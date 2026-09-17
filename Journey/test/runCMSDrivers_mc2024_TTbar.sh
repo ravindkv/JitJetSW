@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# Summer24-like ttbar MC (Run3 2024 detector conditions) in CMSSW_15_0_5.
+# Run from an initialized CMSSW environment.
+# Settings follow the official 2024 RelVal chain (runTheMatrix.py -w upgrade -l 12834.0):
+#   era Run3_2024, GT auto:phase1_2024_realistic, beamspot DBrealistic,
+#   geometry DB:Extended. The com energy is set to 13.6 TeV to match Summer24.
+# HLT: the RelVal key @relval2024 resolves to the HLT_Fake2 menu (no real trigger
+#   paths), and the frozen 2024 menu (2024v14) is not shipped in CMSSW_15_0_5.
+#   We therefore run the real GRun menu shipped with this release (HLT_GRun_cff,
+#   /dev/CMSSW_15_0_0/GRun/V62). GRun seeds on 2025 L1 algorithms (e.g. L1_CICADA_*)
+#   that are absent from the 2024 L1 menu in the 2024 GT, so the L1 menu record is
+#   overridden with the 2025 L1 menu (taken from auto:phase1_2025_realistic) in the
+#   L1 emulation step and in the HLT step. Everything else stays 2024 conditions.
+set -euo pipefail
+
+events=${EVENTS:-5}
+first=${FIRST_STEP:-1}
+last=${LAST_STEP:-9}
+conditions=auto:phase1_2024_realistic
+era=Run3_2024
+geometry=DB:Extended
+beamspot=DBrealistic
+com_energy=13600.0
+l1_menu_override="L1Menu_Collisions2025_v1_0_0_xml,L1TUtmTriggerMenuRcd"
+
+if [[ ${CMSSW_VERSION:-} != CMSSW_15_0_5 ]]; then
+  echo "Initialize CMSSW_15_0_5 with 'eval \"\$(scram runtime -sh)\"' first." >&2
+  exit 1
+fi
+
+run_step() {
+  local number=$1 name=$2 fragment=$3 sequence=$4 tier=$5 content=$6 input=$7
+  local config="step${number}_${name}_cfg.py"
+  local output="output_step${number}_${name}.root"
+  local log="output_step${number}_${name}.log"
+  local args=("$fragment" --conditions "$conditions" --era "$era" --geometry "$geometry"
+              -n "$events" -s "$sequence" --datatier "$tier" --eventcontent "$content"
+              --fileout "file:$output" --python_filename "$config" --no_exec)
+  if [[ -n $input ]]; then
+    [[ -s $input ]] || { echo "Missing input: $input" >&2; exit 1; }
+    args+=(--filein "file:$input")
+  fi
+  if (( number == 1 )); then
+    args+=(--beamspot "$beamspot")
+    args+=(--customise_commands "process.generator.comEnergy = cms.double($com_energy)")
+  fi
+  if (( number == 3 )); then
+    # Run3 DIGI2RAW packs the PPS pixel digis (RPixDetDigitizer). Nothing in a
+    # standalone DIGI job consumes them and FEVTDEBUGHLT does not keep them, so the
+    # digitizer would never run; keep them explicitly so step 5 can find them.
+    args+=(--outputCommands 'keep *_RPixDetDigitizer_*_*')
+  fi
+  if (( number == 4 )); then
+    args+=(--customise_commands "process.load('Configuration.StandardSequences.Digi_cff')")
+    args+=(--outputCommands 'keep *')
+  fi
+  if (( number == 4 || number == 6 )); then
+    # L1 menu must match the HLT menu (see header note).
+    args+=(--custom_conditions "$l1_menu_override")
+  fi
+  echo "Running step $number/9: $name"
+  cmsDriver.py "${args[@]}" > "${config%.py}.driver.log" 2>&1 || {
+    cat "${config%.py}.driver.log" >&2; exit 1;
+  }
+  cmsRun "$config" > "$log" 2>&1 || { tail -80 "$log" >&2; exit 1; }
+  [[ -s $output ]] || { echo "No output produced: $output" >&2; exit 1; }
+  echo "Completed $output"
+}
+
+(( first >= 1 && first <= last && last <= 9 )) || { echo 'Invalid FIRST_STEP/LAST_STEP' >&2; exit 1; }
+
+if (( first <= 1 && last >= 1 )); then
+  run_step 1 GEN TTbar_14TeV_TuneCP5_cfi GEN GEN FEVTDEBUG ''
+fi
+if (( first <= 2 && last >= 2 )); then
+  run_step 2 SIM step2 SIM GEN-SIM FEVTDEBUG output_step1_GEN.root
+fi
+if (( first <= 3 && last >= 3 )); then
+  run_step 3 DIGI step3 DIGI:pdigi_valid GEN-SIM-DIGI FEVTDEBUGHLT output_step2_SIM.root
+fi
+if (( first <= 4 && last >= 4 )); then
+  run_step 4 L1 step4 L1 GEN-SIM-DIGI FEVTDEBUGHLT output_step3_DIGI.root
+fi
+if (( first <= 5 && last >= 5 )); then
+  run_step 5 DIGI2RAW step5 DIGI2RAW GEN-SIM-DIGI-RAW FEVTDEBUGHLT output_step4_L1.root
+fi
+if (( first <= 6 && last >= 6 )); then
+  run_step 6 HLT step6 'HLT:GRun' GEN-SIM-DIGI-RAW-HLTDEBUG FEVTDEBUGHLT output_step5_DIGI2RAW.root
+fi
+if (( first <= 7 && last >= 7 )); then
+  run_step 7 AODSIM step7 RAW2DIGI,L1Reco,RECO,RECOSIM AODSIM AODSIM output_step6_HLT.root
+fi
+if (( first <= 8 && last >= 8 )); then
+  run_step 8 MINIAODSIM step8 PAT MINIAODSIM MINIAODSIM output_step7_AODSIM.root
+fi
+if (( first <= 9 && last >= 9 )); then
+  run_step 9 NANOAODSIM step9 NANO NANOAODSIM NANOAODSIM output_step8_MINIAODSIM.root
+fi
