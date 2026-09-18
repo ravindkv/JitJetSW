@@ -1,4 +1,4 @@
-// RecoDumper: reconstructed objects (HLT or offline). Vertices, every track (with the
+// RecoJourney: reconstructed objects (HLT or offline). Vertices, every track (with the
 // true TrackingParticle -> genParticle link when an association is available, otherwise a
 // Delta-R gen match), every PF candidate, every jet with constituents and gen-jet match,
 // METs, leptons/photons/taus (generic reco::Candidate view) and event-level doubles (rho).
@@ -21,13 +21,13 @@
 #include "SimDataFormats/Associations/interface/TrackToTrackingParticleAssociator.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class RecoDumper : public edm::one::EDAnalyzer<> {
+class RecoJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit RecoDumper(const edm::ParameterSet& ps);
+  explicit RecoJourney(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
 
 private:
@@ -47,7 +47,7 @@ private:
   std::vector<Tagged<double>> doubles_;
 };
 
-RecoDumper::RecoDumper(const edm::ParameterSet& ps)
+RecoJourney::RecoJourney(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "RECO")),
       maxElements_(optInt(ps, "maxElements", -1)),
       maxSub_(optInt(ps, "maxSub", -1)),
@@ -75,7 +75,7 @@ RecoDumper::RecoDumper(const edm::ParameterSet& ps)
   reg(doubles_, "doubles");
 }
 
-void RecoDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void RecoJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -286,4 +286,4 @@ void RecoDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(RecoDumper);
+DEFINE_FWK_MODULE(RecoJourney);

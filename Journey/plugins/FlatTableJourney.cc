@@ -1,4 +1,4 @@
-// FlatTableDumper: prints every NanoAOD FlatTable found in the event (all columns of all
+// FlatTableJourney: prints every NanoAOD FlatTable found in the event (all columns of all
 // rows), i.e. exactly the numbers that end up in the NANOAOD tree.
 #include <algorithm>
 
@@ -10,13 +10,13 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "DataFormats/NanoAOD/interface/FlatTable.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class FlatTableDumper : public edm::one::EDAnalyzer<> {
+class FlatTableJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit FlatTableDumper(const edm::ParameterSet& ps)
+  explicit FlatTableJourney(const edm::ParameterSet& ps)
       : step_(optString(ps, "step", "NANO")), maxElements_(optInt(ps, "maxElements", -1)), getter_(edm::ProcessMatch("*"), this) {
     callWhenNewProductsRegistered(getter_);
   }
@@ -28,7 +28,7 @@ private:
   edm::GetterOfProducts<nanoaod::FlatTable> getter_;
 };
 
-void FlatTableDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void FlatTableJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
   std::vector<edm::Handle<nanoaod::FlatTable>> tables;
@@ -96,4 +96,4 @@ void FlatTableDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(FlatTableDumper);
+DEFINE_FWK_MODULE(FlatTableJourney);

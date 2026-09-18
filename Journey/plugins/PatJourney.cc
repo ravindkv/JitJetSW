@@ -1,4 +1,4 @@
-// PatDumper: MiniAOD content. Every packed PF candidate (with the original AOD PF
+// PatJourney: MiniAOD content. Every packed PF candidate (with the original AOD PF
 // candidate it was packed from, to show the packing precision), lost tracks, every pat::Jet
 // with all JEC levels, flavour, gen match, b-tag discriminators, user floats and
 // constituents, pat::MET with uncertainties, leptons/photons/taus, pruned/packed gen
@@ -23,13 +23,13 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class PatDumper : public edm::one::EDAnalyzer<> {
+class PatJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit PatDumper(const edm::ParameterSet& ps);
+  explicit PatJourney(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
 
 private:
@@ -51,7 +51,7 @@ private:
   std::vector<Tagged<double>> doubles_;
 };
 
-PatDumper::PatDumper(const edm::ParameterSet& ps)
+PatJourney::PatJourney(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "PAT")),
       maxElements_(optInt(ps, "maxElements", -1)),
       maxSub_(optInt(ps, "maxSub", -1)),
@@ -113,7 +113,7 @@ namespace {
   }
 }  // namespace
 
-void PatDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void PatJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -452,4 +452,4 @@ void PatDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(PatDumper);
+DEFINE_FWK_MODULE(PatJourney);

@@ -1,6 +1,6 @@
-#ifndef ChainDump_Dumper_DumpUtil_h
-#define ChainDump_Dumper_DumpUtil_h
-// Small shared helpers for the ChainDump per-event text dumps.
+#ifndef JitJetSW_Journey_JourneyUtil_h
+#define JitJetSW_Journey_JourneyUtil_h
+// Small shared helpers for the JitJet per-event text dumps.
 // Everything is printed to std::cout; the driver script redirects cmsRun output to the step log.
 #include <algorithm>
 #include <cmath>
@@ -27,7 +27,7 @@
 #include "FWCore/Utilities/interface/EDGetToken.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 
-namespace chaindump {
+namespace jitjet {
 
   template <class T>
   struct Tagged {
@@ -80,7 +80,7 @@ namespace chaindump {
   inline void eventHeader(std::ostream& os, const edm::Event& ev, const std::string& step, const std::string& module) {
     os << std::defaultfloat << std::setprecision(7);
     os << "\n################################################################################################\n"
-       << "#### CHAINDUMP step=" << step << " module=" << module << " run=" << ev.id().run()
+       << "#### JITJET step=" << step << " module=" << module << " run=" << ev.id().run()
        << " lumi=" << ev.luminosityBlock() << " event=" << ev.id().event() << "\n"
        << "################################################################################################\n";
   }
@@ -274,6 +274,6 @@ namespace chaindump {
     os << " flags=" << genFlags(g) << "\n";
   }
 
-}  // namespace chaindump
+}  // namespace jitjet
 
 #endif

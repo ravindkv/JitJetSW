@@ -1,4 +1,4 @@
-// SimDumper: Geant4 output. Every SimVertex, every SimTrack (linked back to the
+// SimJourney: Geant4 output. Every SimVertex, every SimTrack (linked back to the
 // genParticle through the HepMC barcode), every tracker PSimHit and calorimeter PCaloHit.
 #include <map>
 #include <unordered_map>
@@ -13,13 +13,13 @@
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class SimDumper : public edm::one::EDAnalyzer<> {
+class SimJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit SimDumper(const edm::ParameterSet& ps);
+  explicit SimJourney(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
 
 private:
@@ -34,7 +34,7 @@ private:
   std::vector<Tagged<edm::PCaloHitContainer>> caloHits_;
 };
 
-SimDumper::SimDumper(const edm::ParameterSet& ps)
+SimJourney::SimJourney(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "SIM")),
       maxElements_(optInt(ps, "maxElements", -1)),
       maxSub_(optInt(ps, "maxSub", -1)),
@@ -56,7 +56,7 @@ SimDumper::SimDumper(const edm::ParameterSet& ps)
     caloHits_.push_back({t, consumes<edm::PCaloHitContainer>(t)});
 }
 
-void SimDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void SimJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -211,4 +211,4 @@ void SimDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(SimDumper);
+DEFINE_FWK_MODULE(SimJourney);

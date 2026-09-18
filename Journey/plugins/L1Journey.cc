@@ -1,4 +1,4 @@
-// L1Dumper: every Level-1 trigger object (jets, e/gamma, taus, muons, energy sums, calo
+// L1Journey: every Level-1 trigger object (jets, e/gamma, taus, muons, energy sums, calo
 // towers and clusters) for every bunch crossing, with hardware and physical values and
 // a Delta-R match to the generator objects, plus the uGT algorithm decisions with names.
 #include <map>
@@ -20,13 +20,13 @@
 #include "CondFormats/L1TObjects/interface/L1TUtmTriggerMenu.h"
 #include "CondFormats/DataRecord/interface/L1TUtmTriggerMenuRcd.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class L1Dumper : public edm::one::EDAnalyzer<> {
+class L1Journey : public edm::one::EDAnalyzer<> {
 public:
-  explicit L1Dumper(const edm::ParameterSet& ps);
+  explicit L1Journey(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup& es) override;
 
 private:
@@ -51,7 +51,7 @@ private:
   std::vector<Tagged<BXVector<l1t::CaloCluster>>> clusters_;
 };
 
-L1Dumper::L1Dumper(const edm::ParameterSet& ps)
+L1Journey::L1Journey(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "L1")),
       maxElements_(optInt(ps, "maxElements", -1)),
       printAllAlgos_(optBool(ps, "printAllAlgos", false)),
@@ -81,7 +81,7 @@ L1Dumper::L1Dumper(const edm::ParameterSet& ps)
 }
 
 template <class T, class EXTRA>
-void L1Dumper::printBX(std::ostream& os, const std::string& name, const Tagged<BXVector<T>>& t, const edm::Event& ev, EXTRA extra,
+void L1Journey::printBX(std::ostream& os, const std::string& name, const Tagged<BXVector<T>>& t, const edm::Event& ev, EXTRA extra,
                        const reco::GenParticleCollection* gens, const reco::GenJetCollection* gjets, bool matchJets) {
   edm::Handle<BXVector<T>> h;
   ev.getByToken(t.token, h);
@@ -149,7 +149,7 @@ namespace {
   }
 }  // namespace
 
-void L1Dumper::analyze(const edm::Event& ev, const edm::EventSetup& es) {
+void L1Journey::analyze(const edm::Event& ev, const edm::EventSetup& es) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -240,4 +240,4 @@ void L1Dumper::analyze(const edm::Event& ev, const edm::EventSetup& es) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(L1Dumper);
+DEFINE_FWK_MODULE(L1Journey);

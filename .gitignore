@@ -1,1 +1,4 @@
-python/__pycache__
+**/__pycache__/
+Journey/test/*.log
+Journey/test/*.root
+Journey/test/*.py

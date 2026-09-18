@@ -1,8 +1,8 @@
 # Per-event text dumps for the whole GEN -> NANO chain.
 #
 # Usage (from cmsDriver, appended to the config through --customise_commands):
-#   from ChainDump.Dumper.chainDump_cff import customiseChainDump
-#   process = customiseChainDump(process, level=1, maxElements=-1, maxSub=-1)
+#   from JitJetSW.Journey.jitJet_cff import customiseJitJet
+#   process = customiseJitJet(process, level=1, maxElements=-1, maxSub=-1)
 #
 # The step is detected from the process name (GEN, SIM, DIGI, L1, DIGI2RAW, HLT, RECO, PAT,
 # NANO). Every dump module prints to stdout, so the cmsRun log holds the numbers.
@@ -26,7 +26,7 @@ def _vtags(*names):
     return cms.VInputTag(*names)
 
 
-def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=1.0):
+def customiseJitJet(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=1.0):
     step = process.name_()
     common = dict(step=cms.string(step), maxElements=cms.int32(int(maxElements)), maxSub=cms.int32(int(maxSub)))
     names = []
@@ -41,7 +41,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
     genJets = cms.InputTag('ak4GenJetsNoNu')
 
     if step == 'GEN':
-        add('chainDumpGen', cms.EDAnalyzer('GenDumper',
+        add('jitJetGen', cms.EDAnalyzer('GenJourney',
             genEventInfo=cms.InputTag('generator'),
             hepmcRaw=cms.InputTag('generator', 'unsmeared'),
             hepmcSmeared=cms.InputTag('generatorSmeared'),
@@ -52,7 +52,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             printHepMCParticles=cms.bool(level >= 2),
             **common))
         # decay-tree view of the same particles (prints with std::cout)
-        add('chainDumpParticleList', cms.EDAnalyzer('ParticleListDrawer',
+        add('jitJetParticleList', cms.EDAnalyzer('ParticleListDrawer',
             src=genParticles,
             maxEventsToPrint=cms.untracked.int32(-1),
             printVertex=cms.untracked.bool(True),
@@ -71,7 +71,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
                    'TrackerHitsTIDHighTof', 'TrackerHitsTOBLowTof', 'TrackerHitsTOBHighTof', 'TrackerHitsTECLowTof',
                    'TrackerHitsTECHighTof', 'MuonDTHits', 'MuonCSCHits', 'MuonRPCHits', 'MuonGEMHits']
         calo = ['EcalHitsEB', 'EcalHitsEE', 'EcalHitsES', 'HcalHits']
-        add('chainDumpSim', cms.EDAnalyzer('SimDumper',
+        add('jitJetSim', cms.EDAnalyzer('SimJourney',
             simTracks=cms.InputTag('g4SimHits'),
             simVertices=cms.InputTag('g4SimHits'),
             genParticles=genParticles,
@@ -87,7 +87,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             process.g4SimHits.VerboseTracks = cms.untracked.vint32()
 
     elif step == 'DIGI':
-        add('chainDumpDigi', cms.EDAnalyzer('DigiDumper',
+        add('jitJetDigi', cms.EDAnalyzer('DigiJourney',
             pileupSummary=_vtags('addPileupInfo'),
             trackingParticles=_vtags('mix:MergedTrackTruth'),
             trackingVertices=_vtags('mix:MergedTrackTruth'),
@@ -112,7 +112,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             **common))
 
     elif step == 'L1':
-        add('chainDumpL1', cms.EDAnalyzer('L1Dumper',
+        add('jitJetL1', cms.EDAnalyzer('L1Journey',
             genParticles=genParticles, genJets=genJets,
             jets=_vtags('simCaloStage2Digis', 'simCaloStage2Digis:MP'),
             egammas=_vtags('simCaloStage2Digis', 'simCaloStage2Digis:MP'),
@@ -124,7 +124,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             algBlk=cms.InputTag('simGtStage2Digis'),
             printAllAlgos=cms.bool(level >= 2),
             **common))
-        add('chainDumpL1Summary', cms.EDAnalyzer('L1TGlobalSummary',
+        add('jitJetL1Summary', cms.EDAnalyzer('L1TGlobalSummary',
             AlgInputTag=cms.InputTag('simGtStage2Digis'),
             ExtInputTag=cms.InputTag('simGtExtFakeStage2Digis'),
             MinBx=cms.int32(0), MaxBx=cms.int32(0),
@@ -132,10 +132,10 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             ReadPrescalesFromFile=cms.bool(False), psFileName=cms.string('prescale_L1TGlobal.csv'), psColumn=cms.int32(0)))
 
     elif step == 'DIGI2RAW':
-        add('chainDumpRaw', cms.EDAnalyzer('DigiDumper', fedRawData=_vtags('rawDataCollector'), **common))
+        add('jitJetRaw', cms.EDAnalyzer('DigiJourney', fedRawData=_vtags('rawDataCollector'), **common))
 
     elif step == 'HLT':
-        add('chainDumpHLTL1', cms.EDAnalyzer('L1Dumper',
+        add('jitJetHLTL1', cms.EDAnalyzer('L1Journey',
             genParticles=genParticles, genJets=genJets,
             jets=_vtags('hltGtStage2Digis:Jet'),
             egammas=_vtags('hltGtStage2Digis:EGamma'),
@@ -145,7 +145,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             algBlk=cms.InputTag('hltGtStage2Digis'),
             printAllAlgos=cms.bool(level >= 2),
             **common))
-        add('chainDumpHLTLocalReco', cms.EDAnalyzer('LocalRecoDumper',
+        add('jitJetHLTLocalReco', cms.EDAnalyzer('LocalRecoJourney',
             pixelClusters=_vtags('hltSiPixelClusters'),
             stripClusters=_vtags('hltSiStripRawToClustersFacility'),
             ecalRecHits=_vtags('hltEcalRecHit:EcalRecHitsEB', 'hltEcalRecHit:EcalRecHitsEE'),
@@ -158,7 +158,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
                                  'hltParticleFlowSuperClusterECALUnseeded:hltParticleFlowSuperClusterECALEndcapWithPreshower'),
             caloTowers=_vtags('hltTowerMakerForAll'),
             **common))
-        add('chainDumpHLTReco', cms.EDAnalyzer('RecoDumper',
+        add('jitJetHLTReco', cms.EDAnalyzer('RecoJourney',
             genParticles=genParticles, genJets=genJets,
             vertices=_vtags('hltPixelVertices', 'hltTrimmedPixelVertices', 'hltVerticesPF'),
             tracks=_vtags('hltPixelTracks', 'hltIter0PFlowTrackSelectionHighPurity', 'hltMergedTracks', 'hltPFMuonMerging'),
@@ -169,7 +169,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             candidates=_vtags('hltIterL3Muons', 'hltEgammaCandidates'),
             doubles=_vtags('hltAK4PFJets:rho', 'hltAK4CaloJets:rho'),
             **common))
-        add('chainDumpHLTTrigger', cms.EDAnalyzer('TriggerDumper',
+        add('jitJetHLTTrigger', cms.EDAnalyzer('TriggerJourney',
             genParticles=genParticles, genJets=genJets,
             triggerResults=cms.InputTag('TriggerResults'),
             triggerSummary=cms.InputTag('hltTriggerSummaryAOD'),
@@ -182,7 +182,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
         process.load('SimTracker.TrackAssociatorProducers.quickTrackAssociatorByHits_cfi')
         process.load('SimTracker.TrackAssociation.trackingParticleRecoTrackAsssociation_cfi')
         task.add(process.tpClusterProducer, process.quickTrackAssociatorByHits, process.trackingParticleRecoTrackAsssociation)
-        add('chainDumpLocalReco', cms.EDAnalyzer('LocalRecoDumper',
+        add('jitJetLocalReco', cms.EDAnalyzer('LocalRecoJourney',
             pixelClusters=_vtags('siPixelClusters'),
             stripClusters=_vtags('siStripClusters'),
             ecalRecHits=_vtags('ecalRecHit:EcalRecHitsEB', 'ecalRecHit:EcalRecHitsEE'),
@@ -196,7 +196,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
                                  'particleFlowSuperClusterECAL:particleFlowSuperClusterECALEndcapWithPreshower'),
             caloTowers=_vtags('towerMaker'),
             **common))
-        add('chainDumpReco', cms.EDAnalyzer('RecoDumper',
+        add('jitJetReco', cms.EDAnalyzer('RecoJourney',
             genParticles=genParticles, genJets=genJets,
             vertices=_vtags('offlinePrimaryVertices', 'offlinePrimaryVerticesWithBS', 'inclusiveSecondaryVertices'),
             tracks=_vtags('generalTracks', 'globalMuons', 'standAloneMuons', 'electronGsfTracks'),
@@ -211,7 +211,7 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             **common))
 
     elif step == 'PAT':
-        add('chainDumpPat', cms.EDAnalyzer('PatDumper',
+        add('jitJetPat', cms.EDAnalyzer('PatJourney',
             genParticles=genParticles, genJets=genJets,
             prunedGenParticles=cms.InputTag('prunedGenParticles'),
             packedGenParticles=cms.InputTag('packedGenParticles'),
@@ -229,18 +229,18 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
             **common))
 
     elif step == 'NANO':
-        add('chainDumpNano', cms.EDAnalyzer('FlatTableDumper', **common))
+        add('jitJetNano', cms.EDAnalyzer('FlatTableJourney', **common))
 
     else:
-        print('customiseChainDump: unknown process name %s, nothing added' % step)
+        print('customiseJitJet: unknown process name %s, nothing added' % step)
         return process
 
     if level >= 3:
         # list of every product present in the event (type, module label, instance, process).
         # The reflection dump of the product contents (verbose=True) segfaults in CMSSW_15_0_5
-        # (checked on DIGI2RAW and SIM), so it is not enabled; the ChainDump analyzers above
+        # (checked on DIGI2RAW and SIM), so it is not enabled; the JitJet analyzers above
         # print the contents instead.
-        add('chainDumpEventContent', cms.EDAnalyzer('EventContentAnalyzer',
+        add('jitJetEventContent', cms.EDAnalyzer('EventContentAnalyzer',
             verbose=cms.untracked.bool(False),
             getData=cms.untracked.bool(True),
             listContent=cms.untracked.bool(True),
@@ -249,14 +249,14 @@ def customiseChainDump(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=
     seq = None
     for n in names:
         seq = getattr(process, n) if seq is None else seq + getattr(process, n)
-    process.chainDumpSequence = cms.Sequence(seq)
-    process.chainDumpPath = cms.EndPath(process.chainDumpSequence, task)
+    process.jitJetSequence = cms.Sequence(seq)
+    process.jitJetPath = cms.EndPath(process.jitJetSequence, task)
     if hasattr(process, 'schedule') and process.schedule is not None:
-        process.schedule.append(process.chainDumpPath)
+        process.schedule.append(process.jitJetPath)
 
     # make the MessageLogger based summaries of the borrowed modules visible
     if hasattr(process, 'MessageLogger'):
         for cat in ('L1TGlobalSummary', 'EventContent', 'G4cout', 'G4cerr', 'SimG4CoreApplication'):
             setattr(process.MessageLogger.cerr, cat, cms.untracked.PSet(limit=cms.untracked.int32(-1)))
-    print('customiseChainDump: step=%s level=%d modules=%s' % (step, level, ','.join(names)))
+    print('customiseJitJet: step=%s level=%d modules=%s' % (step, level, ','.join(names)))
     return process

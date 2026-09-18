@@ -1,4 +1,4 @@
-# ChainDump/Dumper
+# JitJetSW/Journey
 
 Per-event text dumps of every object at every step of the GEN -> SIM -> DIGI -> L1 -> DIGI2RAW
 -> HLT -> RECO -> PAT -> NANO chain, so that the journey of every particle can be followed
@@ -11,7 +11,7 @@ Enable it in `runCMSDrivers_mc2024_BBbar.sh` with the `DUMP` variable:
     DUMP=3 DUMP_G4_THRESHOLD=1.0 ./runCMSDrivers_mc2024_BBbar.sh  # + Geant4 track/step printout (Ekin >= 1 GeV), list of every product
     DUMP=1 DUMP_MAX=50 DUMP_SUB=20 ./runCMSDrivers_mc2024_BBbar.sh  # cap elements / sub-elements per collection
 
-The customisation is `ChainDump.Dumper.chainDump_cff.customiseChainDump(process, level, maxElements, maxSub, g4Threshold)`;
+The customisation is `JitJetSW.Journey.jitJet_cff.customiseJitJet(process, level, maxElements, maxSub, g4Threshold)`;
 it can also be added by hand to any of the `stepN_*_cfg.py` files. The step is detected from the
 process name.
 
@@ -38,7 +38,7 @@ Notes
 - `EventContentAnalyzer` with `verbose=True` (reflection dump of product contents) crashes in
   CMSSW_15_0_5 and is therefore not used; level 3 only lists the products.
 - Each dump module is an ordinary EDAnalyzer with `cms.VInputTag` parameters, so collections
-  can be added or removed in `python/chainDump_cff.py` (or on a `stepN_*_cfg.py` file) without
+  can be added or removed in `python/jitJet_cff.py` (or on a `stepN_*_cfg.py` file) without
   recompiling.
 - Rough log sizes with the default caps (all elements): ~10k lines/event for GEN, ~6k for SIM,
   ~50k for DIGI (mostly strip digis), ~12k for L1 (calo towers), ~15k for HLT and RECO, ~1k for

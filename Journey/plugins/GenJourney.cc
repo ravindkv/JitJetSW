@@ -1,4 +1,4 @@
-// GenDumper: prints, for every event, the generator information, the HepMC primary
+// GenJourney: prints, for every event, the generator information, the HepMC primary
 // vertex before/after smearing, every genParticle (with barcodes, mothers, daughters,
 // status flags), every GenJet with its constituents and the GenMETs.
 #include <map>
@@ -17,13 +17,13 @@
 #include "HepMC/GenVertex.h"
 #include "HepMC/GenParticle.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class GenDumper : public edm::one::EDAnalyzer<> {
+class GenJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit GenDumper(const edm::ParameterSet& ps);
+  explicit GenJourney(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
 
 private:
@@ -41,7 +41,7 @@ private:
   std::vector<Tagged<reco::GenMETCollection>> genMETs_;
 };
 
-GenDumper::GenDumper(const edm::ParameterSet& ps)
+GenJourney::GenJourney(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "GEN")),
       maxElements_(optInt(ps, "maxElements", -1)),
       maxSub_(optInt(ps, "maxSub", -1)),
@@ -67,7 +67,7 @@ GenDumper::GenDumper(const edm::ParameterSet& ps)
     genMETs_.push_back({t, consumes<reco::GenMETCollection>(t)});
 }
 
-void GenDumper::printHepMC(std::ostream& os, const std::string& name, const edm::InputTag& tag, const edm::HepMCProduct& prod) const {
+void GenJourney::printHepMC(std::ostream& os, const std::string& name, const edm::InputTag& tag, const edm::HepMCProduct& prod) const {
   const HepMC::GenEvent* evt = prod.GetEvent();
   if (!evt) {
     os << "\n== " << name << " [" << tag.encode() << "] : empty HepMC event\n";
@@ -112,7 +112,7 @@ void GenDumper::printHepMC(std::ostream& os, const std::string& name, const edm:
   }
 }
 
-void GenDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void GenJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -250,4 +250,4 @@ void GenDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(GenDumper);
+DEFINE_FWK_MODULE(GenJourney);

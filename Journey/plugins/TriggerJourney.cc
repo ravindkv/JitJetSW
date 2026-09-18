@@ -1,4 +1,4 @@
-// TriggerDumper: HLT path results (all paths, with the index of the module that stopped
+// TriggerJourney: HLT path results (all paths, with the index of the module that stopped
 // the path) and the full trigger summary: every trigger object with kinematics, every
 // collection and every filter with the objects it accepted, Delta-R matched to gen.
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
@@ -10,13 +10,13 @@
 #include "DataFormats/HLTReco/interface/TriggerEvent.h"
 #include "DataFormats/HLTReco/interface/TriggerObject.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class TriggerDumper : public edm::one::EDAnalyzer<> {
+class TriggerJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit TriggerDumper(const edm::ParameterSet& ps);
+  explicit TriggerJourney(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
 
 private:
@@ -30,7 +30,7 @@ private:
   edm::EDGetTokenT<reco::GenJetCollection> genJetsTok_;
 };
 
-TriggerDumper::TriggerDumper(const edm::ParameterSet& ps)
+TriggerJourney::TriggerJourney(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "HLT")),
       maxElements_(optInt(ps, "maxElements", -1)),
       onlyAccepted_(optBool(ps, "onlyAcceptedPaths", false)),
@@ -48,7 +48,7 @@ TriggerDumper::TriggerDumper(const edm::ParameterSet& ps)
     genJetsTok_ = consumes<reco::GenJetCollection>(genJetsTag_);
 }
 
-void TriggerDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void TriggerJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -137,4 +137,4 @@ void TriggerDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(TriggerDumper);
+DEFINE_FWK_MODULE(TriggerJourney);

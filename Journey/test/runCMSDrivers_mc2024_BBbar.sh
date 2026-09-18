@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Summer24-like bbbar MC (Run3 2024 detector conditions) in CMSSW_15_0_5.
 # GEN: Pythia8 HardQCD gg/qqbar->bbbar (tune CP5) from the local fragment
-#   Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py (no bbbar fragment
-#   ships with the release). The fragment needs 'scram b python' once; the script
-#   does this automatically if the module is not importable.
+#   JitJetSW/Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py (no bbbar
+#   fragment ships with the release). cmsDriver expects a GEN fragment under
+#   Configuration/GenProduction/python, so the script symlinks it there and runs
+#   'scram b python' once if the module is not importable.
 # Run from an initialized CMSSW environment.
 # Settings follow the official 2024 RelVal chain (runTheMatrix.py -w upgrade -l 12834.0):
 #   era Run3_2024, GT auto:phase1_2024_realistic, beamspot DBrealistic,
@@ -15,13 +16,13 @@
 #   that are absent from the 2024 L1 menu in the 2024 GT, so the L1 menu record is
 #   overridden with the 2025 L1 menu (taken from auto:phase1_2025_realistic) in the
 #   L1 emulation step and in the HLT step. Everything else stays 2024 conditions.
-# DUMP: per-event text dumps of every object at every step (ChainDump/Dumper package),
+# DUMP: per-event text dumps of every object at every step (JitJetSW/Journey package),
 #   0 (default) off, 1 every physics object + links to the previous step, 2 + Pythia8/HepMC
 #   listings and all L1 bits, 3 + Geant4 track/step printout and list of every product.
 #   DUMP_MAX / DUMP_SUB cap elements / sub-elements per collection (-1 = all),
 #   DUMP_G4_THRESHOLD is the Geant4 track Ekin threshold (GeV) for DUMP=3.
 #   The dumps go to the step logs output_stepN_*.log; with DUMP>0 the NANO tree is also
-#   printed to output_step9_NANOAODSIM.tree.log. See ChainDump/Dumper/README.md.
+#   printed to output_step9_NANOAODSIM.tree.log. See JitJetSW/Journey/README.md.
 set -euo pipefail
 
 events=${EVENTS:-5}
@@ -37,7 +38,7 @@ dump=${DUMP:-0}
 dump_max=${DUMP_MAX:--1}
 dump_sub=${DUMP_SUB:--1}
 dump_g4_threshold=${DUMP_G4_THRESHOLD:-1.0}
-dump_customise="from ChainDump.Dumper.chainDump_cff import customiseChainDump; process = customiseChainDump(process, level=${dump}, maxElements=${dump_max}, maxSub=${dump_sub}, g4Threshold=${dump_g4_threshold})"
+dump_customise="from JitJetSW.Journey.jitJet_cff import customiseJitJet; process = customiseJitJet(process, level=${dump}, maxElements=${dump_max}, maxSub=${dump_sub}, g4Threshold=${dump_g4_threshold})"
 
 if [[ ${CMSSW_VERSION:-} != CMSSW_15_0_5 ]]; then
   echo "Initialize CMSSW_15_0_5 with 'eval \"\$(scram runtime -sh)\"' first." >&2
@@ -96,18 +97,26 @@ run_step() {
 (( first >= 1 && first <= last && last <= 9 )) || { echo 'Invalid FIRST_STEP/LAST_STEP' >&2; exit 1; }
 
 if (( dump > 0 )); then
-  [[ -d $CMSSW_BASE/src/ChainDump/Dumper ]] || { echo "Missing package ChainDump/Dumper (needed for DUMP>0)" >&2; exit 1; }
-  if [[ ! -s $CMSSW_BASE/lib/$SCRAM_ARCH/pluginChainDumpDumperAuto.so ]] ||
-     ! python3 -c 'import ChainDump.Dumper.chainDump_cff' 2>/dev/null; then
-    echo "Building ChainDump/Dumper"
+  [[ -d $CMSSW_BASE/src/JitJetSW/Journey ]] || { echo "Missing package JitJetSW/Journey (needed for DUMP>0)" >&2; exit 1; }
+  if [[ ! -s $CMSSW_BASE/lib/$SCRAM_ARCH/pluginJitJetSWJourneyAuto.so ]] ||
+     ! python3 -c 'import JitJetSW.Journey.jitJet_cff' 2>/dev/null; then
+    echo "Building JitJetSW/Journey"
     # full build (not only the package) so that the edm plugin cache is refreshed
-    (cd "$CMSSW_BASE/src" && scram b -j 4 > chaindump_build.log 2>&1) || { cat "$CMSSW_BASE/src/chaindump_build.log" >&2; exit 1; }
+    (cd "$CMSSW_BASE/src" && scram b -j 4 > jitjet_build.log 2>&1) || { cat "$CMSSW_BASE/src/jitjet_build.log" >&2; exit 1; }
   fi
 fi
 
+# The fragment lives in this package so that it is version controlled; cmsDriver
+# resolves it as the python module Configuration.GenProduction.<name>, so it is
+# symlinked into the standard location (see header note).
 gen_fragment=Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py
+gen_fragment_src=$CMSSW_BASE/src/JitJetSW/$gen_fragment
 if (( first <= 1 && last >= 1 )); then
-  [[ -s $CMSSW_BASE/src/$gen_fragment ]] || { echo "Missing GEN fragment: $gen_fragment" >&2; exit 1; }
+  [[ -s $gen_fragment_src ]] || { echo "Missing GEN fragment: $gen_fragment_src" >&2; exit 1; }
+  if [[ ! -e $CMSSW_BASE/src/$gen_fragment ]]; then
+    mkdir -p "$CMSSW_BASE/src/${gen_fragment%/*}"
+    ln -s "$gen_fragment_src" "$CMSSW_BASE/src/$gen_fragment"
+  fi
   python3 -c 'import Configuration.GenProduction.BBbar_14TeV_TuneCP5_cfi' 2>/dev/null ||
     (cd "$CMSSW_BASE/src/Configuration/GenProduction" && scram b python > /dev/null)
   run_step 1 GEN "$gen_fragment" GEN GEN FEVTDEBUG ''
@@ -137,7 +146,7 @@ if (( first <= 9 && last >= 9 )); then
   run_step 9 NANOAODSIM step9 NANO NANOAODSIM NANOAODSIM output_step8_MINIAODSIM.root
   if (( dump > 0 )); then
     echo "Dumping NANO tree to output_step9_NANOAODSIM.tree.log"
-    python3 "$CMSSW_BASE/src/ChainDump/Dumper/scripts/dumpNanoTree.py" output_step9_NANOAODSIM.root \
+    python3 "$CMSSW_BASE/src/JitJetSW/Journey/scripts/dumpNanoTree.py" output_step9_NANOAODSIM.root \
       > output_step9_NANOAODSIM.tree.log 2>&1 || { tail -20 output_step9_NANOAODSIM.tree.log >&2; exit 1; }
   fi
 fi

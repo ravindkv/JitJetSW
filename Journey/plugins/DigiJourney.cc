@@ -1,4 +1,4 @@
-// DigiDumper: every digi of every subdetector (tracker pixel/strip, ECAL, HCAL, muon),
+// DigiJourney: every digi of every subdetector (tracker pixel/strip, ECAL, HCAL, muon),
 // the digi->SimTrack links, ECAL/HCAL trigger primitives, TrackingParticles/Vertices,
 // pileup summary and (for RAW) the size of every FED payload.
 #include <unordered_map>
@@ -31,13 +31,13 @@
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class DigiDumper : public edm::one::EDAnalyzer<> {
+class DigiJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit DigiDumper(const edm::ParameterSet& ps);
+  explicit DigiJourney(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
 
 private:
@@ -72,7 +72,7 @@ private:
   std::vector<Tagged<FEDRawDataCollection>> raw_;
 };
 
-DigiDumper::DigiDumper(const edm::ParameterSet& ps)
+DigiJourney::DigiJourney(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "DIGI")), maxElements_(optInt(ps, "maxElements", -1)), maxSub_(optInt(ps, "maxSub", -1)) {
   auto reg = [&](auto& vec, const char* name) {
     using T = typename std::decay_t<decltype(vec)>::value_type;
@@ -104,7 +104,7 @@ DigiDumper::DigiDumper(const edm::ParameterSet& ps)
 }
 
 template <class DIGI, class PRINT>
-void DigiDumper::printDetSetVector(std::ostream& os, const std::string& name, const Tagged<edm::DetSetVector<DIGI>>& t, const edm::Event& ev, PRINT printer) {
+void DigiJourney::printDetSetVector(std::ostream& os, const std::string& name, const Tagged<edm::DetSetVector<DIGI>>& t, const edm::Event& ev, PRINT printer) {
   edm::Handle<edm::DetSetVector<DIGI>> h;
   ev.getByToken(t.token, h);
   if (!h.isValid()) {
@@ -137,7 +137,7 @@ void DigiDumper::printDetSetVector(std::ostream& os, const std::string& name, co
 }
 
 template <class COLL, class PRINT>
-void DigiDumper::printMuonDigis(std::ostream& os, const std::string& name, const Tagged<COLL>& t, const edm::Event& ev, PRINT printer) {
+void DigiJourney::printMuonDigis(std::ostream& os, const std::string& name, const Tagged<COLL>& t, const edm::Event& ev, PRINT printer) {
   edm::Handle<COLL> h;
   ev.getByToken(t.token, h);
   if (!h.isValid()) {
@@ -170,7 +170,7 @@ void DigiDumper::printMuonDigis(std::ostream& os, const std::string& name, const
   truncated(os, limDet, ndet);
 }
 
-void DigiDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void DigiJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -460,4 +460,4 @@ void DigiDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(DigiDumper);
+DEFINE_FWK_MODULE(DigiJourney);

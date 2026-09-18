@@ -1,4 +1,4 @@
-// LocalRecoDumper: local reconstruction (the bridge between digis and physics objects):
+// LocalRecoJourney: local reconstruction (the bridge between digis and physics objects):
 // tracker pixel/strip clusters, ECAL/HCAL rechits, PF rechits, PF clusters, ECAL
 // superclusters and calo towers.
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
@@ -20,13 +20,13 @@
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/CaloTowers/interface/CaloTowerCollection.h"
 
-#include "DumpUtil.h"
+#include "JourneyUtil.h"
 
-using namespace chaindump;
+using namespace jitjet;
 
-class LocalRecoDumper : public edm::one::EDAnalyzer<> {
+class LocalRecoJourney : public edm::one::EDAnalyzer<> {
 public:
-  explicit LocalRecoDumper(const edm::ParameterSet& ps);
+  explicit LocalRecoJourney(const edm::ParameterSet& ps);
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
 
 private:
@@ -44,7 +44,7 @@ private:
   std::vector<Tagged<CaloTowerCollection>> caloTowers_;
 };
 
-LocalRecoDumper::LocalRecoDumper(const edm::ParameterSet& ps)
+LocalRecoJourney::LocalRecoJourney(const edm::ParameterSet& ps)
     : step_(optString(ps, "step", "RECO")), maxElements_(optInt(ps, "maxElements", -1)), maxSub_(optInt(ps, "maxSub", -1)) {
   auto reg = [&](auto& vec, const char* name) {
     using T = typename std::decay_t<decltype(vec)>::value_type;
@@ -63,7 +63,7 @@ LocalRecoDumper::LocalRecoDumper(const edm::ParameterSet& ps)
   reg(caloTowers_, "caloTowers");
 }
 
-void LocalRecoDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
+void LocalRecoJourney::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::ostream& os = std::cout;
   eventHeader(os, ev, step_, moduleDescription().moduleLabel());
 
@@ -264,4 +264,4 @@ void LocalRecoDumper::analyze(const edm::Event& ev, const edm::EventSetup&) {
   os.flush();
 }
 
-DEFINE_FWK_MODULE(LocalRecoDumper);
+DEFINE_FWK_MODULE(LocalRecoJourney);
