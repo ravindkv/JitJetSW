@@ -25,7 +25,7 @@
 #   printed to output_step9_NANOAODSIM.tree.log. See JitJetSW/Journey/README.md.
 set -euo pipefail
 
-events=${EVENTS:-5}
+events=${EVENTS:-1}
 first=${FIRST_STEP:-1}
 last=${LAST_STEP:-9}
 conditions=auto:phase1_2024_realistic

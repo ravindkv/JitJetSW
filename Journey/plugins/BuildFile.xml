@@ -2,6 +2,8 @@
 <use name="FWCore/ParameterSet"/>
 <use name="FWCore/Utilities"/>
 <use name="FWCore/Common"/>
+<use name="FWCore/ServiceRegistry"/>
+<use name="CommonTools/UtilAlgos"/>
 <use name="DataFormats/Common"/>
 <use name="DataFormats/Math"/>
 <use name="DataFormats/Candidate"/>
@@ -53,4 +55,6 @@
 <use name="CondFormats/L1TObjects"/>
 <use name="CondFormats/DataRecord"/>
 <use name="hepmc"/>
+<use name="root"/>
+<use name="rootgraphics"/>
 <flags EDM_PLUGIN="1"/>

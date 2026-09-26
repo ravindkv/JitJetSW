@@ -44,3 +44,41 @@ Notes
   ~50k for DIGI (mostly strip digis), ~12k for L1 (calo towers), ~15k for HLT and RECO, ~1k for
   PAT, ~0.4k for NANO. Use `DUMP_SUB` to cap hits/digis/constituents and `DUMP_MAX` for the
   number of objects per collection.
+
+## GenPartAnalyzer: eta-phi maps per generation stage
+
+`plugins/GenPartAnalyzer.cc` draws the genParticles of a GEN file as markers in the (eta, phi)
+plane, marker size growing with pT and the pT value written next to the b, bbar and every
+particle above `labelPtMin` (5 GeV). One plot is made per generation stage, so the event can be
+followed from the matrix element to the final state:
+
+| stage | particles drawn (Pythia8 status codes stored in genParticles)                                   |
+|-------|--------------------------------------------------------------------------------------------------|
+| 1     | hard process: outgoing b, bbar (status 23)                                                       |
+| 2     | + parton shower: ISR (41-49) and FSR (51-59) partons, and the b / bbar copies after showering    |
+| 3     | + MPI (31-39) partons, primordial-kT copies and beam remnants (61-69)                            |
+| 4     | + hadronisation: the primary hadrons (daughters of the status 71-79 string partons)              |
+| 5     | + hadron decays: the status 1 final state                                                        |
+
+A particle is drawn at stage N if it exists at the end of stage N (produced in a stage <= N,
+outgoing ancestors all from stages <= N, no daughter produced in a stage <= N). Incoming partons
+and the beams (pT = 0, along z) are never drawn. The marker colour is the origin of the particle
+(hard process, ISR, FSR, MPI, beam remnant, primary hadron, decay product); copies (status 44,
+52, 62, ...) and FSR radiators inherit the origin of what they copy.
+
+The hard-process b and bbar are followed through the stages in red / blue: the same-flavour quark
+copies (stages 1-3), the primary b hadron nearest in Delta R to the last quark copy (stage 4) and
+the stable decay products of that hadron (stage 5). Each plot shows pT, eta, phi of the b and bbar
+systems, the net pT |pT(b) + pT(bbar)| (also drawn as a magenta star at the direction of the
+vector sum), the scalar sum and Delta phi. The same numbers go to stdout, and with
+`printParticles=True` every drawn particle of every stage is listed with its origin.
+
+    cd test
+    cmsRun genPartAnalyzer_cfg.py                                   # reads output_step1_GEN.root
+    cmsRun genPartAnalyzer_cfg.py inputFiles=file:x.root maxEvents=3 printParticles=True
+
+Output: `genPartAnalyzer_stage<N>_<name>_run<R>_event<E>.pdf` per stage and event, and
+`genPartAnalyzer.root` (TFileService) with, per stage, `etaPhiPt` (TH2, eta vs phi weighted by
+pT) and the `ptB`, `ptBbar`, `ptNetBBbar` distributions over events. Parameters: `genParticles`,
+`outputPrefix`, `etaMax` (6, particles beyond are drawn on the border with an x marker),
+`labelPtMin`, `savePDF`, `printParticles`.

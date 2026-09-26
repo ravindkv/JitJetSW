@@ -17,7 +17,7 @@ generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
         pythia8CommonSettingsBlock,
         pythia8CP5SettingsBlock,
         processParameters = cms.vstring(
-            'HardQCD:gg2bbbar = on ',
+            'HardQCD:gg2bbbar = off ',
             'HardQCD:qqbar2bbbar = on ',
             'PhaseSpace:pTHatMin = 30. ',
             ),

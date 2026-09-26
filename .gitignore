@@ -2,3 +2,5 @@
 Journey/test/*.log
 Journey/test/*.root
 Journey/test/*.py
+!Journey/test/genPartAnalyzer_cfg.py
+Journey/test/*.pdf
