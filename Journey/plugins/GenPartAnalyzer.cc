@@ -3,8 +3,12 @@
 // Every genParticle is drawn as a marker at (eta, phi) whose size grows with pT (the pT
 // value is written next to the b, bbar and every particle above labelPtMin). One PDF is
 // written per stage and event (<outputPrefix>_stageN_<name>_run<R>_event<E>.pdf; ROOT can
-// keep only one multi-page PDF open at a time), plus TH2 (eta, phi, weight pT) per stage in
-// the TFileService file.
+// keep only one multi-page PDF open at a time), or, if pdfFile is set, all plots go as pages
+// into that single PDF (per event the stages 1..maxStage), plus TH2 (eta, phi, weight pT)
+// per stage in the TFileService file. maxStage limits the stages that are analysed, for a
+// sample generated with later Pythia8 levels switched off (ME only: 1, + parton shower: 2,
+// + MPI: 3, + hadronisation: 5); sampleLabel is printed in the right panel of every plot,
+// '|' separates lines.
 //
 // The Pythia8 status codes kept in genParticles (Pythia8 manual, "Particle Properties")
 // give the stage in which each particle (or copy of a particle) was produced:
@@ -94,6 +98,7 @@ private:
 
   void beginJob() override;
   void analyze(const edm::Event& ev, const edm::EventSetup&) override;
+  void endJob() override;
 
   static bool isIncoming(int status);
   static bool isParton(int pdg);  // quark, gluon, diquark, string / cluster
@@ -111,9 +116,11 @@ private:
             const std::vector<int>& origin, const std::vector<Sys>& systems);
 
   edm::EDGetTokenT<Coll> genParticlesTok_;
-  std::string outputPrefix_;
+  std::string outputPrefix_, pdfFile_, sampleLabel_;
   double etaMax_, labelPtMin_;
   bool savePDF_, printParticles_;
+  int maxStage_;
+  bool pdfOpen_ = false;  // the multi-page pdfFile_ is opened on the first page and closed in endJob
 
   std::unique_ptr<TCanvas> canvas_;
   TH2D* hEtaPhiPt_[kNStages + 1] = {};
@@ -125,10 +132,13 @@ private:
 GenPartAnalyzer::GenPartAnalyzer(const edm::ParameterSet& ps)
     : genParticlesTok_(consumes<Coll>(ps.getParameter<edm::InputTag>("genParticles"))),
       outputPrefix_(ps.getParameter<std::string>("outputPrefix")),
+      pdfFile_(ps.getParameter<std::string>("pdfFile")),
+      sampleLabel_(ps.getParameter<std::string>("sampleLabel")),
       etaMax_(ps.getParameter<double>("etaMax")),
       labelPtMin_(ps.getParameter<double>("labelPtMin")),
       savePDF_(ps.getParameter<bool>("savePDF")),
-      printParticles_(ps.getParameter<bool>("printParticles")) {
+      printParticles_(ps.getParameter<bool>("printParticles")),
+      maxStage_(std::min(std::max(ps.getParameter<int>("maxStage"), 1), kNStages)) {
   usesResource(TFileService::kSharedResource);
   edm::Service<TFileService> fs;
   for (int s = 1; s <= kNStages; ++s) {
@@ -151,6 +161,12 @@ void GenPartAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descripti
   desc.add<double>("etaMax", 6.)->setComment("eta axis range; particles beyond are drawn on the border with an x marker");
   desc.add<double>("labelPtMin", 5.)->setComment("pT above which the pT value is written next to the marker (b, bbar always)");
   desc.add<bool>("savePDF", true);
+  desc.add<std::string>("pdfFile", "")
+      ->setComment("if set, all plots are written as pages of this single PDF instead of one PDF per stage and event");
+  desc.add<std::string>("sampleLabel", "")
+      ->setComment("printed in the right panel of every plot, '|' separates lines (e.g. the generator stage)");
+  desc.add<int>("maxStage", kNStages)
+      ->setComment("last stage to analyse and draw: 1 hard process, 2 parton shower, 3 MPI, 4 hadronisation, 5 decays");
   desc.add<bool>("printParticles", false)->setComment("print every drawn particle of every stage to stdout");
   descriptions.addWithDefaultLabel(desc);
 }
@@ -420,7 +436,7 @@ void GenPartAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
   std::vector<size_t> bHadron, bbarHadron;  // primary b hadrons matched to the b / bbar chains (stage 4)
   std::vector<char> bHadronDesc(n, 0), bbarHadronDesc(n, 0);
 
-  for (int s = 1; s <= kNStages; ++s) {
+  for (int s = 1; s <= maxStage_; ++s) {
     // 3. particles alive at the end of stage s
     std::vector<char> lineage(n, 2), alive(n, 0);
     for (size_t i = 0; i < n; ++i) {
@@ -648,6 +664,18 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
   text(0.06, 0.955, kStageTitle[stage], 0.034);
   text(0.79, 0.955, Form("run %u  lumi %u  event %llu", ev.id().run(), ev.luminosityBlock(), ev.id().event()), 0.022,
        kBlack, 31);
+  // sample label in the right panel above the legend, one line per '|'-separated part
+  if (!sampleLabel_.empty()) {
+    size_t start = 0;
+    for (int k = 0; start <= sampleLabel_.size() && k < 5; ++k) {
+      size_t bar = sampleLabel_.find('|', start);
+      std::string line = sampleLabel_.substr(start, bar == std::string::npos ? std::string::npos : bar - start);
+      text(0.80, 0.925 - 0.026 * k, line.c_str(), 0.018, k == 0 ? kBlack : kGray + 3);
+      if (bar == std::string::npos)
+        break;
+      start = bar + 1;
+    }
+  }
   size_t nAlive = 0;
   for (size_t i = 0; i < n; ++i)
     nAlive += alive[i];
@@ -709,12 +737,25 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
   }
   text(0.80, 0.26, "stages:", 0.02);
   const char* flow[5] = {"1 hard process", "2 ISR + FSR", "3 MPI / remnants", "4 hadronisation", "5 hadron decays"};
-  for (int k = 0; k < 5; ++k)
-    text(0.81, 0.23 - 0.03 * k, flow[k], 0.018, k + 1 == stage ? kRed : kGray + 2);
+  for (int k = 0; k < 5; ++k)  // stages beyond maxStage (not generated in this sample) in light grey
+    text(0.81, 0.23 - 0.03 * k, flow[k], 0.018, k + 1 == stage ? kRed : (k < maxStage_ ? kGray + 2 : kGray));
 
   canvas_->Update();
-  canvas_->Print(Form("%s_stage%d_%s_run%u_event%llu.pdf", outputPrefix_.c_str(), stage, kStageName[stage], ev.id().run(),
-                      ev.id().event()));
+  if (pdfFile_.empty()) {
+    canvas_->Print(Form("%s_stage%d_%s_run%u_event%llu.pdf", outputPrefix_.c_str(), stage, kStageName[stage],
+                        ev.id().run(), ev.id().event()));
+    return;
+  }
+  if (!pdfOpen_) {
+    canvas_->Print((pdfFile_ + "[").c_str());
+    pdfOpen_ = true;
+  }
+  canvas_->Print(pdfFile_.c_str());
+}
+
+void GenPartAnalyzer::endJob() {
+  if (pdfOpen_)
+    canvas_->Print((pdfFile_ + "]").c_str());
 }
 
 DEFINE_FWK_MODULE(GenPartAnalyzer);
