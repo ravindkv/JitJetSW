@@ -4,7 +4,9 @@
 // value is written next to the b, bbar and every particle above labelPtMin). One PDF is
 // written per stage and event (<outputPrefix>_stageN_<name>_run<R>_event<E>.pdf; ROOT can
 // keep only one multi-page PDF open at a time), or, if pdfFile is set, all plots go as pages
-// into that single PDF (per event the stages 1..maxStage), plus TH2 (eta, phi, weight pT)
+// into that single PDF (per event the stages 1..maxStage; with openPdf / closePdf = false the
+// file is opened / closed by another module of the same job that prints into the same PDF,
+// e.g. GenJetAnalyzer, which then appends its pages after the stages of every event), plus TH2 (eta, phi, weight pT)
 // per stage in the TFileService file. maxStage limits the stages that are analysed, for a
 // sample generated with later Pythia8 levels switched off (ME only: 1, + parton shower: 2,
 // + MPI: 3, + hadronisation: 5); sampleLabel is printed in the right panel of every plot,
@@ -118,7 +120,7 @@ private:
   edm::EDGetTokenT<Coll> genParticlesTok_;
   std::string outputPrefix_, pdfFile_, sampleLabel_;
   double etaMax_, labelPtMin_;
-  bool savePDF_, printParticles_;
+  bool savePDF_, printParticles_, openPdf_, closePdf_;
   int maxStage_;
   bool pdfOpen_ = false;  // the multi-page pdfFile_ is opened on the first page and closed in endJob
 
@@ -138,6 +140,8 @@ GenPartAnalyzer::GenPartAnalyzer(const edm::ParameterSet& ps)
       labelPtMin_(ps.getParameter<double>("labelPtMin")),
       savePDF_(ps.getParameter<bool>("savePDF")),
       printParticles_(ps.getParameter<bool>("printParticles")),
+      openPdf_(ps.getParameter<bool>("openPdf")),
+      closePdf_(ps.getParameter<bool>("closePdf")),
       maxStage_(std::min(std::max(ps.getParameter<int>("maxStage"), 1), kNStages)) {
   usesResource(TFileService::kSharedResource);
   edm::Service<TFileService> fs;
@@ -168,6 +172,8 @@ void GenPartAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descripti
   desc.add<int>("maxStage", kNStages)
       ->setComment("last stage to analyse and draw: 1 hard process, 2 parton shower, 3 MPI, 4 hadronisation, 5 decays");
   desc.add<bool>("printParticles", false)->setComment("print every drawn particle of every stage to stdout");
+  desc.add<bool>("openPdf", true)->setComment("open pdfFile before the first page (false: another module of the job opens it)");
+  desc.add<bool>("closePdf", true)->setComment("close pdfFile in endJob (false: another module of the job closes it)");
   descriptions.addWithDefaultLabel(desc);
 }
 
@@ -747,14 +753,15 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
     return;
   }
   if (!pdfOpen_) {
-    canvas_->Print((pdfFile_ + "[").c_str());
+    if (openPdf_)
+      canvas_->Print((pdfFile_ + "[").c_str());
     pdfOpen_ = true;
   }
   canvas_->Print(pdfFile_.c_str());
 }
 
 void GenPartAnalyzer::endJob() {
-  if (pdfOpen_)
+  if (pdfOpen_ && closePdf_)
     canvas_->Print((pdfFile_ + "]").c_str());
 }
 

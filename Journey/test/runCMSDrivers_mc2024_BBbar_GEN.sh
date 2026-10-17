@@ -7,31 +7,51 @@
 #   ME_PS_MPI      + multiparton interactions
 #   ME_PS_MPI_Had  + hadronisation (hadron decays off)
 #   ME_PS_MPI_Had_Decay  + hadron decays (the full event, as in the main script)
+#   ME_PS_MPI_Had_Decay_GenJet  + jet clustering: the GenJet step (step 2, process GENJET) on the
+#                  step 1 output of ME_PS_MPI_Had_Decay
 # PhaseSpace:pTHatMin is set explicitly (PTHATMIN, default 100 GeV) and overrides the fragment.
-# For each stage it writes, in the output directory (default GEN/ below the current directory):
+# The GenJet stage runs the anti-kT clustering of the status 1 genParticles with fastjet
+# (FastjetJetProducer, JitJetSW/Journey/python/genJet_cff.py: ak4GenJets, ak8GenJets and the NoNu
+# variants, jet pT > JETPTMIN), scheduled by cmsDriver.py as a USER step reading
+# step1_GEN_ME_PS_MPI_Had_Decay_out.root (generated first if it does not exist yet). Note that the
+# GEN step itself already runs the same clustering (pgen contains genJetMET), so the step 1 files
+# hold identical collections from process GEN; the GenJet stage makes the clustering a separate,
+# configurable step of the journey and its output keeps only its own jets.
+# For each generator stage it writes, in the output directory (default GEN/ below the current directory):
 #   step1_GEN_<stage>_cfg.py, step1_GEN_<stage>_cfg.driver.log      cmsDriver config and log
 #   step1_GEN_<stage>_out.root, step1_GEN_<stage>_out.log           cmsRun output and log
 #   genPartAnalyzer_<stage>_out.pdf, .root, .log                     eta-phi maps (GenPartAnalyzer)
-# The PDF has one page per generator-record stage that exists in the sample (ME: 1 page,
-# ME_PS: 2, ME_PS_MPI: 3, ME_PS_MPI_Had: 4, ME_PS_MPI_Had_Decay: 5), per analysed event.
+# and for the GenJet stage (<stage> = ME_PS_MPI_Had_Decay_GenJet):
+#   step2_GENJET_<stage>_cfg.py, step2_GENJET_<stage>_cfg.driver.log cmsDriver config and log
+#   step2_GENJET_<stage>_out.root, step2_GENJET_<stage>_out.log     cmsRun output and log
+#   genJetAnalyzer_<stage>_out.pdf, .root, .log                      eta-phi maps (GenPartAnalyzer + GenJetAnalyzer)
+# The GenPartAnalyzer PDF has one page per generator-record stage that exists in the sample (ME: 1 page,
+# ME_PS: 2, ME_PS_MPI: 3, ME_PS_MPI_Had: 4, ME_PS_MPI_Had_Decay: 5), per analysed event; the
+# GenJetAnalyzer PDF of the GenJet stage continues this: per analysed event the same 5 pages
+# followed by one page per jet collection (JETS).
 # Run from an initialized CMSSW environment.
 #   EVENTS=1000                            events per stage (default 1000)
-#   STAGES="ME ME_PS"                      subset of stages (default all five)
+#   STAGES="ME ME_PS"                      subset of stages (default all six)
 #   PTHATMIN=100                           PhaseSpace:pTHatMin in GeV (default 100)
 #   OUTDIR=GEN                             output directory (default GEN)
 #   RUN=0                                  only generate the configs, do not run cmsRun
-#   ANALYZE=0                              skip the GenPartAnalyzer step
-#   ANALYZE_EVENTS=1                       events drawn by GenPartAnalyzer per stage (default 1)
-#   DUMP, DUMP_MAX, DUMP_SUB, DUMP_G4_THRESHOLD  as in runCMSDrivers_mc2024_BBbar.sh
+#   ANALYZE=0                              skip the GenPartAnalyzer and GenJetAnalyzer steps
+#   ANALYZE_EVENTS=1                       events drawn per stage by the analyzers (default 1)
+#   JETPTMIN=3                             jet pT threshold of the GenJet producers in GeV (default 3)
+#   JETS=ak4GenJets,ak8GenJets             jet collections drawn by GenJetAnalyzer (default ak4GenJets,ak4GenJetsNoNu,ak8GenJets)
+#   DUMP, DUMP_MAX, DUMP_SUB, DUMP_G4_THRESHOLD  as in runCMSDrivers_mc2024_BBbar.sh (GEN and GENJET steps)
 set -euo pipefail
 
-events=${EVENTS:-1000}
-stages=${STAGES:-"ME ME_PS ME_PS_MPI ME_PS_MPI_Had ME_PS_MPI_Had_Decay"}
+events=${EVENTS:-1}
+#events=${EVENTS:-1000}
+stages=${STAGES:-"ME ME_PS ME_PS_MPI ME_PS_MPI_Had ME_PS_MPI_Had_Decay ME_PS_MPI_Had_Decay_GenJet"}
 pthat_min=${PTHATMIN:-100}
 outdir=${OUTDIR:-GEN}
 run=${RUN:-1}
 analyze=${ANALYZE:-1}
 analyze_events=${ANALYZE_EVENTS:-1}
+jet_ptmin=${JETPTMIN:-3}
+jets=${JETS:-ak4GenJets,ak4GenJetsNoNu,ak8GenJets}
 conditions=auto:phase1_2024_realistic
 era=Run3_2024
 geometry=DB:Extended
@@ -50,6 +70,8 @@ fi
 
 journey=$CMSSW_BASE/src/JitJetSW/Journey
 analyzer_cfg=$journey/test/genPartAnalyzer_cfg.py
+jet_analyzer_cfg=$journey/test/genJetAnalyzer_cfg.py
+genjet_sequence=JitJetSW/Journey/genJet_cff.genJetSequence   # cmsDriver USER step: <cff>.<sequence>
 
 # Pythia8 switches per stage (ISR FSR MPI Had Decay) and the last GenPartAnalyzer stage present
 # in the record (1 hard process, 2 parton shower, 3 MPI, 4 hadronisation, 5 hadron decays)
@@ -60,7 +82,7 @@ stage_switches() {
     ME_PS_MPI)           echo on  on  on  off off 3 ;;
     ME_PS_MPI_Had)       echo on  on  on  on  off 4 ;;
     ME_PS_MPI_Had_Decay) echo on  on  on  on  on  5 ;;
-    *) echo "Unknown stage '$1' (use ME, ME_PS, ME_PS_MPI, ME_PS_MPI_Had, ME_PS_MPI_Had_Decay)" >&2; exit 1 ;;
+    *) echo "Unknown stage '$1' (use ME, ME_PS, ME_PS_MPI, ME_PS_MPI_Had, ME_PS_MPI_Had_Decay, ME_PS_MPI_Had_Decay_GenJet)" >&2; exit 1 ;;
   esac
 }
 
@@ -94,6 +116,7 @@ run_stage() {
   cmsRun "$config" > "$log" 2>&1 || { tail -80 "$log" >&2; exit 1; }
   [[ -s $output ]] || { echo "No output produced: $output" >&2; exit 1; }
   echo "  Completed $output"
+
   (( analyze )) || return 0
 
   local aprefix="genPartAnalyzer_${stage}_out"
@@ -105,13 +128,64 @@ run_stage() {
   echo "  Completed $aprefix.pdf ($max_stage page(s) per event)"
 }
 
-# JitJetSW/Journey plugins: GenPartAnalyzer (ANALYZE=1) and the dump customisation (DUMP>0).
+# GenJet stage <base>_GenJet: step 2 (fastjet anti-kT clustering of the status 1 particles, process
+# GENJET) on the step 1 output of the generator stage <base>, then GenJetAnalyzer
+run_genjet_stage() {
+  local stage=$1 base=${1%_GenJet} isr fsr mpi had decay max_stage
+  read -r isr fsr mpi had decay max_stage < <(stage_switches "$base")
+  local input="step1_GEN_${base}_out.root"
+  if (( run )) && [[ ! -s $input ]]; then
+    echo "Stage $stage needs $input: running stage $base first"
+    run_stage "$base"
+  fi
+  local config2="step2_GENJET_${stage}_cfg.py"
+  local output2="step2_GENJET_${stage}_out.root"
+  local log2="step2_GENJET_${stage}_out.log"
+  local args2=(step2 --filein "file:$input" --conditions "$conditions" --era "$era" --geometry "$geometry"
+               -n -1 -s "USER:$genjet_sequence" --processName GENJET --datatier GEN --eventcontent FEVTDEBUG
+               --fileout "file:$output2" --python_filename "$config2" --no_exec
+               --outputCommands "drop *_ak4GenJets*_*_GEN,drop *_ak8GenJets*_*_GEN")   # keep only the jets of this step
+  local -a customise2=(
+    "for m in ('ak4GenJets', 'ak8GenJets', 'ak4GenJetsNoNu', 'ak8GenJetsNoNu'): getattr(process, m).jetPtMin = $jet_ptmin"
+  )
+  if (( dump > 0 )); then
+    customise2+=("$dump_customise")
+  fi
+  local joined=${customise2[0]} c
+  for c in "${customise2[@]:1}"; do joined+='\n'"$c"; done
+  args2+=(--customise_commands "$joined")
+
+  echo "Stage $stage: anti-kT R=0.4/0.8 (fastjet) on the status 1 particles of $input, jet pT > $jet_ptmin GeV"
+  cmsDriver.py "${args2[@]}" > "${config2%.py}.driver.log" 2>&1 || {
+    cat "${config2%.py}.driver.log" >&2; exit 1;
+  }
+  echo "  Generated $config2"
+  (( run )) || return 0
+  cmsRun "$config2" > "$log2" 2>&1 || { tail -80 "$log2" >&2; exit 1; }
+  [[ -s $output2 ]] || { echo "No output produced: $output2" >&2; exit 1; }
+  echo "  Completed $output2"
+  (( analyze )) || return 0
+
+  local jprefix="genJetAnalyzer_${stage}_out"
+  local label="sample $stage|ISR $isr, FSR $fsr, MPI $mpi|Had $had, Decay $decay|pTHatMin $pthat_min GeV, jet pT > $jet_ptmin GeV"
+  cmsRun "$jet_analyzer_cfg" inputFiles="file:$output2" outputFile="$jprefix.root" maxEvents="$analyze_events" \
+    maxStage="$max_stage" jets="$jets" pdfFile="$jprefix.pdf" sampleLabel="$label" > "$jprefix.log" 2>&1 ||
+    { tail -40 "$jprefix.log" >&2; exit 1; }
+  [[ -s $jprefix.pdf ]] || { echo "No PDF produced: $jprefix.pdf" >&2; exit 1; }
+  echo "  Completed $jprefix.pdf ($max_stage generator-stage page(s) + one page per jet collection per event: $jets)"
+}
+
+# JitJetSW/Journey plugins: GenPartAnalyzer and GenJetAnalyzer (ANALYZE=1), the GenJet stage
+# sequence (genJet_cff) and the dump customisation (DUMP>0).
 # Rebuild when the plugin library is missing or older than the sources.
-if (( analyze || dump > 0 )); then
+genjet=0
+for stage in $stages; do [[ $stage == *_GenJet ]] && genjet=1; done
+if (( analyze || genjet || dump > 0 )); then
   [[ -d $journey ]] || { echo "Missing package JitJetSW/Journey" >&2; exit 1; }
   plugin_lib=$CMSSW_BASE/lib/$SCRAM_ARCH/pluginJitJetSWJourneyAuto.so
   if [[ ! -s $plugin_lib ]] || [[ -n $(find "$journey/plugins" -name '*.cc' -newer "$plugin_lib") ]] ||
-     { (( dump > 0 )) && ! python3 -c 'import JitJetSW.Journey.jitJet_cff' 2>/dev/null; }; then
+     { (( dump > 0 )) && ! python3 -c 'import JitJetSW.Journey.jitJet_cff' 2>/dev/null; } ||
+     { (( genjet )) && ! python3 -c 'import JitJetSW.Journey.genJet_cff' 2>/dev/null; }; then
     echo "Building JitJetSW/Journey"
     # full build (not only the package) so that the edm plugin cache is refreshed
     (cd "$CMSSW_BASE/src" && scram b -j 4 > jitjet_build.log 2>&1) || { cat "$CMSSW_BASE/src/jitjet_build.log" >&2; exit 1; }
@@ -135,5 +209,9 @@ mkdir -p "$outdir"
 cd "$outdir"
 echo "Writing to $PWD"
 for stage in $stages; do
-  run_stage "$stage"
+  if [[ $stage == *_GenJet ]]; then
+    run_genjet_stage "$stage"
+  else
+    run_stage "$stage"
+  fi
 done

@@ -82,3 +82,46 @@ Output: `genPartAnalyzer_stage<N>_<name>_run<R>_event<E>.pdf` per stage and even
 pT) and the `ptB`, `ptBbar`, `ptNetBBbar` distributions over events. Parameters: `genParticles`,
 `outputPrefix`, `etaMax` (6, particles beyond are drawn on the border with an x marker),
 `labelPtMin`, `savePDF`, `printParticles`.
+
+## GenJet stage and GenJetAnalyzer: jets over the particles they were clustered from
+
+The GEN step already runs the anti-kT clustering of the status 1 genParticles (`pgen` contains
+`genJetMET`, i.e. `genParticlesForJets` + `FastjetJetProducer` for ak4GenJets, ak8GenJets and
+the NoNu variants). `runCMSDrivers_mc2024_BBbar_GEN.sh` nevertheless has a sixth stage,
+`ME_PS_MPI_Had_Decay_GenJet`, that runs the clustering again as a separate step 2 (process
+`GENJET`, `python/genJet_cff.py`, scheduled by cmsDriver as
+`-s USER:JitJetSW/Journey/genJet_cff.genJetSequence` on `step1_GEN_ME_PS_MPI_Had_Decay_out.root`,
+which is generated first if missing) so that it is an explicit, configurable stage of the
+journey after the full event: the jet pT threshold is set with `JETPTMIN` (default 3 GeV), R or
+the algorithm can be changed with `--customise_commands`, and the stage output keeps only the
+jets of that process (the GEN-process copies are dropped). It writes
+`step2_GENJET_ME_PS_MPI_Had_Decay_GenJet_cfg.py`, `_out.root`, `_out.log` and the
+`genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_out.pdf`, `.root`, `.log`. Like the PDFs of the earlier
+stages, that PDF starts every event with the five generator-stage pages of GenPartAnalyzer and
+then adds one page per jet collection: `genJetAnalyzer_cfg.py` runs both analyzers in one job
+(`maxStage`, default 5; 0 = jet pages only), GenPartAnalyzer opens the shared multi-page PDF and
+GenJetAnalyzer closes it (`openPdf` / `closePdf` parameters of both modules), and an always-true
+`HLTBool` filter between them fixes the order, since the framework orders the modules of a Path
+only across filters. With `DUMP>0` the `GENJET` process prints every jet with its constituents
+(GenJourney). GenJetAnalyzer can also be run by
+hand on any step 1 file, where the status 1 particles of the parton-level stages are partons.
+
+`plugins/GenJetAnalyzer.cc` draws, per jet collection and event, every jet as a circle of radius
+R around its axis (star marker, label `[index] pT`), its constituents as filled markers in the
+jet colour and the status 1 particles that ended up in no jet as grey open markers. R, the
+algorithm, the input collection and the pT threshold are read from the producer configuration
+stored in the file (provenance), and the process that produced the jets is printed in the title.
+The hard-process b and bbar are followed to their last same-flavour copy and matched to the
+nearest jet within R: b jet red, bbar jet blue, quark directions as open stars. The plot and
+stdout give pT, eta, phi of both jets, the response pT(jet)/pT(quark), the net
+|pT(b jet) + pT(bbar jet)|, Delta phi and the dijet mass; the right panel lists the leading jets.
+
+    cd test
+    cmsRun genJetAnalyzer_cfg.py                                        # reads output_step1_GEN.root
+    cmsRun genJetAnalyzer_cfg.py inputFiles=file:x.root jets=ak4GenJets,ak8GenJets printConstituents=True
+
+Output: `genJetAnalyzer_<collection>_run<R>_event<E>.pdf` per collection and event (or one
+multi-page PDF with `pdfFile=`), and `genJetAnalyzer.root` with, per collection, `nJets`, `jetPt`,
+`jetEta`, `nConstituents`, `etaPhiPt`, `ptBjet`, `ptBbarJet`, `ptNetBBbarJets` and `responseB`.
+Parameters: `genParticles`, `genJets` (VInputTag), `outputPrefix`, `etaMax`, `labelPtMin`,
+`savePDF`, `pdfFile`, `sampleLabel`, `printConstituents`, `openPdf`, `closePdf`.

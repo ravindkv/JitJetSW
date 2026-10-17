@@ -4,8 +4,8 @@
 #   from JitJetSW.Journey.jitJet_cff import customiseJitJet
 #   process = customiseJitJet(process, level=1, maxElements=-1, maxSub=-1)
 #
-# The step is detected from the process name (GEN, SIM, DIGI, L1, DIGI2RAW, HLT, RECO, PAT,
-# NANO). Every dump module prints to stdout, so the cmsRun log holds the numbers.
+# The step is detected from the process name (GEN, GENJET, SIM, DIGI, L1, DIGI2RAW, HLT, RECO,
+# PAT, NANO). Every dump module prints to stdout, so the cmsRun log holds the numbers.
 #
 # level 1: every physics object of the step (gen particles, sim tracks/hits, digis, L1 objects,
 #          trigger results, tracks, PF candidates, jets, MET, MiniAOD objects, NanoAOD tables)
@@ -64,6 +64,15 @@ def customiseJitJet(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=1.0
             process.generator.maxEventsToPrint = cms.untracked.int32(n if n > 0 else 1000000)
             process.generator.pythiaPylistVerbosity = cms.untracked.int32(1)   # Pythia8 info.list() + event.list()
             process.generator.pythiaHepMCVerbosity = cms.untracked.bool(True)  # HepMC GenEvent::print()
+
+    elif step == 'GENJET':
+        # GenJet step of runCMSDrivers_mc2024_BBbar_GEN.sh (genJet_cff): the jets clustered in this
+        # process (InputTags without process name resolve to the most recent producer) with their
+        # constituents as genParticles keys
+        add('jitJetGenJet', cms.EDAnalyzer('GenJourney',
+            genParticles=genParticles,
+            genJets=_vtags('ak4GenJets', 'ak4GenJetsNoNu', 'ak8GenJets', 'ak8GenJetsNoNu'),
+            **common))
 
     elif step == 'SIM':
         tracker = ['TrackerHitsPixelBarrelLowTof', 'TrackerHitsPixelBarrelHighTof', 'TrackerHitsPixelEndcapLowTof',
