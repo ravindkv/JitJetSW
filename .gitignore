@@ -2,4 +2,14 @@
 Journey/test/*.log
 Journey/test/*.root
 Journey/test/*.pdf
+Journey/test/*.png
+Journey/test/*/*.log
+Journey/test/*/*.root
+Journey/test/*/*.pdf
+Journey/test/*/*.png
+Journey/test/*/*/*.log
+Journey/test/*/*/*.root
+Journey/test/*/*/*.pdf
+Journey/test/*/*/*.png
 Journey/test/GEN
+Journey/test/SIM

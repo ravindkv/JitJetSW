@@ -39,6 +39,9 @@
 #   ANALYZE_EVENTS=1                       events drawn per stage by the analyzers (default 1)
 #   JETPTMIN=3                             jet pT threshold of the GenJet producers in GeV (default 3)
 #   JETS=ak4GenJets,ak8GenJets             jet collections drawn by GenJetAnalyzer (default ak4GenJets,ak4GenJetsNoNu,ak8GenJets)
+#   CONDITIONS, ERA, GEOMETRY, BEAMSPOT, COMENERGY  cmsDriver conditions, era, geometry, vertex smearing and com
+#                                         energy in GeV (default the 2024 ones of the main script); used by
+#                                         runCMSDrivers_mcPhase2_BBbar_SIM.sh to generate its Phase2 input
 #   DUMP, DUMP_MAX, DUMP_SUB, DUMP_G4_THRESHOLD  as in runCMSDrivers_mc2024_BBbar.sh (GEN and GENJET steps)
 set -euo pipefail
 
@@ -52,11 +55,11 @@ analyze=${ANALYZE:-1}
 analyze_events=${ANALYZE_EVENTS:-1}
 jet_ptmin=${JETPTMIN:-3}
 jets=${JETS:-ak4GenJets,ak4GenJetsNoNu,ak8GenJets}
-conditions=auto:phase1_2024_realistic
-era=Run3_2024
-geometry=DB:Extended
-beamspot=DBrealistic
-com_energy=13600.0
+conditions=${CONDITIONS:-auto:phase1_2024_realistic}
+era=${ERA:-Run3_2024}
+geometry=${GEOMETRY:-DB:Extended}
+beamspot=${BEAMSPOT:-DBrealistic}
+com_energy=${COMENERGY:-13600.0}
 dump=${DUMP:-0}
 dump_max=${DUMP_MAX:--1}
 dump_sub=${DUMP_SUB:--1}
