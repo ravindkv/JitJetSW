@@ -11,5 +11,12 @@ Journey/test/*/*/*.log
 Journey/test/*/*/*.root
 Journey/test/*/*/*.pdf
 Journey/test/*/*/*.png
+Journey/test/*/*/*/*.log
+Journey/test/*/*/*/*.root
+Journey/test/*/*/*/*.pdf
+Journey/test/*/*/*/*.png
 Journey/test/GEN
 Journey/test/SIM
+
+Journey/doc/pu/Phase2/*.pdf
+Journey/test/PU_Phase2/

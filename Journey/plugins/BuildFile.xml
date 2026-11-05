@@ -47,6 +47,7 @@
 <use name="SimDataFormats/Vertex"/>
 <use name="SimDataFormats/TrackingHit"/>
 <use name="SimDataFormats/CaloHit"/>
+<use name="SimDataFormats/CrossingFrame"/>
 <use name="SimDataFormats/TrackingAnalysis"/>
 <use name="SimDataFormats/TrackerDigiSimLink"/>
 <use name="SimDataFormats/Associations"/>

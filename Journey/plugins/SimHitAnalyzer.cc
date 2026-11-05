@@ -24,6 +24,13 @@
 // layer / station and kind go to std::cout.
 // Calorimeter cells are summed per cell over the hits; a cell takes the kind of the primary with the largest
 // energy share. HCAL hit ids in the simulation test numbering are relabelled (hcalTestNumbering).
+// With crossingFrame = true the analyzer runs inside a DIGI job with pileup mixing and reads the CrossingFrame
+// collections of the MixingModule instead of the SIM collections (mix:g4SimHits<Collection>): the signal hits
+// are drawn as above, coloured by the kind of their signal primary, and the pileup hits added by the mixing are
+// drawn underneath, coloured by their bunch crossing (early bx < 0, in-time bx 0, late bx > 0); a calorimeter
+// cell whose energy is dominated by pileup takes the pileup colour. The pileup events are counted per bunch
+// crossing from the EncodedEventId of their SimTracks. CrossingFrames are transient, so this mode only works
+// in the mixing job itself (JitJetSW.Journey.simHitAnalyzer_cff.addSimHitAnalyzer, runPileup_mcPhase2_BBbar.sh).
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -94,6 +101,9 @@
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
+#include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
+#include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
+#include "SimDataFormats/EncodedEventId/interface/EncodedEventId.h"
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
@@ -105,11 +115,18 @@ public:
 
 private:
   // kind of the primary a hit descends from
-  enum Kind { CHARGED_HADRON = 0, NEUTRAL_HADRON, PHOTON, ELECTRON, MUON, OTHER_KIND, UNASSIGNED, NKIND };
-  static constexpr const char* kKindName[NKIND] = {"charged hadron", "neutral hadron", "photon", "e^{#pm}",
-                                                   "#mu^{#pm}",      "other",          "no stored ancestor"};
-  static constexpr int kKindColor[NKIND] = {kBlack, kMagenta + 2, kGreen + 2, kOrange + 7, kCyan + 2, kViolet + 1, kGray + 1};
-  static constexpr int kKindMarker[NKIND] = {20, 21, 20, 21, 22, 20, 20};
+  // (the three pileup kinds exist only with crossingFrame: hits of the mixed pileup events by bunch crossing)
+  enum Kind { CHARGED_HADRON = 0, NEUTRAL_HADRON, PHOTON, ELECTRON, MUON, OTHER_KIND, UNASSIGNED, PU_EARLY, PU_INTIME, PU_LATE, NKIND };
+  static constexpr const char* kKindName[NKIND] = {"charged hadron", "neutral hadron", "photon", "e^{#pm}", "#mu^{#pm}", "other",
+                                                   "no stored ancestor", "pileup, early (bx < 0)", "pileup, in-time (bx 0)",
+                                                   "pileup, late (bx > 0)"};
+  static constexpr int kKindColor[NKIND] = {kBlack,   kMagenta + 2, kGreen + 2, kOrange + 7, kCyan + 2,
+                                            kViolet + 1, kGray + 1, kYellow + 2, kAzure - 4,  kRed - 7};
+  static constexpr int kKindMarker[NKIND] = {20, 21, 20, 21, 22, 20, 20, 20, 20, 20};
+  static bool isPileup(int kind) { return kind >= PU_EARLY; }
+  // owner of a hit: >= 0 index of the signal primary it descends from, -1 no stored ancestor,
+  // -2 / -3 / -4 a pileup event of an early / in-time / late bunch crossing
+  static int pileupOwner(int bx) { return bx < 0 ? -2 : (bx == 0 ? -3 : -4); }
 
   // subdetector of a hit or of a detector element
   enum Sub { PXB = 0, PXF, TIB, TID, TOB, TEC, DT, CSC, RPC, GEM, EB, EE, ES, HB, HE, HO, HF, HGCEE, HGCHSI, HGCHSC, OTHER_SUB, NSUB };
@@ -124,6 +141,9 @@ private:
     std::string name, title;
     std::vector<std::pair<edm::InputTag, edm::EDGetTokenT<edm::PSimHitContainer>>> psimTok;
     std::vector<std::pair<edm::InputTag, edm::EDGetTokenT<edm::PCaloHitContainer>>> caloTok;
+    std::vector<std::pair<edm::InputTag, edm::EDGetTokenT<CrossingFrame<PSimHit>>>> psimCFTok;  // crossingFrame mode
+    std::vector<std::pair<edm::InputTag, edm::EDGetTokenT<CrossingFrame<PCaloHit>>>> caloCFTok;
+    bool hasCalo = false;
     std::vector<std::string> geometry;
     double zMax, rMax, xyMax, etaMax;
     bool drawCaloEntry;
@@ -143,11 +163,25 @@ private:
     int sub;
     bool barrel;
   };
-  struct Primary {  // a SimTrack handed to Geant4
-    int track;      // index in the SimTrack collection
+  struct Primary {  // a SimTrack handed to Geant4 (signal event)
+    const SimTrack* trk;
     int kind;
     double pt, eta, phi;
     std::string name;
+  };
+  struct SimEvent {  // the SimTracks and SimVertices of one simulated event: the signal, or one mixed pileup event
+    bool signal;
+    int bx;
+    EncodedEventId id;
+    std::vector<const SimTrack*> tracks;
+    std::vector<const SimVertex*> vertices;
+    std::unordered_map<unsigned int, int> trackIdx;  // Geant4 track id -> index in tracks
+    std::vector<int> anc;                             // index in tracks of the ancestor primary of every track (-1: none)
+  };
+  struct PileupSummary {  // crossingFrame mode: the mixed pileup events per bunch-crossing class (early, in-time, late)
+    int nEvents[3] = {}, nPrimaries[3] = {}, nTracks[3] = {};
+    int bxMin = 0, bxMax = 0;
+    std::map<int, int> eventsPerBx;
   };
   // one drawn page
   struct View {
@@ -169,8 +203,9 @@ private:
 
   void analyze(const edm::Event& ev, const edm::EventSetup& es) override;
   void buildGeometry(const edm::EventSetup& es);
-  void drawStation(Station& st, const edm::Event& ev, const std::vector<Hit>& hits, const std::vector<Primary>& prims,
-                   const std::vector<int>& trackPrim, const edm::SimTrackContainer& tracks, const math::XYZTLorentzVectorD& pv);
+  void drawStation(Station& st, const edm::Event& ev, std::vector<Hit>& hits, const std::vector<Primary>& prims,
+                   const math::XYZTLorentzVectorD& pv, const PileupSummary& pu, size_t nSignalHits);
+  static void resolveAncestors(SimEvent& e);
   void finish(View& v, Station& st, const edm::Event& ev, const char* view, const std::vector<std::string>& header,
               const std::string& legendTitle);
   static int kindOf(int pdg, double charge);
@@ -182,8 +217,11 @@ private:
     return 0.35 + 0.33 * k;
   }
 
+  bool crossingFrame_;
   edm::EDGetTokenT<edm::SimTrackContainer> simTracksTok_;
   edm::EDGetTokenT<edm::SimVertexContainer> simVerticesTok_;
+  edm::EDGetTokenT<CrossingFrame<SimTrack>> simTracksCFTok_;
+  edm::EDGetTokenT<CrossingFrame<SimVertex>> simVerticesCFTok_;
   edm::ESGetToken<GlobalTrackingGeometry, GlobalTrackingGeometryRecord> trackingGeomTok_;
   edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomTok_;
   edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoTok_;
@@ -207,8 +245,7 @@ private:
 };
 
 SimHitAnalyzer::SimHitAnalyzer(const edm::ParameterSet& ps)
-    : simTracksTok_(consumes<edm::SimTrackContainer>(ps.getParameter<edm::InputTag>("simTracks"))),
-      simVerticesTok_(consumes<edm::SimVertexContainer>(ps.getParameter<edm::InputTag>("simVertices"))),
+    : crossingFrame_(ps.getParameter<bool>("crossingFrame")),
       trackingGeomTok_(esConsumes()),
       trackerGeomTok_(esConsumes()),
       trackerTopoTok_(esConsumes()),
@@ -227,14 +264,30 @@ SimHitAnalyzer::SimHitAnalyzer(const edm::ParameterSet& ps)
       highlight_(ps.getParameter<int>("highlight")),
       maxGeoPoints_(ps.getParameter<int>("maxGeoPoints")),
       highlightPtMin_(ps.getParameter<double>("highlightPtMin")) {
+  if (crossingFrame_) {
+    simTracksCFTok_ = consumes<CrossingFrame<SimTrack>>(ps.getParameter<edm::InputTag>("simTracks"));
+    simVerticesCFTok_ = consumes<CrossingFrame<SimVertex>>(ps.getParameter<edm::InputTag>("simVertices"));
+  } else {
+    simTracksTok_ = consumes<edm::SimTrackContainer>(ps.getParameter<edm::InputTag>("simTracks"));
+    simVerticesTok_ = consumes<edm::SimVertexContainer>(ps.getParameter<edm::InputTag>("simVertices"));
+  }
   for (auto const& sps : ps.getParameter<std::vector<edm::ParameterSet>>("stations")) {
     Station st;
     st.name = sps.getParameter<std::string>("name");
     st.title = sps.getParameter<std::string>("title");
-    for (auto const& t : sps.getParameter<std::vector<edm::InputTag>>("psimHits"))
-      st.psimTok.emplace_back(t, consumes<edm::PSimHitContainer>(t));
-    for (auto const& t : sps.getParameter<std::vector<edm::InputTag>>("caloHits"))
-      st.caloTok.emplace_back(t, consumes<edm::PCaloHitContainer>(t));
+    for (auto const& t : sps.getParameter<std::vector<edm::InputTag>>("psimHits")) {
+      if (crossingFrame_)
+        st.psimCFTok.emplace_back(t, consumes<CrossingFrame<PSimHit>>(t));
+      else
+        st.psimTok.emplace_back(t, consumes<edm::PSimHitContainer>(t));
+    }
+    for (auto const& t : sps.getParameter<std::vector<edm::InputTag>>("caloHits")) {
+      st.hasCalo = true;
+      if (crossingFrame_)
+        st.caloCFTok.emplace_back(t, consumes<CrossingFrame<PCaloHit>>(t));
+      else
+        st.caloTok.emplace_back(t, consumes<edm::PCaloHitContainer>(t));
+    }
     st.geometry = sps.getParameter<std::vector<std::string>>("geometry");
     st.zMax = sps.getParameter<double>("zMax");
     st.rMax = sps.getParameter<double>("rMax");
@@ -253,8 +306,8 @@ void SimHitAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   edm::ParameterSetDescription station;
   station.add<std::string>("name")->setComment("station name, used for the output directory and file names (e.g. TRK)");
   station.add<std::string>("title")->setComment("title printed on the pages");
-  station.add<std::vector<edm::InputTag>>("psimHits", {})->setComment("PSimHit collections of the station (tracker, muon)");
-  station.add<std::vector<edm::InputTag>>("caloHits", {})->setComment("PCaloHit collections of the station");
+  station.add<std::vector<edm::InputTag>>("psimHits", {})->setComment("PSimHit collections of the station (tracker, muon); crossingFrame: CrossingFrame<PSimHit>");
+  station.add<std::vector<edm::InputTag>>("caloHits", {})->setComment("PCaloHit collections of the station; crossingFrame: CrossingFrame<PCaloHit>");
   station.add<std::vector<std::string>>("geometry", {})
       ->setComment("detector elements drawn in grey: tracker, EB, EE, ES, HB, HE, HO, HF, HGCEE, HGCHSi, HGCHSc, DT, CSC, RPC, GEM");
   station.add<double>("zMax", 1300.)->setComment("z range of the r-z view [cm]");
@@ -263,8 +316,11 @@ void SimHitAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   station.add<double>("etaMax", 5.)->setComment("eta range of the eta-phi view");
   station.add<bool>("drawCaloEntry", false)->setComment("draw where every primary crossed the tracker / calorimeter boundary");
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("simTracks", edm::InputTag("g4SimHits"));
-  desc.add<edm::InputTag>("simVertices", edm::InputTag("g4SimHits"));
+  desc.add<edm::InputTag>("simTracks", edm::InputTag("g4SimHits"))->setComment("SimTracks (crossingFrame: the CrossingFrame<SimTrack>, mix:g4SimHits)");
+  desc.add<edm::InputTag>("simVertices", edm::InputTag("g4SimHits"))->setComment("SimVertices (crossingFrame: the CrossingFrame<SimVertex>, mix:g4SimHits)");
+  desc.add<bool>("crossingFrame", false)
+      ->setComment("read the CrossingFrame collections of the MixingModule (signal + mixed pileup; only inside the mixing job) "
+                   "instead of the SIM collections; all input tags are then CrossingFrame products, e.g. mix:g4SimHitsEcalHitsEB");
   desc.addVPSet("stations", station, {});
   desc.add<std::string>("outputDir", ".")->setComment("<outputDir>/<station>/ receives the PDF and PNGs of the station");
   desc.add<std::string>("prefix", "simHits");
@@ -517,66 +573,132 @@ void SimHitAnalyzer::buildGeometry(const edm::EventSetup& es) {
 }
 
 // ----------------------------------------------------------------------------- event
-void SimHitAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
-  if (!geometryBuilt_)
-    buildGeometry(es);
-  const auto& tracks = ev.get(simTracksTok_);
-  const auto& vertices = ev.get(simVerticesTok_);
-  const size_t nt = tracks.size();
-
-  // ancestor primary of every SimTrack through the vertex parent links
-  std::unordered_map<unsigned int, int> trackIdx;
+// ancestor primary of every SimTrack of one simulated event through the vertex parent links
+void SimHitAnalyzer::resolveAncestors(SimEvent& e) {
+  const size_t nt = e.tracks.size();
+  e.trackIdx.clear();
+  e.trackIdx.reserve(nt);
   for (size_t i = 0; i < nt; ++i)
-    trackIdx[tracks[i].trackId()] = i;
-  std::vector<int> anc(nt, -2);
+    e.trackIdx[e.tracks[i]->trackId()] = i;
+  e.anc.assign(nt, -2);
   for (size_t i = 0; i < nt; ++i) {
     std::vector<int> path;
     int cur = i, result = -1;
     while (true) {
-      if (anc[cur] != -2) {
-        result = anc[cur];
+      if (e.anc[cur] != -2) {
+        result = e.anc[cur];
         break;
       }
       path.push_back(cur);
-      const SimTrack& t = tracks[cur];
+      const SimTrack& t = *e.tracks[cur];
       if (t.isPrimary()) {
         result = cur;
         break;
       }
       int v = t.vertIndex();
-      if (v < 0 || static_cast<size_t>(v) >= vertices.size() || vertices[v].noParent())
+      if (v < 0 || static_cast<size_t>(v) >= e.vertices.size() || e.vertices[v]->noParent())
         break;
-      auto it = trackIdx.find(vertices[v].parentIndex());
-      if (it == trackIdx.end())
+      auto it = e.trackIdx.find(e.vertices[v]->parentIndex());
+      if (it == e.trackIdx.end())
         break;
       cur = it->second;
       if (path.size() > nt)
         break;
     }
     for (int p : path)
-      anc[p] = result;
+      e.anc[p] = result;
   }
-  // the primaries: index in prims of every track's ancestor
+}
+
+void SimHitAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
+  if (!geometryBuilt_)
+    buildGeometry(es);
+
+  // the simulated events: the signal (evs[0]) and, in crossingFrame mode, every mixed pileup event, identified
+  // by the EncodedEventId (bunch crossing, event number) the MixingModule stamps on its tracks, vertices and hits
+  std::vector<SimEvent> evs(1);
+  evs[0].signal = true;
+  evs[0].bx = 0;
+  PileupSummary pu;
+  if (!crossingFrame_) {
+    for (auto const& t : ev.get(simTracksTok_))
+      evs[0].tracks.push_back(&t);
+    for (auto const& v : ev.get(simVerticesTok_))
+      evs[0].vertices.push_back(&v);
+  } else {
+    std::map<uint32_t, int> evIdx;  // pileup EncodedEventId -> index in evs
+    auto eventOf = [&](const EncodedEventId& id, int bx) {
+      auto ins = evIdx.try_emplace(id.rawId(), evs.size());
+      if (ins.second) {
+        SimEvent e;
+        e.signal = false;
+        e.bx = bx;
+        e.id = id;
+        evs.push_back(std::move(e));
+      }
+      return ins.first->second;
+    };
+    const CrossingFrame<SimTrack>& cfT = ev.get(simTracksCFTok_);
+    MixCollection<SimTrack> colT(&cfT);
+    for (auto it = colT.begin(); it != colT.end(); ++it) {
+      const SimTrack& t = *it;
+      if (it.getTrigger())
+        evs[0].tracks.push_back(&t);
+      else
+        evs[eventOf(t.eventId(), it.bunch())].tracks.push_back(&t);
+    }
+    const CrossingFrame<SimVertex>& cfV = ev.get(simVerticesCFTok_);
+    MixCollection<SimVertex> colV(&cfV);
+    for (auto it = colV.begin(); it != colV.end(); ++it) {
+      const SimVertex& v = *it;
+      if (it.getTrigger())
+        evs[0].vertices.push_back(&v);
+      else
+        evs[eventOf(v.eventId(), it.bunch())].vertices.push_back(&v);
+    }
+    pu.bxMin = cfT.getBunchRange().first;
+    pu.bxMax = cfT.getBunchRange().second;
+    for (size_t k = 1; k < evs.size(); ++k) {
+      int c = evs[k].bx < 0 ? 0 : (evs[k].bx == 0 ? 1 : 2);
+      ++pu.nEvents[c];
+      ++pu.eventsPerBx[evs[k].bx];
+      pu.nTracks[c] += evs[k].tracks.size();
+      for (auto const* t : evs[k].tracks)
+        if (t->isPrimary())
+          ++pu.nPrimaries[c];
+    }
+  }
+  SimEvent& sig = evs[0];
+  resolveAncestors(sig);
+  const size_t nt = sig.tracks.size();
+
+  // the signal primaries: index in prims of every signal track's ancestor
   std::vector<Primary> prims;
   std::vector<int> trackToPrim(nt, -1), trackPrim(nt, -1);
   for (size_t i = 0; i < nt; ++i)
-    if (tracks[i].isPrimary()) {
-      const SimTrack& t = tracks[i];
+    if (sig.tracks[i]->isPrimary()) {
+      const SimTrack& t = *sig.tracks[i];
       trackToPrim[i] = prims.size();
-      prims.push_back({int(i), kindOf(t.type(), t.charge()), t.momentum().pt(), t.momentum().eta(), t.momentum().phi(),
-                       pdgName(t.type())});
+      prims.push_back({&t, kindOf(t.type(), t.charge()), t.momentum().pt(), t.momentum().eta(), t.momentum().phi(), pdgName(t.type())});
     }
   for (size_t i = 0; i < nt; ++i)
-    trackPrim[i] = anc[i] >= 0 ? trackToPrim[anc[i]] : -1;
-  auto primOfTrackId = [&](unsigned int id) {
-    auto it = trackIdx.find(id);
-    return it == trackIdx.end() ? -1 : trackPrim[it->second];
+    trackPrim[i] = sig.anc[i] >= 0 ? trackToPrim[sig.anc[i]] : -1;
+  auto primOfTrackId = [&](unsigned int id) {  // signal hits
+    auto it = sig.trackIdx.find(id);
+    return it == sig.trackIdx.end() ? -1 : trackPrim[it->second];
+  };
+  auto kindOfOwner = [&](int owner) {
+    if (owner >= 0)
+      return prims[owner].kind;
+    if (owner == -1)
+      return static_cast<int>(UNASSIGNED);
+    return static_cast<int>(PU_EARLY) + (-owner - 2);
   };
 
   math::XYZTLorentzVectorD pv;
   for (size_t i = 0; i < nt; ++i)
-    if (tracks[i].isPrimary() && tracks[i].vertIndex() >= 0 && static_cast<size_t>(tracks[i].vertIndex()) < vertices.size()) {
-      pv = vertices[tracks[i].vertIndex()].position();
+    if (sig.tracks[i]->isPrimary() && sig.tracks[i]->vertIndex() >= 0 && static_cast<size_t>(sig.tracks[i]->vertIndex()) < sig.vertices.size()) {
+      pv = sig.vertices[sig.tracks[i]->vertIndex()]->position();
       break;
     }
   auto dirEta = [&](double x, double y, double z) { return math::XYZVectorD(x - pv.x(), y - pv.y(), z - pv.z()).eta(); };
@@ -602,132 +724,202 @@ void SimHitAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
 
   std::cout << "SimHitAnalyzer run " << ev.id().run() << " event " << ev.id().event() << ": " << nt << " SimTracks, " << prims.size()
             << " primaries handed to Geant4, PV = (" << pv.x() << ", " << pv.y() << ", " << pv.z() << ") cm\n";
+  if (crossingFrame_) {
+    std::cout << "  pileup mixed in (CrossingFrame, bunch crossings " << pu.bxMin << " .. " << pu.bxMax << "): " << evs.size() - 1
+              << " events (early " << pu.nEvents[0] << ", in-time " << pu.nEvents[1] << ", late " << pu.nEvents[2] << "), "
+              << pu.nPrimaries[0] + pu.nPrimaries[1] + pu.nPrimaries[2] << " primaries (" << pu.nPrimaries[0] << ", " << pu.nPrimaries[1]
+              << ", " << pu.nPrimaries[2] << "), " << pu.nTracks[0] + pu.nTracks[1] + pu.nTracks[2] << " SimTracks; events per bx:";
+    for (auto const& kv : pu.eventsPerBx)
+      std::cout << " " << kv.first << ":" << kv.second;
+    std::cout << "\n";
+    for (size_t k = 1; k < evs.size(); ++k) {
+      int np = 0;
+      const SimVertex* v0 = nullptr;
+      for (auto const* t : evs[k].tracks)
+        if (t->isPrimary()) {
+          ++np;
+          if (!v0 && t->vertIndex() >= 0 && static_cast<size_t>(t->vertIndex()) < evs[k].vertices.size())
+            v0 = evs[k].vertices[t->vertIndex()];
+        }
+      std::cout << "    pileup event " << evs[k].id.event() << " in bx " << evs[k].bx << ": " << np << " primaries, " << evs[k].tracks.size()
+                << " SimTracks, " << evs[k].vertices.size() << " SimVertices"
+                << (v0 ? Form(", vertex z = %.2f cm, t = %.1f ns", v0->position().z(), std::abs(v0->position().t()) < 0.05 ? 0. : v0->position().t()) : "")
+                << "\n";
+    }
+  }
 
   for (Station& st : stations_) {
     std::vector<Hit> hits;
     int nNoGeom = 0;
-    for (auto const& th : st.psimTok) {
-      edm::Handle<edm::PSimHitContainer> h;
-      ev.getByToken(th.second, h);
-      if (!h.isValid())
-        continue;
-      for (auto const& hit : *h) {
-        DetId id(hit.detUnitId());
-        const GeomDet* det = nullptr;
-        if (tgeom) {
-          try {
-            det = tgeom->idToDet(id);
-          } catch (cms::Exception const&) {
-          }
+    size_t nSignalPSim = 0;
+    auto addPSimHit = [&](const PSimHit& hit, int owner) {
+      DetId id(hit.detUnitId());
+      const GeomDet* det = nullptr;
+      if (tgeom) {
+        try {
+          det = tgeom->idToDet(id);
+        } catch (cms::Exception const&) {
         }
-        if (!det) {
-          ++nNoGeom;
+      }
+      if (!det) {
+        ++nNoGeom;
+        return;
+      }
+      GlobalPoint gp = det->surface().toGlobal(hit.localPosition());
+      Hit x;
+      x.x = gp.x();
+      x.y = gp.y();
+      x.z = gp.z();
+      x.r = gp.perp();
+      x.eta = dirEta(gp.x(), gp.y(), gp.z());
+      x.phi = dirPhi(gp.x(), gp.y(), gp.z());
+      x.tof = hit.timeOfFlight();
+      x.e = hit.energyLoss();
+      x.sub = subOf(id);
+      x.layer = 0;
+      if (id.det() == DetId::Tracker && topo)
+        x.layer = topo->layer(id);
+      else if (x.sub == DT)
+        x.layer = DTChamberId(id).station();
+      else if (x.sub == CSC)
+        x.layer = CSCDetId(id).station();
+      else if (x.sub == RPC)
+        x.layer = RPCDetId(id).station();
+      else if (x.sub == GEM)
+        x.layer = GEMDetId(id).station();
+      x.prim = owner >= 0 ? owner : -1;
+      x.kind = kindOfOwner(owner);
+      x.calo = false;
+      x.barrel = isBarrel(x.sub, id);
+      if (owner >= -1)
+        ++nSignalPSim;
+      hits.push_back(x);
+    };
+    if (!crossingFrame_) {
+      for (auto const& th : st.psimTok) {
+        edm::Handle<edm::PSimHitContainer> h;
+        ev.getByToken(th.second, h);
+        if (!h.isValid())
           continue;
-        }
-        GlobalPoint gp = det->surface().toGlobal(hit.localPosition());
-        Hit x;
-        x.x = gp.x();
-        x.y = gp.y();
-        x.z = gp.z();
-        x.r = gp.perp();
-        x.eta = dirEta(gp.x(), gp.y(), gp.z());
-        x.phi = dirPhi(gp.x(), gp.y(), gp.z());
-        x.tof = hit.timeOfFlight();
-        x.e = hit.energyLoss();
-        x.sub = subOf(id);
-        x.layer = 0;
-        if (id.det() == DetId::Tracker && topo)
-          x.layer = topo->layer(id);
-        else if (x.sub == DT)
-          x.layer = DTChamberId(id).station();
-        else if (x.sub == CSC)
-          x.layer = CSCDetId(id).station();
-        else if (x.sub == RPC)
-          x.layer = RPCDetId(id).station();
-        else if (x.sub == GEM)
-          x.layer = GEMDetId(id).station();
-        x.prim = primOfTrackId(hit.trackId());
-        x.kind = x.prim >= 0 ? prims[x.prim].kind : UNASSIGNED;
-        x.calo = false;
-        x.barrel = isBarrel(x.sub, id);
-        hits.push_back(x);
+        for (auto const& hit : *h)
+          addPSimHit(hit, primOfTrackId(hit.trackId()));
+      }
+    } else {
+      for (auto const& th : st.psimCFTok) {
+        edm::Handle<CrossingFrame<PSimHit>> h;
+        ev.getByToken(th.second, h);
+        if (!h.isValid())
+          continue;
+        MixCollection<PSimHit> col(h.product());
+        for (auto it = col.begin(); it != col.end(); ++it)
+          addPSimHit(*it, it.getTrigger() ? primOfTrackId((*it).trackId()) : pileupOwner(it.bunch()));
       }
     }
-    // calorimeter cells: energy summed per cell, kind of the primary with the largest share
+    // calorimeter cells: energy summed per cell, kind of the owner (signal primary or pileup class) with the largest share
     struct Cell {
       Hit h;
-      std::map<int, double> ePrim;
+      std::map<int, double> eOwner;
     };
     std::map<uint32_t, Cell> cells;
-    size_t nCaloHits = 0;
-    for (auto const& th : st.caloTok) {
-      edm::Handle<edm::PCaloHitContainer> h;
-      ev.getByToken(th.second, h);
-      if (!h.isValid())
-        continue;
-      bool hcal = th.first.instance().find("Hcal") != std::string::npos;
-      for (auto const& hit : *h) {
-        ++nCaloHits;
-        DetId id(hit.id());
-        if (hcal && hcalTestNumbering_ && hcons)
-          id = HcalHitRelabeller::relabel(hit.id(), hcons);
-        if (id.rawId() == 0) {
+    size_t nCaloHits = 0, nSignalCaloHits = 0;
+    auto addCaloHit = [&](const PCaloHit& hit, int owner, bool hcal) {
+      ++nCaloHits;
+      if (owner >= -1)
+        ++nSignalCaloHits;
+      DetId id(hit.id());
+      if (hcal && hcalTestNumbering_ && hcons)
+        id = HcalHitRelabeller::relabel(hit.id(), hcons);
+      if (id.rawId() == 0) {
+        ++nNoGeom;
+        return;
+      }
+      auto it = cells.find(id.rawId());
+      if (it == cells.end()) {
+        const CaloSubdetectorGeometry* sg = cgeom ? cgeom->getSubdetectorGeometry(id) : nullptr;
+        auto cell = sg ? sg->getGeometry(id) : CaloSubdetectorGeometry::CellMayOwnPtr();
+        if (!cell.get()) {
           ++nNoGeom;
+          return;
+        }
+        const GlobalPoint& gp = cell->getPosition();
+        Cell c;
+        c.h.x = gp.x();
+        c.h.y = gp.y();
+        c.h.z = gp.z();
+        c.h.r = gp.perp();
+        c.h.eta = dirEta(gp.x(), gp.y(), gp.z());
+        c.h.phi = dirPhi(gp.x(), gp.y(), gp.z());
+        c.h.tof = 0.;
+        c.h.e = 0.;
+        c.h.sub = subOf(id);
+        c.h.layer = c.h.sub == HGCEE || c.h.sub == HGCHSI ? HGCSiliconDetId(id).layer() : (c.h.sub == HGCHSC ? HGCScintillatorDetId(id).layer() : 0);
+        c.h.prim = -1;
+        c.h.kind = UNASSIGNED;
+        c.h.calo = true;
+        c.h.barrel = isBarrel(c.h.sub, id);
+        it = cells.emplace(id.rawId(), c).first;
+      }
+      it->second.h.e += hit.energy();
+      it->second.eOwner[owner] += hit.energy();
+    };
+    if (!crossingFrame_) {
+      for (auto const& th : st.caloTok) {
+        edm::Handle<edm::PCaloHitContainer> h;
+        ev.getByToken(th.second, h);
+        if (!h.isValid())
           continue;
-        }
-        auto it = cells.find(id.rawId());
-        if (it == cells.end()) {
-          const CaloSubdetectorGeometry* sg = cgeom ? cgeom->getSubdetectorGeometry(id) : nullptr;
-          auto cell = sg ? sg->getGeometry(id) : CaloSubdetectorGeometry::CellMayOwnPtr();
-          if (!cell.get()) {
-            ++nNoGeom;
-            continue;
-          }
-          const GlobalPoint& gp = cell->getPosition();
-          Cell c;
-          c.h.x = gp.x();
-          c.h.y = gp.y();
-          c.h.z = gp.z();
-          c.h.r = gp.perp();
-          c.h.eta = dirEta(gp.x(), gp.y(), gp.z());
-          c.h.phi = dirPhi(gp.x(), gp.y(), gp.z());
-          c.h.tof = 0.;
-          c.h.e = 0.;
-          c.h.sub = subOf(id);
-          c.h.layer = c.h.sub == HGCEE || c.h.sub == HGCHSI ? HGCSiliconDetId(id).layer() : (c.h.sub == HGCHSC ? HGCScintillatorDetId(id).layer() : 0);
-          c.h.prim = -1;
-          c.h.kind = UNASSIGNED;
-          c.h.calo = true;
-          c.h.barrel = isBarrel(c.h.sub, id);
-          it = cells.emplace(id.rawId(), c).first;
-        }
-        it->second.h.e += hit.energy();
-        it->second.ePrim[primOfTrackId(hit.geantTrackId())] += hit.energy();
+        bool hcal = th.first.instance().find("Hcal") != std::string::npos;
+        for (auto const& hit : *h)
+          addCaloHit(hit, primOfTrackId(hit.geantTrackId()), hcal);
+      }
+    } else {
+      for (auto const& th : st.caloCFTok) {
+        edm::Handle<CrossingFrame<PCaloHit>> h;
+        ev.getByToken(th.second, h);
+        if (!h.isValid())
+          continue;
+        bool hcal = th.first.instance().find("Hcal") != std::string::npos;
+        MixCollection<PCaloHit> col(h.product());
+        for (auto it = col.begin(); it != col.end(); ++it)
+          addCaloHit(*it, it.getTrigger() ? primOfTrackId((*it).geantTrackId()) : pileupOwner(it.bunch()), hcal);
       }
     }
     size_t nPSim = hits.size();
+    size_t nSignalCells = 0;
     for (auto& kv : cells) {
       Cell& c = kv.second;
       double best = -1.;
-      for (auto const& pe : c.ePrim)
+      int owner = -1;
+      for (auto const& pe : c.eOwner)
         if (pe.second > best) {
           best = pe.second;
-          c.h.prim = pe.first;
+          owner = pe.first;
         }
-      c.h.kind = c.h.prim >= 0 ? prims[c.h.prim].kind : UNASSIGNED;
+      c.h.prim = owner >= 0 ? owner : -1;
+      c.h.kind = kindOfOwner(owner);
+      if (owner >= -1)
+        ++nSignalCells;
       hits.push_back(c.h);
     }
     std::cout << "  station " << st.name << ": " << nPSim << " PSimHits, " << nCaloHits << " PCaloHits in " << cells.size() << " cells"
-              << (nNoGeom ? Form(", %d hits without geometry", nNoGeom) : "") << "\n";
-    drawStation(st, ev, hits, prims, trackPrim, tracks, pv);
+              << (nNoGeom ? Form(", %d hits without geometry", nNoGeom) : "");
+    if (crossingFrame_) {
+      std::cout << " (signal: " << nSignalPSim << " PSimHits, " << nSignalCaloHits << " PCaloHits";
+      if (!cells.empty())
+        std::cout << "; " << nSignalCells << " cells dominated by the signal, " << cells.size() - nSignalCells << " by pileup";
+      std::cout << ")";
+    }
+    std::cout << "\n";
+    drawStation(st, ev, hits, prims, pv, pu, nSignalPSim + nSignalCells);
   }
   std::cout.flush();
 }
 
 // ----------------------------------------------------------------------------- the three views of a station
-void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::vector<Hit>& hits, const std::vector<Primary>& prims,
-                                 const std::vector<int>& trackPrim, const edm::SimTrackContainer& tracks,
-                                 const math::XYZTLorentzVectorD& pv) {
+void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, std::vector<Hit>& hits, const std::vector<Primary>& prims,
+                                 const math::XYZTLorentzVectorD& pv, const PileupSummary& pu, size_t nSignalHits) {
+  // pileup hits first, so that they are drawn underneath the signal hits (a TGraph per colour, in creation order)
+  std::stable_partition(hits.begin(), hits.end(), [](const Hit& h) { return isPileup(h.kind); });
   // counts per subdetector / layer / kind, hits per primary
   std::map<std::pair<int, int>, int> nSubLayer;
   std::map<int, double> eSub;
@@ -762,7 +954,7 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
       double e = 0.;
       for (int i : kv.second)
         hits[i].calo ? (e += hits[i].e, 0) : ++nh;
-      std::cout << "      " << p.name << " pdg " << tracks[p.track].type() << " pT=" << p.pt << " eta=" << p.eta << " phi=" << p.phi
+      std::cout << "      " << p.name << " pdg " << p.trk->type() << " pT=" << p.pt << " eta=" << p.eta << " phi=" << p.phi
                 << " PSimHits=" << nh << " cells=" << kv.second.size() - nh << " E=" << e << "\n";
     }
 
@@ -820,8 +1012,21 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
       line += parts[i] + (i + 1 < parts.size() ? ", " : "");
     }
     header.push_back(line);
-    header.push_back(Form("%zu of the %zu primaries handed to Geant4 left hits here; colour = kind of the primary the hit descends from (ancestor through the SimVertex parents)",
-                          hitsOfPrim.size(), prims.size()));
+    if (crossingFrame_) {
+      int nPU = 0;
+      for (int k = 0; k < NKIND; ++k)
+        if (isPileup(k))
+          nPU += nKind[k];
+      std::string perBx;
+      for (auto const& kv : pu.eventsPerBx)
+        perBx += Form("%s%+d: %d", perBx.empty() ? "" : ", ", kv.first, kv.second);
+      header.push_back(Form("signal + pileup (MixingModule): %zu hits of the signal event + %d hits of the %d mixed pileup events (%d pileup primaries), drawn underneath by bunch crossing",
+                            nSignalHits, nPU, pu.nEvents[0] + pu.nEvents[1] + pu.nEvents[2], pu.nPrimaries[0] + pu.nPrimaries[1] + pu.nPrimaries[2]));
+      header.push_back(Form("pileup events per bunch crossing (Poisson): %s; in-time = bx 0, the hits of bx < 0 / bx > 0 arrive 25 ns x |bx| before / after the signal",
+                            perBx.c_str()));
+    }
+    header.push_back(Form("%zu of the %zu %sprimaries handed to Geant4 left hits here; colour = kind of the primary the hit descends from (ancestor through the SimVertex parents)",
+                          hitsOfPrim.size(), prims.size(), crossingFrame_ ? "signal " : ""));
     std::string hl;
     for (int p : highlighted)
       hl += (hl.empty() ? "" : ";  ") + highlightLine(p);
@@ -842,7 +1047,7 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
   auto legend = [&](View& v, int nShown[NKIND], bool withCells) {
     for (int k = 0; k < NKIND; ++k)
       if (nShown[k])
-        v.legEntry(kKindColor[k], kKindMarker[k], Form("%s (%d)", kKindName[k], nShown[k]));
+        v.legEntry(kKindColor[k], kKindMarker[k], Form("%s%s (%d)", kKindName[k], crossingFrame_ && !isPileup(k) ? ", signal" : "", nShown[k]));
     v.legEntry(kGray + 1, 20, "detector elements");
     if (!highlighted.empty())
       v.legEntry(kBlack, 24, "followed primary (cells)");
@@ -867,14 +1072,14 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
       }
     if (st.drawCaloEntry)
       for (auto const& p : prims)
-        if (tracks[p.track].crossedBoundary()) {
-          auto const& b = tracks[p.track].getPositionAtBoundary();
+        if (p.trk->crossedBoundary()) {
+          auto const& b = p.trk->getPositionAtBoundary();
           v.point(kGray + 3, 2, 0.8, b.z(), std::hypot(b.x(), b.y()));
         }
     int nShown[NKIND] = {};
     for (auto const& h : hits) {
       ++nShown[h.kind];
-      v.point(kKindColor[h.kind], kKindMarker[h.kind], h.calo ? cellSize(h.e) : 0.45, h.z, h.r);
+      v.point(kKindColor[h.kind], kKindMarker[h.kind], h.calo ? cellSize(h.e) : (isPileup(h.kind) ? 0.35 : 0.45), h.z, h.r);
     }
     for (int p : highlighted) {
       std::vector<int> ph;
@@ -916,8 +1121,8 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
       }
     if (st.drawCaloEntry)
       for (auto const& p : prims)
-        if (tracks[p.track].crossedBoundary() && std::abs(tracks[p.track].getPositionAtBoundary().z()) < st.zMax) {
-          auto const& b = tracks[p.track].getPositionAtBoundary();
+        if (p.trk->crossedBoundary() && std::abs(p.trk->getPositionAtBoundary().z()) < st.zMax) {
+          auto const& b = p.trk->getPositionAtBoundary();
           if (std::hypot(b.x(), b.y()) > 0.9 * std::abs(b.z()) / 3.)  // only the barrel part of the boundary (roughly r > z/3)
             v.point(kGray + 3, 2, 0.8, b.x(), b.y());
         }
@@ -927,7 +1132,7 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
       if (h.barrel) {
         ++nBarrel;
         ++nShown[h.kind];
-        v.point(kKindColor[h.kind], kKindMarker[h.kind], h.calo ? cellSize(h.e) : 0.45, h.x, h.y);
+        v.point(kKindColor[h.kind], kKindMarker[h.kind], h.calo ? cellSize(h.e) : (isPileup(h.kind) ? 0.35 : 0.45), h.x, h.y);
       }
     for (int p : highlighted) {
       std::vector<int> ph;
@@ -969,8 +1174,8 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
     View v(this, Form("%s hits by primary kind", st.name.c_str()), "#eta", "#phi", -st.etaMax, st.etaMax, -M_PI, M_PI);
     if (st.drawCaloEntry)
       for (auto const& p : prims)
-        if (tracks[p.track].crossedBoundary()) {
-          auto const& b = tracks[p.track].getPositionAtBoundary();
+        if (p.trk->crossedBoundary()) {
+          auto const& b = p.trk->getPositionAtBoundary();
           math::XYZVectorD d(b.x() - pv.x(), b.y() - pv.y(), b.z() - pv.z());
           v.point(kGray + 3, 2, 0.8, d.eta(), d.phi());
         }
@@ -982,7 +1187,7 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
         continue;
       }
       ++nShown[h.kind];
-      v.point(kKindColor[h.kind], kKindMarker[h.kind], h.calo ? cellSize(h.e) : 0.45, h.eta, h.phi);
+      v.point(kKindColor[h.kind], kKindMarker[h.kind], h.calo ? cellSize(h.e) : (isPileup(h.kind) ? 0.35 : 0.45), h.eta, h.phi);
     }
     for (int p : highlighted) {
       int color = kKindColor[prims[p].kind];
@@ -1009,7 +1214,6 @@ void SimHitAnalyzer::drawStation(Station& st, const edm::Event& ev, const std::v
     legend(v, nShown, true);
     finish(v, st, ev, "etaphi", hdr, legendTitle);
   }
-  (void)trackPrim;
   (void)geoText;
 }
 
@@ -1105,7 +1309,8 @@ void SimHitAnalyzer::View::legEntry(int color, int style, const std::string& ent
 void SimHitAnalyzer::finish(View& v, Station& st, const edm::Event& ev, const char* view, const std::vector<std::string>& header,
                             const std::string& legendTitle) {
   TCanvas* c = canvas_.get();
-  v.text(0.07, 0.957, Form("SIM hits at %s (%s)", st.name.c_str(), st.title.c_str()), 0.03);
+  std::string title = Form("%s hits at %s (%s)", crossingFrame_ ? "SIM + pileup" : "SIM", st.name.c_str(), st.title.c_str());
+  v.text(0.07, 0.957, title, title.size() > 48 ? 0.024 : 0.03);  // long station titles must not run into the run / event text
   v.text(0.79, 0.955, Form("run %u  lumi %u  event %llu", ev.id().run(), ev.luminosityBlock(), ev.id().event()), 0.022, kBlack, 31);
   if (!sampleLabel_.empty()) {
     size_t start = 0;
@@ -1118,10 +1323,10 @@ void SimHitAnalyzer::finish(View& v, Station& st, const edm::Event& ev, const ch
       start = bar + 1;
     }
   }
-  for (size_t k = 0; k < header.size() && k < 5; ++k)
-    v.text(0.07, 0.928 - 0.021 * k, header[k], k == 0 ? 0.018 : 0.015, kGray + 3);
+  for (size_t k = 0; k < header.size() && k < 6; ++k)
+    v.text(0.07, 0.930 - 0.019 * k, header[k], k == 0 ? 0.018 : 0.015, kGray + 3);
   v.leg->Draw();
-  if (!st.caloTok.empty()) {
+  if (st.hasCalo) {
     v.text(0.80, 0.39, "marker size of calorimeter cells:", 0.017);
     const double scale[3] = {0.01, 1., 100.};
     for (int k = 0; k < 3; ++k) {

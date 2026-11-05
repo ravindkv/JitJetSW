@@ -244,3 +244,39 @@ station does to each kind of particle, and the numbers of event 1). The hit coun
 station and kind, and the extent and layer count of every subdetector from the geometry, are in
 `SIM_Phase2/simHits.log`. The analyzer is detector-agnostic (`era`, `globalTag`, `geometry` options; a Run 3
 era selects the Run 3 collections and stations with EE, ES and HE).
+
+## Pileup chapter: the signal, the pileup and their mixing (SimHitAnalyzer inside the DIGI step)
+
+`runPileup_mcPhase2_BBbar.sh` shows what pileup mixing does to the SimHits of one event, on three samples
+drawn with the same SimHitAnalyzer pages (every station, three views), so that they can be compared page by page:
+
+| case | sample | how it is made |
+|------|--------|----------------|
+| (a) signal | the bbbar event through Geant4 | `SIM_Phase2/step2_SIM_Transport_B_Decay_EM_Had_out.root` (the full-physics stage of `runCMSDrivers_mcPhase2_BBbar_SIM.sh`, generated if missing) |
+| (b) pileup | minimum-bias events through Geant4: the pileup library | `MinBias_14TeV_pythia8_TuneCP5_cfi` (Pythia8 `SoftQCD:inelastic`, 14 TeV, CP5) through the same GEN step (HL-LHC vertex smearing) and SIM step; `PUEVENTS` events (default 50), event `PUEVENT` (default 1) is drawn |
+| (a+b) signal + pileup | the DIGI step with pileup mixing | `cmsDriver.py step3 -s DIGI:pdigi_valid --pileup "AVE_200_BX_25ns,{'N': PU, 'B': (bxmin, bxmax)}" --pileup_input <library>` on the signal file; the MixingModule takes a Poisson(`PU`, default 10) number of library events for every bunch crossing of the window `BUNCHES` (default -1,1), in sequence, and SimHitAnalyzer runs inside the job |
+
+The MixingModule stamps every pileup SimTrack, SimVertex, PSimHit and PCaloHit with an `EncodedEventId`
+(bunch crossing, event number), shifts the hit times and vertex times by 25 ns x bx, and hands the signal
+objects and the pileup objects together to the digitisers as `CrossingFrame<T>` collections
+(`mix:g4SimHits<Collection>`). These are transient (not written to the output file), which is why the
+analyzer must run in the mixing job: `python/simHitAnalyzer_cff.py` (`addSimHitAnalyzer`, appended with
+`--customise_commands`) switches on the CrossingFrames of every hit collection and of the SimTracks /
+SimVertices (`mixObjects.mixSH/mixCH.crossingFrames`, `mixTracks/mixVertices.makeCrossingFrame`) and schedules
+the analyzer in an EndPath. With `crossingFrame = True` SimHitAnalyzer reads the `MixCollection`s: the signal
+hits are drawn as in (a), coloured by the kind of their signal primary, and the pileup hits are drawn
+underneath, coloured by bunch crossing (early bx < 0, in-time bx 0, late bx > 0); a calorimeter cell takes the
+colour of the largest energy share, so cells dominated by pileup show up in the pileup colours. The log lists
+the mixed pileup events per bunch crossing with their primaries, SimTracks and vertex (z, t).
+
+    cd test
+    ./runPileup_mcPhase2_BBbar.sh                              # (a), (b) with a 50-event library, (a+b) with PU=10 in bx -1..1
+    PU=50 BUNCHES=0,0 PUEVENTS=120 ./runPileup_mcPhase2_BBbar.sh      # in-time pileup only, larger library
+    CASES=mixed REUSE=1 PU=20 ./runPileup_mcPhase2_BBbar.sh    # another mixing on the existing library
+    STATIONS=TRK,HGCAL EVENT=1:1:1 PNG=0 ...
+
+Output in `PU_Phase2/`: `step1_GEN_MinBias_*`, `step2_SIM_MinBias_*` (the library), `step3_DIGI_PU<PU>_*` (the
+mixing job and its DIGI output), and the pages in `signal/`, `pileup/` and `mixed/` (`<station>/simHits_<station>_run<R>_event<E>.pdf`
+and PNGs, `simHits.log` with the hit counts; for the mixed case the signal / pileup split per station), plus the
+chapter text `AtPileup.md` from `doc/sim/`. The HL-LHC production setting is PU = 200 in bx -3..3 (1400 minimum-bias
+events per signal event, premixed in production); the defaults here keep the pages readable and the library small.
