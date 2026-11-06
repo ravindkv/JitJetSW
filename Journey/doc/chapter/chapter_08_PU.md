@@ -9,12 +9,16 @@ CMS uses (the fragment, the CP5 tune, the common decay settings), how `cmsDriver
 job with the Run-3 vertex smearing and its own random seeds, what the generator writes into the file, and
 what the 250 generated events of `test/PU_2024/step1_GEN_MinBias_out.root` look like, event by event.
 Nothing here involves Geant4: the SIM step that turns these events into hits, and the library it produces,
-are the subject of `PULib.md` (and `PULib.tex`); the mixing is `PUSIM.tex`. The chapter is written for a
+are the subject of `PULib.md` (and `PULib.tex`); the mixing is `PUSIM.tex`. Section 8 closes the chapter
+with the generated collisions put to their use: the in-time ones are overlaid on the bbbar signal event of
+the GEN chapter, still at generator level, and the anti-kT clustering is run again to show what pileup does
+to the jets before any detector is involved. The chapter is written for a
 student who has followed the GEN chapter of the book for the bbbar signal; the boxes marked "In plain words"
 restate each key idea without the Pythia or CMSSW vocabulary.
 
 All numbers were produced with CMSSW_15_0_5 (Pythia 8.311, LHAPDF 6.4.0) on 5 November 2026; the
-per-event ones come from `minBiasGenStats.py` (section 7).
+per-event ones come from `minBiasGenStats.py` (section 7), those of section 8 from
+`runGenJetPileup_mc2024_BBbar.sh` on 6 November 2026.
 
 | word / symbol | meaning in this chapter |
 |---|---|
@@ -27,6 +31,8 @@ per-event ones come from `minBiasGenStats.py` (section 7).
 | central | a stable particle with \|eta\| < 2.5 and pT > 0.5 GeV, roughly what the tracker will see |
 | M_X, xi | mass of the dissociated system of a diffractive collision, and the momentum fraction lost by the surviving proton |
 | event k | the k-th event of the GEN file (run 1, lumi 1, event k) |
+| in-time pileup | the pileup collisions of the same bunch crossing as the signal (bunch crossing 0 of the mixing); the only ones that matter at generator level |
+| collisionId | the index of the collision a GenParticle came from in a merged collection: 0 the signal, 1 .. N the pileup collisions |
 
 ---
 
@@ -794,7 +800,173 @@ The recipe is the same for any scenario; only the fragment and the settings chan
 
 ---
 
-## 8. Questions to test yourself
+## 8. The signal event under pileup: the generator jets with 55 collisions on top
+
+Everything so far was about the pileup collisions on their own. This section puts them where they belong,
+*on top of the signal*, and asks the first question an analysis asks of pileup: what does it do to the
+jets? It stays at generator level, so that the answer is not yet mixed with anything the detector does: the
+stable particles of the in-time pileup collisions are added to the stable particles of the bbbar signal
+event, and the anti-kT clustering of the GenJet stage of the GEN chapter is run again on the sum.
+
+The signal event is event 1 of the GEN chapter, the one followed from the matrix element to the jets in
+the eight pages of `GEN/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_out.pdf` (five generator stages, then
+ak4GenJets, ak4GenJetsNoNu, ak8GenJets). The pileup collisions are the 55 events of the library that the
+DIGI step of the pileup chapter (`runPileup_mc2024_BBbar.sh`, `PUSIM.tex`) mixed into the *in-time* bunch
+crossing of that same signal event: the MixingModule reads the library in sequence, bunch crossing by
+bunch crossing, and `PU_2024/mixed/simHits.log` records 66 events in bunch crossing -1, 55 in bunch
+crossing 0 and 77 in bunch crossing 1 ("events per bx: -1:66 0:55 1:77"), so the in-time collisions are
+library events 67 to 121. Only these matter for generator jets: the early and late collisions are seen by
+the detector through its time response (the subject of the mixing chapter), but a jet of particles has no
+time axis, and anti-kT on a generator record is by construction an in-time picture. The result is the ninth
+page of `PU_2024/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_PU_out.pdf`, a copy of the eight GEN pages
+followed by the same event with the pileup on it:
+
+![ak4 jets (with neutrinos) of signal event 1 with the 55 in-time pileup collisions overlaid](../../test/PU_2024/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_PU_out_page-9.png)
+
+The page is drawn like page 6 (ak4GenJets without pileup), with three additions: the pileup particles are
+triangles (filled in the jet colour when clustered, light grey and open when not), the signal particles
+circles as before; the jets above 30 GeV, and the b and bbar jets whatever their pT, are drawn with their
+circle of radius R and their label, the others only through their constituents, because there are now
+262 jets; and every jet in the right-hand list carries the share of its pT that comes from pileup
+(scalar sum of the pT of its pileup constituents over the jet pT; it can exceed 100 % for a jet made of
+pileup only, since the constituents are not collinear).
+
+### 8.1 What the page shows
+
+| | page 6: signal alone | page 9: signal + 55 in-time collisions |
+|---|---:|---:|
+| stable particles (status 1) | 634 | 634 signal + 11 309 pileup (12 to 606 per collision, median 161) |
+| ak4 jets with pT > 3 GeV | 27 | 262 |
+| jets with pT > 20 / 30 / 50 GeV | 2 / 2 / 2 | 105 / 67 / 8 |
+| b jet: pT, constituents | 117.8 GeV, 24 | 152.5 GeV, 112 (24 signal + 88 pileup), 35.5 GeV from pileup (23 %) |
+| bbar jet: pT, constituents | 115.9 GeV, 18 | 150.2 GeV, 83 (18 signal + 65 pileup), 35.0 GeV from pileup (23 %) |
+| response pT(jet) / pT(quark), b / bbar | 1.284 / 0.996 | 1.662 / 1.291 |
+| Delta R (jet axis, quark), b / bbar | 0.019 / 0.004 | 0.057 / 0.029 |
+| dijet mass m(b jet + bbar jet) | 386.8 GeV | 520.5 GeV |
+| \|pT(b jet) + pT(bbar jet)\| | 6.1 GeV | 7.8 GeV |
+| signal particles inside a jet | 239 of 634 | 629 of 634 |
+| jets without a single signal particle | - | 77 |
+
+Four things to read off the page and the table:
+
+1. **The pileup is a uniform pedestal.** The 55 collisions put 2067 GeV of transverse momentum into
+   \|eta\| < 2.5, that is 66 GeV per unit of eta-phi area (68 GeV at 1.2 < \|eta\| < 2.0, 60 GeV at
+   3.4 < \|eta\| < 4.2: flat within what one event can tell). A cone of R = 0.4 covers pi R^2 = 0.50 units
+   of area and so collects about 33 GeV wherever it is placed; the b jet at eta = -1.6 and the bbar jet at
+   eta = -3.8 collected 35.5 and 35.0 GeV. This is the number that the pileup corrections of the
+   reconstruction (the "L1 offset" of the jet energy corrections, rho x area) will later subtract, and the
+   page shows where it comes from: 88 and 65 soft triangles, 0.4 GeV each on average, inside the circles.
+2. **The b and bbar jets kept all their signal particles** (24 and 18, the same ones as on page 6, 118.1
+   and 116.0 GeV of scalar pT), but their axes moved by 0.04 and 0.03 in Delta R towards the pileup inside
+   the cone, and their pT, their response and their invariant mass are shifted by the full pedestal: the
+   dijet mass goes from 387 to 521 GeV. Nothing in the event tells anti-kT which triangle belongs to the
+   signal; the algorithm clusters what it is given.
+3. **Pileup makes jets of its own.** 262 jets instead of 27, 105 of them above 20 GeV and six between 50
+   and 60 GeV ([2] to [7] in the list, 95-101 % pileup): 55 soft collisions, each with its MPIs, fluctuate
+   enough in one place for a 0.4 cone to reach 50 GeV. In the detector these are the "pileup jets" that a
+   pileup-jet identification has to remove, and at generator level the page shows what they are made of:
+   many soft particles from many collisions (jet [2] has 102 pileup constituents from a sample of 55
+   collisions, and 3 from the signal).
+4. **The distinction "signal jet / pileup jet" is not sharp.** Only 77 of the 262 jets contain no signal
+   particle at all; 64 of the 67 jets above 30 GeV contain at least one, because the 634 signal particles
+   (MPI, beam remnants, the underlying event of the GEN chapter) are spread over the whole plane and a cone
+   anywhere catches a few. That is why 629 of the 634 signal particles are now inside a jet, against 239
+   without pileup: they were not in a jet because no jet reached 3 GeV around them; now one always does.
+
+> **In plain words: pileup and jets.** Spread 11 000 soft particles evenly over the detector and draw a
+> circle of radius 0.4 anywhere: it contains about 35 GeV of them. A jet is such a circle, so every jet of
+> the signal is 35 GeV heavier than it was, and wherever the soft particles happen to be a little denser
+> the circle alone passes the jet threshold and a jet appears that nobody produced. The first effect is
+> corrected on average (one subtracts what a circle contains on average); the second is fought by asking
+> whether the particles in the circle come from one vertex or from many, which is what the tracker will
+> make possible and the next chapters will come to.
+
+### 8.2 How the overlay is made
+
+No new code touches the particles: the overlay is the MixingModule of the DIGI step, restricted to the
+generator record, followed by the standard modules of the GEN step (`python/genJetPileup_cff.py`):
+
+1. **`mix` (MixingModule)** reads the `generatorSmeared` HepMCProduct of the signal event from the source
+   and those of N library events from its secondary input (`EmbeddedRootSource` on the GEN file of the
+   library, `sequential = True`, the first `skipEvents` skipped), and puts them together in a
+   `CrossingFrame<HepMCProduct>` for the single bunch crossing `minBunch = maxBunch = 0`. Its `mixObjects`
+   holds only `mixHepMC` and its `digitizers` PSet is empty, so no SimHit is read and nothing is digitised;
+   the `PileupMixingContent` it writes records which library events went in. With `type = 'fixed'` and
+   `averageNumber = 55` exactly 55 collisions are taken; `type = 'poisson'` draws the number as the DIGI
+   step does.
+2. **`genParticlesPU` (GenParticleProducer)** is the module that makes `genParticles` in every GEN job,
+   with `useCrossingFrame = True`: it converts every HepMC event of the frame, the signal first and then
+   the pileup collisions, into one `reco::GenParticle` collection, and stamps every particle with the
+   index of its collision, `GenParticle::collisionId()` (0 = signal, 1 to 55 = the pileup collisions; the
+   heavy-ion workflows use the same mechanism for their sub-events). Mother-daughter links stay within
+   a collision; the hard-process flags of the signal are untouched, so the b and bbar can be followed as
+   before.
+3. **`genParticlesForJetsPU`, `ak4GenJetsPU`** (and the NoNu and ak8 variants) are the input selector and
+   the FastjetJetProducer of the GenJet stage with `src` pointed at the merged collection: the status 1
+   particles of all 56 collisions, anti-kT with R = 0.4, jet pT > 3 GeV.
+4. **GenJetAnalyzer** draws `ak4GenJetsPU` over `genParticlesPU` with `signalCollisionId = 0`: particles
+   of another collision are pileup (triangles), the hard-process quarks are searched in the signal only,
+   and the pileup pT of every jet is the scalar sum of its pileup constituents.
+
+The page is therefore not an approximation of the mixing but the same mixing stopped before the detector:
+the collisions on page 9 are, event by event, the in-time collisions of the DIGI step of the mixing chapter.
+
+### 8.3 Running it: `./runGenJetPileup_mc2024_BBbar.sh`
+
+```bash
+./runGenJetPileup_mc2024_BBbar.sh                          # signal event 1 + the in-time collisions of PU_2024/mixed/simHits.log (8 s)
+NPU=55 SKIP=66 ./runGenJetPileup_mc2024_BBbar.sh           # the same, given by hand
+NPU=20 SKIP=0 ./runGenJetPileup_mc2024_BBbar.sh            # library events 1-20 instead
+PUTYPE=poisson NPU=60 PUSEED=7 ./runGenJetPileup_mc2024_BBbar.sh   # Poisson(60) collisions, as the DIGI step draws them
+JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./runGenJetPileup_mc2024_BBbar.sh   # three new pages (9, 10, 11)
+LABELPTMIN=20 ./runGenJetPileup_mc2024_BBbar.sh            # draw the circles and labels of the jets above 20 GeV
+```
+
+| variable (default) | meaning |
+|---|---|
+| `EVENT=1:1:1` | the signal event |
+| `NPU`, `SKIP` | in-time collisions and library events skipped before them; default: read from `OUTDIR/mixed/simHits.log` (66 and 55 for this event), else 60 and 0 |
+| `PUTYPE=fixed` | `fixed`: exactly `NPU` collisions; `poisson`: Poisson(`NPU`) with seed `PUSEED` (20243) |
+| `JETS=ak4GenJetsPU` | collections drawn, one page each: `ak4GenJetsPU`, `ak4GenJetsNoNuPU`, `ak8GenJetsPU`, `ak8GenJetsNoNuPU` |
+| `JETPTMIN=3` | jet pT threshold of the producers, as in the GenJet stage |
+| `LABELPTMIN=30` | jets drawn with circle and label (the b / bbar jets always) |
+| `STAGE=ME_PS_MPI_Had_Decay` | generator stage of the signal: `GEN/step1_GEN_<STAGE>_out.root` and `GEN/genJetAnalyzer_<STAGE>_GenJet_out.pdf` (made with the GEN script if missing) |
+| `PU_INPUT=PU_2024/step1_GEN_MinBias_out.root` | the GEN file of the library (section 7.1; made with `SIM=0 ./runMinBias_mc2024.sh` if missing) |
+| `OUTDIR=PU_2024` | output directory |
+
+Output in `OUTDIR`:
+
+| file | content |
+|---|---|
+| `genJetPileup_<STAGE>_PU_out.log` | the cmsRun log: every jet with pT, eta, phi, mass, constituents and pileup pT; the b / bbar matching |
+| `genJetPileup_<STAGE>_PU_out.pdf`, `.root` | the new page(s) alone, and the jet histograms (TFileService) |
+| `step2_GENJETPU_<STAGE>_PU_out.root` | EDM file with `genParticlesPU` (33 028 particles, `collisionId` per particle), the four jet collections and the `mix` products; `edmDumpEventContent` lists them |
+| `genJetAnalyzer_<STAGE>_GenJet_PU_out.pdf` | the book PDF: the 8 pages of `GEN/genJetAnalyzer_<STAGE>_GenJet_out.pdf` + the new page(s) (`pdfunite`) |
+| `genJetAnalyzer_<STAGE>_GenJet_PU_out_page-9.png` | the new page as PNG (`pdftoppm -cropbox -r 110`), the figure above |
+
+By hand, the script runs one `cmsRun` (`test/genJetPileup_cfg.py`, all options are VarParsing arguments)
+and one `pdfunite`:
+
+```bash
+cd PU_2024
+cmsRun ../genJetPileup_cfg.py inputFiles=file:../GEN/step1_GEN_ME_PS_MPI_Had_Decay_out.root \
+  pileupFiles=file:step1_GEN_MinBias_out.root eventsToProcess=1:1:1 nPileup=55 skipPileup=66 pileupType=fixed \
+  jets=ak4GenJetsPU jetPtMin=3 labelPtMin=30 outputFile=genJetPileup_ME_PS_MPI_Had_Decay_PU_out.root \
+  edmOutput=step2_GENJETPU_ME_PS_MPI_Had_Decay_PU_out.root pdfFile=genJetPileup_ME_PS_MPI_Had_Decay_PU_out.pdf \
+  sampleLabel="sample ME_PS_MPI_Had_Decay_GenJet|+ 55 MinBias collisions in time|library events 67-121 (bx 0)|bbbar pTHat > 100 GeV, 13.6 TeV|jet pT > 3 GeV, drawn > 30 GeV" \
+  > genJetPileup_ME_PS_MPI_Had_Decay_PU_out.log 2>&1
+pdfunite ../GEN/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_out.pdf genJetPileup_ME_PS_MPI_Had_Decay_PU_out.pdf \
+  genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_PU_out.pdf
+```
+
+To look at the merged particles afterwards, FWLite reads the EDM file like any other
+(`DataFormats.FWLite.Events`, label `genParticlesPU`), and `collisionId()` tells the collision of every
+particle; `printConstituents=True` on the `cmsRun` line prints, for every jet, the index of every
+constituent in that collection.
+
+---
+
+## 9. Questions to test yourself
 
 1. The fragment says 14 TeV and `crossSection = 71.39e9`. What energy and cross section did the job
    actually use, and where is each written?
@@ -827,6 +999,18 @@ The recipe is the same for any scenario; only the fragment and the settings chan
    *From pi0 -> gamma gamma, decayed by Pythia because c tau(pi0) is 25 nm, far below the 10 mm limit. A
    minimum-bias event deposits most of its ECAL energy through these photons, spread over hundreds of
    crystals at a few MeV each.*
+8. On page 9 the b jet gained 35 GeV from pileup although it kept exactly its 24 signal particles. Estimate
+   that number from section 8.1 without looking at the jet, and say what a reconstruction can do about it.
+   *55 collisions put 66 GeV per unit area into the central region; a cone of R = 0.4 has an area of
+   pi R^2 = 0.50, so about 33 GeV. The offset is the same for any jet at that eta and is subtracted on
+   average (rho x area, the L1 pileup correction); only its fluctuation from jet to jet remains.*
+9. Why does the overlay of section 8 use only the 55 in-time collisions and not the 198 of the three bunch
+   crossings of the DIGI step, and why library events 67 to 121 rather than 1 to 55?
+   *A generator record has no time: anti-kT on particles is an in-time picture, and the early and late
+   collisions reach the detector only through the time response of its channels. The mixing reads the
+   library in sequence, bunch crossing by bunch crossing, early ones first, so for this signal event the
+   first 66 library events went into bunch crossing -1 and the next 55 into bunch crossing 0; taking those
+   makes page 9 the same collisions, event by event, that the DIGI step mixed in time.*
 
 ---
 
@@ -857,3 +1041,7 @@ The recipe is the same for any scenario; only the fragment and the settings chan
 | `RandomNumberGeneratorService`, `initialSeed` | the service that owns one random engine per module; the seed fixes the whole sequence, and `cmsDriver.py` writes the same defaults into every configuration |
 | `GenXsecAnalyzer` | the end-of-job module that reports the cross section and the filter efficiency of the sample |
 | GEN | the data tier of a file that holds generator products only |
+| `MixingModule`, `CrossingFrame` | the DIGI-step module that overlays pileup events on the signal, and the container it fills per product type; section 8 runs it on the HepMC record alone |
+| `GenParticleProducer`, `useCrossingFrame` | the module that converts the HepMC record into `genParticles`; with `useCrossingFrame` it merges all events of the CrossingFrame and sets `collisionId` |
+| pileup pT density | transverse momentum of the pileup per unit of eta-phi area (66 GeV for 55 collisions in this event); times pi R^2 it is the pileup offset of a jet of radius R |
+| pileup jet | a jet made (almost) only of pileup particles, where the soft particles of many collisions happen to be dense enough to pass the jet threshold |

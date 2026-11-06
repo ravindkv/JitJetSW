@@ -24,9 +24,19 @@
 // pages); closePdf = false leaves the closing to that module. Per collection, the TFileService file gets the jet pT, eta
 // and multiplicity, the constituent multiplicity, the b / bbar jet pT, the response, the net
 // b + bbar jet pT and etaPhiPt (TH2, eta vs phi weighted by jet pT).
+//
+// Pileup (signalCollisionId >= 0): when the genParticles collection holds the signal event and
+// the pileup collisions mixed into it (GenParticleProducer with useCrossingFrame on the
+// CrossingFrame<HepMCProduct> of the MixingModule, genJetPileup_cff.py), every particle carries
+// the index of its collision (GenParticle::collisionId, 0 = signal). The particles of the other
+// collisions are then drawn as triangles (filled in the jet colour when clustered, open and
+// light grey when not), the hard-process b and bbar are looked for in the signal only, the
+// pileup pT of every jet (scalar sum of its pileup constituents) is listed next to the jet,
+// and the header counts the signal and pileup particles and the pileup collisions.
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -89,15 +99,19 @@ private:
 
   static bool isIncoming(int status);
   static double markerSize(double pt);
+  bool isPileup(const reco::GenParticle& g) const {
+    return signalCollisionId_ >= 0 && g.collisionId() != signalCollisionId_;
+  }
   Producer producerOf(const edm::Event& ev, const edm::Provenance& prov, const std::string& label) const;
   void draw(size_t k, const edm::Event& ev, const Gens& gens, const Jets& jets, const std::vector<int>& jetOf,
-            const Quark quark[2], const Producer& prod);
+            const std::vector<double>& puPt, const Quark quark[2], const Producer& prod);
 
   edm::EDGetTokenT<Gens> genParticlesTok_;
   std::vector<edm::InputTag> jetTags_;
   std::vector<edm::EDGetTokenT<Jets>> jetToks_;
   std::string outputPrefix_, pdfFile_, sampleLabel_;
   double etaMax_, labelPtMin_;
+  int signalCollisionId_;  // >= 0: the status 1 particles of the other collisions (collisionId) are pileup
   bool savePDF_, printConstituents_, openPdf_, closePdf_;
   bool pdfOpen_ = false;  // the multi-page pdfFile_ is opened on the first page and closed in endJob
 
@@ -113,6 +127,7 @@ GenJetAnalyzer::GenJetAnalyzer(const edm::ParameterSet& ps)
       sampleLabel_(ps.getParameter<std::string>("sampleLabel")),
       etaMax_(ps.getParameter<double>("etaMax")),
       labelPtMin_(ps.getParameter<double>("labelPtMin")),
+      signalCollisionId_(ps.getParameter<int>("signalCollisionId")),
       savePDF_(ps.getParameter<bool>("savePDF")),
       printConstituents_(ps.getParameter<bool>("printConstituents")),
       openPdf_(ps.getParameter<bool>("openPdf")),
@@ -148,6 +163,8 @@ void GenJetAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
       ->setComment("PDFs are written as <outputPrefix>_<collection>_run<R>_event<E>.pdf");
   desc.add<double>("etaMax", 6.)->setComment("eta axis range; objects beyond are drawn on the border with an x marker");
   desc.add<double>("labelPtMin", 5.)->setComment("jet pT above which [index] pT is written next to the jet axis (b, bbar jets always)");
+  desc.add<int>("signalCollisionId", -1)
+      ->setComment("collisionId of the signal event when the collection also holds mixed pileup collisions (-1: no pileup)");
   desc.add<bool>("savePDF", true);
   desc.add<std::string>("pdfFile", "")
       ->setComment("if set, all plots are written as pages of this single PDF instead of one PDF per collection and event");
@@ -205,10 +222,18 @@ void GenJetAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
 
   // 1. the hard-process b and bbar and their last same-flavour copies
   Quark quark[2];  // 0: b, 1: bbar
-  size_t nStatus1 = 0;
+  size_t nStatus1 = 0, nPileup1 = 0;
+  std::set<int> collisions;  // the pileup collisions (collisionId != signal) with a status 1 particle
   for (size_t i = 0; i < n; ++i) {
-    nStatus1 += gens[i].status() == 1;
-    if (std::abs(gens[i].pdgId()) != 5 || !gens[i].isHardProcess() || isIncoming(gens[i].status()) || gens[i].pt() <= 0.)
+    if (gens[i].status() == 1) {
+      ++nStatus1;
+      if (isPileup(gens[i])) {
+        ++nPileup1;
+        collisions.insert(gens[i].collisionId());
+      }
+    }
+    if (std::abs(gens[i].pdgId()) != 5 || !gens[i].isHardProcess() || isIncoming(gens[i].status()) || gens[i].pt() <= 0. ||
+        isPileup(gens[i]))
       continue;
     Quark& q = quark[gens[i].pdgId() > 0 ? 0 : 1];
     if (q.found && gens[q.hard].pt() >= gens[i].pt())
@@ -231,6 +256,9 @@ void GenJetAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
 
   std::cout << "\n== GenJetAnalyzer run:lumi:event " << ev.id().run() << ":" << ev.luminosityBlock() << ":"
             << ev.id().event() << " nGenParticles=" << n << " nStatus1=" << nStatus1;
+  if (signalCollisionId_ >= 0)
+    std::cout << " (signal " << nStatus1 - nPileup1 << " + pileup " << nPileup1 << " from " << collisions.size()
+              << " collisions)";
   for (int k = 0; k < 2; ++k) {
     std::cout << " | hard " << (k ? "bbar" : "b") << ":";
     if (!quark[k].found) {
@@ -277,9 +305,17 @@ void GenJetAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
         if (best < n)
           jetOf[best] = j;
       }
-    size_t nClustered = 0;
-    for (size_t i = 0; i < n; ++i)
-      nClustered += jetOf[i] >= 0;
+    size_t nClustered = 0, nClusteredPU = 0;
+    std::vector<double> puPt(jets.size(), 0.);  // scalar pT of the pileup constituents of every jet
+    for (size_t i = 0; i < n; ++i) {
+      if (jetOf[i] < 0)
+        continue;
+      ++nClustered;
+      if (isPileup(gens[i])) {
+        ++nClusteredPU;
+        puPt[jetOf[i]] += gens[i].pt();
+      }
+    }
 
     // the jets matched to the quarks (nearest within R)
     Quark q[2] = {quark[0], quark[1]};
@@ -310,7 +346,11 @@ void GenJetAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
     if (prod.known)
       std::cout << ", " << prod.algorithm << " R=" << prod.rParam << ", jetPtMin=" << prod.jetPtMin << " GeV, src="
                 << prod.src;
-    std::cout << "): nJets=" << jets.size() << " nClustered=" << nClustered << "/" << nStatus1 << " status 1 particles\n";
+    std::cout << "): nJets=" << jets.size() << " nClustered=" << nClustered << "/" << nStatus1 << " status 1 particles";
+    if (signalCollisionId_ >= 0)
+      std::cout << " (signal " << nClustered - nClusteredPU << "/" << nStatus1 - nPileup1 << ", pileup " << nClusteredPU
+                << "/" << nPileup1 << ")";
+    std::cout << "\n";
     for (int s = 0; s < 2; ++s) {
       std::cout << "    " << (s ? "bbar" : "b") << " quark -> ";
       if (!q[s].found) {
@@ -324,7 +364,10 @@ void GenJetAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
       const reco::GenJet& j = jets[q[s].jet];
       double resp = j.pt() / gens[q[s].last].pt();
       std::cout << "jet [" << q[s].jet << "] pt=" << j.pt() << " eta=" << j.eta() << " phi=" << j.phi() << " nConst="
-                << j.numberOfDaughters() << " dR=" << q[s].dR << " pt(jet)/pt(quark)=" << resp << "\n";
+                << j.numberOfDaughters() << " dR=" << q[s].dR << " pt(jet)/pt(quark)=" << resp;
+      if (signalCollisionId_ >= 0)
+        std::cout << " pileupPt=" << puPt[q[s].jet] << " (" << 100. * puPt[q[s].jet] / j.pt() << "%)";
+      std::cout << "\n";
       (s ? h.ptBbarJet : h.ptBjet)->Fill(j.pt());
       h.response->Fill(resp);
     }
@@ -339,6 +382,8 @@ void GenJetAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
     for (size_t j = 0; j < jets.size(); ++j) {
       std::cout << "    [" << j << "] pt=" << jets[j].pt() << " eta=" << jets[j].eta() << " phi=" << jets[j].phi()
                 << " mass=" << jets[j].mass() << " nConst=" << jets[j].numberOfDaughters();
+      if (signalCollisionId_ >= 0)
+        std::cout << " pileupPt=" << puPt[j] << " (" << 100. * puPt[j] / jets[j].pt() << "%)";
       if (printConstituents_) {
         std::cout << " constituents(genParticles idx: pdg pt)=";
         for (auto const& c : jets[j].daughterPtrVector())
@@ -349,13 +394,14 @@ void GenJetAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
     }
 
     if (savePDF_)
-      draw(k, ev, gens, jets, jetOf, q, prod);
+      draw(k, ev, gens, jets, jetOf, puPt, q, prod);
   }
 }
 
 // ----------------------------------------------------------------------------- drawing
 void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, const Jets& jets,
-                          const std::vector<int>& jetOf, const Quark quark[2], const Producer& prod) {
+                          const std::vector<int>& jetOf, const std::vector<double>& puPt, const Quark quark[2],
+                          const Producer& prod) {
   const size_t n = gens.size();
   const std::string& label = jetTags_[k].label();
   std::vector<std::unique_ptr<TObject>> keep;  // primitives must outlive Print()
@@ -388,10 +434,12 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
     keep.push_back(std::move(g));
     return eta;
   };
-  auto label_ = [&](double x, double y, const char* s, double size, int color) {
-    auto t = std::make_unique<TLatex>(x, y, s);
+  auto label_ = [&](double eta, double phi, const char* s, double size, int color) {  // next to the point (eta, phi)
+    const bool left = eta > etaMax_ - 1.2;  // near the right border: to the left of the point, right-aligned
+    auto t = std::make_unique<TLatex>(eta + (left ? -0.07 : 0.07), phi, s);
     t->SetTextSize(size);
     t->SetTextColor(color);
+    t->SetTextAlign(left ? 32 : 12);
     t->Draw();
     keep.push_back(std::move(t));
   };
@@ -438,31 +486,50 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
   };
   auto isBJet = [&](int j) { return quark[0].jet == j || quark[1].jet == j; };
 
-  // particles: not clustered first (grey), then the constituents in the jet colour
-  size_t nUnclustered = 0;
+  // the status 1 particles: signal / pileup, clustered / not
+  const bool withPileup = signalCollisionId_ >= 0;
+  size_t nStatus1 = 0, nPileup1 = 0, nUnclustered = 0, nUnclusteredPU = 0;
+  std::set<int> collisions;
   for (size_t i = 0; i < n; ++i) {
     if (gens[i].status() != 1 || gens[i].pt() <= 0.)
       continue;
-    if (jetOf[i] < 0) {
-      ++nUnclustered;
-      addPoint(kGray + 1, 24, gens[i].eta(), gens[i].phi(), markerSize(gens[i].pt()));
+    ++nStatus1;
+    nUnclustered += jetOf[i] < 0;
+    if (isPileup(gens[i])) {
+      ++nPileup1;
+      nUnclusteredPU += jetOf[i] < 0;
+      collisions.insert(gens[i].collisionId());
     }
   }
-  for (size_t i = 0; i < n; ++i)
-    if (gens[i].status() == 1 && jetOf[i] >= 0)
-      addPoint(jetColor(jetOf[i]), 20, gens[i].eta(), gens[i].phi(), markerSize(gens[i].pt()));
-  // jets: circle, axis and label (b / bbar jets on top)
+  // particles: the pileup underneath the signal, and within each the particles in no jet (grey,
+  // open markers) underneath the constituents (filled, jet colour); pileup = triangles, signal = circles
+  for (int pass = 0; pass < 4; ++pass) {
+    const bool pileup = pass % 2 == 0, clustered = pass >= 2;
+    const int style = clustered ? (pileup ? 22 : 20) : (pileup ? 26 : 24);
+    for (size_t i = 0; i < n; ++i) {
+      if (gens[i].status() != 1 || gens[i].pt() <= 0. || isPileup(gens[i]) != pileup || (jetOf[i] >= 0) != clustered)
+        continue;
+      const int color = clustered ? jetColor(jetOf[i]) : (pileup ? kGray : kGray + 1);
+      addPoint(color, style, gens[i].eta(), gens[i].phi(), markerSize(gens[i].pt()));
+    }
+  }
+  // jets: circle, axis and label (b / bbar jets on top); with pileup there are hundreds of jets, so
+  // only the ones above labelPtMin (and the b / bbar jets) get a circle, an axis marker and a label
   double R = prod.rParam > 0. ? prod.rParam : 0.4;
+  size_t nDrawn = 0;
   for (int pass = 0; pass < 2; ++pass)
     for (size_t j = 0; j < jets.size(); ++j) {
       if (isBJet(j) != (pass == 1))
         continue;
       int color = jetColor(j);
       bool big = isBJet(j);
+      if (withPileup && !big && jets[j].pt() < labelPtMin_)
+        continue;
+      ++nDrawn;
       circle(jets[j].eta(), jets[j].phi(), R, color, big ? 3 : (j < 8 ? 2 : 1), big ? 1 : (j < 8 ? 1 : 2));
       double eta = addPoint(color, 29, jets[j].eta(), jets[j].phi(), markerSize(jets[j].pt()) * 1.3);
       if (big || jets[j].pt() >= labelPtMin_)
-        label_(eta + 0.07, jets[j].phi() + 0.1, Form("[%zu] %.1f", j, jets[j].pt()), big ? 0.022 : 0.017, color);
+        label_(eta, jets[j].phi() + 0.1, Form("[%zu] %.1f", j, jets[j].pt()), big ? 0.022 : 0.017, color);
     }
   // quark directions
   for (int s = 0; s < 2; ++s) {
@@ -470,7 +537,7 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
       continue;
     const reco::GenParticle& g = gens[quark[s].last];
     double eta = addPoint(sysColor[s], 30, g.eta(), g.phi(), 2.4);
-    label_(eta + 0.07, g.phi() - 0.2, Form("%s quark %.1f", s ? "#bar{b}" : "b", g.pt()), 0.02, sysColor[s]);
+    label_(eta, g.phi() - 0.2, Form("%s quark %.1f", s ? "#bar{b}" : "b", g.pt()), 0.02, sysColor[s]);
   }
 
   // header
@@ -487,7 +554,7 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
   if (prod.known)
     title += Form(": %s R = %.1f, jet p_{T} > %.0f GeV, input %s", prod.algorithm == "AntiKt" ? "anti-k_{T}" : prod.algorithm.c_str(),
                   prod.rParam, prod.jetPtMin, prod.src.c_str());
-  text(0.06, 0.955, title.c_str(), 0.028);
+  text(0.06, 0.955, title.c_str(), title.size() > 95 ? 0.025 : 0.028);  // long input / process names: keep clear of the right panel
   // right panel: event, sample label (one line per '|'-separated part)
   text(0.80, 0.955, Form("run %u  lumi %u  event %llu", ev.id().run(), ev.luminosityBlock(), ev.id().event()), 0.02);
   if (!sampleLabel_.empty()) {
@@ -501,14 +568,18 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
       start = bar + 1;
     }
   }
-  size_t nStatus1 = 0;
-  for (size_t i = 0; i < n; ++i)
-    nStatus1 += gens[i].status() == 1 && gens[i].pt() > 0.;
-  std::string info = Form("%zu jets; %zu of %zu status 1 particles clustered; marker size ~ log p_{T}; label = [jet] p_{T} [GeV] (p_{T} > %.0f GeV)",
-                          jets.size(), nStatus1 - nUnclustered, nStatus1, labelPtMin_);
+  std::string info;
+  if (withPileup)
+    info = Form("%zu jets, %zu drawn (p_{T} > %.0f GeV); clustered: %zu of %zu signal, %zu of %zu pileup (%zu collisions) status 1 particles",
+                jets.size(), nDrawn, labelPtMin_, nStatus1 - nPileup1 - (nUnclustered - nUnclusteredPU), nStatus1 - nPileup1,
+                nPileup1 - nUnclusteredPU, nPileup1, collisions.size());
+  else
+    info = Form("%zu jets; %zu of %zu status 1 particles clustered; marker size ~ log p_{T}; label = [jet] p_{T} [GeV] (p_{T} > %.0f GeV)",
+                jets.size(), nStatus1 - nUnclustered, nStatus1, labelPtMin_);
   if (nClamped)
-    info += Form("; %d beyond |#eta| = %.0f on the border (x)", nClamped, etaMax_);
-  text(0.06, 0.922, info.c_str(), 0.018, kGray + 3);
+    info += withPileup ? Form("; %d beyond |#eta| = %.0f (x)", nClamped, etaMax_)
+                       : Form("; %d beyond |#eta| = %.0f on the border (x)", nClamped, etaMax_);
+  text(0.06, 0.922, info.c_str(), withPileup ? 0.0165 : 0.018, kGray + 3);
   for (int s = 0; s < 2; ++s) {
     std::string line = s ? "#bar{b}" : "b";
     if (!quark[s].found)
@@ -525,7 +596,7 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
                      quark[s].jet, j.pt(), j.eta(), j.phi(), (size_t)j.numberOfDaughters(), quark[s].dR, j.pt() / g.pt());
       }
     }
-    text(0.06, 0.891 - 0.028 * s, line.c_str(), 0.018, sysColor[s]);
+    text(0.06, 0.891 - 0.028 * s, line.c_str(), 0.017, sysColor[s]);
   }
   if (quark[0].jet >= 0 && quark[1].jet >= 0) {
     const reco::GenJet& jb = jets[quark[0].jet];
@@ -536,7 +607,9 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
                             net.mass());
     if (quark[0].jet == quark[1].jet)
       line += "  (same jet)";
-    text(0.06, 0.835, line.c_str(), 0.019, kMagenta + 2);
+    if (withPileup)
+      line += Form(",  pileup p_{T} in b / #bar{b} jet = %.1f / %.1f GeV", puPt[quark[0].jet], puPt[quark[1].jet]);
+    text(0.06, 0.835, line.c_str(), withPileup ? 0.0175 : 0.019, kMagenta + 2);
   }
 
   // legend, marker-size scale and the list of the leading jets
@@ -559,9 +632,17 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
   for (size_t j = 0; j < jets.size(); ++j)
     nOther += !isBJet(j);
   if (nOther)
-    legEntry(kOrange + 7, 29, Form("other jets (%zu), leading 8 in colour", nOther));
-  legEntry(kGray + 2, 20, "jet constituents (jet colour)");
-  legEntry(kGray + 1, 24, Form("status 1, not in a jet (%zu)", nUnclustered));
+    legEntry(kOrange + 7, 29, withPileup ? Form("other jets (%zu): p_{T} > %.0f GeV drawn", nOther, labelPtMin_)
+                                         : Form("other jets (%zu), leading 8 in colour", nOther));
+  if (withPileup) {
+    legEntry(kGray + 2, 20, "signal constituents (jet colour)");
+    legEntry(kGray + 2, 22, "pileup constituents (jet colour)");
+    legEntry(kGray + 1, 24, Form("signal, not in a jet (%zu)", nUnclustered - nUnclusteredPU));
+    legEntry(kGray, 26, Form("pileup, not in a jet (%zu)", nUnclusteredPU));
+  } else {
+    legEntry(kGray + 2, 20, "jet constituents (jet colour)");
+    legEntry(kGray + 1, 24, Form("status 1, not in a jet (%zu)", nUnclustered));
+  }
   if (quark[0].found || quark[1].found)
     legEntry(kBlack, 30, "b / #bar{b} quark, last copy");
   leg->Draw();
@@ -577,12 +658,15 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
     keep.push_back(std::move(m));
     text(0.835, 0.48 - 0.035 * s, Form("p_{T} = %.0f GeV", scalePt[s]), 0.02);
   }
-  text(0.80, 0.36, "leading jets: [i] p_{T}  #eta  #phi  n", 0.019);
+  text(0.80, 0.36, withPileup ? "leading jets: [i] p_{T}  #eta  #phi  n  pileup" : "leading jets: [i] p_{T}  #eta  #phi  n", 0.019);
   const size_t nList = std::min<size_t>(jets.size(), 11);
-  for (size_t j = 0; j < nList; ++j)
-    text(0.805, 0.335 - 0.026 * j, Form("[%zu] %.1f  %.2f  %.2f  %zu", j, jets[j].pt(), jets[j].eta(), jets[j].phi(),
-                                        (size_t)jets[j].numberOfDaughters()),
-         0.017, jetColor(j));
+  for (size_t j = 0; j < nList; ++j) {
+    std::string row = Form("[%zu] %.1f  %.2f  %.2f  %zu", j, jets[j].pt(), jets[j].eta(), jets[j].phi(),
+                           (size_t)jets[j].numberOfDaughters());
+    if (withPileup)
+      row += Form("  %.0f%%", 100. * puPt[j] / jets[j].pt());
+    text(0.805, 0.335 - 0.026 * j, row.c_str(), 0.017, jetColor(j));
+  }
   if (jets.size() > nList)
     text(0.805, 0.335 - 0.026 * nList, Form("... %zu more", jets.size() - nList), 0.017, kGray + 2);
 

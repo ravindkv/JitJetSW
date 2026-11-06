@@ -126,6 +126,30 @@ multi-page PDF with `pdfFile=`), and `genJetAnalyzer.root` with, per collection,
 Parameters: `genParticles`, `genJets` (VInputTag), `outputPrefix`, `etaMax`, `labelPtMin`,
 `savePDF`, `pdfFile`, `sampleLabel`, `printConstituents`, `openPdf`, `closePdf`.
 
+## GenJet stage with pileup: the signal jets with the in-time minimum-bias collisions on top
+
+`runGenJetPileup_mc2024_BBbar.sh` adds a ninth page to the GenJet-stage PDF: the stable particles of the
+in-time pileup collisions are overlaid on the generator final state of the signal event and the anti-kT
+clustering is run again on the sum (`python/genJetPileup_cff.py`, run by `test/genJetPileup_cfg.py`).
+The overlay is the MixingModule of the DIGI step restricted to the HepMC record (`mixObjects` = `mixHepMC`
+only, no digitizers, one bunch crossing, N library events read in sequence after `skipEvents`),
+`GenParticleProducer` with `useCrossingFrame = True` on its `CrossingFrame<HepMCProduct>` (one merged
+`genParticlesPU` collection, `collisionId` 0 = signal, 1..N = the pileup collisions) and the GenJet
+producers on that collection (`ak4GenJetsPU`, `ak8GenJetsPU` and the NoNu variants). GenJetAnalyzer with
+`signalCollisionId = 0` draws the pileup particles as triangles, the signal as circles, labels only the jets
+above `labelPtMin` and lists the pileup pT share of every jet. By default the script takes the collisions
+that the DIGI mixing of `runPileup_mc2024_BBbar.sh` put in the in-time bunch crossing of the same signal
+event (from "events per bx" in `PU_2024/mixed/simHits.log`: library events 67-121 for event 1), so that
+the page is the DIGI mixing stopped before the detector.
+
+    cd test
+    ./runGenJetPileup_mc2024_BBbar.sh                                   # PU_2024/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_PU_out.pdf (9 pages) + page-9 PNG
+    NPU=55 SKIP=66 PUTYPE=fixed JETS=ak4GenJetsPU,ak8GenJetsPU ./runGenJetPileup_mc2024_BBbar.sh
+    cmsRun genJetPileup_cfg.py inputFiles=file:GEN/step1_GEN_ME_PS_MPI_Had_Decay_out.root pileupFiles=file:PU_2024/step1_GEN_MinBias_out.root \
+           eventsToProcess=1:1:1 nPileup=55 skipPileup=66 pdfFile=x.pdf edmOutput=x_edm.root
+
+The chapter text is `doc/chapter/chapter_08_PU.md`, section 8.
+
 ## SIM stages and SimAnalyzer: the Geant4 simulation switched on stage by stage
 
 `runCMSDrivers_mc2024_BBbar_SIM.sh` is the SIM-only companion of the GEN script: it runs step 2
@@ -280,3 +304,13 @@ mixing job and its DIGI output), and the pages in `signal/`, `pileup/` and `mixe
 and PNGs, `simHits.log` with the hit counts; for the mixed case the signal / pileup split per station), plus the
 chapter text `AtPileup.md` from `doc/sim/`. The HL-LHC production setting is PU = 200 in bx -3..3 (1400 minimum-bias
 events per signal event, premixed in production); the defaults here keep the pages readable and the library small.
+
+`runPileup_mc2024_BBbar.sh` is the same exercise on the 2024 (Run 3) detector: the signal is the full-physics stage
+of `runCMSDrivers_mc2024_BBbar_SIM.sh` (`SIM/step2_SIM_Transport_B_Decay_EM_Had_out.root`, 13.6 TeV, generated if
+missing), the library is `MinBias_14TeV_pythia8_TuneCP5_cfi` with `comEnergy` set to 13.6 TeV (`COMENERGY`) through the
+2024 GEN step (`auto:phase1_2024_realistic`, `Run3_2024`, `DB:Extended`, `--beamspot DBrealistic`) and SIM step, and the
+mixing is `AVE_60_BX_25ns,{'N': PU, 'B': (bxmin, bxmax)}` with the 2024 average `PU=60` in `BUNCHES=-1,1` from a
+`PUEVENTS=250` library (`PUSEED=20241`). The stations are TRK, ECAL (EB, EE, ES), HCAL (HB, HE, HO, HF), MUON and ALL
+(no HGCAL). Output in `PU_2024/` with the same layout; the chapters are `doc/pu/2024/PULib.tex` and `PUSIM.tex`
+(the Phase2 ones are in `doc/pu/Phase2/`). The Run 3 production mixes the flat 55-75 profile
+`Run3_Flat55To75_PoissonOOTPU` in bx -12..3.
