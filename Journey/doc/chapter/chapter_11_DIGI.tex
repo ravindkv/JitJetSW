@@ -1,0 +1,360 @@
+% chapter_11_DIGI.tex -- chapter 11 of the JitJet book: the digitisation, with and without pileup.
+% Every number comes from test/11_DIGI/out/ (ledger_11_DIGI.txt, digiAnalyzer_{signal,pileup,mixed}_11_DIGI.log,
+% thresholds_11_DIGI.txt, the PNG pages), from test/10_SIM/out/ (simHits_signal_10_SIM.log, step3_MIX_10_SIM.log) and
+% from the FWLite extras listed in doc/chapter/chapter_11_DIGI.md, section 4.
+
+\chapter{11 -- DIGI: the hits become electronics signals and the pileup is mixed in}
+\label{ch:11_DIGI}
+
+\section{What this chapter is about}
+
+Geant4 left the event as energy deposits: \code{PSimHit}s in the silicon sensors and muon chambers, \code{PCaloHit}s
+in the calorimeter cells, each with a time and, through the \code{SimTrack}, a particle. A detector records what its
+front-end electronics makes of them. The \code{DIGI} step (\code{cmsDriver.py -s DIGI:pdigi\_valid}) is the
+simulation of that electronics: a \emph{digitiser} per subdetector takes the hits of a channel, converts the energy
+into charge or light, shapes the pulse, samples it in time, adds the noise of the channel and applies the thresholds
+and the zero suppression of the real readout. What comes out is a \emph{digi}: a channel number and a few integers,
+what the detector would have sent to the data acquisition. It is also the step where the pileup enters: the
+\code{MixingModule} of chapter~\ref{ch:10_SIM} overlays the hits of the other collisions of the bunch crossing, and
+of the neighbouring bunch crossings, on those of the signal before the digitisers run. In the tracker and in the
+muon chambers a \code{DigiSimLink} still records, channel by channel, which simulated particle put charge there; in
+the calorimeters the signal and the pileup fall into the same data frame and nothing in it says who deposited what.
+
+The chapter digitises three samples with the same configuration (\path{test/11_DIGI/run_11_DIGI.sh}): (11a) the signal
+alone, no mixing; (11b) one library collision alone, library event 72, the first in-time collision of our bunch
+crossing; and (11a+11b) the production case, the signal with its 71, 68 and 54 collisions in bunch crossings $-1$, 0
+and $+1$. The sample (11b) exists only in this book: in the production the collisions are never digitised one by one.
+Run~3 and Phase-2 use \emph{premixing}: a first job mixes and digitises the whole pileup of a bunch crossing into a
+library of premixed events (\code{premix\_stage1}), a second job digitises the signal alone and adds one premixed
+event to it digi by digi (\code{PreMixingModule}, \path{Configuration/StandardSequences/python/DataMixerPreMix_cff.py}).
+The classical mixing of this chapter does the same in one job and keeps every pileup hit in memory, which is what
+lets the analyzer tell the origin of every digi.
+\section{From the previous chapter}
+
+Three files of chapter~\ref{ch:10_SIM} enter (Rule E). The signal, \path{test/10_SIM/out/step2_SIM_signal_10_SIM.root},
+is the full Geant4 event: 1926 \code{SimTrack}s from 571 primaries, $10\,272$ tracker \code{PSimHit}s (PXB 929, PXF 973,
+TIB 1182, TID 975, TOB 1022, TEC 5191, $2.33\GeV$ of energy loss) and $26\,793$ \code{PCaloHit}s in $14\,157$ cells
+(EB 5521 cells with $68.0\GeV$, EE 6214 with $293.7\GeV$, ES 1069, HB 173, HE 648, HO 1, HF 531 cells with 1849
+photoelectrons of the shower library), no muon-chamber hit. The library,
+\path{step2_SIM_pileup_10_SIM.root}, holds the 250 minimum-bias collisions through the same Geant4; library event 72
+has 164 primaries, 2097 tracker hits, 11 CSC hits, 1217 EB cells with $9.4\GeV$, 1948 EE cells with $43.5\GeV$, 223
+ES, 21 HB, 101 HE and 119 HF cells. The third file, \path{step3_MIX_10_SIM.root}, is the signal again with one new
+product: the \code{CrossingFramePlaybackInfoNew} that the chapter-10 mixing job wrote, the list of which library
+events it drew into which bunch crossing. That mixing put $448\,315$ tracker \code{PSimHit}s in front of the
+digitisers: $10\,272$ of the signal, $146\,028$ of the 68 in-time collisions, $139\,551$ of the 71 early ones and
+$152\,464$ of the 54 late ones.\footnote{Signal hits from \path{test/10_SIM/out/simHits_signal_10_SIM.log}, the
+bunch crossing from \path{step3_MIX_10_SIM.log}; library event 72, the zero suppression and the truth counts from
+FWLite (companion, section~4); every digi count from \path{test/11_DIGI/out/ledger_11_DIGI.txt}.}
+
+\begin{plainwords}[What a digi is]
+A pixel digi is a pixel address and an 8-bit ADC count; a strip digi the same for a strip, kept only if it passed the
+zero suppression of the front-end driver; an ECAL digi is a \emph{data frame}, the ten 40-MHz samples of the pulse of
+one crystal with the gain of each sample; an HCAL digi is the QIE frame, 10 (HB, HE) or 3 (HF) time slices of the
+charge; a DT digi is a wire and a drift time, a CSC digi a strip with 8 samples or a wire group with a time, an RPC
+or GEM digi a strip and a bunch crossing. The digitisers are configured in the python of the \code{DIGI} process
+(\code{process.mix.digitizers} for the tracker and the calorimeters, the modules \code{simMuon*Digis} for the
+chambers); \path{test/11_DIGI/out/thresholds_11_DIGI.txt} lists every threshold, noise and window the job used.
+\end{plainwords}
+
+Nothing of the SIM content changes: the \code{DIGI} process copies the generator record, the \code{SimTrack}s and
+the signal hits unchanged and adds its products under the process name \code{DIGI}: one digi collection per
+subdetector (\code{simSiPixelDigis}, \code{simSiStripDigis}, \code{simEcalDigis}, \code{simHcalDigis},
+\code{simMuon*Digis}, \ldots), the \code{DigiSimLink}s, the trigger primitives, the \code{TrackingParticle}s of
+\code{mix:MergedTrackTruth} (999 for the signal, $45\,282$ in the mixed event, of which $14\,729$ in-time and
+$29\,554$ out-of-time pileup) and the \code{PileupSummaryInfo} with the number of collisions per bunch crossing. The
+pileup \code{SimTrack}s and hits themselves are not written; the \code{CrossingFrame}s live only inside the job.
+
+\begin{plainwords}[Why the DIGI job replays the chapter-10 draw]
+The \code{MixingModule} draws the number of collisions per bunch crossing from a Poisson distribution of mean 60
+(seed 12345 of the module \code{mix}) and reads the library in sequence (\code{input.sequential = True}). Chapter~\ref{ch:10_SIM}
+drew 71, 68 and 54. The same module with the same seed in this chapter would \emph{not}: in
+\code{BMixingModule::produce} (\path{Mixing/Base/src/BMixingModule.cc}) the order is \code{initializeEvent},
+\code{addSignals}, then \code{doPileUp}, and \code{addSignals} runs the digitisers on the signal, which consume random
+numbers from the same engine (noise, photostatistics, threshold smearing) before \code{PileUp::CalculatePileup}
+(\path{Mixing/Base/src/PileUp.cc}, called from \path{SimGeneral/MixingModule/plugins/MixingModule.cc}) draws the
+number of collisions. In chapter~\ref{ch:10_SIM} no digitiser ran, so the draw came first; here a fresh draw gave
+65, 67 and 56 when it was tried. The script therefore sets \code{process.mix.playback = True}: the module reads the
+\code{CrossingFramePlaybackInfoNew} of \path{step3_MIX_10_SIM.root} and mixes exactly library events 1--71, 72--139
+and 140--193; the \code{PileupSummaryInfo} then reports 71, 68 and 54 as the ``true'' number of interactions, not 60.
+\end{plainwords}
+
+\section{The numbers of the event}
+
+\textbf{The cuts of the electronics.} Table~\ref{tab:11_cuts} is the part of \path{thresholds_11_DIGI.txt} that
+decides what becomes a digi. First, several thresholds are not numbers in the configuration but database payloads of the global tag \code{150X\_mcRun3\_2024\_realistic\_v2}: the strip
+zero-suppression thresholds (\code{SiStripThreshold}, multiplied by the per-strip noise), the ECAL selective-readout
+settings (\code{configFromCondDB = True}), the preshower threshold (\code{ESThresholds}) and the HCAL
+zero-suppression levels (\code{useConfigZSvalues = 0}: the \code{HBlevel = 8}, \code{HElevel = 9}, \code{HOlevel = 24}
+of the python are the fallback). Second, the time windows differ by an order of magnitude between subdetectors, and
+this is what decides how much of the out-of-time pileup survives: the pixels accept a hit only within $\pm12.5\ns$ of
+its nominal time of flight, the strips integrate everything within $50\ns$ through the deconvolution pulse shape of
+the APV, the calorimeters sample ten 25-ns slices, the CSC strips integrate from $-250$ to $+500\ns$
+(\code{signalStartTime}, \code{signalStopTime}).
+
+\begin{table}[htb]
+\centering\footnotesize\setlength{\tabcolsep}{4pt}
+\caption{The cuts of the digitisers of the mixed configuration (\code{test/11\_DIGI/out/thresholds\_11\_DIGI.txt}, the
+parameter sets of \code{process.mix.digitizers} and of the modules after the mixing). ``DB'' means the value is a
+payload of the global tag, not a number in the python.}
+\label{tab:11_cuts}
+\begin{tabular}{p{1.4cm}p{14.2cm}}
+\toprule
+digitiser & what decides whether a channel becomes a digi \\
+\midrule
+pixel & charge above \code{ThresholdInElectrons} $=1600$\,e (BPix layer 1: 2000\,e), smeared by 245\,e (BPix) / 210\,e
+(FPix); noise 175\,e per pixel plus 350\,e readout noise, noisy pixels added; 135\,e per ADC count, 8 bits; time window
+\code{TofLowerCut/TofUpperCut} $=-12.5/+12.5\ns$; dead modules and bad FED channels from DB; inefficiency on \\
+strip & APV in deconvolution mode, hits within \code{TOFCutForDeconvolution} $=50\ns$; per-strip pedestals and noise
+from DB, common-mode noise RMS 5.92 / 3.08 / 1.08 / 2.44 ADC (TIB / TID / TOB / TEC); 247\,e per ADC count; FED zero
+suppression \code{FedAlgorithm = 4} with the DB thresholds (a strip above the high threshold, or above the low one
+with neighbours above threshold) \\
+ECAL & 2250 (EB) / 1800 (EE) photoelectrons per GeV, 10 samples, peak in sample 6, correlated noise (the
+\code{CorrNoiseMatrix} vectors), constant term 0.3\,\%; selective readout (\code{simEcalDigis}) from DB, driven by the
+trigger primitives: full readout of the trigger towers / supercrystals flagged high interest, zero suppression
+elsewhere; ES: 3 samples, threshold on sample 2 from DB \\
+HCAL & HB / HE: 2000 photoelectrons per GeV, sampling factors 125 (HB) and 186--211 (HE), SiPM and time smearing, 10
+time slices with the sample of interest at 6, TDC threshold 18.7; HF: 6 photoelectrons per shower-library unit,
+sampling factor 0.37, 3 time slices; zero suppression (\code{simHcalDigis}) on one time slice (\code{use1ts}) with
+levels from DB (python fallback HB 8, HE 9, HO 24 ADC), none for HF \\
+muon & DT: drift time smeared by 2.4\,ns, dead time 150\,ns, links within 10\,ns; CSC: pedestal $600\pm1.5$ ADC, gain 2
+counts/fC (ME1/1: 4), 8 SCA samples, noise and correlated noise on; RPC: efficiency 0.95, gate 25\,ns, noise and
+background on; GEM: efficiency 0.98, intrinsic noise off, window bx $-5$ to $+3$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{(11a) The signal alone.} The $10\,272$ tracker hits become $36\,758$ pixel and strip digis, $24\,495$ of them
+linked to a signal particle and $12\,263$ without a link: electronics noise above threshold. The pixels are clean, 4982
+linked digis for 1902 hits, 2.6 pixels per crossing, and 7 noise digis in the whole pixel detector; the strips are
+not, 2.3 strips per hit ($19\,513$ linked digis for 8370 hits) and $12\,256$ noise strips above the zero suppression.
+In the ECAL the selective readout flagged 2 of the 2448 barrel trigger towers and 15 of the
+624 endcap supercrystals as high interest and read them in full; the rest passed through the zero suppression,
+leaving 399 EB and 372 EE data frames of the $61\,200$ and $14\,648$ crystals, and 981 of the $137\,216$ preshower
+strips. The 5521 EB cells with a hit became 399 digis: the zero-suppression threshold of a low-interest tower (a DB
+payload) is far above what most cells of a shower receive. In the HCAL the digitiser makes a frame for every one of
+the $15\,840$ HB and HE channels (\code{doEmpty = True}, noise added), the zero suppression keeps 3285 of them; the HF
+has no zero suppression and all 3456 channels are written (the analyzer counts the 2251 with a non-negative
+amplitude); HO: 2160 frames, none above the level 24. The muon chambers saw no particle in chapter~\ref{ch:10_SIM} and
+have 8 digis here: RPC strips fired by the background model, no link. In figure~\ref{fig:11_alone} (left) the $b$ jet
+at $(\eta,\phi)=(-1.6,-2.1)$ is a dense patch of black tracker digis under large green EB frames and the $\bar b$ jet
+at $\eta=-3.75$ sits in the HF ring beyond the tracker.
+
+\textbf{(11b) One collision alone.} Library event 72 is an ordinary inelastic collision: 2097 tracker hits, 5308
+linked digis, and $12\,376$ noise strips, as many as the signal sample, so that its $17\,684$ tracker digis are
+70\,\% noise. The ECAL keeps 285 EB and 55 EE frames (one supercrystal high interest), the ES 360; the HCAL zero
+suppression keeps 2972 HB/HE frames, nearly as many as for the signal (3285), because most of them are noise
+fluctuations of empty channels above a level of 8 or 9 ADC. Its 11 CSC hits (a forward particle reaching ME1) give
+18 linked strip digis among 176, the other 158 and the 3 wire-group digis being noise. The right panel of
+figure~\ref{fig:11_alone} is what a bunch crossing's worth of pileup looks like one collision at a time.
+
+\begin{figure}[htb]
+\centering
+\begin{subfigure}[t]{0.49\textwidth}
+\includegraphics[width=\textwidth]{11_DIGI/out/digiAnalyzer_signal_11_DIGI_etaphi_run1_event1.png}
+\caption{(11a) the signal alone: $43\,762$ digis, $24\,495$ tracker digis linked to the signal, $12\,263$ tracker noise.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\textwidth}
+\includegraphics[width=\textwidth]{11_DIGI/out/digiAnalyzer_pileup_11_DIGI_etaphi_run1_event72.png}
+\caption{(11b) library event 72 alone: $23\,363$ digis, 5326 linked to the collision, $12\,545$ noise.}
+\end{subfigure}
+\caption{The digis of the signal alone and of one pileup collision alone, $\eta$--$\phi$ from the signal vertex
+(\code{digiAnalyzer\_signal\_11\_DIGI\_etaphi\_run1\_event1.png}, \code{digiAnalyzer\_pileup\_11\_DIGI\_etaphi\_run1\_event72.png}).
+Black: tracker and muon digis linked to the sample's own particles, grey: no link (noise); green squares: ECAL frames
+sized by their amplitude above pedestal (light green: ES); red triangles: HCAL (dark red: HF); magenta circles: the
+signal \code{ak4GenJets} above $30\GeV$.}
+\label{fig:11_alone}
+\end{figure}
+
+\textbf{(11a+11b) The signal with its bunch crossing.} The $448\,315$ tracker hits of the \code{CrossingFrame}s become
+$520\,289$ digis, and the links sort them: $23\,971$ signal (4.6\,\%), $355\,086$ in-time pileup (68\,\%), $124\,603$
+early (24\,\%), 6966 late (1.3\,\%), 9663 without a link. The signal lost 524 of its $24\,495$ digis to the pileup:
+a channel shared by a signal and a pileup particle is attributed to the larger charge fraction. The 68 in-time
+collisions give 5222 digis each, so the signal weighs as much as 4.6 of them. The out-of-time pileup is where the
+time windows of table~\ref{tab:11_cuts} show: the pixels have \emph{no} late digi and only 1780 early ones of
+$80\,346$ (a hit $25\ns$ late is outside the $\pm12.5\ns$ window; an early one can get in only if its own time of
+flight was long, a looper or a slow secondary), while the strips take $122\,823$ early digis, 28\,\% of their total,
+because the deconvolution pulse of the APV sampled $25\ns$ early still has a large amplitude, and 6966 late ones,
+because sampled $25\ns$ late it has almost none. In the calorimeters there is no sorting: one frame per channel, and
+the summed amplitudes in ADC counts grow from the signal alone to the bunch crossing by a factor 5.5 in the EB (3426 to
+$18\,927$), 12.9 in the EE (2088 to $26\,952$), 12.8 in the ES, 2.1 in the HB, 9.7 in the HE ($14\,537$ to $141\,454$)
+and 3.8 in the HF. The selective readout now flags 23 barrel towers and 175 of the 624 endcap supercrystals as high
+interest, the EE digis go from 372 to 4144 and the HB/HE zero suppression keeps 5839 frames. The muon system, empty
+for the signal, has 2016 digis: 12 DT wires (9 from the early bunch crossing: a drift time is hundreds of ns), 1888
+CSC strips (305 in-time, 62 early, 36 late, 1485 noise), 91 CSC wire groups without a link, 10 RPC and 15 GEM strips.
+
+\section{Ledger and display}
+
+Table~\ref{tab:11_ledger} is the ledger of the stage: what went into each digitiser and what came out, for the three
+samples. The stage does not add or remove energy in the sense of the generator chapters; it changes the currency. The
+tracker hits come out as pixels and strips, 3.6 per hit for the signal, 1.2 per hit for the bunch crossing (most of
+the out-of-time hits fall outside the windows); the calorimeter cells go in with an energy in GeV (or shower-library
+units in the HF) and come out as data frames with an amplitude in ADC counts, and only a fraction of the cells with a
+hit becomes a digi (EB: 5521 cells, 399 digis for the signal). The noise is the one entry the stage adds: $12\,263$
+tracker strips and some 2000 HB/HE frames appear where nothing crossed the channel.
+
+\begin{table}[tb]
+\centering\scriptsize\setlength{\tabcolsep}{2.6pt}
+\caption{The ledger of the digitisation (\code{ledger\_11\_DIGI.txt}; the SimHits of the signal from
+\code{test/10\_SIM/out/simHits\_signal\_10\_SIM.log}, of the bunch crossing from \code{step3\_MIX\_10\_SIM.log}, of library
+event 72 and the HCAL cells from the FWLite extras of the companion). Top: tracker and muon chambers, hits in and digis
+out, the digis split by their \code{DigiSimLink}; for the bunch crossing the hits per subdetector are the sum of the
+\code{CrossingFrame} (signal and all pileup). Bottom: calorimeters, cells with a hit and their energy in, data frames
+and their summed amplitude above pedestal (ADC counts) out.}
+\label{tab:11_ledger}
+\begin{tabular}{lrrrrcrrrrcrrrrrrr}
+\toprule
+ & \multicolumn{4}{c}{(11a) signal alone} & & \multicolumn{4}{c}{(11b) library event 72 alone} & & \multicolumn{7}{c}{(11a+11b) signal + 71 / 68 / 54 collisions} \\
+\cmidrule(lr){2-5}\cmidrule(lr){7-10}\cmidrule(lr){12-18}
+ & hits & digis & linked & noise & & hits & digis & linked & noise & & hits & digis & signal & in-time & early & late & noise \\
+\midrule
+PXB & 929 & 3134 & 3128 & 6 & & 277 & 796 & 796 & 0 & & 50\,953 & 53\,601 & 2883 & 49\,385 & 1333 & 0 & 0 \\
+PXF & 973 & 1855 & 1854 & 1 & & 176 & 325 & 325 & 0 & & 36\,700 & 26\,745 & 1844 & 24\,454 & 447 & 0 & 0 \\
+TIB & 1182 & 5573 & 3171 & 2402 & & 187 & 2914 & 577 & 2337 & & 71\,941 & 93\,129 & 3107 & 61\,435 & 25\,539 & 1350 & 1698 \\
+TID & 975 & 2495 & 1793 & 702 & & 172 & 1116 & 339 & 777 & & 37\,897 & 34\,819 & 1733 & 24\,082 & 7824 & 647 & 533 \\
+TOB & 1022 & 6695 & 2813 & 3882 & & 209 & 4599 & 563 & 4036 & & 69\,140 & 106\,962 & 2751 & 62\,340 & 37\,149 & 1248 & 3474 \\
+TEC & 5191 & 17\,006 & 11\,736 & 5270 & & 1076 & 7934 & 2708 & 5226 & & 181\,684 & 205\,033 & 11\,653 & 133\,390 & 52\,311 & 3721 & 3958 \\
+\midrule
+tracker & 10\,272 & 36\,758 & 24\,495 & 12\,263 & & 2097 & 17\,684 & 5308 & 12\,376 & & 448\,315 & 520\,289 & 23\,971 & 355\,086 & 124\,603 & 6966 & 9663 \\
+\midrule
+DT & 0 & 0 & 0 & 0 & & 0 & 0 & 0 & 0 & & -- & 12 & 0 & 1 & 9 & 2 & 0 \\
+CSC strip & 0 & 0 & 0 & 0 & & 11 & 176 & 18 & 158 & & -- & 1888 & 0 & 305 & 62 & 36 & 1485 \\
+CSC wire & 0 & 0 & 0 & 0 & & 11 & 3 & 0 & 3 & & -- & 91 & 0 & 0 & 0 & 0 & 91 \\
+RPC & 0 & 8 & 0 & 8 & & 0 & 8 & 0 & 8 & & -- & 10 & 0 & 3 & 0 & 0 & 7 \\
+GEM & 0 & 0 & 0 & 0 & & 0 & 0 & 0 & 0 & & -- & 15 & 0 & 14 & 1 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\begin{tabular}{lrrrrcrrrrcrrr}
+\toprule
+ & \multicolumn{4}{c}{(11a) signal alone} & & \multicolumn{4}{c}{(11b) library event 72 alone} & & \multicolumn{3}{c}{(11a+11b)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){7-10}\cmidrule(lr){12-14}
+ & cells & $E$ in & digis & ADC out & & cells & $E$ in & digis & ADC out & & digis & ADC out & ratio to (11a) \\
+\midrule
+EB & 5521 & 68.0\,GeV & 399 & 3426 & & 1217 & 9.4\,GeV & 285 & 2423 & & 2050 & 18\,927 & 5.5 \\
+EE & 6214 & 293.7\,GeV & 372 & 2088 & & 1948 & 43.5\,GeV & 55 & 283 & & 4144 & 26\,952 & 12.9 \\
+ES & 1069 & 0.25\,GeV & 981 & 17\,885 & & 223 & 0.05\,GeV & 360 & 5053 & & 15\,907 & 228\,109 & 12.8 \\
+HB & 173 & 0.22\,GeV & 1538 & 13\,074 & & 21 & 0.02\,GeV & 1530 & 12\,692 & & 2115 & 27\,573 & 2.1 \\
+HE & 648 & 1.66\,GeV & 1455 & 14\,537 & & 101 & 0.22\,GeV & 1147 & 5739 & & 3478 & 141\,454 & 9.7 \\
+HO & 1 & $4\times10^{-6}$\,GeV & 0 & 0 & & 0 & 0 & 0 & 0 & & 1 & 63 & -- \\
+HF & 531 & 1849 units & 2251 & 8120 & & 119 & 173 units & 2115 & 3940 & & 1889 & 31\,194 & 3.8 \\
+\midrule
+all digis & & & 43\,762 & & & & & 23\,363 & & & 551\,889 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:11_mixed} is the $\eta$--$\phi$ display of the event at the end of the journey. The tracker region,
+$\abseta<2.5$, is solid with the $355\,086$ blue in-time and $124\,603$ orange early pileup digis; the $23\,971$ black
+signal digis are drawn on top and are visible as a darker patch only inside the $b$-jet circle at $(-1.6,-2.1)$. The
+green ECAL frames show the same thing in energy: the $b$ jet is still the largest cluster of the barrel, but the
+endcaps, $1.5<\abseta<3$, are now a wall of green, 4144 EE frames against 372 for the signal, and the ES ($15\,907$
+strips) fills the same band. The HF ring, where the $\bar b$ jet of $114\GeV$ fell in chapter~\ref{ch:10_SIM}, has
+the same number of frames as before (every channel is read) with four times the amplitude. Compared with page 6 of
+chapter~\ref{ch:09_G4}, where the event was 571 coloured dots and two circles, the two circles are the only thing
+that is still recognisable.
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width=0.8\textwidth]{11_DIGI/out/digiAnalyzer_mixed_11_DIGI_etaphi_run1_event1.png}
+\caption{The signal with its bunch crossing digitised (\code{digiAnalyzer\_mixed\_11\_DIGI\_etaphi\_run1\_event1.png}):
+$551\,889$ digis, the tracker and muon digis coloured by their link (black: signal, blue: in-time pileup, orange:
+bunch crossing $-1$, red: $+1$, grey: no link), the ECAL (green) and HCAL (red) frames sized by amplitude, the two
+signal jets as magenta circles. The tracker and muon digis are thinned for the drawing (at most 8000 per
+subdetector); the counts in the right panel are exact. The $r$--$z$ page of the same PDF
+(\code{\_rz\_run1\_event1.png}) shows the 2016 muon digis at their chambers.}
+\label{fig:11_mixed}
+\end{figure}
+
+What is left of the signal: in the tracker 4.6\,\% of the digis, and the \code{DigiSimLink}s know which; in the
+calorimeters nothing is labelled, the EE frame of a crystal in the $\bar b$ direction holds the sum of the signal
+pulse and of the pulses of 193 collisions, sampled ten times. From here on the separation is the job of the
+reconstruction, with three handles: the position (a jet is narrow, the pileup is flat in $\eta$--$\phi$), the
+vertex (the tracker links the charged part of a jet to one $z$) and the time (the out-of-time pileup peaks in a
+different sample). The $\bar b$ jet, at $\eta=-3.75$, beyond the tracker, has only the first of the three.
+
+\section{Open problems for Phase-2}
+
+The Phase-2 era of this release is \code{Phase2C17I13M9}, defined in
+\path{Configuration/Eras/python/Era_Phase2C17I13M9_cff.py} as the \code{Phase2} chain (\code{phase2\_common},
+\code{phase2\_tracker}, \code{phase2\_hgcal}, \code{phase2\_timing\_layer}, \code{phase2\_muon}) plus \code{phase2\_GE0}
+and the HGCal V10--V16 modifiers. It rebuilds \code{process.mix.digitizers} in
+\path{SimGeneral/MixingModule/python/digitizers_cfi.py}: the strip digitiser is removed, the pixel one replaced by
+the \code{Phase2TrackerDigitizer}, the HGCal and MTD digitisers added, the ECAL endcap and preshower switched off.
+
+\textbf{The Phase-2 tracker digitiser carries 2012 numbers.} In \path{SimTracker/SiPhase2Digitizer/python/phase2TrackerDigitizer_cfi.py}
+the inner pixels have a threshold of 1000\,e without smearing (\code{AddThresholdSmearing = False}), no noise
+(\code{NoiseInElectrons = 0}, \code{AddNoise = False}, \code{AddNoisyPixels = False}), no inefficiency, 1500\,e per
+ADC count on 4 bits (\code{AdcFullScale = 15}, dual-slope readout mode 3) and a time window of $-5$ to $+20\ns$;
+against the 1600\,e, 245\,e smearing, 175\,e noise, 8 bits and $\pm12.5\ns$ of table~\ref{tab:11_cuts}, the HL-LHC
+pixel is simulated without noise, noisy pixels or inefficiency, and \code{UseReweighting = False} carries the comment
+``will be True for realistic simulations''. The outer-tracker modules have thresholds of 6300\,e (PS pixels, ``0.4
+MIP''), 4800\,e (PS strips) and 6000\,e (2S) with noise 1010 and 1263\,e set so that ``4.75 sigma $\Rightarrow$
+occupancy = 1e-6'', a square-window hit detection (\code{HitDetectionMode = 0}), \code{CBCDeadTime = 0},
+\code{KillModules = False} and a charge-sharing parameter \code{SigmaCoeff} ``to be confirmed with simulations in
+CMSSW\_6.X''. The bias-rail inefficiency, the dead strips and the pixel time-walk exist only as customisations
+(\path{customizeForOTInefficiency.py}, \path{customizeForPhase2TrackerSignalShape.py}). In the 2024
+digitiser the radiation damage of the pixels enters through the DB templates (\code{UseReweighting = True} under
+\code{phase1Pixel} in \path{SimGeneral/MixingModule/python/SiPixelSimParameters_cfi.py}, where \code{run3\_common}
+sets the Run-3 thresholds); nothing equivalent exists for Phase-2.
+
+\textbf{The ECAL barrel of Phase-2 is digitised with the Run-3 electronics.} \path{SimGeneral/MixingModule/python/ecalDigitizer_cfi.py}
+sets \code{doEE = False} (\code{phase2\_hgcal}) and \code{doES = False} (\code{phase2\_common}) and leaves the barrel to
+the same \code{EcalDigiProducer}: 10 samples at 40\,MHz, peak in sample 6, the noise correlation matrices of
+\path{SimCalorimetry/EcalSimProducers/python/ecalDigiParameters_cff.py} and the 2250 photoelectrons per GeV of
+\path{ecalSimParameterMap_cff.py}, none with a Phase-2 modifier. The new front-end (16 samples at 160\,MHz, two
+gains) is \code{EcalDigiProducer\_Ph2} in \path{ecalDigitizer_Ph2_cfi.py}, switched on only by
+\code{phase2\_ecal\_devel}, which is not in \code{Phase2C17I13M9}; its noise matrices are declared in
+\path{ecalDigiParameters_Ph2_cff.py} as ``Phase2 noise correlation matrices with fake numbers to simply test the code
+flow''. The ageing of \path{SLHCUpgradeSimulations/Configuration/python/aging.py} (\code{ageEcal}) changes conditions
+and particle-flow thresholds (0.103 to $0.707\GeV$ for 300 to 4500\,fb$^{-1}$), not a digitiser parameter.
+
+\textbf{HCAL: the HE is killed, the HB keeps its Run-3 settings, the ageing is a customisation.}
+\path{SimCalorimetry/HcalSimProducers/python/hcalUnsuppressedDigis_cfi.py} sets \code{killHE = True} and
+\code{doZDCDigi = False} under \code{phase2\_hgcal} (\path{hcalSimParameters_cfi.py} still gives the killed HE new
+sampling factors under \code{phase2\_hcal}). The HB of Phase-2 is the HB of 2024: 10 time slices, sample of interest
+6, SiPM smearing and TDC threshold 18.7 from \code{run3\_HB} and \code{run3\_common}, zero-suppression levels from the
+DB. The darkening is off by default (\code{HBDarkening = False}, \code{DelivLuminosity = 0}, SiPM
+\code{doRadiationDamage} off) and turned on by \code{customise\_aging\_3000} of \path{aging.py}, which only the
+\code{Aging1000} / \code{Aging3000} relval workflows add; that function raises the particle-flow seeds to
+$1.25$--$2.5\GeV$ and carries the comment ``todo: determine ZS threshold adjustments'': the zero suppression of the
+aged HB is not adjusted. The HF keeps \code{samplingFactor = 0.37}, the Run-3 shower library and
+\code{HFDarkening = False}.
+
+\textbf{HGCal: begin-of-life noise by default, ageing by hand.} In
+\path{SimCalorimetry/HGCalSimProducers/python/hgcalDigitizer_cfi.py} the silicon has a threshold
+\code{adcThreshold\_fC = 0.672} (``$\sim$MIP/2'', scaled per thickness), \code{tdcOnset\_fC = 60},
+\code{adcSaturation\_fC = 100} at 10 bits, a time LSB of 24.4\,ps (\path{hgcROCParameters_cfi.py}), noise of
+2000 / 2400 / 2000 electrons for the 120 / 200 / 300\,$\mu$m sensors (\code{nonAgedNoises\_v9} under
+\code{phase2\_hgcalV10}) and \code{scaleByDose = False}: no fluence, no leakage current, charge collection
+efficiency 1. The end-of-life setting (\code{HGCal\_setEndOfLifeNoise}, dose map
+\path{doseParams_3000fb_fluka-3.7.20.txt}, sensors \code{TDR\_600V}) is applied by \code{customise\_aging\_3000}
+only. The scintillator part has \code{nPEperMIP = 21}, \code{adcThreshold\_fC = 0.5} and a noise
+\code{noise\_MIP = 1/100} marked ``this is to be deprecated''.
+
+\textbf{MTD.} In \path{SimFastTiming/FastTimingCommon/python/mtdDigitizer_cfi.py} the BTL has an energy threshold
+of 4 photoelectrons, a dark count rate of 10\,GHz that does not depend on the fluence and a time resolution
+normalised to a test beam (\code{TestBeamMIPTimeRes = 4.293}); the ETL has \code{IntegratedLuminosity = 1000}, a
+fluence parametrisation in $r$ and a gain rule \code{min(15, 30 - x)}, but \code{applyDegradation = False}, and
+its \code{meVPerMIP = 0.085} is annotated ``from HGCAL'' and corrected to 0.015 by \code{phase2\_etlV4}.
+
+\textbf{Muon chambers.} The DT (\path{SimMuon/DTDigitizer/python/muonDTDigis_cfi.py}: smearing 2.4\,ns, dead time
+150\,ns ``from M. Pegoraro'', \code{phase2Digis = False}) and the CSC (\path{SimMuon/CSCDigitizer/python/muonCSCDigis_cfi.py}:
+bunch timing offsets from the ``latest tuning by Vadim Khotilovich 16-Nov-2012 based on SingleMuPt10 relval sample'',
+neutron background off) have no Phase-2 modifier at all. The RPC digitiser is replaced under \code{phase2\_muon} by
+\code{RPCandIRPCDigiProducer} with \code{doBkgNoise = False}, where the Run-3 one has \code{True}; the GEM background
+scales with \code{instLumi} (2.0 under \code{run3\_common}, 5 under \code{phase2\_common}) but
+\code{simulateBkgNoise = False} by default; the ME0 digitiser is removed from the task by \code{phase2\_GE0} ``while
+GE0 is in development'' (\path{SimMuon/Configuration/python/SimMuon_cff.py}). The chamber ageing exists as the
+\code{*ChamberMasker\_cff.py} customisations and is not called by \code{aging.py}.
+
+\textbf{The mixing at PU 200.} The Phase-2 relval pileup is \code{AVE\_200\_BX\_25ns}
+(\path{Configuration/PyReleaseValidation/python/relval_steps.py}): \code{mix\_POISSON\_average\_cfi} with
+\code{N = 200} and \code{B = (-3, 3)} (\path{Configuration/StandardSequences/python/Mixing.py}), seven bunch crossings
+where the Run-3 production profile (\path{mix_2024_25ns_RunIII2024Summer24_PoissonOOTPU_cfi.py}) uses $-12$ to $+3$
+(the variants \code{\_m12p3} and \code{\_m6p6} exist in the same file). With 200 collisions per crossing the
+\code{CrossingFrame} of this chapter, $448\,315$ tracker hits for 193 collisions, becomes some 3 million, and the
+premixing of the production (\code{premix\_stage1}: no noise, no noisy pixels, \code{UseFullReadout = True} for the
+ECAL, \code{markAndPass} for the HCAL) is the only way it is done. Whether $-3$ to $+3$ is enough for the HB frames
+(10 slices) and for the CSC strip integration ($-250$ to $+500\ns$, i.e.\ 10 crossings before, covered by $-12$ in
+Run~3) could not be established: no file of the release states why Phase-2 uses the shorter window.

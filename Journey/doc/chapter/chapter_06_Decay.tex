@@ -1,0 +1,312 @@
+% chapter_06_Decay.tex -- Chapter 06, Decay: the hadron decays, the full generator event.
+% Every number comes from test/06_Decay/out/ (ledger_06_Decay.txt, genPartAnalyzer_06_Decay.log,
+% step1_GEN_06_Decay.log) and from FWLite reads of step1_GEN_06_Decay.root listed in chapter_06_Decay.md.
+\chapter{06 -- Decay: the primary hadrons decay and the generator event is complete}
+\label{ch:06_Decay}
+
+\section{What this chapter is about}
+Chapter~\ref{ch:05_Had} left the event as 320 primary hadrons: the mesons and baryons that the strings of
+the hadronisation produced, among them the $B^-$ that carries the $b$ quark and the $B^{*+}$ that carries the
+$\bar{b}$. Most of these hadrons do not live long enough to reach the detector. This chapter switches on the
+last step of Pythia8, \code{HadronLevel:Decay = on}, and lets them decay: the $\pi^0$ into two photons, the
+$\rho$ into pions, the $D$ and $B$ mesons through their weak decay chains, down to the particles that Pythia8
+calls stable. The file written here, \code{test/06\_Decay/out/step1\_GEN\_06\_Decay.root}, is the complete
+generator event: its 634 stable particles are what the jet clustering of chapter~\ref{ch:07_GenJet} reads, what
+the pileup of chapter~\ref{ch:08_PU} is added to, and what chapter~\ref{ch:09_G4} hands to Geant4. The book
+follows this file from here on; every later chapter starts from it.
+
+The chapter answers three questions. Which hadrons decay in Pythia8 and which are left, still undecayed, to
+Geant4? What does the decay of the two $b$ hadrons of the event look like, and where does the energy go,
+in particular the neutrino that the detector will never see? And what is the final state made of, by kind and
+by region, once everything that can decay has decayed? The ``Open problems'' section then looks at what the
+release uses for the decay tables and the lifetime boundary, and at the age of the common Pythia8 settings.
+
+\begin{plainwords}[Stable is a decision, not a fact]
+A particle that lives $10^{-8}$~s before decaying travels centimetres in the detector; a particle that lives
+$10^{-16}$~s decays before it has moved a micron. The generator and the detector simulation share the work: Pythia8
+decays the short-lived ones, Geant4 decays the long-lived ones on their way through the material, because
+for those it matters where they decay. The boundary is a number in the configuration, a proper lifetime
+$c\tau_0$ of $10\mm$. ``Status~1'' (stable) in the generator record means ``left for Geant4'', not
+``lives forever''.
+\end{plainwords}
+
+\section{From the previous chapter}
+The parton level and the hadronisation are identical to chapter~\ref{ch:05_Had}: same fragment, same seeds,
+and Pythia8 does the same 32 MPI, 28 ISR and 64 FSR emissions and the same string fragmentation
+before the new switch acts.\footnote{\path{test/06_Decay/out/step1_GEN_06_Decay.log}, the Info listing; the
+record by status group in \path{ledger_06_Decay.txt} (4, 124, 190, 192, 233, 165 entries for the hard process,
+MPI, ISR, FSR, beam remnants and strings) is the same as in \path{test/05_Had/out/ledger_05_Had.txt}.} The
+analyzer log confirms it stage by stage: the $B^-$ at $\pt = 94.28\GeV$, $\eta = -1.57$ and the $B^{*+}$ at
+$\pt = 114.17\GeV$, $\eta = -3.75$ are the same primary hadrons, at the same place, as in
+chapter~\ref{ch:05_Had}, and the 320 particles of stage~4 of this chapter are the 320 status-1 particles of the
+previous one.\footnote{\path{test/06_Decay/out/genPartAnalyzer_06_Decay.log}, the lines \code{stage 4} and
+\code{stage 5}.}
+
+What changes is the end of the record. In chapter~\ref{ch:05_Had} all 320 primary hadrons had status~1. Here
+188 of them decay and receive status~2 (``decayed''), their decay products are appended to the record, and
+those products that are themselves unstable decay in turn (114 further decays), until only status-1 particles
+are left. The record grows from 1230 to 1846 entries: 616 new particles, of which 502 are stable and 114 decayed
+again, so the event ends with 634 stable particles and 302 decayed ones, and 132 of the primary hadrons survive
+untouched because their lifetime is above the boundary (table~\ref{tab:06_ledger}, and the legend of
+figure~\ref{fig:06_display}: 9 + 16 + 132 + 477 = 634). The two $b$ hadrons are followed through their decays:
+the 9 stable products of the $B^-$ and the 16 of the $B^{*+}$ still carry exactly the \pt{} of their parents,
+94.28 and $114.17\GeV$, and the net $\pt$ of $b + \bar{b}$ stays $20.30\GeV$.
+
+\section{The numbers of the event}
+\paragraph{Who decays in Pythia8 and who is left to Geant4.}
+Two lines of the CMS common settings decide it:\footnote{\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py}
+of the release, copied into \path{test/06_Decay/step1_GEN_06_Decay_cfg.py} as the block \code{pythia8CommonSettings}.}
+\code{ParticleDecays:limitTau0 = on} and \code{ParticleDecays:tau0Max = 10}: a particle species is decayed by
+Pythia8 only if its proper lifetime $c\tau_0$, as listed in Pythia8's particle data, is below $10\mm$. The
+particle table of Pythia 8.311\footnote{\path{share/Pythia8/xmldoc/ParticleData.xml} of the Pythia8 of the release,
+\code{tau0} in mm; the GEN log prints ``no particle data has been changed from its default value''.} then sorts the
+hadrons of the event into the two groups of table~\ref{tab:06_who}. The $\pi^0$ ($c\tau_0 = 2.6 \times 10^{-5}\mm$),
+the $\eta$, the strong resonances ($\rho$, $\omega$, $K^*$, $\Delta$, which have a width and no lifetime at all) and
+the weakly decaying charm and bottom hadrons ($D^0$: $0.123\mm$, $B^+$: $0.491\mm$) decay here. The $K^0_S$
+($26.8\mm$), the $\Lambda$ ($78.9\mm$), the $\Sigma^\pm$, $\Xi$, $\Omega$ (24 to 87~mm), the charged pions
+and kaons (7.8 and 3.7~m), the $K^0_L$ (15.3~m), the neutron and the muon are left with status~1: Geant4 will
+decay them, if they decay at all before being absorbed.
+
+\begin{table}[htbp]
+\centering\small
+\caption{The hadron decays of the event: what Pythia8 decayed (status 2, 302 decays) and what it left stable
+(status 1, 634 particles), by species, with the proper lifetime $c\tau_0$ of Pythia8's particle data that decides
+the group. From an FWLite read of \code{test/06\_Decay/out/step1\_GEN\_06\_Decay.root} (listed in the companion) and
+\code{ParticleData.xml} of Pythia~8.311.}
+\label{tab:06_who}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+ & species & $n$ & $c\tau_0$ (Pythia8) \\
+\midrule
+\multirow{8}{*}{\shortstack[l]{decayed by Pythia8\\(status 2)}}
+ & $\pi^0$ & 131 & $2.6\times10^{-5}\mm$ \\
+ & $\rho^0$, $\rho^\pm$ & 60 & resonance, $\Gamma = 149\MeV$ \\
+ & $K^0$, $\bar{K}^0$ (to $K^0_S$ / $K^0_L$) & 33 & $10^{-6}\mm$ (flavour eigenstate) \\
+ & $K^{*}$, $\omega$, $\eta$, $\eta'$, $\phi$ & 58 & resonances; $\eta$: $1.5\times10^{-7}\mm$ \\
+ & $\Delta$, $\Sigma^*$, $\Sigma^0$ & 10 & resonances; $\Sigma^0$: $2.2\times10^{-8}\mm$ \\
+ & $D^0$, $\bar{D}^0$, $D^{*}$, $D^*_0$ & 7 & $D^0$: $0.123\mm$ \\
+ & $B^-$, $B^+$, $B^{*+}$ & 3 & $B^\pm$: $0.491\mm$ \\
+\midrule
+\multirow{9}{*}{\shortstack[l]{left stable for Geant4\\(status 1)}}
+ & $\gamma$ & 273 & stable \\
+ & $\pi^+$, $\pi^-$ & 261 & $7805\mm$ \\
+ & $K^+$, $K^-$ & 29 & $3713\mm$ \\
+ & $K^0_L$ & 22 & $15\,330\mm$ \\
+ & $K^0_S$ & 13 & $26.8\mm$ \\
+ & $n$, $\bar{n}$; $p$, $\bar{p}$ & 13; 11 & stable in practice \\
+ & $\Lambda$, $\bar{\Lambda}$; $\bar{\Sigma}^-$ & 8; 2 & $78.9\mm$; $24.0\mm$ \\
+ & $e^-$; $\bar{\nu}_e$ & 1; 1 & stable; invisible \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The status codes.}
+In the \code{genParticles} collection every entry carries the Pythia8 status: the codes 21 to 79 of the earlier
+chapters tell in which step a parton was produced, and the two codes of this chapter are 2 (``decayed'': the
+particle existed, its daughters follow) and 1 (``stable'': no daughters, the end of the generator's work). The
+decay tree is stored as mother and daughter links, so the full history of every stable particle, from the
+hard process through strings and decays, can be walked back in the file. The analyzer of the book draws stage~5 as
+the set of status-1 particles, coloured by origin, and the $b$ and $\bar{b}$ systems as the stable descendants of
+the two primary $b$ hadrons.
+
+\paragraph{The decay of the $b$ hadrons.}
+The $B^-$ (index 829 in \code{genParticles}) decays semileptonically: $B^- \to e^-\,\bar{\nu}_e\,D^{*0}_0(2300)$,
+followed by $D^{*0}_0 \to D^0\pi^0$, $D^0 \to K^{*-}\rho^+$, $K^{*-} \to \bar{K}^0\pi^-$ with $\bar{K}^0 \to K^0_S$,
+$\rho^+ \to \pi^+\pi^0$ and three $\pi^0 \to \gamma\gamma$. Its 9 stable products are the antineutrino
+($E = 95.5\GeV$, $\pt = 37.5\GeV$, $\eta = -1.59$), the electron ($10.9\GeV$), a $K^0_S$ ($20.6\GeV$), a $\pi^-$
+($26.6\GeV$), a $\pi^+$ ($32.6\GeV$) and four photons ($44.3$, $4.1$, $0.8$ and $0.4\GeV$), and they sum to the
+$235.9\GeV$ of the $B^-$. The neutrino alone takes 40\% of the $B^-$ energy and 40\% of its \pt. It is the
+only neutrino of the event, and it is exactly the generator missing transverse momentum stored in the file:
+\code{genMetTrue} has $\pt = 37.46\GeV$ at $\phi = -2.10$, the neutrino's direction. This is the energy that
+chapter~\ref{ch:09_G4} loses at the hand-over: Geant4 is not given neutrinos, and the $b$ jet of
+chapter~\ref{ch:07_GenJet} will be measured without it.
+
+The $B^{*+}$ (index 968) first radiates a $33.2\GeV$ photon, $B^{*+} \to B^+\gamma$ (a strong decay, at the
+production vertex), and the $B^+$ decays hadronically into five bodies, $B^+ \to \bar{D}^{*0}\,\pi^+\,\pi^0\,K^0\,\bar{K}^{*0}$,
+with $\bar{D}^{*0} \to \bar{D}^0\gamma$ and $\bar{D}^0 \to \bar{K}^0\pi^-\pi^+\pi^0\pi^0$. Its 16 stable products
+are 10 photons, two $K^0_S$, one $K^0_L$, two $\pi^+$ and one $\pi^-$, with the full $2421.4\GeV$ of the
+$B^{*+}$ and no neutrino: everything of the $\bar{b}$ system is in principle visible, but at $\eta = -3.75$ it is
+all in the forward calorimeter.
+
+\paragraph{Where the decays happen.}
+The $10\mm$ boundary is on the lifetime of the species, not on the distance a given particle travels. With
+$\gamma\beta = p/m = 44.7$ the $B^-$ flies $7.8\mm$ before it decays; the forward $B^+$, with $p = 2388\GeV$
+and $\gamma\beta = 452$, flies $117.3\mm$, and its $\bar{D}^0$ another $140.7\mm$, so that the $\bar{D}^0$ decay
+vertex sits $258\mm$ from the primary vertex, at $r = 12.1\mm$ and $z = -227\mm$.\footnote{FWLite, the production
+vertices of the daughters; the primary vertex of the event is at $x = 0.28$, $y = -0.17$, $z = 31.1\mm$ after the
+beam-spot smearing of \code{VtxSmearedRealistic}. Of the 302 decays, 17 have a flight path above $0.01\mm$,
+4 above $1\mm$ and 2 above $10\mm$.} These displaced vertices are the signature by which $b$ jets are tagged;
+they are in the file, and chapter~\ref{ch:09_G4} shows which of them Geant4 accepts as production points.
+
+\paragraph{The composition of the final state.}
+Photons are the largest group by number, 273 of the 634 stable particles, and 262 of them come from the 131
+$\pi^0$ (8 more from $\eta$ decays, one each from the $B^{*+}$, a $\bar{D}^{*0}$ and a $\bar{\Sigma}^0$); they
+carry $2876\GeV$, of which $2703\GeV$ from the $\pi^0$. Charged hadrons are 303 (261 charged pions, 29
+charged kaons, 11 protons and antiprotons, two $\bar{\Sigma}^-$) with $7168\GeV$; neutral hadrons are only 56
+(22 $K^0_L$, 13 $K^0_S$, 13 neutrons, 8 $\Lambda$) with $3450\GeV$; and there is one electron and one
+neutrino.\footnote{\path{test/06_Decay/out/ledger_06_Decay.txt}, ``by kind'', and the FWLite species counts of the
+companion.} In chapter~\ref{ch:05_Had} the 320 primary hadrons were 169 charged and 151 neutral: the decays turn
+most of the neutral hadrons (all the $\pi^0$, $\eta$, $\omega$, $K^*$) into photons and charged pions, which is why
+a jet is, by number, mostly photons and charged pions, and why the electromagnetic calorimeter sees a sizeable
+part of the energy even of a hadronic jet (here the photons carry 21\% of the energy of the stable particles).
+Figure~\ref{fig:06_species} shows the stable species.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.05cm, y=0.0115cm]
+\draw[->] (0,0) -- (11.4,0);
+\draw[->] (0,0) -- (0,300);
+\foreach \y in {0,100,200,300} {\draw (0.1,\y) -- (-0.1,\y) node[left,font=\tiny] {\y};}
+\histbar{0}{273} \histbar{1}{261} \histbar{2}{29} \histbar{3}{22} \histbar{4}{13} \histbar{5}{13}
+\histbar{6}{11} \histbar{7}{8} \histbar{8}{2} \histbar{9}{1} \histbar{10}{1}
+\foreach \x/\l in {0/$\gamma$, 1/$\pi^\pm$, 2/$K^\pm$, 3/$K^0_L$, 4/$K^0_S$, 5/$n\,\bar{n}$, 6/$p\,\bar{p}$, 7/$\Lambda\,\bar\Lambda$, 8/$\bar\Sigma^-$, 9/$e^-$, 10/$\bar\nu_e$}
+  {\node[below, font=\scriptsize] at (\x+0.5,0) {\l};}
+\node[font=\scriptsize, anchor=north east] at (11.3,290) {634 stable particles of the event, by species};
+\end{tikzpicture}
+\caption{The stable (status 1) particles of the event by species, from the FWLite count of
+\code{test/06\_Decay/out/step1\_GEN\_06\_Decay.root} (companion, section 4). Photons, almost all from $\pi^0$
+decays, and charged pions make 84\% of the final state by number.}
+\label{fig:06_species}
+\end{figure}
+
+\begin{plainwords}[Why a jet is mostly photons and charged pions]
+Strings fragment into pions in roughly equal numbers of $\pi^+$, $\pi^-$ and $\pi^0$ (here 261 charged pions
+against 131 $\pi^0$, with a few from decays of heavier hadrons), plus a minority of kaons and baryons. The $\pi^0$
+decays at once into two photons. So by the time Geant4 starts, a jet is a bundle of charged pions, which leave
+tracks and then shower in the hadron calorimeter, and photons, which shower in the electromagnetic calorimeter.
+That is the basis of particle-flow reconstruction and the reason the two calorimeters share the jet energy.
+\end{plainwords}
+
+\section{Ledger and display}
+Table~\ref{tab:06_ledger} closes the ledger of the stage. Decays conserve energy and momentum, so the total energy
+of the stable particles stays $13\,600.0\GeV$, the two proton energies. The scalar sum of \pt{} rises from
+$505.7$ to $528.9\GeV$, because a decay shares the momentum of one particle among several that are not
+collinear, and for the same reason energy migrates between the $\eta$ regions: the tracker region
+$\abseta < 2.5$ gains $49\GeV$ and the region beyond $\abseta = 5.5$ loses $193\GeV$ as forward hadrons decay
+into products spread over a wider range of $\eta$. The visible energy within $\abseta < 5.2$ grows from $5779$
+to $5851\GeV$, while $95.5\GeV$ become invisible in the one neutrino: at this stage the only hole in the event
+is the semileptonic $B^-$ decay.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Ledger of the decay stage: the stable (status 1) particles before (chapter~\ref{ch:05_Had},
+\code{test/05\_Had/out/ledger\_05\_Had.txt}) and after the hadron decays (\code{test/06\_Decay/out/ledger\_06\_Decay.txt}).
+$n$ is the number of particles, $E$ the energy and \pt{} the scalar sum of transverse momenta, in GeV.}
+\label{tab:06_ledger}
+\begin{tabular}{@{}lrrrrrrrrr@{}}
+\toprule
+ & \multicolumn{3}{c}{before (05\_Had)} & \multicolumn{3}{c}{after (06\_Decay)} & \multicolumn{3}{c}{difference} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+ & $n$ & $E$ & \pt & $n$ & $E$ & \pt & $n$ & $E$ & \pt \\
+\midrule
+entries in \code{genParticles} & 1230 & & & 1846 & & & $+616$ & & \\
+decayed (status 2)             & 0 & & & 302 & & & $+302$ & & \\
+stable (status 1)              & 320 & 13600.0 & 505.7 & 634 & 13600.0 & 528.9 & $+314$ & 0.0 & $+23.2$ \\
+\midrule
+charged hadrons & 169 & 8863.8 & 355.0 & 303 & 7167.7 & 259.1 & $+134$ & $-1696.1$ & $-95.9$ \\
+neutral hadrons & 151 & 4736.2 & 150.7 &  56 & 3449.9 &  84.7 & $-95$  & $-1286.3$ & $-66.0$ \\
+photons         &   0 &    0.0 &   0.0 & 273 & 2875.9 & 142.7 & $+273$ & $+2875.9$ & $+142.7$ \\
+electrons       &   0 &    0.0 &   0.0 &   1 &   10.9 &   5.0 & $+1$   & $+10.9$   & $+5.0$ \\
+neutrinos       &   0 &    0.0 &   0.0 &   1 &   95.5 &  37.5 & $+1$   & $+95.5$   & $+37.5$ \\
+\midrule
+$\abseta < 2.5$ (tracker)        & 141 &  684.6 & 259.9 & 316 &  733.8 & 278.7 & $+175$ & $+49.2$  & $+18.8$ \\
+$2.5 \le \abseta < 3.0$          &  30 &  196.8 &  24.6 &  55 &  193.1 &  24.6 & $+25$  & $-3.7$   & $0.0$ \\
+$3.0 \le \abseta < 5.2$ (HF)     &  94 & 4897.9 & 192.4 & 189 & 5019.6 & 197.4 & $+95$  & $+121.7$ & $+5.0$ \\
+$5.2 \le \abseta < 5.5$          &  15 &  810.7 &   7.9 &  16 &  836.4 &   7.8 & $+1$   & $+25.7$  & $-0.1$ \\
+$\abseta \ge 5.5$ (not simulated) & 40 & 7010.1 &  20.9 &  58 & 6817.1 &  20.3 & $+18$  & $-193.0$ & $-0.6$ \\
+\midrule
+visible ($\abseta < 5.2$, no $\nu$) & 265 & 5779.2 & 476.9 & 559 & 5851.0 & 463.4 & $+294$ & $+71.8$ & $-13.5$ \\
+invisible (neutrinos)               &   0 &    0.0 &   0.0 &   1 &   95.5 &  37.5 & $+1$   & $+95.5$ & $+37.5$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:06_display} is the $\eta$--$\phi$ display of the complete event. Compared with the stage-4
+display of chapter~\ref{ch:05_Had}, where the $B^-$ and the $B^{*+}$ were two single large markers, the two
+$b$ systems are now clusters of 9 (red) and 16 (blue) small markers around the same positions, $(\eta, \phi) =
+(-1.57, -2.09)$ and $(-3.75, 1.01)$: the decay products of a $235\GeV$ and a $2421\GeV$ hadron stay within a
+few tenths of a unit of their parent. This is the picture a jet algorithm will see in the next chapter. The
+grey points are the 477 other decay products, the violet ones the 132 primary hadrons that did not decay; 38
+particles beyond $\abseta = 6$ are drawn on the border.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{06_Decay/out/genPartAnalyzer_06_Decay_page-5.png}
+\caption{The $\eta$--$\phi$ display of the complete generator event, stage 5 of
+\code{test/06\_Decay/out/genPartAnalyzer\_06\_Decay.pdf} (page 5): the 634 stable particles, marker size growing with
+\pt, coloured by origin. Red: the 9 stable decay products of the $B^-$; blue: the 16 of the $B^{*+}$; violet: the
+primary hadrons left undecayed; grey: the decay products of the other hadrons. The magenta star is the vector sum
+of the $b$ and $\bar{b}$ systems, $\pt = 20.3\GeV$.}
+\label{fig:06_display}
+\end{figure}
+
+\FloatBarrier
+\section{Open problems for Phase-2}
+\paragraph{Which decay tables.}
+This event is decayed with Pythia8's own tables: the GEN log prints ``no particle data has been changed from its
+default value'', and the configuration has no \code{ExternalDecays} block. That is also what the Phase-2 release
+validation does: the fragments it uses, \path{Configuration/Generator/python/TTbar_14TeV_TuneCP5_cfi.py} and
+\path{MinBias_14TeV_pythia8_TuneCP5_cfi.py}, contain no external decayer either. The production fragments that
+do use EvtGen do it through the \code{ExternalDecays} parameter set of the Pythia8 module, for example in
+\path{Configuration/Generator/python/Hadronizer_TuneCP5_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_evtgen_cff.py}:
+\code{EvtGen130} with \code{decay\_table} set to \path{GeneratorInterface/EvtGenInterface/data/DECAY_2010.DEC},
+\code{particle\_property\_file} to \code{evt.pdl}, and empty \code{list\_forced\_decays} and \code{operates\_on\_particles}
+(so EvtGen takes every species it knows, $b$ and $c$ hadrons among them). The $B$-physics fragments of the same
+directory use \code{DECAY\_2014\_NOLONGLIFE.DEC} with \code{evt\_2014.pdl}, while the data package shipped with
+the release (\path{cms-data/GeneratorInterface-EvtGenInterface}, V02-12-00, EvtGen~2.0.0) also carries
+\code{DECAY\_2020.DEC} and \code{evt\_2020.pdl}, whose $B^-$ block still reads ``Updated to PDG 2008'' with
+branching fractions marked PDG2014. Three generations of tables coexist in one release, and a 2010 table is
+the default of the standard hadronizer fragment. The central Phase-2 Monte Carlo fragments are not part of the
+release (they live in the production repository), so which table they use could not be established here;
+what the release shows is that nothing selects a newer table by default, and that the Pythia8-only path of this
+chapter is the one used for the Phase-2 relvals. For a $b$-jet study at the HL-LHC the semileptonic branching
+fractions and the $D$ decay multiplicities, which set the neutrino energy and the track multiplicity in the jet,
+are decided by this choice.
+
+\paragraph{The lifetime boundary and the displaced vertices.}
+\code{ParticleDecays:tau0Max = 10} (mm) in \path{Pythia8CommonSettings_cfi.py} is Pythia8's own default
+(\code{ParticleDecays.xml}: \code{default="10."}); CMS only switches \code{limitTau0} on. The boundary has been
+the same for Run~2, Run~3 and the Phase-2 relvals. It is a cut on the species, not on the vertex: in this event
+the forward $B^+$ decays $117\mm$ from the primary vertex and its $\bar{D}^0$ at $258\mm$, inside the
+acceptance window that Geant4 applies to generator vertices, \code{RDecLenCut = 2.9} and \code{LDecLenCut = 30.0} (cm)
+in \path{SimG4Core/Application/python/g4SimHits_cfi.py}, but a $B$ hadron of a few TeV at larger $\eta$ would
+not be. Everything above the boundary ($K^0_S$, $\Lambda$, $\Sigma$, $\Xi$, $\Omega$) decays in Geant4 with
+Geant4's own branching fractions and kinematics, not Pythia8's; the generator-level $V^0$ content of a jet
+is therefore split between two programs. For Phase-2 the vertex smearing changes module:
+\path{IOMC/EventVertexGenerators/python/VtxSmearedRealisticHLLHC_cfi.py} (\code{HLLHCEvtVtxGenerator}, read from
+the \code{SimBeamSpotHLLHCObjectsRcd} of the global tag), with the crab-cavity parameters of
+\code{HLLHCVtxSmearingParameters} in \path{VtxSmearedParameters_cfi.py} (\code{CrossingAngleInurad = 510},
+\code{BetaCrossingPlaneInm = 0.20}, \code{EprotonInGeV = 6500} in the base set, 7000 in the 14~TeV clone), which is
+what the relval scenario \code{GenSimHLBeamSpot} of \path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}
+selects (\code{BeamSpot: DBrealisticHLLHC}, geometry \code{ExtendedRun4D110}, era \code{Phase2C17I13M9}). The
+Phase-2 inner tracker that will resolve these vertices is described in the XML of
+\path{Geometry/TrackerCommonData/data/PhaseII/}; its first-layer radius is not a python parameter and was not
+extracted here.
+
+\paragraph{The age of the common settings.}
+\path{Pythia8CommonSettings_cfi.py} has eight lines and none of them is tune-specific:
+\code{Tune:preferLHAPDF = 2} is the Pythia8 default (\code{Tunes.xml}) and does nothing;
+\code{Main:timesAllowErrors = 10000} raises the number of flawed events Pythia8 may skip before it aborts from the
+default 10, so that a sick configuration is not noticed; \code{Check:epTolErr = 0.01} loosens the
+energy-momentum conservation check from the default $10^{-4}$ to 1\% of the beam energy, i.e. $136\GeV$ at
+13.6~TeV; \code{SLHA:minMassSM = 1000} and \code{Beams:setProductionScalesFromLHEF = off} concern SUSY and
+Les Houches input; \code{ParticleDecays:allowPhotonRadiation = on} adds QED radiation in decays to lepton pairs,
+which the Pythia8 manual leaves off by default to avoid double counting with an external QED program such as
+PHOTOS, which EvtGen runs. The block dates from the 2017 tune campaign and its physics content is the same in
+CMSSW\_15\_0\_5. The tune itself is older than the beam energy: the fragment of the book imports
+\path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py}, whose total and elastic cross
+sections are the 13~TeV values, \code{SigmaTotal:sigmaTot = 100.309} and \code{sigmaEl = 21.89} (mb), while the
+release also holds \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py} with 101.037 and 22.08~mb for
+13.6~TeV; the 14~TeV fragments of the Phase-2 relvals (\code{TTbar\_14TeV\_TuneCP5\_cfi.py},
+\code{MinBias\_14TeV\_pythia8\_TuneCP5\_cfi.py}) import the 2017 block as well, so no CP5 setting has been
+re-derived for 14~TeV. These cross sections feed the MPI machinery (the log of this chapter computes
+$\sigma_{\mathrm{ND}} = 55.42\mb$ from them) and, through the minimum-bias events of chapter~\ref{ch:08_PU},
+the number of particles per pileup collision at PU~200.
+
+\begin{plainwords}[What to take away]
+The decays are the last step of the generator and the first place where the detector enters the physics choices:
+a lifetime boundary of $10\mm$ decides who decays in Pythia8 and who in Geant4, the decay tables decide how often
+a $b$ hadron produces a neutrino, and this event has one, $95.5\GeV$, 40\% of the $B^-$, which no later
+stage will recover. Everything downstream, jets, pileup, Geant4, digitisation, reads the 634 stable particles of
+this file.
+\end{plainwords}

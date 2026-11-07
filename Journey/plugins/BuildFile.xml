@@ -77,4 +77,7 @@
 <use name="hepmc"/>
 <use name="root"/>
 <use name="rootgraphics"/>
+<use name="SimDataFormats/DigiSimLinks"/>
+<use name="SimDataFormats/RPCDigiSimLink"/>
+<use name="SimDataFormats/GEMDigiSimLink"/>
 <flags EDM_PLUGIN="1"/>

@@ -1,0 +1,337 @@
+% chapter_09_G4.tex -- chapter 09 of the JitJet book: the hand-over of the generator final state to Geant4.
+% Every number comes from test/09_G4/out/ (ledger_09_G4.txt, simAnalyzer_signal_09_G4.log, simAnalyzer_pileup_09_G4.log,
+% step2_G4_signal_09_G4.log, the PNG pages) and from the FWLite extras listed in doc/chapter/chapter_09_G4.md, section 4.
+
+\chapter{09 -- G4: the 634 stable particles are handed to Geant4, 571 are accepted}
+\label{ch:09_G4}
+
+\section{What this chapter is about}
+
+Everything up to here was Pythia8: a list of particles with four-momenta and production vertices, but no
+detector. From this chapter on the list is given to Geant4, the toolkit that transports particles through the
+CMS geometry, step by step, through every piece of material, and lets the sensitive volumes record what crosses
+them. In CMSSW this is the \code{SIM} step (\code{cmsDriver.py -s SIM}), one module, \code{g4SimHits}
+(\code{OscarMTProducer}, configured by \path{SimG4Core/Application/python/g4SimHits_cfi.py}). Its first job is
+the \emph{hand-over}: it reads the HepMC record \code{generatorSmeared}, decides which of the stable particles
+are worth simulating, turns them into Geant4 primaries and only then starts tracking them. This chapter is about
+that decision alone. To see it without anything else in the way, the script runs Geant4 with its physics reduced
+to the transportation: no magnetic field, no decays in flight, no electromagnetic and no hadronic processes
+(the physics list \code{JourneyTransportPhysics} of \path{JitJetSW/Journey/plugins/JourneyTransportPhysics.cc},
+which constructs every Geant4 particle and registers no process). Every accepted particle then flies in a
+straight line, loses no energy, and the file shows exactly which particles Geant4 accepted, which it dropped and
+where each one would go if nothing happened to it. The same is done for the 250 library collisions of
+chapter~\ref{ch:08_PU}, so that the ledger can be closed for the signal and for its 68 in-time pileup
+collisions. The full physics is switched on, piece by piece, in chapter~\ref{ch:10_SIM}.
+
+\begin{plainwords}[The hand-over]
+Geant4 does not read \code{genParticles}; it reads the HepMC event and builds a \code{G4PrimaryParticle} for
+every generator particle that passes the cuts of the \code{Generator} parameter set: a momentum above
+$40\MeV$, a direction within $\abseta<5.5$, and, for particles the generator has already decayed, a decay vertex
+outside a cylinder of radius $2.9\cm$ around the beam (the beam pipe), in which case Geant4 is given the
+undecayed parent instead. Neutrinos pass these cuts and are killed by the \code{StackingAction}
+(\code{TrackNeutrino = False}) before their first step. Each accepted particle becomes a \code{SimTrack} whose
+\code{genpartIndex()} is the HepMC barcode of the generator particle, so the link between the generator record
+and the simulation is kept, particle by particle. The dropped ones leave no trace in the simulation at all.
+\end{plainwords}
+
+\section{From the previous chapter}
+
+Two inputs enter (Rule E): the signal, \path{test/07_GenJet/out/step2_GENJET_07_GenJet.root}, the full
+generator event of chapter~\ref{ch:06_Decay} with its generator jets, 634 stable particles carrying
+$13\,600\GeV$ and $528.9\GeV$ of scalar \pt{}; and the pileup library,
+\path{test/08_PU/out/step1_GEN_MinBias_08_PU.root}, the 250 minimum-bias collisions of chapter~\ref{ch:08_PU},
+of which library events 72 to 139 are the 68 in-time collisions of our bunch crossing (the ones the
+\code{MixingModule} of chapter~\ref{ch:10_SIM} draws into bunch crossing 0 for this signal event: seed 12345,
+Poisson with mean 60, library events 1--71 going to bunch crossing $-1$), $12\,993$ stable particles with
+$924.8\TeV$ and $5315\GeV$ of \pt{}.\footnote{All numbers of this chapter are in
+\path{test/09_G4/out/ledger_09_G4.txt} (the output of \code{common/g4Ledger.py}),
+\path{simAnalyzer_signal_09_G4.log} and \path{simAnalyzer_pileup_09_G4.log}; the few extra ones (the dropped
+particles by kind, the displaced vertices, the hits by time of flight) were read from the SIM files with FWLite and
+are listed in the companion, section~4.} Nothing in the generator record changes: the \code{SIM} process copies
+\code{genParticles}, \code{generatorSmeared} and the jets unchanged and adds its own products under the
+process name \code{SIM}: \code{SimTrack}s and \code{SimVertex}s, the \code{PSimHit} collections of the tracker
+and muon system (one per subdetector and time-of-flight window, e.g.\ \code{TrackerHitsTIBLowTof}) and the
+\code{PCaloHit} collections of the calorimeters (\code{EcalHitsEB}, \code{EcalHitsEE}, \code{EcalHitsES},
+\code{HcalHits}). The smeared primary vertex of the signal, drawn in chapter~\ref{ch:06_Decay}, is where all
+primaries start: $(0.028, -0.017, 3.11)\cm$ for the signal, $(0.029, -0.017, -0.48)\cm$ for library event~72.
+
+The two objects to follow are the $b$ and $\bar b$ systems of chapter~\ref{ch:07_GenJet}: the nine stable
+decay products of the $B^-$ ($\pt=94.3\GeV$, $\eta=-1.57$, among them the $95.5\GeV$ antineutrino) and the
+16 of the $B^{*+}$ ($\pt=114.2\GeV$, $\eta=-3.75$, no neutrino).
+
+\section{The numbers of the event}
+
+\textbf{The cuts and what they remove.} Table~\ref{tab:09_cuts} lists the four reasons for which a stable particle
+gets no \code{SimTrack}, with the parameter that implements it and its effect on the signal and on the 68 pileup
+collisions. The $\eta$ cut is not applied to the momentum but to the straight line from the production vertex:
+the particle is dropped if that line is still inside the $2.9\cm$ cylinder when it reaches
+$|z| = 2.9\cm\times\sinh 5.5 = 355\cm$ (\path{SimG4Core/Generators/src/Generator.cc}). For a vertex at
+$z = 3\cm$ this moves the border by a few hundredths in $\eta$, which is why one $\pi^+$ at $\eta=-5.50$ is kept
+in the signal and eight particles at $\abseta = 5.48$--$5.50$ with vertices displaced by $1$--$6\cm$ in $z$ are
+dropped in the pileup (the ``other'' column of the ledger). A second rule keeps neutral particles that are even
+more forward: a neutron, antineutron or photon whose line is still inside the cylinder at
+$|z| = 2.9\cm\times\sinh 8.2 = 52.8$\,m (\code{EtaCutForHector = 8.2}) is handed to Geant4 for the Zero Degree
+Calorimeter; the $151\GeV$ neutron at $\eta = 9.72$ of the signal and 168 particles with $134.2\TeV$ of the 68
+pileup collisions enter this way, and are later stopped in the dead regions of the beam line
+(\code{DeadRegions = QuadRegion, InterimRegion}). The $40\MeV$ cut removes six photons from $\pi^0$ decays
+($27$--$38\MeV$), $0.2\GeV$ in all. The one neutrino is the $\bar\nu_e$ of the semileptonic $B^-$ decay with
+$95.5\GeV$ and $37.5\GeV$ of \pt{}: the $b$ system enters Geant4 with 8 of its 9 particles and $56.8$ of its
+$94.3\GeV$ of \pt{}, while the $\bar b$ system enters complete, 16 of 16, $114.2\GeV$. The net $b+\bar b$ \pt{},
+$20.3\GeV$ at hadron level, is $57.5\GeV$ among the primaries: a detector cannot see the neutrino, and the
+imbalance it will measure for this event is decided here.
+
+\begin{table}[htb]
+\centering\small\setlength{\tabcolsep}{4pt}
+\caption{Why a stable particle gets no \code{SimTrack}: the cuts of \code{g4SimHits\_cfi.py} and what they remove
+from the signal and from the 68 in-time pileup collisions (\code{ledger\_09\_G4.txt}; the split by kind from the
+FWLite extras of the companion). The last line is the exception that keeps very forward neutrals.}
+\label{tab:09_cuts}
+\begin{tabular}{p{1.9cm}p{3.5cm}p{4.0cm}p{4.7cm}}
+\toprule
+cut & parameter & signal (634 stable) & 68 collisions ($12\,993$ stable) \\
+\midrule
+$\abseta>5.5$ & \code{Generator}: \code{ApplyEtaCuts}, \code{MinEtaCut} / \code{MaxEtaCut} $=\mp5.5$; the line inside $r<2.9\cm$ at $|z|=355\cm$ & 56, $6581\GeV$, $19.6\GeV$ \pt{}: 27 charged hadrons (3869, of which 4 protons 1277), 8 neutral hadrons (1580), 21 photons (1132); $5.52<\abseta<8.04$ & 2492, $706.0\TeV$, $851.4\GeV$ \pt{}: 1228 charged hadrons ($517.0\TeV$, 132 protons with $226.2\TeV$), 251 neutral hadrons (98.7), 994 photons (89.4), 19 electrons (0.9); 211 beyond $\abseta=8.2$ ($364.9\TeV$) \\
+$p<40\MeV$ & \code{ApplyPCuts}, \code{MinPCut = 0.04} & 6 photons from $\pi^0$, $0.2\GeV$ & 98 (94 photons, 2 charged hadrons, 2 electrons), $2.7\GeV$ \\
+neutrino & \code{StackingAction}: \code{TrackNeutrino = False} & 1 ($\bar\nu_e$ of the $B^-$: $95.5\GeV$, $\pt=37.5$) & 7, $57.5\GeV$ \\
+other & the $\eta$ line from a displaced vertex & 0 & 8 ($166.4\GeV$): 4 photons, 4 charged hadrons at $\abseta=5.48$--$5.50$ \\
+\midrule
+kept beyond 5.5 & forward $n$, $\bar n$, $\gamma$ inside $r<2.9\cm$ at $|z|=52.8$\,m & 2: a neutron ($151\GeV$, $\eta=9.72$), a $\pi^+$ ($84.6\GeV$, $\eta=-5.50$) & 168, $134.2\TeV$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The vertices.} The file holds 29 \code{SimVertex}s for the signal although nothing decayed in Geant4:
+the smeared primary vertex and 28 generator vertices, because Pythia8 decays every hadron with
+$c\tau < 10\mm$ (\code{ParticleDecays:tau0Max = 10} in
+\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py}; $K^0_S$, $\Lambda$, charged pions and
+kaons are left to Geant4) and the \code{Generator} keeps these decays as long as the decay vertex lies inside the
+$2.9\cm$ cylinder. The farthest ones belong to the $\bar b$ jet: the $B^+$ of $2388\GeV$ ($\pt=112.6$,
+$\eta=-3.75$) flew $11.7\cm$ to $(r, z) = (0.55, -8.60)\cm$ before decaying, and its $\bar D^0$ of $912\GeV$
+another $14\cm$, to $(1.21, -22.66)\cm$, $25.8\cm$ from the primary vertex, still inside the beam pipe. The
+$B^-$ of the $b$ jet, $236\GeV$, decayed $0.78\cm$ away. The primaries of these decays start from those points.
+
+\textbf{At the tracker/calorimeter boundary.} 557 of the 571 primaries cross the boundary between the
+\code{Tracker} and the \code{CALO} volumes, the point that \code{CaloTrkProcessing} stores in the
+\code{SimTrack} as the tracker-surface position, with exactly their production momentum: no field, no material
+effect. The 14 that never get there are 13 particles at $5.34<\abseta<5.50$, accepted by the $\eta$ cut but
+passing beside the calorimeter envelope, and the forward neutron. The usable acceptance of the simulation
+therefore ends near $\abseta\approx5.3$, not at the $5.5$ of the cut; the 16 signal particles with
+$5.2<\abseta<5.5$ ($836\GeV$) are accepted and only three of them reach a calorimeter volume.
+
+\textbf{The hits.} With \code{TrackerSD.ZeroEnergyLoss = True} the tracker records every crossing of a sensor
+as a \code{PSimHit} even when the energy loss is zero: 6734 hits (PXB 908, PXF 829, TIB 960, TID 679, TOB 860,
+TEC 2498), all in the \code{LowTof} collections (time of flight $0.2$ to $14.0\ns$ against the $3\times12.06 =
+36.2\ns$ split of \code{ElectronicSigmaInNanoSeconds}), from 375 primaries, 193 charged and 182 neutral: a
+photon ``hits'' a sensor here because it crosses it, which is the geometry of the tracker and not its response.
+The $b$ system leaves 179 of them; the $\bar b$ system, at $\eta=-3.75$, none. Of the calorimeters only the HF
+responds: 746 \code{PCaloHit}s in 459 cells, 1511 units in all, 760 in 39 cells for the $\bar b$ system. The HF
+response in CMS is not a Geant4 energy deposit but a parametrised shower library
+(\code{HFShower.UseShowerLibrary = True}, file \code{HFShowerLibrary\_run3\_v7.root} under the \code{run3\_HFSL}
+modifier of \path{Geometry/HcalSimData/python/HFParameters_cff.py}): the first step of a particle in the HF
+calls the library, which returns the photoelectrons of a stored shower of that energy, each booked as a hit of
+$1\GeV$ (\path{SimG4CMS/Calo/src/HCalSD.cc}, \code{getFromHFLibrary}), and kills the track. The 1511 units are
+photoelectrons, and they appear with no physics switched on because the library is called by the sensitive
+detector, not by a physics process. Figure~\ref{fig:09_hits} shows both pages.
+
+\begin{figure}[htb]
+\centering
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{09_G4/out/simAnalyzer_signal_09_G4_page-09.png}
+\caption{the 6734 tracker \code{PSimHit}s, zero energy loss, by subdetector; red: the $b$ system.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{09_G4/out/simAnalyzer_signal_09_G4_page-10.png}
+\caption{the \code{PCaloHit}s: only the 459 HF cells of the shower library; blue: the $\bar b$ system.}
+\end{subfigure}
+\caption{The signal through the transport-only Geant4: the tracker hits (left) and the calorimeter hits (right),
+pages 9 and 10 of \code{simAnalyzer\_signal\_09\_G4.pdf} (\code{\_page-09.png}, \code{\_page-10.png}). Pages 1--5
+of the same PDF are the five generator stages, pages 6--8 the primaries, the boundary crossing and the (empty) list
+of secondaries.}
+\label{fig:09_hits}
+\end{figure}
+
+\begin{plainwords}[Why transport only]
+The standard \code{SIM} step does everything at once: the hand-over, the bending in the $3.8$\,T field, decays
+in flight, electromagnetic showers, hadronic showers. Its output mixes the acceptance of the hand-over with the
+response of the detector and one cannot tell from the hits which particles were dropped at the door. With the
+transportation alone, a particle is either a \code{SimTrack} that flies straight to the calorimeter boundary with
+its momentum unchanged and marks every sensor on its way, or it is nothing. Every number of this chapter is
+therefore a statement about the cuts, and every difference to chapter~\ref{ch:10_SIM} will be a statement about
+the physics. The run is also fast: the 250 library collisions take about a minute (\code{run\_09\_G4.log}).
+\end{plainwords}
+
+\textbf{One pileup collision.} Library event~72, drawn in the companion PDF, has 192 stable particles of which
+164 become primaries; 27 are beyond $\abseta=5.5$ with $9041$ of its $13\,600\GeV$ (three of them beyond
+$8.2$, among them a $\Lambda$ of $3414\GeV$ at $\eta=9.85$), one photon is below $40\MeV$, and four forward
+neutrals with $3749\GeV$ are kept by the ZDC rule. 155 of the 164 reach the calorimeter boundary; the collision
+leaves 1965 tracker hits and 153 HF hits in 135 cells. Over the 68 collisions the number of primaries runs from 0
+(library event 124, a diffractive collision with 6 stable particles, all beyond $\abseta=5.5$) to 470 (event 94,
+547 stable particles), 153 on average.
+
+\section{Ledger and display}
+
+Table~\ref{tab:09_ledger} is the ledger of the hand-over, by region and by kind, for the signal, for the 68
+collisions and for their sum. For the signal the stage removes 63 of 634 particles, but $6677\GeV$ of
+$13\,600$: 90\,\% of the particles, 89\,\% of the \pt{} and 51\,\% of the energy go into Geant4. Everything in
+$2.5<\abseta<5.5$ passes untouched; the central region loses the six soft photons and the neutrino; beyond
+$5.5$ only the forward neutron and the border $\pi^+$ survive. For the pileup the picture is more extreme:
+80\,\% of the particles and 84\,\% of the \pt{} enter, but only 24\,\% of the energy, because $840$ of the
+$925\TeV$ of a bunch crossing's minimum-bias collisions sit beyond $\abseta=5.5$ in the beam remnants and
+$706\TeV$ of them are never simulated. What remains per collision is on average 153 primaries, $3.2\TeV$
+and $66\GeV$ of \pt{}, of which 70 particles and $32\GeV$ of \pt{} in the tracker region. The sum of signal and
+68 collisions is what chapter~\ref{ch:10_SIM} will mix: $10\,959$ primaries with $225\TeV$ and $4957\GeV$ of
+\pt{}, the signal being 5\,\% of the particles and 10\,\% of the \pt{} of its own bunch crossing.
+
+\begin{table}[htbp]
+\centering\scriptsize\setlength{\tabcolsep}{2.5pt}
+\caption{The ledger of the hand-over (\code{ledger\_09\_G4.txt}; the regions and kinds from the FWLite extras of
+the companion): the stable particles before and the Geant4 primaries after, $n$ / $E$ [GeV] / \pt{} [GeV],
+for the signal and for the 68 in-time pileup collisions; the last block gives the fractions handed over, the dropped
+particles by the reasons of table~\ref{tab:09_cuts}, and the sum.}
+\label{tab:09_ledger}
+\begin{tabular}{lrrrrrrcrrrrrr}
+\toprule
+ & \multicolumn{6}{c}{signal} & & \multicolumn{6}{c}{68 pileup collisions} \\
+\cmidrule(lr){2-7}\cmidrule(lr){9-14}
+ & \multicolumn{3}{c}{before: stable} & \multicolumn{3}{c}{after: primaries} & & \multicolumn{3}{c}{before: stable} & \multicolumn{3}{c}{after: primaries} \\
+ & $n$ & $E$ & \pt{} & $n$ & $E$ & \pt{} & & $n$ & $E$ & \pt{} & $n$ & $E$ & \pt{} \\
+\midrule
+$\abseta<2.5$     & 316 & 733.8 & 278.7 & 309 & 638.1 & 241.1 & & 4864 & 5519 & 2179.4 & 4765 & 5506 & 2173.6 \\
+$2.5<\abseta<3.0$ & 55 & 193.1 & 24.6 & 55 & 193.1 & 24.6 & & 1037 & 3597 & 449.2 & 1035 & 3597 & 449.2 \\
+$3.0<\abseta<5.2$ & 189 & 5019.6 & 197.4 & 189 & 5019.6 & 197.4 & & 3996 & 58\,413 & 1674.3 & 3992 & 58\,367 & 1672.7 \\
+$5.2<\abseta<5.5$ & 16 & 836.4 & 7.8 & 16 & 836.4 & 7.8 & & 436 & 17\,054 & 160.3 & 428 & 16\,888 & 158.9 \\
+$\abseta>5.5$     & 58 & 6817.1 & 20.3 & 2 & 235.9 & 0.7 & & 2660 & 840\,217 & 851.4 & 168 & 134\,196 & 31.1 \\
+\midrule
+charged hadrons & 303 & 7167.7 & 259.1 & 276 & 3298.6 & 247.8 & & 5911 & 572\,735 & 3087.8 & 4677 & 55\,664 & 2596.3 \\
+neutral hadrons & 56 & 3449.9 & 84.7 & 48 & 1869.8 & 81.1 & & 1088 & 179\,328 & 749.7 & 837 & 80\,592 & 627.3 \\
+photons         & 273 & 2875.9 & 142.7 & 246 & 1743.7 & 137.9 & & 5900 & 171\,676 & 1458.8 & 4808 & 82\,175 & 1251.9 \\
+electrons, muons & 1 & 10.9 & 5.0 & 1 & 10.9 & 5.0 & & 87 & 1004 & 12.6 & 66 & 121.4 & 10.1 \\
+neutrinos       & 1 & 95.5 & 37.5 & 0 & 0 & 0 & & 7 & 57.5 & 5.6 & 0 & 0 & 0 \\
+\midrule
+all & 634 & 13\,600.0 & 528.9 & 571 & 6923.0 & 471.7 & & 12\,993 & 924\,800 & 5314.6 & 10\,388 & 218\,553 & 4485.6 \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\begin{tabular}{ll}
+\toprule
+signal & handed over: 90.1\,\% of the particles, 50.9\,\% of $E$, 89.2\,\% of \pt{}; \\
+ & dropped ($E$ in GeV): 56 beyond $\abseta=5.5$ (6581.3), 6 below $40\MeV$ (0.2), 1 neutrino (95.5) \\
+68 collisions & handed over: 80.0\,\% of the particles, 23.6\,\% of $E$, 84.4\,\% of \pt{}; \\
+ & dropped: 2492 beyond $\abseta=5.5$ ($706\,021$), 98 below $40\MeV$ (2.7), 7 neutrinos (57.5), 8 other (166.4) \\
+signal + pileup & before: $13\,627$ stable particles, $938\,400\GeV$, $5843.5\GeV$ of \pt{}; \\
+ & after: $10\,959$ primaries, $225\,476\GeV$, $4957.3\GeV$ of \pt{} (80.4\,\%, 24.0\,\%, 84.8\,\%); \\
+ & dropped: 2548 beyond $\abseta=5.5$ ($712\,602$), 104 below $40\MeV$ (2.9), 8 neutrinos (153.0), 8 other (166.4) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:09_prim} is the $\eta$--$\phi$ display of the event at this stage: the 571 primaries in the
+colour of their kind, marker size growing with \pt{}, the $b$ system in red at $(\eta,\phi) = (-1.55, -2.09)$
+and the $\bar b$ system in blue at $(-3.75, 1.01)$, and the 63 particles without a \code{SimTrack} as grey
+crosses. The crosses are where the ledger says: a column at each border of the plot (38 of the 56 forward
+particles sit beyond the $|\eta|=6$ edge of the display and are drawn on it), six faint ones scattered over the
+centre (the photons below $40\MeV$) and one at the $b$ system (the neutrino). Compared with page~5 of the
+same PDF, the stage-5 display of chapter~\ref{ch:06_Decay}, nothing has moved: the hand-over is a selection,
+not a transformation, and page~7 (the primaries at the calorimeter boundary) is the same picture again, because
+without a field and without material a straight line arrives where it was aimed.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{09_G4/out/simAnalyzer_signal_09_G4_page-06.png}
+\caption{The signal handed to Geant4 (\code{simAnalyzer\_signal\_09\_G4\_page-6.png}): the 571 primaries
+(\code{SimTrack}s with a generator link) by kind, the $b$ and $\bar b$ systems in red and blue with their
+vector sum (star), and the 63 stable particles without a \code{SimTrack} as grey crosses (56 beyond
+$\abseta=5.5$, 6 below $40\MeV$, 1 neutrino). The right panel marks the SIM stage of this sample: transport
+only.}
+\label{fig:09_prim}
+\end{figure}
+
+\begin{plainwords}[What the pileup brings into Geant4]
+A minimum-bias collision carries $13.6\TeV$, the same as the signal, but almost all of it goes down the beam
+pipe: in the 68 collisions $840\TeV$ of $925$ are beyond $\abseta=5.5$, where there is no detector, and the
+hand-over drops $706\TeV$ of them before Geant4 does a single step. What enters is small per collision, 153
+particles and $66\GeV$ of \pt{}, but there are 68 of them: $4486\GeV$ of \pt{} against the $472$ of the
+signal. In the tracker region alone the pileup primaries carry $2174\GeV$ of \pt{} to the signal's $241$. The
+detector simulation of the next chapters starts from these $10\,959$ primaries. In the tracker region the 68
+collisions lay down $2174/(5\times2\pi) = 69\GeV$ of \pt{} per unit of $\eta$--$\phi$ area; at the HL-LHC, with
+200 collisions, the same hand-over would deliver about $200\GeV$.
+\end{plainwords}
+
+\FloatBarrier
+\section{Open problems for Phase-2}
+
+The hand-over is configured once for all eras in \path{SimG4Core/Application/python/g4SimHits_cfi.py}. A look
+through that file and the Phase-2 modifiers it imports gives the following.
+
+\textbf{The $\eta$ cut is not era-dependent.} \code{Generator.MinEtaCut = -5.5}, \code{MaxEtaCut = 5.5} and
+\code{RDecLenCut = 2.9} carry no modifier at all; the only places where the cut changes are
+\path{Configuration/StandardSequences/python/SimWithCastor_cff.py} ($-7.0$ to $5.5$, for the CASTOR years) and
+\path{SimG4Core/Application/python/NeutronBGforMuons_cff.py} ($\pm7.0$, a neutron-background study). The Phase-2
+detector list of \code{phase2\_common} in the same file (\code{OnlySDs}) adds the HGCal, the MTD
+(\code{MtdSensitiveDetector}), the HFNose and keeps the ZDC, the BCM1F and the PLT; the Phase-2 Level-1 regions of
+\path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py} put the HGCal at $1.5<\abseta<3.0$ and the HF at
+$3.0<\abseta<5.5$. In this event the particles with $5.2<\abseta<5.5$ (16, $836\GeV$) are accepted and 13 of
+them never enter a calorimeter volume; whether the Phase-2 geometry closes that gap could not be established
+from the python configuration. The very-forward rule that keeps neutrons and photons aimed at the ZDC
+(\code{EtaCutForHector = 8.2}, 168 primaries with $134\TeV$ in our 68 collisions) runs at the HL-LHC as it does
+now, with \code{SteppingAction.CMStoZDCtransport = False}, so these particles are simulated up to the beam-line
+dead regions and then killed: CPU spent on tracks that produce nothing.
+
+\textbf{The $40\MeV$ cut and the decay cylinder.} \code{MinPCut = 0.04} has no modifier either. It is a cut
+on the total momentum, below the response of any detector of Run~3; for the HGCal (\code{HGCSD.EminHit = 0.0})
+and the MTD (\code{MtdSD.EminHit = 0.0}) the sensitive detectors keep every deposit, so the $40\MeV$ remains the
+only lower limit of what is simulated, and it has not been revisited. \code{LDecLenCut = 30.0} is read in
+\code{Generator.cc} into a local variable, printed and never used: the decay cylinder is defined by its radius
+alone, $2.9\cm$, the Run-3 beam pipe. The $\bar D^0$ of this event decayed at $r = 1.2\cm$, $z = -22.7\cm$,
+inside it, so Pythia's decay was kept; a $2.9\cm$ cylinder of unlimited length also keeps generator decays that
+happen metres down the beam pipe. The radius of the Phase-2 beam pipe and of the first inner-tracker layer is
+not in a python file of the release and I could not establish whether $2.9\cm$ still corresponds to it.
+
+\textbf{The StackingAction thresholds.} The Russian roulette of the \code{StackingAction} kills low-energy
+photons (\code{RusRoGammaEnergyLimit = 5} MeV) and neutrons (\code{RusRoNeutronEnergyLimit = 10} MeV) with a
+survival probability per region: $0.3$ for photons and $0.1$ for neutrons in the ECAL, HCAL, muon iron,
+preshower and world. The two Phase-2 entries, \code{RusRoHGcalGamma = 1.3} and \code{RusRoHGcalNeutron = 1.1},
+are not tuned probabilities: \path{SimG4Core/Application/src/StackingAction.cc} applies the roulette only when
+the value is below 1 (line 341, \code{prob < 1.0}) and only registers the \code{HGCalRegion} in that case
+(line 399), so these values switch the roulette off in the HGCal. Every photon above the production cut and
+every neutron is tracked there, which is the right choice for a calorimeter with $0.5$ and $1$\,cm$^2$ cells
+and timing, and the CPU cost of it at PU 200 is paid in full. The heavy-particle thresholds
+(\code{NeutronThreshold}, \code{ProtonThreshold}, \code{IonThreshold} $=30\MeV$) act only with
+\code{KillHeavy = True}, which is off.
+
+\textbf{Physics list and Geant4 version.} The signal log carries the banner ``Geant4 version Name:
+geant4-11-02-patch-02 [MT] (21-June-2024)'', i.e.\ the \code{geant4} tool 11.2.2 of this release. The list is
+\code{SimG4Core/Physics/FTFP\_BERT\_EMM} for every era (no modifier in \code{g4SimHits\_cfi.py}; only the
+CPU-benchmark and neutron-background customisations switch to \code{FTFP\_BERT}, \code{FTFP\_BERT\_XS\_EML},
+\code{FTFP\_BERT\_HP\_EML}): \path{SimG4Core/PhysicsLists/plugins/FTFPCMS_BERT_EMM.cc} registers the CMS
+electromagnetic constructor \code{CMSEmStandardPhysics}, \code{G4DecayPhysics}, elastic, FTFP/Bertini
+(\code{EminFTFP = 3}, \code{EmaxBERT = 6}, \code{EmaxBERTpi = 12} GeV) and stopping physics. The EM options
+\code{G4TransportWithMSC = 2}, \code{G4GammaGeneralProcess = True}, \code{G4HepEmActive = False} are the same
+for Phase-2. Whether the HGCal needs a different EM constructor (the \code{\_EMMT} and \code{\_EMM\_TRK}
+variants exist next to it) could not be established from the configuration.
+
+\textbf{The time windows.} \code{common\_maximum\_time} sets \code{MaxTrackTime = 500} ns in the central region,
+\code{MaxTrackTimeForward = 2000} ns beyond \code{MaxZCentralCMS = 50} m, and the only modifier that touches it
+is \code{h2tb} (a test beam, 1000\,ns); \code{CaloSD.TmaxHits} is $500\ns$ for every calorimeter collection
+and $2000$ for the ZDC. Phase-2 changes the stepping, not the window: \path{SimG4Core/Application/src/RunManagerMT.cc}
+(\code{runForPhase2}) switches to \code{Phase2SteppingAction} as soon as a region named \code{HGCalRegion},
+\code{FastTimerRegionBTL} or \code{FastTimerRegionETL} exists in the geometry, and that class records the
+tracker-to-BTL transition (\code{BTLName = BarrelTimingLayer}) with the same time cuts. The timing detectors are
+given finer slices (\code{MtdSD.TimeSliceUnit = 0.01} ns, \code{HGCSD.TimeSliceUnit = 0.001} ns, and
+\code{phase2\_timing} sets \code{ECalSD.TimeSliceUnit = 0.001} with \code{StoreLayerTimeSim = True}), while
+\code{MtdSD.EnergyThresholdForPersistencyInGeV = 1e9} and \code{ForHistoryInGeV = 1e9} are marked in the file
+``keep temporarily old behaviour'': no MTD hit makes its track persistent.
+
+\textbf{What \code{phase2} modifies in \code{g4SimHits\_cfi.py}, and what it does not.} The modifiers found by
+grep are \code{phase2\_hgcal} (\code{common\_MCtruth.SaveCaloBoundaryInformation = True}), \code{phase2\_timing}
+(the ECAL time slices above), \code{phase2\_common} (the \code{OnlySDs}, \code{TrackHits} and \code{CaloHits}
+lists with \code{FastTimerHitsBarrel/Endcap}, \code{HGCHitsEE/HEfront/HEback}, \code{HFNoseHits};
+\code{LHCTransport = False}, i.e.\ no PPS proton transport in Phase-2 where \code{run3\_common} sets it
+\code{True}; in \code{MuonSD}, \code{HaveDemoChambers = False}), \code{phase2\_hgcalOnly} and
+\code{phase2\_hgcalV18} (in \code{HGCSD}, \code{HitCollection = 2}). Nothing is era-modified in
+\code{Generator}, in \code{StackingAction}, in \code{Physics}, in \code{common\_maximum\_time} or in
+\code{TrackerSD}, whose \code{EnergyThresholdForPersistencyInGeV = 0.2} and
+\code{ElectronicSigmaInNanoSeconds = 12.06} (hence the $36.2\ns$ Low/High time-of-flight split, designed for
+the strip electronics) are inherited by the Phase-2 pixel modules: the hand-over of the HL-LHC is,
+parameter for parameter, the hand-over of this chapter.

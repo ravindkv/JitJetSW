@@ -1,0 +1,49 @@
+JitJet: Journey is the Jet. ONE bbbar event and the SAME event followed at every STAGE.
+
+
+This is the constitution of the JitJet book, which every chapter has to follow. Since we focus only on the ONE bbbar event, we can keep generatig only ONE bbbar event (in case of statistical limitation, we can generate more for illustration)
+
+Rule A: Every chapter XYZ has 
+    (A1) test/XYZ/prefix_XYZ.sh/.py            the scripts
+    (A2) test/XYZ/out/prefix_XYZ.log/.root/.pdf       logs, root, plots (just the pdf from this chapter)
+    (A3) doc/chapter/chapter_XYZ.tex the book chapter: physics
+    (A4) doc/chapter/chapter_XYZ.md  the technical companion, not compiled into the .tex
+
+Rule B: The doc/chapter/chapter_XYZ.tex has exactly these sections
+    (B1) What this chapter is about in 1-2 paragraphs 
+    (B2) connection to the previous chapter in 1-2 paragraphs
+    (B3) the numbers supporting/explaining the physics of the chapter.
+    (B4) ledger table summerising  how much energy was added/removed from the event and the eta-phi display plot
+    (B5) open problems for the Phase-2 LHC, after a DETAILED digging inside CMSSW (e.g. what cuts/thresholds/calibrations have not been updated since Run-2 or Run-3 
+
+Rule C: The doc/chapter/chapter_XYZ.md companion has exactly these sections
+    (C1) The cmsDriver commands. How to run and what each argument mean
+    (C2) The cmsRun on python config commands. How to run and a quick walk-through for different parts of the python config. What is the content of the output root file.
+    (C3) The cmsRun analyser config commands. A quick overview and what it producess (pdf, log) 
+    (C4) The full/partial tables: every number the doc/chapter/chapter_XYZ.tex quotes
+
+Rule D:
+ 
+    All chapters/*.tex are included in doc/JitJetSW.tex file which is compiled and produces the final pdf
+
+Rule E: 
+    The output of previous chapter goes as input to the current chapter and so on
+
+Rule F: 
+    The test dir can hold common scripts to avoid duplications with test/XYZ
+
+List of chapters:
+    01: ME
+    02: PS
+    03: MnM (matching and merging, since our event is LO, and just bbbar the MnM stage does nothing so just .tex file mentioning this fact)
+    04: MPI
+    05: Had
+    06: Decay
+    07: GenJet
+    08: PU
+    09: G4
+    10: SIM
+    11: DIGI
+
+Length of each chapter:
+    5 pdf pages +-2

@@ -1,0 +1,314 @@
+% chapter_07_GenJet.tex -- chapter 07 of the JitJet book: the generator jets (process GENJET).
+% Every number comes from test/07_GenJet/out/ (genJetAnalyzer_07_GenJet.log, ledger_07_GenJet.txt, the PNG pages) and
+% from the FWLite extras listed in doc/chapter/chapter_07_GenJet.md, section 4.
+\providecommand{\antikt}{anti-$k_{\mathrm{T}}$}
+\providecommand{\dR}{\ensuremath{\Delta R}}
+
+\chapter{07 -- GenJet: the 634 stable particles are clustered into \antikt{} jets}
+\label{ch:07_GenJet}
+
+\section{What this chapter is about}
+
+Up to now the event has been a list of particles. A detector does not measure the $b$ quark of
+chapter~\ref{ch:01_ME}, nor the $B^-$ meson of chapter~\ref{ch:05_Had}: it measures a spray of hadrons,
+photons and leptons, and the only object that can be compared between theory and experiment is a
+\emph{jet}, the sum of the particles inside a cone-like region defined by an algorithm. This chapter runs
+that algorithm, \antikt{} as implemented in FastJet 3.4.1, on the 634 stable particles of the full generator
+event and produces four collections of \emph{generator jets} (\code{reco::GenJet}): radius $R=0.4$ and
+$R=0.8$, each once with all stable particles and once without the neutrinos. The clustering is done as a
+separate \code{cmsRun} step, process \code{GENJET}, scheduled by \code{cmsDriver.py} as a \code{USER} step
+with the sequence \code{genJetSequence} of \path{JitJetSW/Journey/python/genJet_cff.py}, with the jet
+\pt{} threshold lowered to $3\GeV$ so that even the soft jets of the underlying event are visible.
+The chapter explains the algorithm, the input selection, and reads the result for the one event: the $b$ jet
+of $117.8\GeV$, the $\bar b$ jet of $115.9\GeV$, their balance, and why the $b$ jet is 28\,\% above
+the quark it came from but 13\,\% below it once the neutrinos are left out.
+
+\begin{plainwords}[A jet]
+A jet is not a particle but a recipe: take the list of final-state particles, apply a clustering rule with a
+radius parameter $R$, and call each resulting group a jet, with four-momentum equal to the vector sum of its
+constituents. The same recipe applied to the stable particles of the generator gives a \emph{generator jet}
+(this chapter), applied to the reconstructed particles of the detector gives a \emph{reconstructed jet}, and
+the ratio of the two, the \emph{response}, is what the jet energy corrections (JEC) measure and undo. The
+generator jet is therefore the reference of everything that follows in the detector chapters.
+\end{plainwords}
+
+\section{From the previous chapter}
+
+The input is \path{test/06_Decay/out/step1_GEN_06_Decay.root}, the complete generator event of
+chapter~\ref{ch:06_Decay}: 1846 entries in \code{genParticles}, of which 634 are stable (status~1) and carry
+the $13\,600\GeV$ of the two protons, $528.9\GeV$ of scalar \pt{}.\footnote{All numbers of this chapter are
+in \path{test/07_GenJet/out/genJetAnalyzer_07_GenJet.log} and \path{ledger_07_GenJet.txt}; the few extra
+ones (the origin of the jet constituents, the unclustered particles by region) were read from the output ROOT
+file with FWLite and are listed in the companion.} Nothing in that list changes here: the \code{GENJET} step
+reads the file, adds the jet collections, and copies \code{genParticles} unchanged under its \code{GEN}
+process name. The GEN step of chapter~\ref{ch:06_Decay} had in fact already clustered jets (the standard
+\code{pgen} sequence contains \code{genJetMET}); those are dropped with
+\code{--outputCommands "drop *\_ak4GenJets*\_*\_GEN,drop *\_ak8GenJets*\_*\_GEN"}, so that the output holds
+exactly one set of jets, the one made and configured in this chapter.
+
+The two objects to follow are the $b$ and $\bar b$ quarks. The hard-process $b$ (status~23,
+$\pt=113.2\GeV$, $\eta=-1.44$) is pushed to $122.8\GeV$ by the recoil of the initial-state radiation
+(status~44), radiates twice in the final-state shower (status~52: $106.0$, then $91.6\GeV$), receives its
+primordial $k_{\mathrm{T}}$ (status~62, $91.7\GeV$) and is copied as the end of a colour string (status~71,
+$\pt=91.74\GeV$, $\eta=-1.57$, $\phi=-2.08$). This status-71 copy is the quark the analyzer compares the
+jets with. It fragments into the $B^-$ of $94.3\GeV$, which decays semileptonically,
+$B^-\to D_0^{*0}\,e^-\,\bar\nu_e$, with the antineutrino carrying $37.5\GeV$ of \pt{} ($95.5\GeV$ of energy)
+and nine stable decay products in all. The $\bar b$ goes from $113.2$ to $116.4\GeV$ (status~71,
+$\eta=-3.75$, $\phi=1.01$), fragments into a $B^{*+}$ of $114.2\GeV$ and ends as 16 stable particles, none
+of them a neutrino. At parton level the pair is already unbalanced: $|\vec p_{\mathrm T}(b)+\vec p_{\mathrm
+T}(\bar b)|=25.1\GeV$ for the status-62 quarks and $20.3\GeV$ for the two $B$ hadrons, against $0$ for the
+hard process. Jets exist to recover what the radiation took away.
+
+\section{The numbers of the event}
+
+\begin{plainwords}[The \antikt{} algorithm]
+FastJet computes for every pair of particles $d_{ij}=\min(1/p_{\mathrm{T}i}^2,\,1/p_{\mathrm{T}j}^2)\,
+\Delta R_{ij}^2/R^2$ with $\Delta R_{ij}^2=(\eta_i-\eta_j)^2+(\phi_i-\phi_j)^2$, and for every particle
+$d_{iB}=1/p_{\mathrm{T}i}^2$ (the distance to the beam). The smallest of all these numbers decides: if it is a
+$d_{ij}$, $i$ and $j$ are merged (four-momenta added) and the list is recomputed; if it is a $d_{iB}$, $i$ is
+declared a jet and removed. The inverse powers of \pt{} make the hardest particle the first to act: it
+swallows everything within \dR$<R$ around it before any soft particle can merge with another soft one, so a
+hard jet is a circle of radius $R$ around its axis, as in the display, and the soft background does not move
+its axis. Two properties make the definition usable in perturbative QCD: a soft particle added anywhere does
+not change the hard jets (\emph{infrared safety}), and a particle split into two collinear ones gives the
+same jets (\emph{collinear safety}); a cone algorithm seeded on the hardest particle has neither. The jet
+\pt{} is the \pt{} of the vector sum, slightly smaller than the scalar sum of its constituents.
+\end{plainwords}
+
+\textbf{The producer and its input.} Each collection is one \code{FastjetJetProducer} module
+(\path{RecoJets/JetProducers/python/ak4GenJets_cfi.py}: \code{jetAlgorithm} \code{"AntiKt"}, \code{rParam} 0.4;
+\path{ak8GenJets_cfi.py} clones it with \code{rParam} 0.8) that reads the parameter set
+\code{GenJetParameters} (\path{GenJetParameters_cfi.py}): \code{jetType} \code{'GenJet'},
+\code{jetPtMin} \code{3.0}, \code{inputEtMin} \code{0.0}, \code{inputEMin} \code{0.0}, no area, no $\rho$ subtraction, a
+deterministic FastJet seed. \code{jetPtMin} is the only threshold: jets below it are not written. The script
+sets it explicitly to the same $3\GeV$ for the four producers, through \code{--customise\_commands}, so that it
+can be changed with \code{JETPTMIN}. The input is not \code{genParticles} itself but a selection made by
+\code{InputGenJetsParticleSelector} (\path{RecoJets/Configuration/python/GenJetParticles_cff.py}): it keeps
+every status-1 particle except those whose $|\mathrm{pdgId}|$ is in \code{ignoreParticleIDs}. For
+\code{genParticlesForJets} that list contains only hypothetical invisible particles: 1000022 (the lightest
+neutralino), 1000012/14/16 and 2000012/14/16 (left- and right-handed sneutrinos), 1000039 (gravitino),
+5100039 (Kaluza--Klein graviton), 4000012/14/16 (excited neutrinos), 9900012/14/16 (heavy Majorana
+neutrinos) and 39 (graviton). None of them occurs in a Pythia8 \bbbar{} event, so all 634 stable particles
+are offered to the clustering. \code{genParticlesForJetsNoNu} adds 12, 14, 16, the three neutrinos: 633
+particles. The other switches are off: \code{excludeResonances = False} (no removal of $W/Z/H$ decay
+products), \code{tausAsJets = False}, \code{partonicFinalState = False}.
+
+\begin{table}[htb]
+\centering\small
+\caption{The $b$ and $\bar b$ jets in the three collections drawn (\code{genJetAnalyzer\_07\_GenJet.log}).
+The quark is the status-71 copy ($\pt=91.74$ and $116.36\GeV$); \dR{} is the distance between jet axis
+and quark; the net \pt{} and $\Delta\phi$ are those of the pair; $m_{jj}$ is read from the page header
+(\code{genJetAnalyzer\_07\_GenJet\_page-6/7/8.png}).}
+\label{tab:07_bjets}
+\begin{tabular}{llrrrrrrr}
+\toprule
+collection & jet & \pt{} [GeV] & $\eta$ & $\phi$ & $n$ & \dR{} & $\pt^{\mathrm{jet}}/\pt^{q}$ & mass [GeV] \\
+\midrule
+\code{ak4GenJets}     & $b$       & 117.79 & $-1.59$ & $-2.08$ & 24 & 0.019 & 1.284 & 16.7 \\
+                      & $\bar b$  & 115.94 & $-3.75$ & $1.01$  & 18 & 0.004 & 0.996 & 7.3 \\
+                      & pair      & \multicolumn{7}{l}{net $\pt=6.06\GeV$, $\Delta\phi=3.09$, $\Sigma\pt=233.7\GeV$, $m_{jj}=386.8\GeV$} \\
+\addlinespace
+\code{ak4GenJetsNoNu} & $b$       & 79.82  & $-1.59$ & $-2.08$ & 22 & 0.017 & 0.870 & 13.4 \\
+                      & $\bar b$  & 115.94 & $-3.75$ & $1.01$  & 18 & 0.004 & 0.996 & 7.3 \\
+                      & pair      & \multicolumn{7}{l}{net $\pt=36.53\GeV$, $\Delta\phi=3.09$, $\Sigma\pt=195.8\GeV$, $m_{jj}=319.7\GeV$} \\
+\addlinespace
+\code{ak8GenJets}     & $b$       & 141.10 & $-1.65$ & $-2.05$ & 55 & 0.088 & 1.538 & 47.3 \\
+                      & $\bar b$  & 121.01 & $-3.75$ & $0.99$  & 32 & 0.022 & 1.040 & 19.0 \\
+                      & pair      & \multicolumn{7}{l}{net $\pt=24.03\GeV$, $\Delta\phi=3.04$, $\Sigma\pt=262.1\GeV$, $m_{jj}=439.5\GeV$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The $b$ jet and its response.} With $R=0.4$ the $b$ quark is matched to jet~[0], $\pt=117.79\GeV$,
+24 constituents, axis $0.019$ away from the quark direction. Its response with respect to the status-71 quark
+is $117.79/91.74=1.284$. A response above one is not an excess of energy, it is the bookkeeping of the
+shower: the quark used as reference has already radiated. Measured against the hard-process $b$ of
+$113.2\GeV$ the same jet has a response of $1.04$. The constituents tell where the \pt{} comes from. Nine of
+the 24 are the decay products of the $B^-$ and carry $94.3\GeV$ (the neutrino alone $37.5\GeV$). Seven more,
+$17.5\GeV$, are hadrons from the same colour string as the $b$ quark, the string formed by the $b$, three
+gluons and an $\bar s$ quark of the shower: this is the radiated energy coming back. The remaining eight,
+$6.4\GeV$, come from other strings, those of the multiparton interactions and of the beam remnants: the
+underlying event that happens to fall inside the circle. The $\bar b$ jet at $\eta=-3.75$ is cleaner: 16 of
+its 18 constituents are the $B^{*+}$ decay products ($114.2\GeV$), one $K^-$ of $1.6\GeV$ comes from the
+$\bar b$ string and one photon of $0.15\GeV$ from elsewhere; response $0.996$.
+
+\begin{plainwords}[Why 1.28 with neutrinos and 0.87 without]
+The $B^-$ decayed semileptonically and its antineutrino carries $37.5\GeV$ of the jet's $117.8\GeV$.
+\code{ak4GenJetsNoNu} drops the three neutrino species before clustering: the $b$ jet becomes
+$79.82\GeV$ (response $0.870$), with 22 constituents instead of 24 because, with the neutrino gone, the axis
+moved and a $0.5\GeV$ pion at the edge now belongs to the neighbouring jet~[4] ($11.89\to12.40\GeV$, 11 to 12
+constituents). The $\bar b$ jet, without a neutrino, is identical in both collections. The dijet balance
+follows: with neutrinos the pair has a net \pt{} of $6.1\GeV$ and $\Delta\phi=3.09$, the best balance of the
+whole journey ($25.1\GeV$ at quark level); without, $36.5\GeV$ is missing in the direction of the $b$ jet,
+exactly the signature a detector would call missing transverse energy. Which of the two is the right reference
+depends on the question: the NoNu jets are what a calorimeter can see at best and are the reference of the
+jet energy corrections; the full jets are the parton-level truth.
+\end{plainwords}
+
+\textbf{$R=0.4$ against $R=0.8$.} Doubling the radius quadruples the area. The $b$ jet of \code{ak8GenJets}
+has $141.10\GeV$ and 55 constituents, response $1.538$ (1.25 against the hard-process quark), mass
+$47.3\GeV$ instead of $16.7$; its axis is $0.088$ from the quark. The additions are $19.8\GeV$ of further
+hadrons of the $b$ string (8 particles, in all 17 of the 55 constituents and $114.2\GeV$ belong to the $b$
+string) and $28.5\GeV$ from 38 particles of other strings. The $\bar b$ jet gains $5.1\GeV$ ($121.01\GeV$,
+32 constituents). The pair is now less balanced, net $\pt=24.0\GeV$, $\Delta\phi=3.04$: the large cone
+collects the underlying event unevenly. In \code{ak8GenJets} 488 of the 634 stable particles are in a jet and
+28 jets are found; jets [2] to [7] have $10$ to $29\GeV$ and 17 to 37 constituents each, merged soft activity
+that \code{ak4GenJets} splits into several $5$ to $14\GeV$ jets. The small radius is the one used for most
+of CMS physics, with the underlying event and (later) the pileup as the price of a large one.
+
+\textbf{The other jets and the unclustered particles.} \code{ak4GenJets} finds 27 jets above $3\GeV$. Besides
+the two $b$ jets, jets~[2] to [5] ($13.8$, $13.3$, $11.9$, $11.4\GeV$, 10 to 12 constituents) are the
+hadronised radiation and multiparton interactions of chapters~\ref{ch:02_PS} and \ref{ch:04_MPI}; the
+remaining 21 have $3.2$ to $7.1\GeV$. In all, 239 of the 634 stable particles are inside a jet and the jets
+sum to $382.8\GeV$ of \pt{}. The 395 unclustered particles carry $144.6\GeV$ of scalar \pt{}: 298 of them are
+below $0.5\GeV$, 78 between $0.5$ and $1\GeV$, only two above $2\GeV$ (the hardest $2.3\GeV$), and 38 sit
+beyond $|\eta|=6$, on the border of the display. They carry, however, $9615\GeV$ of energy, almost all of it
+beam remnants along the beam pipe, which is why the jet energy ($3985\GeV$) is a small part of the event
+energy. By region, the 27 \code{ak4GenJets} are 17 at $\abseta<2.5$ ($217.9\GeV$), 4 at $2.5<\abseta<3.0$
+($18.5\GeV$) and 6 at $3.0<\abseta<5.2$ ($146.3\GeV$, among them the $\bar b$ jet); none is beyond $5.2$,
+while \code{ak8GenJets} has three jets there ($16.1\GeV$, up to $\eta=6.1$). Generator jets have no $\eta$
+limit; the detector will set one.
+
+\section{Ledger and display}
+
+\begin{table}[H]
+\centering\small
+\caption{Ledger of the GenJet stage (\code{ledger\_07\_GenJet.txt}; the unclustered and per-region lines from
+the FWLite extras of the companion). The stage adds nothing to and removes nothing from the event: it
+partitions the 634 stable particles into jets and a remainder. The jet \pt{} is the vector sum per jet, the
+particle sums are scalar.}
+\label{tab:07_ledger}
+\begin{tabular}{lrrrrrr}
+\toprule
+& \multicolumn{3}{c}{before: stable particles} & \multicolumn{3}{c}{after: \code{ak4GenJets}} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+ & $n$ & $E$ [GeV] & \pt{} [GeV] & jets & $n_{\mathrm{const}}$ & $\Sigma\pt$ [GeV] \\
+\midrule
+all, in a jet           & 634 & 13600.0 & 528.9 & 27 & 239 & 382.8 \\
+all, not in a jet       &     &         &       & -- & 395 & 144.6 \\
+$\abseta<2.5$           & 316 & 733.8   & 278.7 & 17 &     & 217.9 \\
+$2.5<\abseta<3.0$       & 55  & 193.1   & 24.6  & 4  &     & 18.5 \\
+$3.0<\abseta<5.2$       & 189 & 5019.6  & 197.4 & 6  &     & 146.3 \\
+$\abseta>5.2$           & 74  & 7653.5  & 28.1  & 0  &     & 0 \\
+neutrinos               & 1   & 95.5    & 37.5  & \multicolumn{3}{l}{in \code{ak4GenJets}, not in \code{NoNu}} \\
+\midrule
+\code{ak4GenJets}       &     &         &       & 27 & 239 & 382.8 \ ($\Sigma E=3985.2$) \\
+\code{ak4GenJetsNoNu}   &     &         &       & 27 & 238 & 345.3 \ ($\Sigma E=3889.7$) \\
+\code{ak8GenJets}       &     &         &       & 28 & 488 & 473.1 \ ($\Sigma E=7613.4$) \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\begin{tabular}{lrrrrrr}
+\toprule
+$b+\bar b$ pair [GeV] & hard process & status 62 & $B$ hadrons & \code{ak4GenJets} & \code{NoNu} & \code{ak8GenJets} \\
+\midrule
+scalar sum \pt{} & 226.4 & 208.1 & 208.5 & 233.7 & 195.8 & 262.1 \\
+net \pt{}        & 0.0   & 25.1  & 20.3  & 6.1   & 36.5  & 24.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_page-6.png}
+\caption{\code{ak4GenJets}: the 27 \antikt{} $R=0.4$ jets with $\pt>3\GeV$ of the event, over the 634 stable
+particles (marker size $\sim\log\pt$). The $b$ jet [0] ($117.8\GeV$, red) and the $\bar b$ jet [1]
+($115.9\GeV$, blue) are matched to the status-71 quarks (stars). Pages 1--5 of the same PDF are the five
+generator stages of chapters~\ref{ch:01_ME}--\ref{ch:06_Decay}.
+(\code{test/07\_GenJet/out/genJetAnalyzer\_07\_GenJet\_page-6.png})}
+\label{fig:07_ak4}
+\end{figure}
+
+Figure~\ref{fig:07_ak4} is the $\eta$--$\phi$ display of the event at this stage: every jet is a circle of
+radius $R$ around its axis, its constituents in the jet colour, the unclustered stable particles in grey, the
+$b$ and $\bar b$ jets in red and blue with the quark direction as an open star. The two $b$ jets are
+back-to-back in $\phi$ ($\Delta\phi=3.09$) and far apart in $\eta$ ($-1.59$ and $-3.75$), the picture of a
+$\qqbar\to\bbbar$ event with a very asymmetric $x_1=0.39$, $x_2=0.0022$ of chapter~\ref{ch:01_ME}. The
+circles of the 25 other jets, mostly in the central region, are the hadronised shower and MPI. The grey
+particles between the circles and the 38 crosses on the $|\eta|=6$ border are the beam remnants.
+Figure~\ref{fig:07_nonu_ak8} shows the same event without neutrinos (the $b$ jet shrinks to $79.8\GeV$,
+nothing else moves) and with $R=0.8$ (the circles overlap, 488 particles are clustered, the display fills
+up).
+
+
+\begin{figure}[htb]
+\centering
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_page-7.png}
+\caption{\code{ak4GenJetsNoNu}: without the neutrino the $b$ jet is $79.8\GeV$.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_page-8.png}
+\caption{\code{ak8GenJets}: $R=0.8$, the $b$ jet is $141.1\GeV$ with 55 constituents.}
+\end{subfigure}
+\caption{The same event in the two other collections
+(\code{genJetAnalyzer\_07\_GenJet\_page-7.png}, \code{page-8.png}).}
+\label{fig:07_nonu_ak8}
+\end{figure}
+
+\FloatBarrier
+\section{Open problems for Phase-2}
+
+The generator jets are the reference of the jet energy scale, so what is frozen here is frozen for the whole
+HL-LHC programme. A look into \code{CMSSW\_15\_0\_5} gives the following.
+
+\textbf{The definitions have not moved since Run 2.} \path{RecoJets/JetProducers/python/GenJetParameters_cfi.py}
+sets \code{jetPtMin} \code{3.0}, \code{inputEtMin} \code{0.0}, \code{inputEMin} \code{0.0}, \code{doAreaFastjet}
+\code{False}, \code{doRhoFastjet} \code{False}; \path{ak4GenJets_cfi.py} and \path{ak8GenJets_cfi.py} fix \code{rParam} to 0.4
+and 0.8. No file in \path{RecoJets/Configuration/python} or \path{RecoJets/JetProducers/python} carries a
+\code{phase2} era modifier for the generator jets (the only \code{phase2} strings in \code{RecoJets} are the
+heavy-ion event content, \path{RecoJets_EventContent_cff.py}, and \path{CaloTowersES_cfi.py}); the Phase-2
+GEN step of \path{doc/tmp/Gen4Phase2.md} runs byte-identical producers. The thresholds that matter
+downstream are also unchanged: miniAOD keeps \code{slimmedGenJets} from \code{ak4GenJetsNoNu} without a
+cut and \code{slimmedGenJetsAK8} from \code{ak8GenJetsNoNu} with \code{pt > 80}
+(\path{PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py}); nanoAOD writes \code{GenJet} with
+\code{pt > 10} and \code{GenJetAK8} with \code{pt > 100} (\path{PhysicsTools/NanoAOD/python/jetMC_cff.py}).
+Note that the compiled default of \code{jetPtMin} in \code{VirtualJetProducer::fillDescriptions} is $5\GeV$
+while the \code{cfi} says $3\GeV$: the \code{cfi} wins, but a module built without it would cut differently.
+None of this is wrong for Phase-2, but none of it was revisited for it either.
+
+\textbf{The exclusion lists are the 2007 lists.} The file
+\path{RecoJets/Configuration/python/GenJetParticles_cff.py} is headed ``ShR 27 Mar 07'' and its \code{ignoreParticleIDs} are the invisible BSM particles listed above; the
+only later additions are the \code{NoNu} (12, 14, 16) and \code{NoMuNoNu} (12, 13, 14, 16) clones. There is
+no pileup-robust generator-jet definition and there need not be one: \code{genParticles} holds only the
+signal collision, so a generator jet is pileup-free by construction (chapter~\ref{ch:08_PU} shows what happens
+when the pileup particles are added to the clustering on purpose). The pileup robustness is entirely on the
+reconstruction side, and that side has been retuned for Phase-2: \path{CommonTools/PileupAlgos/python/Puppi_cff.py}
+modifies \code{puppi} under \code{phase2\_common} with \code{EtaMinUseDeltaZ = 4.0}, \code{DeltaZCut = 0.1},
+\code{MinNeutralPt = 0.2} up to $\abseta=3.5$ and $2.0$ beyond, with the $\eta$ regions $0$--$2.5$,
+$2.5$--$3.5$, $3.5$--$10$. The reference against which that tuning is judged remains the unchanged
+\code{ak4GenJetsNoNu}. One open point for a $b$-rich analysis is the one visible in this event: the
+\code{NoNu} reference removes the $37.5\GeV$ neutrino and makes the $b$ jet response $0.87$, so the flavour
+dependence of the corrections, measured against this reference, is as large at the HL-LHC as it is now.
+
+\textbf{The $\eta$ reach.} Generator jets have no $\eta$ cut; in this event \code{ak4GenJets} reach
+$\eta=-4.70$ and \code{ak8GenJets} $\eta=6.12$. The Run-3 detector of this book sees jets up to
+$\abseta\approx5.2$ with the HF, with the region $2.5$--$3.0$ covered by calorimeters only; the Phase-2 layout
+in the release puts the tracker to $\abseta=4.0$ (the \code{EtaMinUseDeltaZ = 4.0} of Puppi above), the
+HGCal at $1.5<\abseta<3.0$ and the HF at $3.0<\abseta<5.5$, as spelled out by the region boundaries of the
+Phase-2 Level-1 particle flow, \path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py}
+(\code{etaBoundaries = (-1.5, 1.5)}, \code{(1.5, 3.0)}, \code{(3.0, 5.5)}). In the ledger of this event the
+$2.5<\abseta<3.0$ region holds 4 \code{ak4GenJets} ($18.5\GeV$) and $3.0<\abseta<5.2$ holds 6
+($146.3\GeV$, the $\bar b$ jet among them): with the HGCal and the extended tracker the $\bar b$ jet of
+this event, at $\eta=-3.75$, is still an HF jet, and its $B^{*+}$ decay products at $\abseta>3$ are still
+untracked. Whether the generator-jet validation follows the new boundaries could not be established:
+\path{Validation/RecoJets/python} contains no \code{phase2} modifier.
+
+\textbf{The jet energy corrections of Phase-2.} The chain that turns a reconstructed jet into a
+generator-jet-like one is a sequence of \code{JetCorrectorParametersCollection} payloads in the global tag.
+For the Phase-2 tag of this release, \path{auto:phase2_realistic} $=$ \path{150X_mcRun4_realistic_v1}
+(\path{Configuration/AlCa/python/autoCond.py}), \code{conddb list} gives: \code{AK4PF}, \code{AK8PF} and
+\code{AK8PFchs} from \path{PhaseIIFall17_V5_MC}, a 2017 Phase-2 study; \code{AK4PFPuppi},
+\code{AK4PFchs} and \code{AK8PFPuppi}, the collections actually used offline, from
+\path{Winter22Run3_V1_MC}, i.e.\ a Run-3 payload applied to the Phase-2 detector; only the HLT one,
+\code{AK4PFPuppiHLT}, is recent and Phase-2 (\path{Phase2Spring23ticlv4_MC_v1}). The jet resolution
+payloads of the same tag are all \path{JR_Spring16_25nsV6_MC}, from 2016. For comparison the 2024 tag of
+this book, \path{150X_mcRun3_2024_realistic_v2}, has \path{Winter24_AK4PFPuppi_offline_v1} and
+\path{JR_Summer19UL18_JRV2}. All of them take \code{ak4GenJetsNoNu} (or \code{ak8GenJetsNoNu}) matched
+to the reconstructed jet as the truth: the generator jets of this chapter, with their 2007 input list and
+$3\GeV$ threshold, are the reference of the HL-LHC jet energy scale until a Phase-2 payload is derived, and
+they will have to serve at PU 200 and $14\TeV$ without having been changed for either. What could not be
+established from the release: the $\eta$ binning of the Phase-2 payloads (the files live only in the
+database, \path{CondFormats/JetMETObjects/data} holds no Run-3 or Phase-2 text file) and whether the matching
+radius and \pt{} thresholds used to derive them will be adjusted for the HGCal granularity.

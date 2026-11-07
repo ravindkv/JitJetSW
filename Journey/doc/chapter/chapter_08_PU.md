@@ -1,1047 +1,538 @@
-# The minimum-bias event: how Pythia8 generates the pileup collisions (2024, Run 3)
+# Chapter 08, PU: technical companion
 
-Pileup is made of minimum-bias proton-proton collisions, and before anything is simulated in the detector
-those collisions have to be *generated*: a Monte Carlo program has to decide, for each one, whether the two
-protons break up or survive, how many parton pairs interact, how the colour strings fragment into hadrons,
-and which of those hadrons decay before they reach the beam pipe. This chapter is about that step alone,
-the GEN step of the pileup library of the book: what an inelastic collision is in Pythia8, which settings
-CMS uses (the fragment, the CP5 tune, the common decay settings), how `cmsDriver.py` wraps it into a CMSSW
-job with the Run-3 vertex smearing and its own random seeds, what the generator writes into the file, and
-what the 250 generated events of `test/PU_2024/step1_GEN_MinBias_out.root` look like, event by event.
-Nothing here involves Geant4: the SIM step that turns these events into hits, and the library it produces,
-are the subject of `PULib.md` (and `PULib.tex`); the mixing is `PUSIM.tex`. Section 8 closes the chapter
-with the generated collisions put to their use: the in-time ones are overlaid on the bbbar signal event of
-the GEN chapter, still at generator level, and the anti-kT clustering is run again to show what pileup does
-to the jets before any detector is involved. The chapter is written for a
-student who has followed the GEN chapter of the book for the bbbar signal; the boxes marked "In plain words"
-restate each key idea without the Pythia or CMSSW vocabulary.
+The companion of `doc/chapter/chapter_08_PU.tex` (Rule C of `Constitution.txt`): the commands of
+`test/08_PU/run_08_PU.sh`, a walk-through of the configurations, and every number the chapter quotes, copied
+from `test/08_PU/out/`. All commands are run from `JitJetSW/Journey/test` in an initialised CMSSW_15_0_5
+(`cd CMSSW_15_0_5/src && cmsenv`); the chapter needs the output of chapter 07,
+`test/07_GenJet/out/step2_GENJET_07_GenJet.root` and `genJetAnalyzer_07_GenJet.pdf` (Rule E).
 
-All numbers were produced with CMSSW_15_0_5 (Pythia 8.311, LHAPDF 6.4.0) on 5 November 2026; the
-per-event ones come from `minBiasGenStats.py` (section 7), those of section 8 from
-`runGenJetPileup_mc2024_BBbar.sh` on 6 November 2026.
-
-| word / symbol | meaning in this chapter |
-|---|---|
-| minimum bias | the inelastic proton-proton collisions in their natural proportions (Pythia8 `SoftQCD:inelastic`) |
-| ND, SD, DD, CD | non-diffractive, single-, double- and central-diffractive collision (Pythia8 process codes 101, 103/104, 105, 106) |
-| sigma_tot, sigma_el, sigma_inel | total, elastic and inelastic pp cross section; sigma_inel = sigma_tot - sigma_el is the pileup cross section |
-| MPI | multiple-parton interactions: several parton pairs scattering in one collision |
-| interaction | one parton-parton scattering in a collision: the hardest one plus the MPIs |
-| stable particle | a particle with HepMC status 1 after Pythia8 has done its decays |
-| central | a stable particle with \|eta\| < 2.5 and pT > 0.5 GeV, roughly what the tracker will see |
-| M_X, xi | mass of the dissociated system of a diffractive collision, and the momentum fraction lost by the surviving proton |
-| event k | the k-th event of the GEN file (run 1, lumi 1, event k) |
-| in-time pileup | the pileup collisions of the same bunch crossing as the signal (bunch crossing 0 of the mixing); the only ones that matter at generator level |
-| collisionId | the index of the collision a GenParticle came from in a merged collection: 0 the signal, 1 .. N the pileup collisions |
-
----
-
-## 1. What is being generated, and what it must satisfy
-
-In 2024 every bunch crossing at CMS contained on average 60 inelastic proton-proton collisions. One of them
-may be the hard scattering an analysis is after; the other 59 are the pileup. Pileup is therefore not a
-special process: it is *the inelastic cross section itself*, sampled in its natural proportions, and the
-job of the generator is to produce collisions exactly as the LHC produces them, with no trigger, no
-pT cut, no filter.
-
-What the generated events will be used for puts four requirements on the GEN step, all of which are met by
-the configuration of section 3:
-
-1. **the right collisions**: all inelastic processes, in the proportions of their cross sections
-   (`SoftQCD:inelastic`), with the same tune as the signal they will be mixed with (CP5);
-2. **the right energy**: 13.6 TeV, the Run-3 energy of the signal, although the fragment is a 14 TeV one;
-3. **the right beam spot**: the vertex smearing runs in the GEN step, so the generated event already carries
-   the vertex position and time it will have in the detector; it must be the 2024 luminous region;
-4. **independent random numbers**: the generator and the vertex smearing must not repeat the sequences of
-   the signal job.
-
-> **In plain words: minimum bias.** The name is historical: a "minimum-bias trigger" was the loosest trigger
-> an experiment could run, firing on essentially any inelastic collision. A minimum-bias *sample* is thus a
-> sample of ordinary inelastic collisions, with nothing selected and nothing enriched. That is exactly what
-> the other 59 collisions of a bunch crossing are, so a minimum-bias generator run is the raw material of
-> pileup.
-
----
-
-## 2. The inelastic collision in Pythia8
-
-### 2.1 The total cross section and its pieces
-
-At 13.6 TeV two protons that meet interact with a total cross section of about 100 mb. Pythia8 splits it as
-
-| component | Pythia8 process | code | sigma [mb] | share of inelastic |
-|---|---|---|---:|---:|
-| elastic, pp -> pp | `SoftQCD:elastic` (not generated here) | 102 | 21.89 | - |
-| non-diffractive (ND), pp -> X | `SoftQCD:nonDiffractive` | 101 | 55.42 | 70.7 % |
-| single diffractive (SD), pp -> pX and Xp | `SoftQCD:singleDiffractive` | 103 + 104 | 2 x 6.43 | 16.4 % |
-| double diffractive (DD), pp -> XX | `SoftQCD:doubleDiffractive` | 105 | 8.85 | 11.3 % |
-| central diffractive (CD), pp -> pXp | `SoftQCD:centralDiffractive` | 106 | 1.29 | 1.6 % |
-| **inelastic** (`SoftQCD:inelastic`) | ND + SD + DD + CD | | **78.42** | 100 % |
-| total | | | 100.31 | |
-
-These are the numbers Pythia8 printed at the initialisation of the job (`step1_GEN_MinBias_out.log`,
-"PYTHIA Process Initialization", "We collide p+ with p+ at a CM energy of 1.360e+04 GeV"). They are not
-computed from the parton densities: with `SigmaTotal:mode = 0` the CP5 tune *fixes* sigma_tot = 100.309 mb
-and sigma_el = 21.89 mb, so that sigma_inel = 78.42 mb whatever the energy; the diffractive pieces come from
-Pythia's own parametrisation (the Schuler-Sjostrand model, with `SigmaTotal:zeroAXB = off` keeping the
-central-diffractive piece), and the non-diffractive cross section is what remains. This is why the 14 TeV
-Phase-2 library of the book has the same cross sections to the second decimal (55.36, 6.44, 8.88, 1.29 mb):
-the tune, not the energy, sets them. The `crossSection = 71.39e9` (pb) written in the fragment is older
-metadata; the `GenXsecAnalyzer` at the end of the job reports the real one:
-
-```
-Before Filter: total cross section = 7.842e+10 +- 3.028e+02 pb
-Filter efficiency (event-level)= (250) / (250) = 1.000e+00 +- 0.000e+00    [TO BE USED IN MCM]
+```bash
+./08_PU/run_08_PU.sh                 # everything below: the library, the catalogue, the drawn collision, the overlay, the ledger
+RUN=0 ./08_PU/run_08_PU.sh           # only write step1_GEN_MinBias_08_PU_cfg.py
+ANALYZE=0 ./08_PU/run_08_PU.sh       # the library and gencheck_08_PU.log only (no catalogue, no plots, no overlay)
+PUSEED=777 ./08_PU/run_08_PU.sh      # another 250 collisions (seeds 777 / 778)
+NPU=20 SKIP=0 ./08_PU/run_08_PU.sh   # overlay library events 1-20 instead of 72-139
+PUTYPE=poisson ./08_PU/run_08_PU.sh  # draw the number of in-time collisions from Poisson(NPU) with seed 20243
+JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./08_PU/run_08_PU.sh   # three overlay pages (9, 10, 11)
 ```
 
-Pythia chooses the process of each event with probabilities proportional to these cross sections. In the
-250 events of the file: 183 ND, 45 SD (27 of type 103, 18 of type 104), 19 DD, 3 CD, against 176.7, 41.0,
-28.2 and 4.1 expected. The 19 double-diffractive events are 1.7 sigma low; everything else is within one
-standard deviation.
+Variables (defaults): `PUEVENTS=250 PUSEED=20241 PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30`, plus
+the common ones of `common/jitjet_common.sh` (`CONDITIONS=auto:phase1_2024_realistic ERA=Run3_2024
+GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0 EVENT=1:1:1 RUN=1 ANALYZE=1 PNG=1`, and the pileup
+convention of the book `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up
+by bunch crossing -1 and the in-time collisions of bunch crossing 0 in the mixing of chapter 10 for this
+signal event (MixingModule seed 12345, Poisson(60) per bunch crossing, the library read in sequence: events
+1-71 in bx -1, 72-139 in bx 0, 140-193 in bx +1); chapter 10 checks its draw against them and chapter 11
+replays it with the MixingModule playback.
 
-> **In plain words: four ways for two protons to collide inelastically.** Picture the two protons as bags
-> of quarks and gluons. In a *non-diffractive* collision the bags tear open and their contents interact
-> directly; the whole rapidity range fills with particles. In a *diffractive* collision the protons exchange
-> something colourless (a "Pomeron"), so that one of them (SD) or both (DD) keep their identity or dissolve
-> into a low-mass bunch of hadrons that flies on along the beam, and a *gap* with no particles at all
-> separates the two sides. In a *central-diffractive* collision both protons survive and only a small system
-> is created in the middle. The LHC does not pick: it makes all four in the proportions of the table, and so
-> does the generator.
+## 1. The cmsDriver.py commands
 
-### 2.2 The non-diffractive collision: multiple-parton interactions
-
-A non-diffractive collision is where the multiplicity comes from. Pythia8 builds it as follows:
-
-1. **the hardest parton-parton scattering** is generated first as an ordinary 2 -> 2 QCD process
-   (q q -> q q, q g -> q g, g g -> g g, ...), at a transverse momentum pT-hat drawn from the perturbative
-   cross section regularised at low pT: the divergence d(sigma)/d(pT^2) ~ 1/pT^4 of the massless
-   propagators is damped by the factor pT^4 / (pT0^2 + pT^2)^2. This scattering appears in the event record
-   with the Pythia status codes 21 (incoming) and 23 (outgoing). In the 183 ND events its pT-hat is
-   soft: median 4.0 GeV, mean 4.9 GeV, maximum 20.8 GeV (`GenEventInfoProduct::qScale()`; nothing like
-   the pT-hat > 100 GeV of the signal);
-2. **additional parton-parton scatterings** (the MPIs) are then generated in decreasing order of pT, with
-   the same regularised cross section, down to a lower cut-off, until the available energy of the
-   remnants runs out. Their partons carry the status codes 31 (incoming) and 33 (outgoing). How many there
-   are depends on the *impact parameter* of the collision: central collisions, where the two protons
-   overlap fully, have many MPIs; peripheral ones have few. The proton's matter profile is the tune's
-   choice: CP5 uses a double Gaussian (`bProfile = 2`) with a dense core holding 63 % of the matter
-   (`coreFraction = 0.63`) inside 0.76 of the proton radius (`coreRadius = 0.7634`);
-3. **initial- and final-state radiation** (status 41-44 and 51-53) dress every scattering with gluon and
-   quark emissions; the MPIs and the showers are interleaved in pT;
-4. **the beam remnants** (status 61-63): what is left of each proton once the scattered partons are taken
-   out, given a primordial kT and colour-connected to the rest;
-5. **colour reconnection**: the colour strings between the many partons are rearranged to minimise their
-   total length (`ColourReconnection:range = 5.176`, a tune parameter that controls how aggressively);
-6. **hadronisation** with the Lund string model (status 71-74 for the string partons), and
-7. **decays** of the unstable hadrons (section 2.4).
-
-The regularisation scale is the single most important parameter of the model. CP5 sets it at a reference
-energy of 7 TeV and lets it grow with the collision energy as a power law:
-
-    pT0 = pT0Ref x (E_cm / 7 TeV)^ecmPow = 1.41 x (13.6 / 7)^0.03344 = 1.44 GeV
-
-and this is what the log prints: "pT0 = 1.44 gives sigmaInteraction = 492.18 mb: accepted". The number
-492 mb is the integrated parton-parton cross section above the cut-off, nine times the non-diffractive
-cross section of 55 mb: on average nine parton pairs interact per non-diffractive collision. The 250 events
-confirm it. Counting one interaction for the hard scattering plus one per pair of status-31 partons,
-the 183 ND events have between 1 and 39 interactions, mean 9.0, median 6, and the multiplicity follows
-them almost linearly:
-
-| interactions in the ND event | 1 | 2-3 | 4-6 | 7-10 | 11-15 | 16-20 | 21-30 | >30 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| events | 44 | 27 | 25 | 23 | 24 | 17 | 19 | 4 |
-| mean stable particles | 85 | 113 | 177 | 269 | 333 | 409 | 499 | 579 |
-
-Event 1 (18 interactions, 242 stable particles) and event 247 (39 interactions, 723 stable particles, the
-largest of the file) are both non-diffractive; so is event 13, with a single interaction and 78 particles.
-This spread, and not the process type, is what makes two minimum-bias events differ by a factor of ten in
-multiplicity.
-
-> **In plain words: MPI.** Protons are not points: when two of them pass through each other, more than one
-> pair of their constituents can scatter. Each such scattering is soft (a few GeV) and alone would hardly be
-> noticed, but their number fluctuates from one to a few dozen, and every one of them adds a dozen or more
-> hadrons. The "size" of a minimum-bias collision is essentially the number of these scatterings, which is
-> set by how centrally the two protons hit each other.
-
-### 2.3 The diffractive collisions
-
-In a diffractive collision one proton (SD) or both (DD) are excited into a system X of mass M_X by the
-exchange of a Pomeron, and the system then hadronises. Pythia8 (the Schuler-Sjostrand model) draws M_X
-from a spectrum falling like 1/M_X^2 between the proton mass and about the full energy, and treats the
-system as a Pomeron-proton collision with its own MPIs: the log shows this initialisation too, a block
-"diffraction XB for p+ on p+" that finds a regularisation pT0 for every diffractive mass from 10 GeV to
-13.6 TeV. The surviving proton loses the momentum fraction xi = M_X^2 / s and stays within a fraction of a
-milliradian of the beam.
-
-The 45 single-diffractive events of the file span the whole spectrum. The mass of the dissociated system
-(the invariant mass of all stable particles except the most energetic proton) has a median of 167 GeV and
-runs from 1.2 GeV to 6754 GeV; xi from 3.7 x 10^-9 to 0.25:
-
-| SD event | M_X [GeV] | xi | stable particles | what it looks like |
-|---|---:|---:|---:|---|
-| 210 | 1.2 | 3.7e-9 | 3 | the proton (6800.0 GeV, eta = 10.4) and an n pi+ system of 1.25 GeV at eta = -10: a proton excited by little more than a pion mass |
-| 12 | 2.6 | 3.1e-8 | 4 | the proton (6800.0 GeV, eta = -10.8) and a K0L, a Lambda and a pi+ at eta = 9: nothing central |
-| 216 | 6754 | 0.25 | 111 | indistinguishable from a non-diffractive event in the central detector |
-
-On average an SD event has 70 stable particles and 7 central ones, a DD event 57 and 2, against 241 and
-27 for ND: the diffractive events are nearly empty for the tracker and the calorimeters, and they are 27 %
-of the pileup collisions. The three central-diffractive events (two surviving protons and a small central
-system: 35 stable particles, 2 central) are the rarest and the emptiest.
-
-### 2.4 Hadronisation and decays: what reaches the detector
-
-The end of the generation is a list of *stable* particles (HepMC status 1), those Pythia hands to the
-detector simulation. Which particles count as stable is a setting of the common block:
-`ParticleDecays:limitTau0 = on` with `tau0Max = 10` mm decays everything with c tau < 10 mm and leaves the
-rest. So the pi0 (c tau = 25 nm), eta, the D and B hadrons, the tau, the Sigma0 are decayed by Pythia, while
-the K0S (c tau = 2.7 cm), the Lambda (7.9 cm), the charged pions and kaons, the muons and the neutrons are
-left to Geant4. `ParticleDecays:allowPhotonRadiation = on` lets the decays radiate photons.
-
-Over the 48 437 stable particles of the 250 events:
-
-| species | share | note |
-|---|---:|---|
-| photons | 45.9 % | almost all from pi0 -> gamma gamma; the ECAL sees a minimum-bias event mostly through these |
-| pi+- | 37.1 % | the charged tracks |
-| K+- | 4.8 % | |
-| p, pbar | 2.7 % | includes the surviving and the beam-remnant protons |
-| n, nbar | 2.5 % | |
-| K0L | 2.4 % | stable for Pythia and for the central detector (c tau = 15 m) |
-| K0S | 2.2 % | will decay in the tracker (c tau = 2.7 cm) |
-| Lambda | 0.9 % | will decay in the tracker (c tau = 7.9 cm) |
-| e+-, mu+-, neutrinos | 0.7 % | the electrons from Dalitz decays and conversions in the generator, 14 muons in 250 events |
-| Sigma+-, Xi, Omega | 0.8 % | |
-
-and their kinematics are soft and forward:
-
-| pT of the stable particles | < 0.2 GeV | 0.2-0.5 | 0.5-1 | 1-2 | 2-5 | > 5 GeV |
-|---|---:|---:|---:|---:|---:|---:|
-| particles | 18 209 | 17 452 | 8 978 | 3 094 | 687 | 17 |
-
-| \|eta\| of the stable particles | 0-1 | 1-2 | 2-3 | 3-4 | 4-5 | 5-6 | 6-7 | 7-8 | 8-9 | 9-10 | > 10 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| particles | 6950 | 7498 | 7816 | 7227 | 6406 | 5365 | 3509 | 2041 | 1039 | 419 | 167 |
-
-The density is flat in pseudorapidity out to |eta| = 4 and only then falls off, so that 20 % of the particles
-are beyond |eta| = 5.5, where no CMS subdetector is; the hardest particle of an event has a pT of 2.2 GeV on
-average and never more than 8.1 GeV; and 17 of 48 437 particles are above 5 GeV. Only 21 of the 250 events
-contain an anti-kT (R = 0.4) generator jet above 10 GeV, and one event a jet above 20 GeV.
-
-> **In plain words: what a minimum-bias event is made of.** Mostly pions, in equal numbers charged and
-> neutral, the neutral ones already decayed into pairs of photons; a sprinkling of kaons, protons, neutrons
-> and strange baryons; spread evenly across the whole rapidity range with transverse momenta of a few
-> hundred MeV. The signal bbbar event has a few particles with tens of GeV; a minimum-bias event has none
-> above a few GeV.
-
----
-
-## 3. The configuration
-
-### 3.1 The generator fragment
-
-There is no 13.6 TeV minimum-bias fragment in the release (`Configuration/Generator/python/` has
-`MinBias_13TeV_pythia8_TuneCUETP8M1_cfi` and `MinBias_14TeV_pythia8_TuneCP5_cfi`), and the Run-3 RelVal
-workflows of `Configuration/PyReleaseValidation` mix their 13.6 TeV signals with the *14 TeV* library
-`RelValMinBias_14TeV`. The book takes the same fragment and sets the energy to that of the signal through
-`--customise_commands`, exactly as the signal's GEN step did with its 14 TeV bbbar fragment:
-
-```python
-# Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py
-from Configuration.Generator.Pythia8CommonSettings_cfi import *
-from Configuration.Generator.MCTunes2017.PythiaCP5Settings_cfi import *
-
-generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
-    crossSection = cms.untracked.double(71.39e+09),      # pb, metadata only (the GenXsecAnalyzer reports the real one)
-    maxEventsToPrint = cms.untracked.int32(0),           # how many event records to print to the log
-    pythiaPylistVerbosity = cms.untracked.int32(1),
-    filterEfficiency = cms.untracked.double(1.0),
-    pythiaHepMCVerbosity = cms.untracked.bool(False),
-    comEnergy = cms.double(14000.0),                     # overridden: process.generator.comEnergy = cms.double(13600.0)
-    PythiaParameters = cms.PSet(
-        pythia8CommonSettingsBlock,
-        pythia8CP5SettingsBlock,
-        processParameters = cms.vstring('SoftQCD:inelastic = on'),
-        parameterSets = cms.vstring('pythia8CommonSettings', 'pythia8CP5Settings', 'processParameters')))
-
-ProductionFilterSequence = cms.Sequence(generator)
-```
-
-Three named blocks of Pythia8 settings are handed to Pythia in the order of `parameterSets`.
-
-**The process** is one line, `SoftQCD:inelastic = on`: the four subprocesses of section 2.1 and nothing
-else. No hard QCD is switched on; a minimum-bias event with a 20 GeV jet is possible (one of the 250 has
-one) but comes from the tail of the MPI and the showers, not from a 2 -> 2 process with a pT-hat cut.
-
-**The tune CP5** (`Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py`) is the set of
-parameters CMS fitted to Run-2 underlying-event and minimum-bias data; it is the tune of the signal too, so
-the underlying event of the signal and the pileup collisions are described by the same model:
-
-| setting | value | meaning |
-|---|---|---|
-| `Tune:pp 14`, `Tune:ee 7` | | start from the Monash 2013 tune |
-| `PDF:pSet = LHAPDF6:NNPDF31_nnlo_as_0118` | | the parton densities, NNPDF3.1 at NNLO, read through LHAPDF |
-| `SigmaProcess`, `SpaceShower`, `TimeShower`, `MultipartonInteractions:alphaSvalue` | 0.118 | alpha_s(M_Z) in the hard process, the two showers and the MPI, consistent with the PDF |
-| `...:alphaSorder` | 2 | alpha_s run at two loops everywhere |
-| `MultipartonInteractions:pT0Ref` | 1.41 | the MPI regularisation scale at 7 TeV (GeV) |
-| `MultipartonInteractions:ecmPow` | 0.03344 | its energy dependence; gives pT0 = 1.44 GeV at 13.6 TeV |
-| `MultipartonInteractions:bProfile` | 2 | double-Gaussian matter distribution of the proton |
-| `MultipartonInteractions:coreRadius`, `coreFraction` | 0.7634, 0.63 | the inner Gaussian: 63 % of the matter within 0.76 of the outer radius |
-| `ColourReconnection:range` | 5.176 | how far colour reconnection may rearrange the strings |
-| `SigmaTotal:mode` | 0 | use the cross sections given by hand rather than the parametrisation |
-| `SigmaTotal:sigmaTot`, `sigmaEl` | 100.309, 21.89 | the total and elastic cross sections (mb) |
-| `SigmaTotal:zeroAXB` | off | keep the central-diffractive process |
-
-**The common settings** (`Configuration/Generator/python/Pythia8CommonSettings_cfi.py`) are the same for
-every CMS Pythia8 fragment:
-
-| setting | value | meaning |
-|---|---|---|
-| `Tune:preferLHAPDF` | 2 | take the PDF from LHAPDF rather than Pythia's internal copy |
-| `Main:timesAllowErrors` | 10000 | how many generation errors are tolerated before the job stops |
-| `Check:epTolErr` | 0.01 | tolerance of the energy-momentum conservation check |
-| `Beams:setProductionScalesFromLHEF` | off | (only matters for LHE input) |
-| `SLHA:minMassSM` | 1000 | (only matters for SUSY spectra) |
-| `ParticleDecays:limitTau0`, `tau0Max` | on, 10 | decay particles with c tau < 10 mm, leave the rest (section 2.4) |
-| `ParticleDecays:allowPhotonRadiation` | on | QED radiation in the decays |
-
-Pythia prints every setting that differs from its default at initialisation ("Settings (changes only)" in
-the log); the table there is the sum of these three blocks plus `Beams:eCM = 13600` from `comEnergy`.
-
-### 3.2 The generator module
-
-`Pythia8ConcurrentGeneratorFilter` (`GeneratorInterface/Pythia8Interface`, a
-`ConcurrentGeneratorFilter<Pythia8Hadronizer>`) is the module that runs Pythia. Three things about it:
-
-- it is a **filter**: a fragment can reject events (a bbbar filter, a pT-hat cut), and only the events that
-  pass reach the output. This fragment accepts everything (`filterEfficiency = 1.0`; the `GenXsecAnalyzer`
-  confirms 250 tried, 250 accepted). The `ProductionFilterSequence` that holds it is inserted at the start
-  of every path by `cmsDriver.py`, so no later module ever sees a rejected event;
-- it is **concurrent**: there is one Pythia instance per framework stream, each with its own random
-  engine, plus a master instance used for the initialisation and the cross-section bookkeeping. This is why
-  the Pythia banner and the initialisation tables appear twice in the log of a one-stream job;
-- it **produces** two things per event: the generated record as an `edm::HepMCProduct` with the label
-  `generator:unsmeared` (the collision at the origin) and a `GenEventInfoProduct` labelled `generator`
-  (process id, event weight, the scale `qScale` of the hardest interaction, the alpha_s values).
-
-`maxEventsToPrint = 0` keeps the log short. Set it to 1 (section 7.5) and Pythia lists the first event in
-full: the "info" block (process, x_1, x_2, pT-hat, number of MPIs) and the event record, one line per
-particle with its status code, mother and daughter indices and four-momentum.
-
-### 3.3 The energy and the random seeds
-
-Two lines of `--customise_commands` complete the generator configuration, and a third concerns the vertex
-smearing:
-
-```python
-process.generator.comEnergy = cms.double(13600.0)
-process.RandomNumberGeneratorService.generator.initialSeed = 20241
-process.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242
-```
-
-The first overrides the 14 TeV of the fragment with the 13.6 TeV of the Run-3 signal. The difference is
-small (a few per cent in multiplicity, through the slow growth of pT0 and of the PDFs with the energy), and
-the RelVal workflows ignore it; the book keeps the library and the signal at the same energy because that is
-what a physics production would do.
-
-The seeds matter more than they look. Every module that draws random numbers has its own engine in the
-`RandomNumberGeneratorService`, and `cmsDriver.py` writes the *same default seeds* into every configuration
-it generates. Had the minimum-bias job been run with the defaults, its `VtxSmeared` engine would have drawn
-the same sequence as the signal's: minimum-bias event k would have had *exactly* the vertex of signal event
-k, in space and in time, and the first mixed pileup collision would have sat on the signal vertex. The
-scripts therefore give the two GEN engines their own seeds from the `PUSEED` variable (default 20241):
-
-| engine | seed | what it drives |
-|---|---|---|
-| `generator` | `PUSEED` = 20241 | Pythia8: the process of every event, the MPIs, the showers, the hadronisation, the decays |
-| `VtxSmeared` | `PUSEED` + 1 = 20242 | the vertex position and time of every event |
-
-A different `PUSEED` is a different set of collisions; the same `PUSEED` always reproduces this one. The
-`randomEngineStateProducer` of the GEN sequence records the state of both engines at the start of every
-event in the file (`edm::RandomEngineStates`), so that any single event can be regenerated on its own.
-
-### 3.4 The `cmsDriver.py` command and the GEN process
+One `cmsDriver.py` command, written by `run_driver` of `common/jitjet_common.sh` (its own output is
+`out/step1_GEN_MinBias_08_PU_cfg.driver.log`); the command line is also the second line of the generated
+configuration (`# with command line options: ...`):
 
 ```bash
 cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2024_realistic --era Run3_2024 \
   --geometry DB:Extended --beamspot DBrealistic -n 250 -s GEN --datatier GEN --eventcontent FEVTDEBUG \
-  --fileout file:step1_GEN_MinBias_out.root --python_filename step1_GEN_MinBias_cfg.py --no_exec \
-  --customise_commands "process.generator.comEnergy = cms.double(13600.0)\nprocess.RandomNumberGeneratorService.generator.initialSeed = 20241\nprocess.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242"
-cmsRun step1_GEN_MinBias_cfg.py > step1_GEN_MinBias_out.log 2>&1
+  --fileout file:step1_GEN_MinBias_08_PU.root \
+  --customise_commands "process.generator.comEnergy = cms.double(13600.0)\nprocess.RandomNumberGeneratorService.generator.initialSeed = 20241\nprocess.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242" \
+  --python_filename 08_PU/step1_GEN_MinBias_08_PU_cfg.py --no_exec
 ```
 
-| option | what it sets in a GEN job |
+| argument | what it does |
 |---|---|
-| first argument | the generator fragment to load from `Configuration/Generator/python/` |
-| `-s GEN` | the step: the generator sequence `pgen` |
-| `-n 250` | number of events to generate (after the filter) |
-| `--conditions auto:phase1_2024_realistic` | the global tag (`150X_mcRun3_2024_realistic_v2`); in a GEN job it supplies the beam-spot payload of the vertex smearing |
-| `--era Run3_2024` | the era modifiers; in a GEN job they switch on the PPS transport (`run3_common`) |
-| `--geometry DB:Extended` | not used by the generator; written into the configuration so that the SIM step inherits it |
-| `--beamspot DBrealistic` | the vertex-smearing module: `BetafuncEvtVtxGenerator` reading the database |
-| `--datatier GEN`, `--eventcontent FEVTDEBUG` | the label of the output and the list of products kept (everything) |
-| `--customise_commands "..."` | Python lines appended verbatim to the configuration (a literal `\n` separates them) |
-| `--fileout`, `--python_filename`, `--no_exec` | the output file, the name of the configuration, "write it, do not run it" |
+| `MinBias_14TeV_pythia8_TuneCP5_cfi` | the generator fragment, `Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py` of the release: `Pythia8ConcurrentGeneratorFilter` with `SoftQCD:inelastic = on`, the common settings block and the CP5 tune block, `comEnergy = 14000` |
+| `--conditions auto:phase1_2024_realistic` | the global tag (`150X_mcRun3_2024_realistic_v2`, `Configuration/AlCa/python/autoCond.py`); in a GEN job it supplies the beam-spot payload (`SimBeamSpotObjectsRcd`) of the vertex smearing |
+| `--era Run3_2024` | the era modifiers (`Configuration/Eras/python/Era_Run3_2024_cff.py`); in a GEN job they switch on the PPS proton transport (`LHCTransport`) |
+| `--geometry DB:Extended` | not used by the generator; carried in the configuration so that the SIM step of chapter 09 inherits it |
+| `--beamspot DBrealistic` | the vertex-smearing module: `IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py`, a `BetafuncEvtVtxGenerator` with `readDB = True` |
+| `-n 250` | events to generate (`PUEVENTS`); the filter accepts every event, so 250 are written |
+| `-s GEN` | the step: the generator sequence `pgen` of `Configuration/StandardSequences/python/Generator_cff.py` |
+| `--datatier GEN --eventcontent FEVTDEBUG` | the label of the output and the list of kept products (everything the GEN step makes) |
+| `--fileout file:step1_GEN_MinBias_08_PU.root` | the output file, written in `out/` (`cmsRun` runs there) |
+| `--customise_commands "..."` | Python lines appended verbatim to the configuration (a literal `\n` separates them): the energy of the signal and the two seeds (`PUSEED`, `PUSEED + 1`) |
+| `--python_filename ... --no_exec` | the name of the configuration, and "write it, do not run it" (`run_driver` then runs `cmsRun` on it) |
 
-The generated configuration is a process named `GEN` with the era `Run3_2024`, one path and three end
-paths:
+The signal of chapters 01-07 used the same conditions, era, geometry, beam spot and energy with its own
+fragment (`BBbar_14TeV_TuneCP5_cfi`) and the `cmsDriver.py` default seeds; the library must not reuse those
+seeds, or library event k would get the vertex of signal event k.
 
-```python
-process.generation_step = cms.Path(process.pgen)
-process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
-process.endjob_step = cms.EndPath(process.endOfProcess)
-process.FEVTDEBUGoutput_step = cms.EndPath(process.FEVTDEBUGoutput)
-for path in process.paths:
-    getattr(process, path).insert(0, process.ProductionFilterSequence)   # the generator filter runs first
-```
-
-with `pgen` (`Configuration/StandardSequences/python/Generator_cff.py`):
-
-```python
-pgen = cms.Sequence(randomEngineStateProducer + VertexSmearing + GenSmeared + GeneInfo + genJetMET, PPSTransportTask)
-```
-
-Module by module, for every event:
-
-```
-generator (Pythia8)  -->  HepMCProduct generator:unsmeared, GenEventInfoProduct     the collision at the origin
-        |
-VtxSmeared           -->  HepMCProduct VtxSmeared                                   the collision moved to a vertex of the 2024 beam spot
-        |
-generatorSmeared     -->  HepMCProduct generatorSmeared                             the same, under the fixed label every later step reads
-        |
-genParticles         -->  reco::GenParticles (+ xyz0, t0)                           the record as a flat collection, with the vertex
-genJetMET            -->  ak4GenJets, ak8GenJets, (NoNu), genMetTrue, genMetCalo    anti-kT jets and MET of the stable particles
-LHCTransport         -->  HepMCProduct LHCTransport                                 the forward protons carried 200 m to the PPS Roman pots
-        |
-FEVTDEBUGoutput      -->  step1_GEN_MinBias_out.root
-```
-
-1. `randomEngineStateProducer` records the engine states (section 3.3);
-2. `generator` runs Pythia8 (section 3.2);
-3. `VtxSmeared` moves the whole event to a vertex drawn from the beam model (section 3.5) and
-   `generatorSmeared` republishes it under the label that the SIM step, the mixing and every analyzer
-   read, so that none of them depends on which smearing module was used;
-4. `genParticles` converts the HepMC record into `reco::GenParticle`s (every particle of the record, with
-   its Pythia status code, mothers and daughters), together with the vertex (`genParticles:xyz0`) and time
-   (`genParticles:t0`) of the event; `genJetMET` clusters the stable particles into anti-kT jets of R = 0.4
-   and 0.8, with and without neutrinos, and computes the generator MET. None of this is used by the mixing
-   or by Geant4; it is in the file because the standard GEN sequence makes it, and it is what the
-   `GenPartAnalyzer` and `GenJetAnalyzer` of the GEN chapter read;
-5. `LHCTransport` (the `PPSTransportTask`, Run 3 only) takes the stable protons that keep most of the beam
-   energy and tracks them through the LHC magnets to the Roman pots of the Precision Proton Spectrometer,
-   about 200 m from CMS. In the 250 events it carried 93 protons in 81 events: 51 from the 45 SD events, 10
-   from DD, 6 from the 3 CD events, and 26 beam-remnant protons of ND events that happened to fall into the
-   acceptance; their xi = 1 - E/E_beam runs from zero to 0.55 with a median of 0.1. The SIM step starts these
-   protons *at the pots* and this is where their hits will be.
-
-> **In plain words: modules, products and the schedule.** A CMSSW job is a set of *modules* (producers that
-> add products to the event, filters that can stop the processing of an event, analyzers that only read,
-> output modules that write) and a *schedule* that says in which order they run for every event. Every
-> product is identified by its type, the module that made it, an optional instance label and the process
-> name: "`edm::HepMCProduct generatorSmeared GEN`" is the smeared HepMC event made by the module
-> `generatorSmeared` in the process `GEN`. `edmDumpEventContent file.root` lists them.
-
-### 3.5 The vertex smearing
-
-Pythia8 puts every collision at the origin. The real collisions are spread over the *luminous region*, the
-overlap of the two bunches, and this is what `VtxSmeared` reproduces. For Run 3 (`--beamspot DBrealistic`)
-the module is the `BetafuncEvtVtxGenerator` of `IOMC/EventVertexGenerators`, a Gaussian in z and in time
-whose transverse width follows the beta function of the beams:
-
-```python
-# IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py
-from IOMC.EventVertexGenerators.BetafuncEvtVtxGenerator_cfi import BetafuncEvtVtxGenerator
-VtxSmeared = BetafuncEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)
-```
-
-With `readDB = True` the beam parameters come from the `SimBeamSpotObjectsRcd` payload of the global tag,
-here `SimBeamSpot_Realistic25ns13p6TeVEarly2024CollisionVtxSmearingParameters_v1_mc` (`conddb list`,
-`conddb dump`):
-
-| parameter | meaning | 2024 payload |
-|---|---|---:|
-| `X0`, `Y0`, `Z0` [cm] | the centre of the luminous region | 0.0285, -0.0166, 0.416 |
-| `SigmaZ` [cm] | r.m.s. length of the luminous region along the beam | 3.6 |
-| `BetaStar` [cm] | beta* at the interaction point | 30 |
-| `Emittance` [cm] | the (non-normalised) emittance | 5.725e-8 |
-| `Phi`, `Alpha` | tilt angles of the luminous region | 0, 0 |
-| `TimeOffset` [ns] | the centre in time | 0 |
-
-The module draws z from a Gaussian of width `SigmaZ` around `Z0`; x and y from a Gaussian of width
-sigma_xy(z) = sqrt(emittance x beta* x [1 + ((z - z0)/beta*)^2]) / sqrt(2), the beam size at that z divided
-by sqrt(2) for the overlap of two beams (9 um at the centre); and the time from a Gaussian of the same width
-as z in units of mm/c, i.e. sigma_t = 3.6 cm / c = 120 ps. In the 250 events the vertices have (sample
-r.m.s.) sigma_x = sigma_y = 10 um, sigma_z = 3.56 cm around z = 0.08 cm and sigma_t = 122 ps, with z from
--9.5 to +10.1 cm and t from -0.39 to +0.37 ns: the payload within the statistics of 250 events. The time
-is *part of the generated event*: every later step starts the particles at it, and the mixing will only add
-the bunch-crossing offset.
-
-> **In plain words: the same beam spot as the signal, on purpose.** The signal bbbar event was generated
-> with the very same module and payload; its vertex is at z = 3.11 cm. The pileup collisions have to be
-> spread the same way, because nothing downstream will move them again. A minimum-bias sample generated
-> with the HL-LHC beam spot (sigma_z = 4.3 cm, sigma_t = 190 ps, a crossing angle) mixed into a 2024 signal
-> would simply be wrong, and nothing in the mixing job would notice.
-
----
-
-## 4. Reading the log
-
-`step1_GEN_MinBias_out.log` is 800 lines, almost all of them Pythia's. In order:
-
-| lines | block | what to look for |
-|---|---|---|
-| banner | "Welcome to the Lund Monte Carlo! This is PYTHIA version 8.311" | the Pythia version; it appears twice (master and stream instance) |
-| LHAPDF | "LHAPDF 6.4.0 loading .../NNPDF31_nnlo_as_0118_0000.dat" | the PDF set actually used (LHAPDF ID 303600) |
-| Process Initialization | "We collide p+ with p+ at a CM energy of 1.360e+04 GeV" and the table of the five subprocesses with their cross sections | the energy really is 13.6 TeV; the cross sections of section 2.1 |
-| Multiparton Interactions Initialization | "sigmaNonDiffractive = 55.42 mb", "pT0 = 1.44 gives sigmaInteraction = 492.18 mb: accepted", then the "diffraction XB / AX / AXB" blocks with a pT0 per diffractive mass | the MPI regularisation of section 2.2 and 2.3 |
-| Settings (changes only) | every Pythia parameter that differs from its default, with the default beside it | the three blocks of section 3.1 plus `Beams:eCM`; the place to check that a setting was really applied |
-| Particle Data Table (changed only) | "no particle data has been changed" | no masses or branching ratios were overridden |
-| `Begin processing the 1st record ... 250th record` | one line per event with a timestamp | 250 events in 2.6 s, after about 30 s of initialisation |
-| Event and Cross Section Statistics | the five subprocesses with tried / selected / accepted and sigma | 183 / 27 / 18 / 19 / 3, sum 250; the observed process mix |
-| Error and Warning Messages Statistics | "1 Error in BeamRemnants::setKinematics: ... failed after retrying 10 times", 44 "weight above unity" warnings | one event was regenerated after a kinematics failure; the shower warnings are benign |
-| GenXsecAnalyzer | "total cross section = 7.842e+10 +- 3.028e+02 pb", "Filter efficiency (event-level) = 250/250" | the cross section the sample corresponds to and the filter efficiency (what McM records) |
-
-The timing is worth a glance: the generation of a minimum-bias event costs 10 ms, the initialisation
-(Pythia's MPI integration tables, the LHAPDF grids) half a minute. A GEN-only job of a million minimum-bias
-events would take three hours; it is the SIM step, at 2.5 s per event, that makes a library expensive.
-
----
-
-## 5. What is in the GEN file
-
-`edmDumpEventContent step1_GEN_MinBias_out.root` lists 31 products in every event, all from the process
-`GEN`:
-
-| product (type, module:label) | content |
-|---|---|
-| `edm::HepMCProduct generatorSmeared` | the full generator record of the event, vertex smeared: every particle of every stage with its status code, mothers, daughters and four-momentum, and every vertex with its position and time. The only HepMC record the next steps read |
-| `edm::HepMCProduct LHCTransport` | the forward protons at the PPS Roman pots (empty in 169 of the 250 events) |
-| `GenEventInfoProduct generator` | process id, event weight (1 here), `qScale` = pT-hat of the hardest interaction, alpha_s values, PDF information |
-| `vector<reco::GenParticle> genParticles`, `vector<int> genParticles`, `genParticles:xyz0`, `genParticles:t0` | the record as a flat collection with mother/daughter links, the HepMC barcode of every entry, and the smeared vertex position and time |
-| `vector<reco::GenJet> ak4GenJets`, `ak8GenJets`, `ak4GenJetsNoNu`, `ak8GenJetsNoNu` (+ `rho`, `sigma`, `rhos`, `sigmas`) | anti-kT jets of the stable particles and the pileup-density estimates of the jet area method |
-| `vector<reco::GenMET> genMetTrue`, `genMetCalo` | the generator MET from all stable particles, and from the ones a calorimeter would see |
-| `edm::RandomEngineStates randomEngineStateProducer` | the state of the `generator` and `VtxSmeared` engines at the start of the event |
-| `edm::TriggerResults` | the result of the generator filter (always true here) |
-
-The unsmeared record `generator:unsmeared` is *not* in the file: the event content keeps only
-`GenEventInfoProduct` from the module `generator` and takes the HepMC record from `generatorSmeared`.
-
-The file is 11 MB for 250 events, 44 kB per event after compression, of which `edmEventSize -v` attributes
-29 kB to the HepMC record, 11.5 kB to the `GenParticle`s, 0.8 kB to the engine states, 1.5 kB to the four
-jet collections and 50 bytes to the PPS protons.
-
-**The record of one event.** Event 1, a non-diffractive collision with 18 interactions, holds 677 particles
-and 364 vertices, of which 242 are stable. The others are the intermediate stages that Pythia keeps so
-that the history of every hadron can be traced; the conversion to HepMC keeps the Pythia status codes for
-them. Over the 250 events:
-
-| status | Pythia meaning | entries | per event |
-|---|---|---:|---:|
-| 1 | stable final-state particle | 48 437 | 194 |
-| 2 | decayed hadron or tau | 23 116 | 92 |
-| 4 | the two incoming beam protons | 500 | 2 |
-| 13, 15 | incoming / outgoing particle of a diffractive subsystem | 198 | 0.8 |
-| 21, 23 | incoming / outgoing parton of the hardest interaction | 956 | 3.8 |
-| 31, 33 | incoming / outgoing parton of an additional interaction (MPI) | 6 028 | 24 |
-| 41-44 | initial-state radiation | 11 832 | 47 |
-| 51-53 | final-state radiation | 12 852 | 51 |
-| 61-63 | beam remnants (with primordial kT) | 14 573 | 58 |
-| 71-74 | partons copied into the strings for hadronisation | 10 964 | 44 |
-
-(With 3014 status-31 entries in 183 ND events, i.e. 8 per event, plus the hard interaction, the mean number
-of interactions of section 2.2 follows.)
-
-**The stable particles of two events** (`minBiasGenStats.py ... --event 1 12`):
-
-```
-event 1 (ND, 18 interactions, 677 particles and 364 vertices in the record): stable particles by pT
-    pi+-    pT   2.357  eta   -2.34  E      12.4 GeV
-    pi+-    pT   1.841  eta   -2.46  E      10.9 GeV
-    n       pT   1.839  eta    5.17  E     161.8 GeV
-    pi+-    pT   1.439  eta    2.55  E       9.2 GeV
-    ... 242 in all: 118 photons, 87 pi+-, 9 K+-, 7 K0S, 6 n, 5 K0L, 3 Sigma-, 2 p, 2 Lambda, 2 Sigma+, 1 Xi-
-event 12 (SD, 1 interaction, 15 particles and 9 vertices in the record): stable particles by pT
-    Lambda  pT   0.997  eta    9.08  E    4399.0 GeV
-    K0L     pT   0.737  eta    8.68  E    2173.3 GeV
-    p       pT   0.276  eta  -10.81  E    6800.0 GeV
-    pi+-    pT   0.066  eta    8.84  E     227.7 GeV
-```
-
-Event 1 is the one drawn on the detector in `PULib.md`; its hardest particle is a 2.4 GeV pion. Event 12
-is a single-diffractive collision at the bottom of the mass spectrum: the proton keeps the full beam energy
-(xi = 3 x 10^-8) and the other proton turns into a 2.6 GeV system of three hadrons at eta = 9, all of which
-will fly down the beam pipe. Four stable particles, no detector hit.
-
----
-
-## 6. The 250 events at generator level
-
-The catalogue written by `minBiasGenStats.py` (`PU_2024/genstats.txt`, one line per event), first rows:
-
-| event | proc. | interactions | stable | charged | central | \|eta\| > 5.5 | lead pT [GeV] | sum pT [GeV] | jets > 10 GeV | PPS protons | z [cm] | t [ns] |
-|--:|:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 1 | ND | 18 | 242 | 104 | 16 | 62 | 2.36 | 89.0 | 0 | 0 | -3.30 | 0.365 |
-| 2 | DD | 1 | 66 | 28 | 0 | 35 | 1.34 | 21.3 | 0 | 0 | -8.20 | -0.179 |
-| 3 | ND | 25 | 402 | 188 | 32 | 68 | 2.12 | 134.1 | 0 | 0 | 0.69 | -0.031 |
-| 4 | ND | 15 | 234 | 96 | 22 | 53 | 3.76 | 113.5 | 0 | 0 | 6.24 | -0.172 |
-| 5 | DD | 1 | 21 | 8 | 0 | 18 | 0.61 | 4.5 | 0 | 0 | -0.20 | -0.301 |
-| 6 | ND | 1 | 65 | 34 | 4 | 29 | 0.86 | 18.9 | 0 | 0 | 6.21 | -0.110 |
-| 7 | ND | 2 | 83 | 46 | 8 | 33 | 1.67 | 30.5 | 0 | 0 | -3.51 | 0.008 |
-| 8 | ND | 9 | 185 | 82 | 9 | 45 | 2.07 | 70.7 | 0 | 0 | 1.49 | -0.109 |
-| 9 | ND | 20 | 323 | 130 | 48 | 47 | 3.00 | 128.7 | 0 | 0 | -2.68 | 0.065 |
-| 10 | ND | 26 | 390 | 170 | 43 | 66 | 2.46 | 160.7 | 0 | 0 | 1.21 | 0.129 |
-| 11 | ND | 5 | 119 | 66 | 8 | 41 | 2.53 | 50.2 | 0 | 0 | -3.92 | -0.193 |
-| 12 | SD | 1 | 4 | 2 | 0 | 4 | 1.00 | 2.1 | 0 | 1 | -1.17 | 0.032 |
-| 13 | ND | 1 | 78 | 34 | 4 | 31 | 0.85 | 22.0 | 0 | 1 | 6.57 | -0.196 |
-| 247 | ND | 39 | 723 | 320 | 126 | 87 | 4.76 | 376.1 | 2 | 0 | 0.29 | 0.040 |
-
-(the column "interactions" counts the hardest scattering plus the MPIs; "central" is |eta| < 2.5 and
-pT > 0.5 GeV; "PPS protons" is the size of the `LHCTransport` record). The summary of the sample:
-
-| per event | mean | median | min | max |
-|---|--:|--:|--:|--:|
-| interactions | 7.0 | 3 | 1 | 39 |
-| stable particles | 194 | 132 | 3 | 723 |
-| charged stable particles | 89 | 59 | 2 | 320 |
-| central (\|eta\| < 2.5, pT > 0.5 GeV) | 21 | 10 | 0 | 126 |
-| beyond \|eta\| = 5.5 | 39 | 37 | 3 | 93 |
-| pT of the hardest particle [GeV] | 2.2 | 1.8 | 0.2 | 8.1 |
-| scalar sum of pT [GeV] | 79 | 45 | 0.5 | 376 |
-| ak4 jets above 10 GeV | 0.15 | 0 | 0 | 3 |
-| protons at the PPS | 0.37 | 0 | 0 | 2 |
-| vertex z [cm] | 0.08 | -0.05 | -9.5 | 10.1 |
-| vertex t [ns] | -0.007 | -0.015 | -0.39 | 0.37 |
-
-| per process | events | interactions | stable | charged | central | lead pT [GeV] | sum pT [GeV] |
-|---|--:|--:|--:|--:|--:|--:|--:|
-| non-diffractive (ND) | 183 | 9.0 | 241 | 111 | 27 | 2.5 | 100 |
-| single diffractive (SD) | 45 | 2.0 | 70 | 33 | 7 | 1.4 | 26 |
-| double diffractive (DD) | 19 | 1.2 | 57 | 24 | 2 | 1.1 | 17 |
-| central diffractive (CD) | 3 | 2.0 | 35 | 16 | 2 | 0.8 | 9 |
-
-Four things to take from these tables:
-
-- **The sample is not 250 copies of the same event.** The multiplicity spans a factor of 240 between event
-  132 (3 stable particles) and event 247 (723). The median event has two thirds of the mean; the top 10 %
-  of the events hold a third of all the particles. When the mixing later stacks 60 of these for a bunch
-  crossing, the sum is dominated by the few large non-diffractive ones.
-- **Within the non-diffractive class the number of interactions sets the scale**, almost linearly
-  (section 2.2): one interaction gives 85 particles, twenty give about 440, thirty-nine give 723. The process type
-  then separates the diffractive events below.
-- **The events are forward.** A fifth of the particles are beyond |eta| = 5.5, where nothing will see them
-  (except the PPS, for the protons), and the density is flat out to |eta| = 4. Only 21 particles per event,
-  10 in the median one, are "central" by the loose definition of the table. This is what will make the EE
-  and the HF, not the barrel, the detectors that collect most of a minimum-bias event's energy.
-- **The events are soft.** The hardest particle has 2.2 GeV on average and 8.1 GeV at most; a jet above
-  10 GeV appears once in twelve events. The signal event of the book has a single parton pair at
-  pT-hat > 100 GeV; a minimum-bias event has nothing comparable, and nothing that a trigger would fire on.
-
-> **In plain words: mean, median and the big events.** Ask "how many particles does a pileup collision
-> add?" and the honest answer is "between 3 and 700, typically 130, on average 190". Any expectation built
-> from the average is right over many bunch crossings, but a single bunch crossing of 60 collisions
-> fluctuates more than sqrt(60) would suggest, because its sum is a sum of very unequal terms.
-
----
-
-## 7. Running it
-
-Everything below runs from `JitJetSW/Journey/test` in an initialised CMSSW_15_0_5 environment:
+## 2. The cmsRun on the python config
 
 ```bash
-cd CMSSW_15_0_5/src
-eval "$(scram runtime -sh)"        # or: cmsenv
-cd JitJetSW/Journey/test
+cd 08_PU/out && cmsRun ../step1_GEN_MinBias_08_PU_cfg.py > step1_GEN_MinBias_08_PU.log 2>&1 && cd ../..   # about 1 min
 ```
 
-### 7.1 Generating the events: `SIM=0 ./runMinBias_mc2024.sh`
+The generated configuration `08_PU/step1_GEN_MinBias_08_PU_cfg.py`, part by part:
 
-`runMinBias_mc2024.sh` is the script that makes the pileup library (GEN then SIM, `PULib.md`). With `SIM=0`
-it stops after the GEN step and does what this chapter describes and nothing more: it writes the
-configuration of section 3.4 with `cmsDriver.py`, runs it, and prints the generator-level checks.
+- **process and era**: `process = cms.Process('GEN', Run3_2024)`; the standard includes (`Services_cff`,
+  the particle table `pythiapdt_cfi`, `MessageLogger`, `EventContent_cff`, `mixNoPU_cfi` (no mixing in a
+  GEN job), `GeometryRecoDB_cff`, `MagneticField_cff`, `Generator_cff`, `VtxSmearedRealistic_cfi`,
+  `genFilterSummary_cff`, `EndOfProcess_cff`, `FrontierConditions_GlobalTag_cff`).
+- **source and events**: `process.source = cms.Source("EmptySource")` (a generator job makes its own events,
+  run 1, lumi 1, events 1 to 250); `process.maxEvents.input = 250`.
+- **output**: `process.FEVTDEBUGoutput`, a `PoolOutputModule` with `SelectEvents = ['generation_step']` (only
+  events that pass the generator filter) and `fileName = 'file:step1_GEN_MinBias_08_PU.root'`.
+- **global tag**: `process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2024_realistic', '')`.
+- **the generator**: `process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter", ...)`, the
+  fragment spelled out in full: `processParameters = ['SoftQCD:inelastic = on']`, the CP5 block (`Tune:pp 14`,
+  `MultipartonInteractions:pT0Ref=1.41`, `ecmPow=0.03344`, `bProfile=2`, `coreRadius=0.7634`,
+  `coreFraction=0.63`, `ColourReconnection:range=5.176`, `SigmaTotal:zeroAXB=off`, alpha_s = 0.118 at two
+  loops in the hard process, both showers and the MPI, `SigmaTotal:mode = 0`, `SigmaTotal:sigmaEl = 21.89`,
+  `SigmaTotal:sigmaTot = 100.309`, `PDF:pSet=LHAPDF6:NNPDF31_nnlo_as_0118`), the common block
+  (`Main:timesAllowErrors = 10000`, `Check:epTolErr = 0.01`, `ParticleDecays:limitTau0 = on`,
+  `ParticleDecays:tau0Max = 10`, `ParticleDecays:allowPhotonRadiation = on`), `comEnergy = 14000.0`
+  (overridden below), `crossSection = 71390000000.0` (metadata only), `maxEventsToPrint = 0`.
+- **paths and schedule**: `generation_step = cms.Path(process.pgen)`, the end paths `genfiltersummary_step`,
+  `endjob_step`, `FEVTDEBUGoutput_step`; `ProductionFilterSequence` (the generator filter) is inserted at the
+  start of every path. `pgen` runs, per event: `randomEngineStateProducer` (records the engine states),
+  `generator` (Pythia8, `HepMCProduct generator:unsmeared` + `GenEventInfoProduct`), `VtxSmeared` (moves the
+  event to a vertex of the 2024 beam spot, in space and time), `generatorSmeared` (the same record under the
+  label every later step reads), `genParticles` (the record as `reco::GenParticle`s with `xyz0`, `t0`),
+  `genJetMET` (ak4 / ak8 jets with and without neutrinos, `genMetTrue`, `genMetCalo`), `LHCTransport` (the
+  surviving protons carried to the PPS Roman pots).
+- **the customisation lines** at the end: `process.generator.comEnergy = cms.double(13600.0)`,
+  `process.RandomNumberGeneratorService.generator.initialSeed = 20241`,
+  `process.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242`, then the early-deletion customisation
+  `customiseEarlyDelete`.
+
+The checks the script writes into `out/gencheck_08_PU.log`: the process, geometry, vertex-smearing and
+global-tag lines of the configuration, the seeds, `edmFileUtil -e` (250 events), the Pythia8 statistics and
+the `GenXsecAnalyzer` cross section (section 4).
+
+**The output ROOT file** (`edmDumpEventContent file:08_PU/out/step1_GEN_MinBias_08_PU.root`), 31 products
+per event, all from the process `GEN`; 11 MB for 250 events, 44 kB per event (`edmEventSize -v`: 29.0 kB the
+HepMC record, 11.5 kB the `GenParticle`s, 0.8 kB the engine states):
+
+```
+Type                                  Module                      Label      Process
+GenEventInfoProduct                   "generator"                 ""         "GEN"      process id (101..106), weight, qScale
+edm::HepMCProduct                     "generatorSmeared"          ""         "GEN"      the full record, vertex smeared (the only HepMC the mixing reads)
+edm::HepMCProduct                     "LHCTransport"              ""         "GEN"      the protons at the PPS Roman pots
+edm::RandomEngineStates               "randomEngineStateProducer" ""         "GEN"      engine states at the start of the event
+edm::TriggerResults                   "TriggerResults"            ""         "GEN"      the generator filter decision (always true)
+vector<reco::GenParticle>             "genParticles"              ""         "GEN"      the record as a flat collection
+vector<int>                           "genParticles"              ""         "GEN"      the HepMC barcode of every entry
+ROOT::Math::PositionVector3D<...>     "genParticles"              "xyz0"     "GEN"      the smeared vertex
+float                                 "genParticles"              "t0"       "GEN"      the smeared vertex time
+vector<reco::GenJet>                  "ak4GenJets", "ak4GenJetsNoNu", "ak8GenJets", "ak8GenJetsNoNu"   "GEN"   + rho, sigma, rhos, sigmas (double, vector<double>) per collection
+vector<reco::GenMET>                  "genMetTrue", "genMetCalo"  ""         "GEN"
+```
+
+The unsmeared record `generator:unsmeared` is not kept by the FEVTDEBUG event content.
+
+**The overlay** is a second `cmsRun`, on an analyzer configuration (section 3); its EDM output
+`step2_GENJETPU_08_PU.root` (`edmDumpEventContent`) holds, from the signal file (process `GEN`),
+`GenEventInfoProduct generator`, `genParticles` (+ barcodes, `xyz0`, `t0`), and from the process `GENJETPU`:
+
+```
+CrossingFramePlaybackInfoNew          "mix"                       ""         "GENJETPU"   which library events went in
+PileupMixingContent                   "mix"                       ""         "GENJETPU"   bunch crossings [0], collisions [68], true mean [68.0]
+vector<reco::GenParticle>             "genParticlesPU"            ""         "GENJETPU"   36 218 particles, collisionId 0 = signal, 1..68 = pileup
+vector<int>, xyz0, t0                 "genParticlesPU"                       "GENJETPU"
+edm::PtrVector<reco::Candidate>       "genParticlesForJetsPU", "genParticlesForJetsNoNuPU"   "GENJETPU"   the status 1 inputs (without neutrinos for NoNu)
+vector<reco::GenJet>                  "ak4GenJetsPU", "ak4GenJetsNoNuPU", "ak8GenJetsPU", "ak8GenJetsNoNuPU"   "GENJETPU"   + rho, sigma, rhos, sigmas
+```
+
+## 3. The analyzer configs
+
+Four steps after the GEN job, all run by the script (`ANALYZE=1`):
+
+**(8b) the catalogue**, `common/minBiasGenStats.py` (FWLite, no `cmsRun`):
 
 ```bash
-SIM=0 ./runMinBias_mc2024.sh                       # 250 events at 13.6 TeV, seeds 20241/20242, into PU_2024/ (about 1 min)
-SIM=0 STATS=1 ./runMinBias_mc2024.sh               # same, plus the per-event catalogue PU_2024/genstats.txt (section 6)
-SIM=0 RUN=0 OUTDIR=configs ./runMinBias_mc2024.sh  # only write the cmsDriver configuration, to read or edit it
+python3 common/minBiasGenStats.py 08_PU/out/step1_GEN_MinBias_08_PU.root > 08_PU/out/genstats_08_PU.txt 2> 08_PU/out/genstats_08_PU.log
+python3 common/minBiasGenStats.py 08_PU/out/step1_GEN_MinBias_08_PU.root --event 72 132    # + the stable particles of events 72 and 132
 ```
 
-| variable (default) | meaning |
-|---|---|
-| `SIM=0` | stop after the GEN step (default 1: continue with Geant4 and make the library) |
-| `PUEVENTS=250` | number of events generated |
-| `PUSEED=20241` | random-seed base: `generator` and `VtxSmeared` get `PUSEED` and `PUSEED` + 1; a new seed is a new sample |
-| `COMENERGY=13600.0` | centre-of-mass energy written over the fragment's `comEnergy` |
-| `OUTDIR=PU_2024` | where everything goes |
-| `REUSE=1` | keep an existing `step1_GEN_MinBias_out.root` whatever `PUEVENTS`, `PUSEED` and `COMENERGY` say; `REUSE=0` regenerates |
-| `RUN=0` | only write the configuration |
-| `CHECK=1` | print the checks of section 7.4 into `gencheck.log` (`CHECK=0` skips) |
-| `STATS=1` | run `minBiasGenStats.py` on the GEN file into `genstats.txt` (default 0; about a minute) |
-| `CONDITIONS`, `ERA`, `BEAMSPOT`, `FRAGMENT` | the 2024 settings (`auto:phase1_2024_realistic`, `Run3_2024`, `DBrealistic`, `MinBias_14TeV_pythia8_TuneCP5_cfi`); change them together for another scenario |
+One line per collision (process from `signal_process_id()` of the HepMC record, interactions = 1 + the
+status-31 parton pairs, stable / charged / central (|eta| < 2.5, pT > 0.5 GeV) / |eta| > 5.5 particles, the
+hardest particle, the scalar sum of pT, ak4 jets above 10 GeV, protons at the PPS, vertex z and t), then the
+summary (process shares, means, species, |eta| and pT distributions, multiplicity against interactions, the
+SD masses). Section 4 copies the summary and the lines of the in-time collisions.
 
-Variations:
+**(8b) one collision drawn**, `common/genPartAnalyzer_cfg.py` on library event 72 (`SKIP + 1`), the five
+generator pages of chapters 01-06:
 
 ```bash
-SIM=0 REUSE=0 PUSEED=777 ./runMinBias_mc2024.sh                   # another 250 collisions
-SIM=0 REUSE=0 PUEVENTS=10000 ./runMinBias_mc2024.sh               # 10 000 collisions (about 2 minutes: 10 ms each)
-SIM=0 REUSE=0 COMENERGY=14000 ./runMinBias_mc2024.sh              # the RelVal choice: 14 TeV
-SIM=0 REUSE=0 FRAGMENT=MinBias_13TeV_pythia8_TuneCUETP8M1_cfi COMENERGY=13600 ./runMinBias_mc2024.sh   # the Run-2 tune
-SIM=0 OUTDIR=PU_2023 CONDITIONS=auto:phase1_2023_realistic ERA=Run3_2023 ./runMinBias_mc2024.sh        # the 2023 beam spot
-SIM=0 OUTDIR=GEN_NoSmear BEAMSPOT=NoSmear ./runMinBias_mc2024.sh                                       # no vertex smearing
+cd 08_PU/out && cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_MinBias_08_PU.root \
+  outputFile=genPartAnalyzer_MinBias_08_PU.root maxEvents=1 eventsToProcess=1:1:72 maxStage=5 \
+  pdfFile=genPartAnalyzer_MinBias_08_PU.pdf \
+  sampleLabel="chapter 08_PU (8b): one minimum-bias collision|library event 72 of 250|SoftQCD inelastic, CP5, 13.6 TeV|no hard process" \
+  > genPartAnalyzer_MinBias_08_PU.log 2>&1
+pdftoppm -cropbox -r 110 -png genPartAnalyzer_MinBias_08_PU.pdf genPartAnalyzer_MinBias_08_PU_page; cd ../..
 ```
 
-Output in `OUTDIR`:
+Produces `genPartAnalyzer_MinBias_08_PU.pdf` (5 pages: hard process, parton shower, MPI / remnants,
+hadronisation, hadron decays), the PNG pages `_page-1..5.png` (page 5 is figure 8.1 of the chapter), the
+`.root` with the eta-phi histograms, and the `.log` with the particle count per stage.
 
-| file | content |
-|---|---|
-| `step1_GEN_MinBias_cfg.py` (+ `.driver.log`) | the configuration written by `cmsDriver.py` (and `cmsDriver.py`'s own output) |
-| `step1_GEN_MinBias_out.root` (11 MB) | the 250 generated events (section 5) |
-| `step1_GEN_MinBias_out.log` | the Pythia8 initialisation, the event loop, the statistics (section 4) |
-| `gencheck.log` | the checks of section 7.4 |
-| `genstats.txt`, `genstats.log` | with `STATS=1`: the catalogue of section 6 and the FWLite warnings |
-
-The same file is what the full pileup script makes first: `CASES=pileup ./runPileup_mc2024_BBbar.sh`
-and `./runMinBias_mc2024.sh` without `SIM=0` run this GEN step and then Geant4 on its output.
-
-### 7.2 By hand
-
-The two commands of section 3.4 are all there is. To change a Pythia setting, append a line to
-`--customise_commands`, e.g. non-diffractive collisions only:
+**(8a+8b) the overlay**, `common/genJetPileup_cfg.py` (the MixingModule on the HepMC record,
+`python/genJetPileup_cff.py`, then the anti-kT producers and the `GenJetAnalyzer`):
 
 ```bash
-cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2024_realistic --era Run3_2024 \
-  --geometry DB:Extended --beamspot DBrealistic -n 1000 -s GEN --datatier GEN --eventcontent FEVTDEBUG \
-  --fileout file:step1_GEN_MinBiasND_out.root --python_filename step1_GEN_MinBiasND_cfg.py --no_exec \
-  --customise_commands "process.generator.comEnergy = cms.double(13600.0)\nprocess.RandomNumberGeneratorService.generator.initialSeed = 20241\nprocess.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242\nprocess.generator.PythiaParameters.processParameters = cms.vstring('SoftQCD:nonDiffractive = on')"
-cmsRun step1_GEN_MinBiasND_cfg.py > step1_GEN_MinBiasND_out.log 2>&1
+cd 08_PU/out && cmsRun ../../common/genJetPileup_cfg.py inputFiles=file:../../07_GenJet/out/step2_GENJET_07_GenJet.root \
+  pileupFiles=file:step1_GEN_MinBias_08_PU.root eventsToProcess=1:1:1 nPileup=68 skipPileup=71 pileupType=fixed \
+  pileupSeed=20243 jetPtMin=3 labelPtMin=30 jets=ak4GenJetsPU outputFile=genJetPileup_08_PU.root \
+  edmOutput=step2_GENJETPU_08_PU.root pdfFile=genJetPileup_08_PU.pdf maxEvents=-1 \
+  sampleLabel="chapter 08_PU (8a+8b): signal + pileup|+ 68 minimum-bias collisions in time|library events 72-139 (bx 0)|bbbar pTHat > 100 GeV, 13.6 TeV|jet pT > 3 GeV, drawn > 30 GeV" \
+  > genJetPileup_08_PU.log 2>&1
+pdfunite ../../07_GenJet/out/genJetAnalyzer_07_GenJet.pdf genJetPileup_08_PU.pdf genJetAnalyzer_08_PU.pdf
+pdftoppm -cropbox -r 110 -png genJetAnalyzer_08_PU.pdf genJetAnalyzer_08_PU_page; cd ../..
 ```
 
-or edit the generated `_cfg.py` (the `generator` module is spelled out in full, all three blocks included)
-and run `cmsRun` on it.
+`genJetPileup_cfg.py`, part by part: `RandomNumberGeneratorService.mix` (the MixingModule needs an engine
+even with `type = fixed`); the source is the signal file restricted to `eventsToProcess`; `process.load
+('JitJetSW.Journey.genJetPileup_cff')` brings `mix` (a `MixingModule` with `digitizers = cms.PSet()`,
+`minBunch = maxBunch = 0`, `bunchspace = 25`, `mixObjects = mixHepMC` only, `input = EmbeddedRootSource` with
+`sequential = True`), whose `fileNames`, `type`, `averageNumber` and `skipEvents` are set from the
+`pileupFiles`, `pileupType`, `nPileup` and `skipPileup` arguments; `genParticlesPU` (`GenParticleProducer`
+with `useCrossingFrame = True`, `mix = 'mix'`); `genParticlesForJetsPU` / `NoNuPU` (the status 1 selectors
+of `RecoJets/Configuration/GenJetParticles_cff.py` on `genParticlesPU`); `ak4GenJetsPU`, `ak8GenJetsPU`,
+`ak4GenJetsNoNuPU`, `ak8GenJetsNoNuPU` (the producers of `RecoJets/JetProducers`, `jetPtMin` from the
+argument); and `genJetAnalyzer` (`GenJetAnalyzer` on `genParticlesPU` with `signalCollisionId = 0`, one page
+per collection in `jets`). Produces `genJetPileup_08_PU.pdf` (one page), `.root` (the jet histograms,
+`TFileService`), `.log` (every jet with pT, eta, phi, mass, constituents and pileup pT, the b / bbar
+matching; section 4), the EDM file `step2_GENJETPU_08_PU.root` (section 2); `pdfunite` makes
+`genJetAnalyzer_08_PU.pdf` (the 8 pages of chapter 07 + the overlay page 9) and `pdftoppm` the PNG pages
+(`_page-9.png` is figure 8.2 of the chapter).
 
-### 7.3 The catalogue: `minBiasGenStats.py`
+**the ledger**, `common/genLedger.py --pu` on the EDM file:
 
 ```bash
-python3 minBiasGenStats.py PU_2024/step1_GEN_MinBias_out.root                  # one line per event + the summary of section 6
-python3 minBiasGenStats.py PU_2024/step1_GEN_MinBias_out.root 20               # the first 20 events only
-python3 minBiasGenStats.py PU_2024/step1_GEN_MinBias_out.root --event 1 12     # + the stable particles of events 1 and 12
+python3 common/genLedger.py 08_PU/out/step2_GENJETPU_08_PU.root --event 1:1:1 --pu --jets ak4GenJetsPU > 08_PU/out/ledger_08_PU.txt
 ```
 
-The script reads the GEN file with FWLite (no `cmsRun`, no configuration): the process code from
-`signal_process_id()` of the HepMC record, the interactions from the status-31 partons, the stable
-particles (status 1) with their species, pT and eta, the vertex of the first HepMC vertex (positions in mm,
-times in mm/c), the ak4 jets and the size of the `LHCTransport` record; and for the single-diffractive
-events the mass of everything but the most energetic proton. It is 90 lines of Python and meant to be
-edited: another column is a few lines.
+Prints the record by status group and the final state by kind and region, each for the signal
+(`collisionId` 0), the pileup (`collisionId` > 0) and the sum, and the `ak4GenJetsPU` summary (section 4).
 
-### 7.4 Checks before the events are used
+## 4. The tables
 
-A generated sample that passes these checks can go through the SIM step and be mixed into a signal made
-with the same settings (`gencheck.log` holds them):
+### 4.1 The Pythia8 process table and the cross sections (`step1_GEN_MinBias_08_PU.log`, `gencheck_08_PU.log`)
 
-1. `grep -E "Process\(|GlobalTag\(|VtxSmeared|comEnergy" step1_GEN_MinBias_cfg.py`: the same era, global tag,
-   vertex-smearing module and energy as the signal's GEN configuration;
-2. `grep initialSeed step1_GEN_MinBias_cfg.py`: seeds that differ from the signal's and from the
-   `cmsDriver.py` defaults;
-3. `grep -A12 "PYTHIA Event and Cross Section Statistics" step1_GEN_MinBias_out.log`: the five subprocesses
-   with the cross sections of section 2.1 and a sum equal to the number of events;
-4. `edmFileUtil -e step1_GEN_MinBias_out.root`: the number of events written.
-
-### 7.5 Inspecting the events
-
-```bash
-edmDumpEventContent PU_2024/step1_GEN_MinBias_out.root        # the products of section 5
-edmEventSize -v PU_2024/step1_GEN_MinBias_out.root            # bytes per event and per branch
-edmFileUtil -e PU_2024/step1_GEN_MinBias_out.root             # run / lumi / event numbers
-grep -B2 -A12 "PYTHIA Process Initialization" PU_2024/step1_GEN_MinBias_out.log      # energy and cross sections
-grep -A40 "Settings (changes only)" PU_2024/step1_GEN_MinBias_out.log | head -45     # every non-default Pythia setting
-conddb list 150X_mcRun3_2024_realistic_v2 | grep SimBeamSpot  # the beam-spot tag; conddb dump <hash> prints the payload
+```
+ | We collide p+ with p+ at a CM energy of 1.360e+04 GeV            |
+ *-------  PYTHIA Event and Cross Section Statistics  -------------------------------------------------------------*
+ | Subprocess                                    Code |            Number of events       |      sigma +- delta    |
+ |                                                    |       Tried   Selected   Accepted |     (estimated) (mb)   |
+ | non-diffractive                                101 |         183        183        183 |   5.542e+01  2.991e-07 |
+ | A B -> X B single diffractive                  103 |          27         27         27 |   6.432e+00  0.000e+00 |
+ | A B -> A X single diffractive                  104 |          18         18         18 |   6.432e+00  0.000e+00 |
+ | A B -> X X double diffractive                  105 |          19         19         19 |   8.848e+00  4.737e-08 |
+ | A B -> A X B central diffractive               106 |           3          3          3 |   1.285e+00  0.000e+00 |
+ | sum                                                |         250        250        250 |   7.842e+01  3.028e-07 |
+Before Filter: total cross section = 7.842e+10 +- 3.028e+02 pb
+Filter efficiency (event-level)= (250) / (250) = 1.000e+00 +- 0.000e+00    [TO BE USED IN MCM]
 ```
 
-**To see a full Pythia event record** in the log, let the generator print the first event:
+Derived: sigma_inel = 100.309 - 21.89 = 78.419 mb (the CP5 `SigmaTotal` settings, `PythiaCP5Settings_cfi.py`);
+shares ND 55.42 / 78.42 = 70.7 %, SD 12.864 / 78.42 = 16.4 %, DD 8.848 / 78.42 = 11.3 %, CD 1.285 / 78.42 = 1.6 %;
+expected in 250 events: 176.7, 41.0, 28.2, 4.1 (DD deficit (28.2 - 19) / sqrt(28.2) = 1.7 sigma).
 
-```bash
-SIM=0 RUN=0 OUTDIR=listing ./runMinBias_mc2024.sh
-cd listing
-cat >> step1_GEN_MinBias_cfg.py << 'EOF'
-process.generator.maxEventsToPrint = cms.untracked.int32(1)      # the first event of every stream
-process.generator.pythiaPylistVerbosity = cms.untracked.int32(1)  # Pythia's info.list() and event.list()
-process.generator.pythiaHepMCVerbosity = cms.untracked.bool(True) # and the HepMC record after conversion
-process.maxEvents.input = 3
-EOF
-cmsRun step1_GEN_MinBias_cfg.py > step1_GEN_MinBias_out.log 2>&1
+```
+ |                   sigmaNonDiffractive =    55.42 mb              |
+ |    pT0 =  1.44 gives sigmaInteraction =   492.18 mb: accepted    |
 ```
 
-The listing has one line per particle (index, id, name, status, mothers, daughters, colour tags, px, py,
-pz, E, m), from the two beam protons (status 12 in Pythia's own numbering, 4 in HepMC) through the hard
-interaction, the MPIs, the showers, the remnants and the strings to the stable hadrons. The GEN chapter's
-`GenPartAnalyzer` (`cmsRun genPartAnalyzer_cfg.py inputFiles=file:PU_2024/step1_GEN_MinBias_out.root`)
-draws the same stages in the eta-phi plane, stage by stage, for any event of the file; on a minimum-bias
-event the "hard process" page shows the soft 2 -> 2 scattering of section 2.2 and the MPI page the rest.
+pT0 = pT0Ref x (E_cm / 7 TeV)^ecmPow = 1.41 x (13.6 / 7)^0.03344 = 1.44 GeV; 492.18 / 55.42 = 8.9 interactions
+per ND collision on average. Pythia version: 8.311; PDF: NNPDF31_nnlo_as_0118 (LHAPDF ID 303600), LHAPDF 6.4.0.
+Pythia warnings: 1 `BeamRemnants::setKinematics` kinematics failure (retried), 44 `pT2nextQCD: weight above
+unity`, 3 `MultipartonInteractions::init: maximum increased`, 2 `TimeShower::init: pTmin too low`.
 
-### 7.6 Other minimum-bias samples
+### 4.2 The configuration checks (`gencheck_08_PU.log`)
 
-The recipe is the same for any scenario; only the fragment and the settings change:
-
-- **Phase 2**: the same fragment at its nominal 14 TeV with `--beamspot DBrealisticHLLHC` and the Run4D110
-  conditions and era of `runCMSDrivers_mcPhase2_BBbar_SIM.sh`: the GEN step of `doc/pu/Phase2/PULib.tex`;
-- **another year of Run 3**: `CONDITIONS=auto:phase1_2022_realistic ERA=Run3` or
-  `CONDITIONS=auto:phase1_2023_realistic ERA=Run3_2023`, whose global tags carry their own beam-spot
-  payloads;
-- **another tune**: `MinBias_13TeV_pythia8_TuneCUETP8M1_cfi` is the Run-2 (2016) tune of the same process;
-  the CP5 settings can also be overridden one by one in `--customise_commands`
-  (`process.generator.PythiaParameters.pythia8CP5Settings = cms.vstring(...)`);
-- **one process class**: replace `processParameters` by `SoftQCD:nonDiffractive = on`,
-  `SoftQCD:singleDiffractive = on`, ... (section 7.2) to study a class alone; `SoftQCD:all` adds the elastic
-  collisions, which leave nothing in the detector and are not pileup;
-- **another generator**: EPOS, Herwig7 or any fragment that produces inelastic collisions works, as long as
-  it runs through the same `pgen` sequence and vertex smearing;
-- **no vertex smearing** (`BEAMSPOT=NoSmear`): every collision stays at the origin; a sample used for
-  detector studies only, and one that must never be mixed into a smeared signal.
-
----
-
-## 8. The signal event under pileup: the generator jets with 55 collisions on top
-
-Everything so far was about the pileup collisions on their own. This section puts them where they belong,
-*on top of the signal*, and asks the first question an analysis asks of pileup: what does it do to the
-jets? It stays at generator level, so that the answer is not yet mixed with anything the detector does: the
-stable particles of the in-time pileup collisions are added to the stable particles of the bbbar signal
-event, and the anti-kT clustering of the GenJet stage of the GEN chapter is run again on the sum.
-
-The signal event is event 1 of the GEN chapter, the one followed from the matrix element to the jets in
-the eight pages of `GEN/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_out.pdf` (five generator stages, then
-ak4GenJets, ak4GenJetsNoNu, ak8GenJets). The pileup collisions are the 55 events of the library that the
-DIGI step of the pileup chapter (`runPileup_mc2024_BBbar.sh`, `PUSIM.tex`) mixed into the *in-time* bunch
-crossing of that same signal event: the MixingModule reads the library in sequence, bunch crossing by
-bunch crossing, and `PU_2024/mixed/simHits.log` records 66 events in bunch crossing -1, 55 in bunch
-crossing 0 and 77 in bunch crossing 1 ("events per bx: -1:66 0:55 1:77"), so the in-time collisions are
-library events 67 to 121. Only these matter for generator jets: the early and late collisions are seen by
-the detector through its time response (the subject of the mixing chapter), but a jet of particles has no
-time axis, and anti-kT on a generator record is by construction an in-time picture. The result is the ninth
-page of `PU_2024/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_PU_out.pdf`, a copy of the eight GEN pages
-followed by the same event with the pileup on it:
-
-![ak4 jets (with neutrinos) of signal event 1 with the 55 in-time pileup collisions overlaid](../../test/PU_2024/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_PU_out_page-9.png)
-
-The page is drawn like page 6 (ak4GenJets without pileup), with three additions: the pileup particles are
-triangles (filled in the jet colour when clustered, light grey and open when not), the signal particles
-circles as before; the jets above 30 GeV, and the b and bbar jets whatever their pT, are drawn with their
-circle of radius R and their label, the others only through their constituents, because there are now
-262 jets; and every jet in the right-hand list carries the share of its pT that comes from pileup
-(scalar sum of the pT of its pileup constituents over the jet pT; it can exceed 100 % for a jet made of
-pileup only, since the constituents are not collinear).
-
-### 8.1 What the page shows
-
-| | page 6: signal alone | page 9: signal + 55 in-time collisions |
-|---|---:|---:|
-| stable particles (status 1) | 634 | 634 signal + 11 309 pileup (12 to 606 per collision, median 161) |
-| ak4 jets with pT > 3 GeV | 27 | 262 |
-| jets with pT > 20 / 30 / 50 GeV | 2 / 2 / 2 | 105 / 67 / 8 |
-| b jet: pT, constituents | 117.8 GeV, 24 | 152.5 GeV, 112 (24 signal + 88 pileup), 35.5 GeV from pileup (23 %) |
-| bbar jet: pT, constituents | 115.9 GeV, 18 | 150.2 GeV, 83 (18 signal + 65 pileup), 35.0 GeV from pileup (23 %) |
-| response pT(jet) / pT(quark), b / bbar | 1.284 / 0.996 | 1.662 / 1.291 |
-| Delta R (jet axis, quark), b / bbar | 0.019 / 0.004 | 0.057 / 0.029 |
-| dijet mass m(b jet + bbar jet) | 386.8 GeV | 520.5 GeV |
-| \|pT(b jet) + pT(bbar jet)\| | 6.1 GeV | 7.8 GeV |
-| signal particles inside a jet | 239 of 634 | 629 of 634 |
-| jets without a single signal particle | - | 77 |
-
-Four things to read off the page and the table:
-
-1. **The pileup is a uniform pedestal.** The 55 collisions put 2067 GeV of transverse momentum into
-   \|eta\| < 2.5, that is 66 GeV per unit of eta-phi area (68 GeV at 1.2 < \|eta\| < 2.0, 60 GeV at
-   3.4 < \|eta\| < 4.2: flat within what one event can tell). A cone of R = 0.4 covers pi R^2 = 0.50 units
-   of area and so collects about 33 GeV wherever it is placed; the b jet at eta = -1.6 and the bbar jet at
-   eta = -3.8 collected 35.5 and 35.0 GeV. This is the number that the pileup corrections of the
-   reconstruction (the "L1 offset" of the jet energy corrections, rho x area) will later subtract, and the
-   page shows where it comes from: 88 and 65 soft triangles, 0.4 GeV each on average, inside the circles.
-2. **The b and bbar jets kept all their signal particles** (24 and 18, the same ones as on page 6, 118.1
-   and 116.0 GeV of scalar pT), but their axes moved by 0.04 and 0.03 in Delta R towards the pileup inside
-   the cone, and their pT, their response and their invariant mass are shifted by the full pedestal: the
-   dijet mass goes from 387 to 521 GeV. Nothing in the event tells anti-kT which triangle belongs to the
-   signal; the algorithm clusters what it is given.
-3. **Pileup makes jets of its own.** 262 jets instead of 27, 105 of them above 20 GeV and six between 50
-   and 60 GeV ([2] to [7] in the list, 95-101 % pileup): 55 soft collisions, each with its MPIs, fluctuate
-   enough in one place for a 0.4 cone to reach 50 GeV. In the detector these are the "pileup jets" that a
-   pileup-jet identification has to remove, and at generator level the page shows what they are made of:
-   many soft particles from many collisions (jet [2] has 102 pileup constituents from a sample of 55
-   collisions, and 3 from the signal).
-4. **The distinction "signal jet / pileup jet" is not sharp.** Only 77 of the 262 jets contain no signal
-   particle at all; 64 of the 67 jets above 30 GeV contain at least one, because the 634 signal particles
-   (MPI, beam remnants, the underlying event of the GEN chapter) are spread over the whole plane and a cone
-   anywhere catches a few. That is why 629 of the 634 signal particles are now inside a jet, against 239
-   without pileup: they were not in a jet because no jet reached 3 GeV around them; now one always does.
-
-> **In plain words: pileup and jets.** Spread 11 000 soft particles evenly over the detector and draw a
-> circle of radius 0.4 anywhere: it contains about 35 GeV of them. A jet is such a circle, so every jet of
-> the signal is 35 GeV heavier than it was, and wherever the soft particles happen to be a little denser
-> the circle alone passes the jet threshold and a jet appears that nobody produced. The first effect is
-> corrected on average (one subtracts what a circle contains on average); the second is fought by asking
-> whether the particles in the circle come from one vertex or from many, which is what the tracker will
-> make possible and the next chapters will come to.
-
-### 8.2 How the overlay is made
-
-No new code touches the particles: the overlay is the MixingModule of the DIGI step, restricted to the
-generator record, followed by the standard modules of the GEN step (`python/genJetPileup_cff.py`):
-
-1. **`mix` (MixingModule)** reads the `generatorSmeared` HepMCProduct of the signal event from the source
-   and those of N library events from its secondary input (`EmbeddedRootSource` on the GEN file of the
-   library, `sequential = True`, the first `skipEvents` skipped), and puts them together in a
-   `CrossingFrame<HepMCProduct>` for the single bunch crossing `minBunch = maxBunch = 0`. Its `mixObjects`
-   holds only `mixHepMC` and its `digitizers` PSet is empty, so no SimHit is read and nothing is digitised;
-   the `PileupMixingContent` it writes records which library events went in. With `type = 'fixed'` and
-   `averageNumber = 55` exactly 55 collisions are taken; `type = 'poisson'` draws the number as the DIGI
-   step does.
-2. **`genParticlesPU` (GenParticleProducer)** is the module that makes `genParticles` in every GEN job,
-   with `useCrossingFrame = True`: it converts every HepMC event of the frame, the signal first and then
-   the pileup collisions, into one `reco::GenParticle` collection, and stamps every particle with the
-   index of its collision, `GenParticle::collisionId()` (0 = signal, 1 to 55 = the pileup collisions; the
-   heavy-ion workflows use the same mechanism for their sub-events). Mother-daughter links stay within
-   a collision; the hard-process flags of the signal are untouched, so the b and bbar can be followed as
-   before.
-3. **`genParticlesForJetsPU`, `ak4GenJetsPU`** (and the NoNu and ak8 variants) are the input selector and
-   the FastjetJetProducer of the GenJet stage with `src` pointed at the merged collection: the status 1
-   particles of all 56 collisions, anti-kT with R = 0.4, jet pT > 3 GeV.
-4. **GenJetAnalyzer** draws `ak4GenJetsPU` over `genParticlesPU` with `signalCollisionId = 0`: particles
-   of another collision are pileup (triangles), the hard-process quarks are searched in the signal only,
-   and the pileup pT of every jet is the scalar sum of its pileup constituents.
-
-The page is therefore not an approximation of the mixing but the same mixing stopped before the detector:
-the collisions on page 9 are, event by event, the in-time collisions of the DIGI step of the mixing chapter.
-
-### 8.3 Running it: `./runGenJetPileup_mc2024_BBbar.sh`
-
-```bash
-./runGenJetPileup_mc2024_BBbar.sh                          # signal event 1 + the in-time collisions of PU_2024/mixed/simHits.log (8 s)
-NPU=55 SKIP=66 ./runGenJetPileup_mc2024_BBbar.sh           # the same, given by hand
-NPU=20 SKIP=0 ./runGenJetPileup_mc2024_BBbar.sh            # library events 1-20 instead
-PUTYPE=poisson NPU=60 PUSEED=7 ./runGenJetPileup_mc2024_BBbar.sh   # Poisson(60) collisions, as the DIGI step draws them
-JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./runGenJetPileup_mc2024_BBbar.sh   # three new pages (9, 10, 11)
-LABELPTMIN=20 ./runGenJetPileup_mc2024_BBbar.sh            # draw the circles and labels of the jets above 20 GeV
+```
+process = cms.Process('GEN',Run3_2024)
+process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
+process.load('IOMC.EventVertexGenerators.VtxSmearedRealistic_cfi')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2024_realistic', '')
+process.generator.comEnergy = cms.double(13600.0)
+process.RandomNumberGeneratorService.generator.initialSeed = 20241
+process.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242
+== events in the file
+250 events
 ```
 
-| variable (default) | meaning |
-|---|---|
-| `EVENT=1:1:1` | the signal event |
-| `NPU`, `SKIP` | in-time collisions and library events skipped before them; default: read from `OUTDIR/mixed/simHits.log` (66 and 55 for this event), else 60 and 0 |
-| `PUTYPE=fixed` | `fixed`: exactly `NPU` collisions; `poisson`: Poisson(`NPU`) with seed `PUSEED` (20243) |
-| `JETS=ak4GenJetsPU` | collections drawn, one page each: `ak4GenJetsPU`, `ak4GenJetsNoNuPU`, `ak8GenJetsPU`, `ak8GenJetsNoNuPU` |
-| `JETPTMIN=3` | jet pT threshold of the producers, as in the GenJet stage |
-| `LABELPTMIN=30` | jets drawn with circle and label (the b / bbar jets always) |
-| `STAGE=ME_PS_MPI_Had_Decay` | generator stage of the signal: `GEN/step1_GEN_<STAGE>_out.root` and `GEN/genJetAnalyzer_<STAGE>_GenJet_out.pdf` (made with the GEN script if missing) |
-| `PU_INPUT=PU_2024/step1_GEN_MinBias_out.root` | the GEN file of the library (section 7.1; made with `SIM=0 ./runMinBias_mc2024.sh` if missing) |
-| `OUTDIR=PU_2024` | output directory |
+### 4.3 The catalogue summary (`genstats_08_PU.txt`, lines 253-268)
 
-Output in `OUTDIR`:
-
-| file | content |
-|---|---|
-| `genJetPileup_<STAGE>_PU_out.log` | the cmsRun log: every jet with pT, eta, phi, mass, constituents and pileup pT; the b / bbar matching |
-| `genJetPileup_<STAGE>_PU_out.pdf`, `.root` | the new page(s) alone, and the jet histograms (TFileService) |
-| `step2_GENJETPU_<STAGE>_PU_out.root` | EDM file with `genParticlesPU` (33 028 particles, `collisionId` per particle), the four jet collections and the `mix` products; `edmDumpEventContent` lists them |
-| `genJetAnalyzer_<STAGE>_GenJet_PU_out.pdf` | the book PDF: the 8 pages of `GEN/genJetAnalyzer_<STAGE>_GenJet_out.pdf` + the new page(s) (`pdfunite`) |
-| `genJetAnalyzer_<STAGE>_GenJet_PU_out_page-9.png` | the new page as PNG (`pdftoppm -cropbox -r 110`), the figure above |
-
-By hand, the script runs one `cmsRun` (`test/genJetPileup_cfg.py`, all options are VarParsing arguments)
-and one `pdfunite`:
-
-```bash
-cd PU_2024
-cmsRun ../genJetPileup_cfg.py inputFiles=file:../GEN/step1_GEN_ME_PS_MPI_Had_Decay_out.root \
-  pileupFiles=file:step1_GEN_MinBias_out.root eventsToProcess=1:1:1 nPileup=55 skipPileup=66 pileupType=fixed \
-  jets=ak4GenJetsPU jetPtMin=3 labelPtMin=30 outputFile=genJetPileup_ME_PS_MPI_Had_Decay_PU_out.root \
-  edmOutput=step2_GENJETPU_ME_PS_MPI_Had_Decay_PU_out.root pdfFile=genJetPileup_ME_PS_MPI_Had_Decay_PU_out.pdf \
-  sampleLabel="sample ME_PS_MPI_Had_Decay_GenJet|+ 55 MinBias collisions in time|library events 67-121 (bx 0)|bbbar pTHat > 100 GeV, 13.6 TeV|jet pT > 3 GeV, drawn > 30 GeV" \
-  > genJetPileup_ME_PS_MPI_Had_Decay_PU_out.log 2>&1
-pdfunite ../GEN/genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_out.pdf genJetPileup_ME_PS_MPI_Had_Decay_PU_out.pdf \
-  genJetAnalyzer_ME_PS_MPI_Had_Decay_GenJet_PU_out.pdf
+```
+== 250 events, beam energy 6800 GeV
+process shares: ND 183 (73.2%), SD 45 (18.0%), DD 19 (7.6%), CD 3 (1.2%)
+interactions mean    7.03  median    3.00  min    1.00  max   39.00
+stable       mean  193.75  median  132.00  min    3.00  max  723.00
+charged      mean   89.02  median   59.00  min    2.00  max  320.00
+central      mean   21.19  median    9.50  min    0.00  max  126.00
+|eta|>5.5    mean   38.92  median   36.50  min    3.00  max   93.00
+lead pT      mean    2.20  median    1.81  min    0.23  max    8.08
+sum pT       mean   79.25  median   44.65  min    0.46  max  376.09
+jets>10      mean    0.15  median    0.00  min    0.00  max    3.00
+PPS protons  mean    0.37  median    0.00  min    0.00  max    2.00
+per process (events, mean interactions, stable, charged, central, lead pT, sum pT):
+  ND  183    9.0  241.1  110.8  27.0  2.53   99.9
+  SD   45    2.0   69.5   32.8   7.0  1.41   26.2
+  DD   19    1.2   56.8   24.2   2.1  1.13   16.7
+  CD    3    2.0   35.0   16.0   2.3  0.84    9.4
+stable particles by species: gamma 45.9%, pi+- 37.1%, K+- 4.8%, p 2.7%, n 2.5%, K0L 2.4%, K0S 2.2%, Lambda 0.9%, e 0.6%, Sigma- 0.3%, Sigma+ 0.3%, Xi- 0.1%
+|eta| of the stable particles, per unit (last bin >= 10): 6950 7498 7816 7227 6406 5365 3509 2041 1039 419 167
+pT of the stable particles (<0.2, 0.2-0.5, 0.5-1, 1-2, 2-5, >5 GeV): 18209 17452 8978 3094 687 17
+ND: mean stable particles against the number of interactions: 1: 85 (44 ev), 2: 109 (17 ev), 3: 120 (10 ev), 4: 150 (7 ev), 5: 177 (7 ev), 6: 195 (11 ev), 7: 235 (8 ev), 8: 298 (3 ev), 9: 248 (6 ev), 10: 319 (6 ev), 11: 303 (10 ev), 12: 334 (4 ev), 13: 355 (2 ev), 14: 398 (4 ev), 15: 330 (4 ev), 16: 409 (5 ev), 17: 428 (2 ev), 18: 390 (5 ev), 19: 403 (3 ev), 20: 444 (2 ev), 22: 428 (2 ev), 23: 495 (5 ev), 24: 438 (2 ev), 25: 467 (4 ev), 26: 548 (2 ev), 27: 576 (2 ev), 28: 658 (1 ev), 30: 498 (1 ev), 31: 492 (1 ev), 32: 561 (1 ev), 36: 540 (1 ev), 39: 723 (1 ev)
+SD: diffractive mass M_X median 166.8 GeV (min 1.2, max 6754), xi = 1 - E_p/E_beam median 1.5e-04 (min 3.7e-09, max 0.25)
 ```
 
-To look at the merged particles afterwards, FWLite reads the EDM file like any other
-(`DataFormats.FWLite.Events`, label `genParticlesPU`), and `collisionId()` tells the collision of every
-particle; `printConstituents=True` on the `cmsRun` line prints, for every jet, the index of every
-constituent in that collection.
+Derived from the per-event lines (columns z[cm], t[ns], jet10): vertex z mean 0.08 cm, median -0.06, r.m.s.
+3.56 cm, min -9.52, max 10.08; t mean -0.007 ns, median -0.016, r.m.s. 0.122 ns, min -0.392, max 0.365;
+21 of the 250 collisions have a jet above 10 GeV; total stable particles 250 x 193.75 = 48 437, of which
+18209 + 17452 = 35 661 below 0.5 GeV; beyond |eta| = 5.5: 38.92 / 193.75 = 20 %.
 
----
+### 4.4 The in-time collisions, library events 72-139 (`genstats_08_PU.txt`, lines 73-140)
 
-## 9. Questions to test yourself
+```
+event proc nInt stable  charg  centr |eta|>5.5  leadpT   sumpT jet10  PPS   z[cm]   t[ns]
+   72   ND    3    192     84     13     31    2.20    56.6     0    0   -0.48  -0.092
+   73   ND    4    113     56      4     40    1.65    31.2     0    0   -4.13  -0.195
+   74   ND    2    118     54     14     35    1.85    47.9     0    0   -3.66  -0.041
+   75   SD    1     53     22      1     20    0.93    14.7     0    1   -0.32   0.013
+   76   SD    1     29     16      3      7    0.76     9.1     0    2    1.52   0.198
+   77   SD    4    206     90     18     15    3.60    73.0     0    1   -6.74   0.064
+   78   ND    1     76     36      6     31    1.73    27.5     0    1    0.09  -0.013
+   79   ND    4    152     58      5     54    2.83    49.5     0    0   -5.42  -0.096
+   80   ND    2     75     34      3     22    1.26    26.1     0    0    0.54   0.031
+   81   ND   12    321    140     66     40    6.45   203.3     3    0   -0.34  -0.018
+   82   ND   10    352    160     57     43    4.51   157.5     0    0    1.49  -0.003
+   83   SD    2     86     44     14     19    1.32    33.6     0    1   -9.52   0.091
+   84   ND    3     71     34      8     20    1.36    22.2     0    1   -4.74   0.096
+   85   ND    5    105     42      3     27    1.07    33.4     0    0   -1.43  -0.106
+   86   SD    6    167     84     30     30    2.91    82.4     0    1    6.14   0.109
+   87   ND    2    114     52      5     36    1.30    31.6     0    0   -4.02  -0.118
+   88   ND   10    260    122     31     49    2.76   114.1     0    0   -3.17  -0.052
+   89   DD    1     24      6      0     14    0.98     6.2     0    1    3.24   0.066
+   90   ND    1     92     38      0     32    1.24    24.0     0    1   -0.72   0.193
+   91   SD    1     19      6      0     15    0.96     5.1     0    1   -1.03  -0.047
+   92   ND   25    434    188     57     64    3.64   191.0     0    0    5.51  -0.006
+   93   ND   11    250    126     16     63    2.20    84.9     0    0    0.76  -0.052
+   94   ND   26    547    242     81     76    5.31   262.7     0    0    2.50   0.117
+   95   ND   16    461    220     47     70    3.14   203.7     0    0    3.49  -0.005
+   96   ND    1     64     38      7     21    1.24    20.0     0    0   -0.36   0.262
+   97   ND    9    242    114     35     59    1.96    83.8     0    0    6.53   0.020
+   98   SD    1     66     38      6     18    1.33    21.7     0    2   -4.68   0.142
+   99   DD    1     39     20      1     22    0.97    11.8     0    1   -3.35  -0.161
+  100   SD    7    161     88     38     17    4.27    89.8     0    1   -0.08   0.051
+  101   ND   20    444    214     48     50    3.05   196.7     0    0   -2.87   0.135
+  102   ND   23    519    250    113     65    5.38   317.3     2    0   -5.45   0.092
+  103   ND   15    405    192     72     72    5.66   205.7     0    0    1.25  -0.179
+  104   SD    2     68     36      7     24    2.33    21.9     0    1   -1.00  -0.074
+  105   ND    6    283    122     25     51    5.98   119.0     0    0    3.34   0.091
+  106   ND   12    382    182     47     75    2.96   163.1     0    0    2.88   0.201
+  107   ND   36    540    252     90     71    4.91   281.4     2    0    0.36  -0.152
+  108   ND   15    279    134     22     61    2.04    98.5     0    0    4.67  -0.089
+  109   ND   24    479    202     49     55    3.35   213.4     0    0    0.27   0.155
+  110   SD    3    149     70     24     19    5.42    91.1     2    1   -2.05  -0.316
+  111   SD    1     12      4      0     11    0.64     3.6     0    1   -2.34   0.189
+  112   ND    1     88     38      2     36    1.03    22.9     0    0   -4.79  -0.074
+  113   ND    7    170     64      9     38    1.08    48.7     0    0   -4.66  -0.115
+  114   ND   11    315    162     36     93    4.41   124.1     2    0    2.08   0.331
+  115   ND    1     79     40      5     19    1.02    23.0     0    0   -2.34  -0.087
+  116   ND    1     90     46      3     36    0.90    25.7     0    0    4.18   0.040
+  117   DD    1     56     16      0     39    1.20    14.8     0    0   -1.38  -0.147
+  118   ND    6    241    108     14     47    3.32    79.7     0    0    2.08   0.182
+  119   ND    5    180     76      7     53    1.51    58.0     0    0    5.74   0.091
+  120   ND    1     62     28      6     24    1.35    23.1     0    2   -1.37   0.109
+  121   ND    2    109     54      4     43    1.45    36.7     0    0   -4.89  -0.000
+  122   ND   11    371    164     36     61    2.97   142.8     0    0   -2.82   0.196
+  123   ND    5    234     98     25     39    2.60    82.0     0    0   -2.05   0.078
+  124   SD    1      6      4      0      6    0.43     1.8     0    2    1.03  -0.053
+  125   DD    1     61     28      1     29    0.77    16.9     0    1    1.14  -0.119
+  126   ND    7    273    128     21     56    1.71    82.5     0    0   -1.06   0.143
+  127   SD    4    131     62     14     31    1.57    51.7     0    1   -1.03  -0.140
+  128   ND   13    262    112     16     52    2.31    92.2     0    0   -2.12   0.038
+  129   ND    7    249    108     23     78    2.33    92.4     0    0   -6.03  -0.079
+  130   ND    1     72     38      2     18    1.16    22.5     0    0    3.93   0.024
+  131   ND   24    397    164     41     75    3.50   157.9     0    0   -0.06  -0.244
+  132   SD    1      3      2      0      3    0.23     0.5     0    1    0.54   0.009
+  133   ND    2    198    106     27     35    1.53    72.5     0    0    3.82  -0.053
+  134   SD    2     45     26      0     10    0.85    12.5     0    1   -4.15  -0.098
+  135   ND    8    265    136     27     39    2.26   102.2     0    0   -4.16  -0.016
+  136   ND    1     89     38      5     24    1.45    27.7     0    0    4.76  -0.121
+  137   ND    1     98     48      5     38    1.80    29.5     0    0    5.01  -0.060
+  138   ND   12    304    148     14     63    2.00   111.7     0    0    4.36  -0.137
+  139   ND    1     96     46      5     31    0.96    28.7     0    1    3.51  -0.160
+```
 
-1. The fragment says 14 TeV and `crossSection = 71.39e9`. What energy and cross section did the job
-   actually use, and where is each written?
-   *13.6 TeV, from the `comEnergy` override in `--customise_commands`, visible as `Beams:eCM = 13600` in the
-   log's settings table; 78.42 mb, fixed by the CP5 tune's `SigmaTotal` settings and reported by the
-   `GenXsecAnalyzer` ("total cross section = 7.842e+10 pb"). The fragment's `crossSection` is metadata and is
-   used by nothing.*
-2. Why do the 13.6 TeV and the 14 TeV samples have the same cross sections to the second decimal?
-   *Because `SigmaTotal:mode = 0` makes Pythia take sigma_tot and sigma_el from the tune instead of
-   computing them, and the diffractive fractions from a parametrisation that barely moves between the two
-   energies. The non-diffractive cross section is the remainder.*
-3. Event 13 is non-diffractive with 78 stable particles; event 247 is non-diffractive with 723. What
-   distinguishes them?
-   *The number of parton-parton interactions: 1 against 39. Both are the same process; event 247 is a
-   central collision with many MPIs, event 13 a peripheral one with only the hardest scattering.*
-4. Event 12 has 4 stable particles. What are they, and will any of them be seen?
-   *A proton with the full beam energy (xi = 3 x 10^-8) at eta = -10.8, and a Lambda, a K0L and a pi+ at
-   eta = 9 forming a 2.6 GeV diffractive system. The three hadrons fly down the beam pipe. The proton is
-   carried by `LHCTransport` to the Roman pots, but at that xi it stays inside the beam envelope; the
-   SIM step gives it its hits there.*
-5. Why does the GEN step, which knows nothing about the detector, take `--conditions` and `--era`?
-   *For the vertex smearing: the beam-spot parameters are a payload of the global tag, and the era switches
-   on the Run-3 PPS transport. The geometry option is only carried along for the SIM step.*
-6. If `PUSEED` had been left at the `cmsDriver.py` default, what would be wrong with the sample?
-   *Nothing visible in the sample itself. But its vertices would be, event by event, those of the signal
-   sample generated with the same defaults, so that pileup collision k would sit exactly on signal event k
-   when mixed.*
-7. Half of the stable particles are photons. Where do they come from, and what does this mean for the
-   detector?
-   *From pi0 -> gamma gamma, decayed by Pythia because c tau(pi0) is 25 nm, far below the 10 mm limit. A
-   minimum-bias event deposits most of its ECAL energy through these photons, spread over hundreds of
-   crystals at a few MeV each.*
-8. On page 9 the b jet gained 35 GeV from pileup although it kept exactly its 24 signal particles. Estimate
-   that number from section 8.1 without looking at the jet, and say what a reconstruction can do about it.
-   *55 collisions put 66 GeV per unit area into the central region; a cone of R = 0.4 has an area of
-   pi R^2 = 0.50, so about 33 GeV. The offset is the same for any jet at that eta and is subtracted on
-   average (rho x area, the L1 pileup correction); only its fluctuation from jet to jet remains.*
-9. Why does the overlay of section 8 use only the 55 in-time collisions and not the 198 of the three bunch
-   crossings of the DIGI step, and why library events 67 to 121 rather than 1 to 55?
-   *A generator record has no time: anti-kT on particles is an in-time picture, and the early and late
-   collisions reach the detector only through the time response of its channels. The mixing reads the
-   library in sequence, bunch crossing by bunch crossing, early ones first, so for this signal event the
-   first 66 library events went into bunch crossing -1 and the next 55 into bunch crossing 0; taking those
-   makes page 9 the same collisions, event by event, that the DIGI step mixed in time.*
+Sums over the 68 lines: 49 ND, 15 SD, 4 DD, 0 CD; 467 interactions; 12 993 stable particles (mean 191.1,
+median 149, min 3 = event 132 (SD), max 547 = event 94 (ND)); 5998 charged; 1414 central; 11 jets above 10 GeV.
+The neighbouring draws of the mixing of chapter 10 (seed 12345, Poisson(60) per bunch crossing, the library
+read in sequence): bunch crossing -1 = library events 1-71, bunch crossing +1 = events 140-193.
 
----
+### 4.5 The drawn collision, library event 72 (`genPartAnalyzer_MinBias_08_PU.log`)
 
-## Glossary
+```
+== GenPartAnalyzer run:lumi:event 1:1:72 nGenParticles=406 nStatus1=192 hard b idx=hard bbar idx=
+  stage 1 (hardProcess): nParticles=2 | b: none | #bar{b}: none
+  stage 2 (partonShower): nParticles=13
+  stage 3 (mpiBeamRemnants): nParticles=26
+  stage 4 (hadronisation): nParticles=102
+  stage 5 (hadronDecays): nParticles=192
+```
 
-| term | meaning |
-|---|---|
-| minimum bias | the inelastic collisions selected with the least possible bias; in Pythia8 `SoftQCD:inelastic` = non-diffractive + single, double and central diffractive |
-| non-diffractive, diffractive | collisions in which both protons break up (ND), or in which one (SD), both (DD) or neither (CD, with a central system) survive after a colourless exchange; the diffractive ones leave a rapidity gap |
-| Pomeron | the colourless object exchanged in a diffractive collision, in Pythia's Schuler-Sjostrand model |
-| M_X, xi | the mass of the dissociated system of a diffractive collision and the momentum fraction lost by the surviving proton, xi = M_X^2 / s |
-| total, elastic, inelastic cross section | sigma_tot = 100.3 mb, sigma_el = 21.9 mb, sigma_inel = 78.4 mb with the CP5 tune, fixed by the tune and not by the energy; the rate of pileup collisions is L x sigma_inel |
-| multiple-parton interactions (MPI) | several parton pairs scattering in one collision; their number, set by the impact parameter, is what makes the multiplicity of non-diffractive events fluctuate |
-| pT0 | the scale below which the parton-parton cross section is regularised; 1.44 GeV at 13.6 TeV with CP5 |
-| tune (CP5) | the set of Pythia8 parameters (PDF, alpha_s, MPI profile and pT0, colour reconnection) fitted to CMS data; the same for the signal and the pileup |
-| colour reconnection | the rearrangement of the colour strings between the partons of all the interactions before hadronisation |
-| Lund string | Pythia's hadronisation model: a colour string stretched between partons breaks into hadrons |
-| status code | the integer that tells which stage of the generation a particle belongs to (1 stable, 2 decayed, 21-23 hardest interaction, 31-33 MPI, 41-53 showers, 61-63 remnants, 71-74 strings) |
-| stable particle | HepMC status 1: what is left after Pythia8 decayed everything with c tau < 10 mm |
-| generator fragment | the `_cfi.py` file that configures the generator (process, tune, energy); the first argument of `cmsDriver.py` in a GEN step |
-| `Pythia8ConcurrentGeneratorFilter` | the CMSSW module that runs Pythia8, one instance per stream, and can reject events |
-| `GenEventInfoProduct` | the per-event summary of the generator: process id, weight, scale of the hardest interaction |
-| `HepMCProduct` | the full generator record (particles, vertices, status codes, mother/daughter links) in the HepMC format |
-| `generator:unsmeared`, `generatorSmeared` | the record at the origin, and the record moved to the smeared vertex; only the second is written and read |
-| luminous region, beam spot | the overlap volume of the two colliding bunches, where the vertices are; in 2024 sigma_z = 3.6 cm, sigma_t = 120 ps, about 10 um transversely |
-| `VtxSmeared` | the GEN-step module that moves every generated event to a vertex drawn from the beam model; `BetafuncEvtVtxGenerator` with database parameters for `--beamspot DBrealistic` |
-| `LHCTransport`, PPS | the GEN-step module that carries the surviving protons to the Roman pots of the Precision Proton Spectrometer, 200 m from CMS |
-| `RandomNumberGeneratorService`, `initialSeed` | the service that owns one random engine per module; the seed fixes the whole sequence, and `cmsDriver.py` writes the same defaults into every configuration |
-| `GenXsecAnalyzer` | the end-of-job module that reports the cross section and the filter efficiency of the sample |
-| GEN | the data tier of a file that holds generator products only |
-| `MixingModule`, `CrossingFrame` | the DIGI-step module that overlays pileup events on the signal, and the container it fills per product type; section 8 runs it on the HepMC record alone |
-| `GenParticleProducer`, `useCrossingFrame` | the module that converts the HepMC record into `genParticles`; with `useCrossingFrame` it merges all events of the CrossingFrame and sets `collisionId` |
-| pileup pT density | transverse momentum of the pileup per unit of eta-phi area (66 GeV for 55 collisions in this event); times pi R^2 it is the pileup offset of a jet of radius R |
-| pileup jet | a jet made (almost) only of pileup particles, where the soft particles of many collisions happen to be dense enough to pass the jet threshold |
+Catalogue line 72: ND, 3 interactions, 192 stable, 84 charged, 13 central, 31 beyond |eta| = 5.5, hardest
+particle 2.20 GeV, sum pT 56.6 GeV, no jet above 10 GeV, z = -0.48 cm, t = -0.092 ns. Page 1 of
+`genPartAnalyzer_MinBias_08_PU.pdf` draws the two hard-process partons without a pT label (both below the
+5 GeV label threshold); page 5 draws 192 particles, 47 primary hadrons and 145 decay products, 18 with
+|eta| > 6 on the border.
+
+### 4.6 The overlay (`genJetPileup_08_PU.log`, first lines and the 12 leading jets of 266)
+
+```
+== GenJetAnalyzer run:lumi:event 1:1:1 nGenParticles=36218 nStatus1=13627 (signal 634 + pileup 12993 from 68 collisions) | hard b: [5] pt=113.221 -> last copy [824] status=71 pt=91.7437 eta=-1.56979 phi=-2.08372 | hard bbar: [4] pt=113.221 -> last copy [964] status=71 pt=116.356 eta=-3.74787 phi=1.01139
+  ak4GenJetsPU (process GENJETPU, AntiKt R=0.4, jetPtMin=3 GeV, src=genParticlesForJetsPU): nJets=266 nClustered=13106/13627 status 1 particles (signal 627/634, pileup 12479/12993)
+    b quark -> jet [1] pt=150.895 eta=-1.62991 phi=-2.08378 nConst=114 dR=0.0601206 pt(jet)/pt(quark)=1.64474 pileupPt=33.9195 (22.4789%)
+    bbar quark -> jet [0] pt=152.028 eta=-3.77978 phi=1.00135 nConst=88 dR=0.033447 pt(jet)/pt(quark)=1.30657 pileupPt=36.7424 (24.1683%)
+    net b jet + bbar jet: |sum pT|=8.62555 (px=7.91221 py=-3.43469) scalar sum pT=302.922 dphi=3.08513
+    [0] pt=152.028 eta=-3.77978 phi=1.00135 mass=44.3279 nConst=88 pileupPt=36.7424 (24.1683%)
+    [1] pt=150.895 eta=-1.62991 phi=-2.08378 mass=51.3568 nConst=114 pileupPt=33.9195 (22.4789%)
+    [2] pt=60.9265 eta=-0.427131 phi=0.301034 mass=35.8603 nConst=94 pileupPt=59.1301 (97.0515%)
+    [3] pt=57.9195 eta=-1.41116 phi=3.03549 mass=35.9035 nConst=109 pileupPt=54.9782 (94.9218%)
+    [4] pt=56.1916 eta=-0.942531 phi=-2.72205 mass=30.7832 nConst=96 pileupPt=53.1819 (94.6437%)
+    [5] pt=54.6808 eta=2.54838 phi=-2.16859 mass=34.1365 nConst=114 pileupPt=52.4901 (95.9936%)
+    [6] pt=54.1034 eta=1.23233 phi=2.42233 mass=36.5441 nConst=95 pileupPt=40.9415 (75.6728%)
+    [7] pt=51.5411 eta=-2.43167 phi=-0.104322 mass=28.0673 nConst=106 pileupPt=51.0359 (99.0199%)
+    [8] pt=51.011 eta=0.24542 phi=-1.52298 mass=29.7201 nConst=92 pileupPt=51.3976 (100.758%)
+    [9] pt=48.7428 eta=-1.98297 phi=-1.42794 mass=28.2221 nConst=89 pileupPt=39.4301 (80.8941%)
+    [10] pt=48.2716 eta=1.5031 phi=-0.796267 mass=31.7833 nConst=100 pileupPt=40.5155 (83.9324%)
+    [11] pt=47.1941 eta=-1.079 phi=-0.140472 mass=27.0372 nConst=85 pileupPt=44.8704 (95.0763%)
+```
+
+The signal alone, for comparison (`test/07_GenJet/out/genJetAnalyzer_07_GenJet.log`, `ak4GenJets`):
+
+```
+  ak4GenJets (process GENJET, AntiKt R=0.4, jetPtMin=3 GeV, src=genParticlesForJets): nJets=27 nClustered=239/634 status 1 particles
+    b quark -> jet [0] pt=117.788 eta=-1.58908 phi=-2.08403 nConst=24 dR=0.0192893 pt(jet)/pt(quark)=1.28389
+    bbar quark -> jet [1] pt=115.944 eta=-3.74635 phi=1.00816 nConst=18 dR=0.00357334 pt(jet)/pt(quark)=0.996452
+    net b jet + bbar jet: |sum pT|=6.06053 (px=4.01277 py=-4.54178) scalar sum pT=233.732 dphi=3.09219
+    [0] pt=117.788 eta=-1.58908 phi=-2.08403 mass=16.7186 nConst=24
+    [1] pt=115.944 eta=-3.74635 phi=1.00816 mass=7.32812 nConst=18
+    [2] pt=13.759 eta=1.14207 phi=2.42033 mass=5.67954 nConst=11
+    [3] pt=13.3261 eta=1.73863 phi=1.84424 mass=6.28552 nConst=12
+```
+
+Derived from the two jet lists: jets above 10 / 20 / 30 / 50 GeV: 6 / 2 / 2 / 2 (signal) and 175 / 116 / 76 / 9
+(overlay); dijet mass m(jet [0] + jet [1]) from (pT, eta, phi, mass): 386.8 GeV (signal, also printed on page 6
+as "m = 386.8 GeV") and 521.7 GeV (overlay, printed on page 9); the b jet (now jet [1]) gained
+150.895 - 117.788 = 33.1 GeV and the bbar jet (jet [0]) 152.028 - 115.944 = 36.1 GeV; the jet axes moved by
+Delta R = 0.041 (b) and 0.034 (bbar).
+From `step2_GENJETPU_08_PU.root` with FWLite (`Events` / `Handle('std::vector<reco::GenJet>')` on
+`ak4GenJetsPU`, then `jet.daughter(k).collisionId()` over `k < jet.numberOfDaughters()`, 0 = signal): jet [0]
+(bbar) 18 signal + 70 pileup constituents
+from 32 collisions, jet [1] (b) 24 + 90 from 41, jet [2] 5 + 89 from 34, jet [3] 8 + 101 from 44; 87 of the 266
+jets have no signal constituent; 74 of the 76 jets above 30 GeV have at least one. `PileupMixingContent` of
+`mix`: bunch crossing [0], 68 collisions, true mean 68.
+
+### 4.7 The ledger (`ledger_08_PU.txt`, in full)
+
+```
+== genLedger step2_GENJETPU_08_PU.root event 1:1:1: 36218 particles in genParticlesPU
+record by status group (signal / pileup / all):
+  hard process (21-29)            4 /    267 /    271
+  MPI (31-39)                   124 /   1596 /   1720
+  ISR (41-49)                   190 /   3077 /   3267
+  FSR (51-59)                   192 /   3390 /   3582
+  beam remnants (61-69)         233 /   3855 /   4088
+  strings (71-79)               165 /   2882 /   3047
+  decayed (status 2)            302 /   6121 /   6423
+  final state (status 1)        634 /  12993 /  13627
+hard process: incoming pdg -2 (E=14.8 GeV, x=0.0022) + pdg 2 (E=2652.9 GeV, x=0.3901) -> sqrt(s_hat) = 396.1 GeV
+  outgoing pdg -5: pT=113.2 eta=-3.75 phi=0.99 E=2415.7 GeV
+  outgoing pdg 5: pT=113.2 eta=-1.44 phi=-2.15 E=252.1 GeV
+final state (status 1) of the signal: n=634 sumE=13600.0 GeV sumPt=528.9 GeV
+  by kind                 n    E[GeV]  pT[GeV]
+  charged hadron        303    7167.7    259.1
+  neutral hadron         56    3449.9     84.7
+  photon                273    2875.9    142.7
+  electron                1      10.9      5.0
+  neutrino                1      95.5     37.5
+  by region               n    E[GeV]  pT[GeV]     E_nu
+  |eta|<2.5             316     733.8    278.7     95.5
+  2.5-3.0                55     193.1     24.6      0.0
+  3.0-5.2               189    5019.6    197.4      0.0
+  5.2-5.5                16     836.4      7.8      0.0
+  >5.5                   58    6817.1     20.3      0.0
+  visible (|eta|<5.2, no neutrinos): n=559 E=5851.0 GeV pT=463.4 GeV; neutrinos: n=1 E=95.5 GeV pT=37.5 GeV
+final state (status 1) of the pileup: n=12993 sumE=924800.0 GeV sumPt=5314.6 GeV
+  by kind                 n    E[GeV]  pT[GeV]
+  charged hadron       5911  572734.9   3087.8
+  neutral hadron       1088  179327.8    749.7
+  photon               5900  171675.6   1458.8
+  electron               85     998.9     10.9
+  muon                    2       5.3      1.7
+  neutrino                7      57.5      5.6
+  by region               n    E[GeV]  pT[GeV]     E_nu
+  |eta|<2.5            4864    5519.3   2179.4     11.0
+  2.5-3.0              1037    3597.0    449.2      0.0
+  3.0-5.2              3996   58413.2   1674.3     46.5
+  5.2-5.5               436   17054.0    160.3      0.0
+  >5.5                 2660  840216.5    851.4      0.0
+  visible (|eta|<5.2, no neutrinos): n=9890 E=67472.0 GeV pT=4297.3 GeV; neutrinos: n=7 E=57.5 GeV pT=5.6 GeV
+final state (status 1) of the all: n=13627 sumE=938400.0 GeV sumPt=5843.5 GeV
+  by kind                 n    E[GeV]  pT[GeV]
+  charged hadron       6214  579902.7   3347.0
+  neutral hadron       1144  182777.7    834.4
+  photon               6173  174551.6   1601.4
+  electron               86    1009.8     15.9
+  muon                    2       5.3      1.7
+  neutrino                8     153.0     43.0
+  by region               n    E[GeV]  pT[GeV]     E_nu
+  |eta|<2.5            5180    6253.1   2458.1    106.5
+  2.5-3.0              1092    3790.1    473.9      0.0
+  3.0-5.2              4185   63432.8   1871.7     46.5
+  5.2-5.5               452   17890.4    168.1      0.0
+  >5.5                 2718  847033.6    871.7      0.0
+  visible (|eta|<5.2, no neutrinos): n=10449 E=73323.0 GeV pT=4760.7 GeV; neutrinos: n=8 E=153.0 GeV pT=43.0 GeV
+jets ak4GenJetsPU: n=266 sumPt=5616.2 GeV sumE=555114.4 GeV constituents=13106
+  [0] pT=152.0 eta=-3.78 phi=1.00 mass=44.3 nConst=88
+  [1] pT=150.9 eta=-1.63 phi=-2.08 mass=51.4 nConst=114
+  [2] pT=60.9 eta=-0.43 phi=0.30 mass=35.9 nConst=94
+  [3] pT=57.9 eta=-1.41 phi=3.04 mass=35.9 nConst=109
+```
+
+In the chapter's ledger table the rows "electrons, muons" are electron + muon (pileup 85 + 2 = 87, E
+998.9 + 5.3 = 1004.2 GeV, pT 10.9 + 1.7 = 12.6 GeV; all 88, 1015.1, 17.6). Derived: pileup energy beyond
+|eta| = 5.5: 840 217 / 924 800 = 91 %; pileup pT density in |eta| < 2.5: 2179.4 / (5 x 2 pi) = 69.4 GeV per
+unit of eta-phi area; mean pT of a pileup particle there 2179.4 / 4864 = 0.45 GeV; an R = 0.4 cone (area
+pi R^2 = 0.503) collects 34.9 GeV; the signal column equals `test/07_GenJet/out/ledger_07_GenJet.txt`.
+At PU 200 (x 200 / 68 = 2.9): 204 GeV per unit area, 103 GeV per cone.
+
+### 4.8 The release files quoted in "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`)
+
+```
+Configuration/PyReleaseValidation/python/relval_steps.py (4617):
+    elif 'Run4' in ds:
+        PUDataSets[ds]={'-n':10,'--pileup':'AVE_200_BX_25ns','--pileup_input':'das:/RelValMinBias_14TeV/%s/GEN-SIM'%(name,)}
+    (4612-4615: '2022', '2023', '2024', '2025' -> 'Run3_Flat55To75_PoissonOOTPU' with RelValMinBias_14TeV)
+Configuration/StandardSequences/python/Mixing.py (184, 160, 124):
+    addMixingScenario("AVE_200_BX_25ns",{'file': 'SimGeneral.MixingModule.mix_POISSON_average_cfi','BX':25, 'B': (-3,3), 'N': 200})
+    addMixingScenario("AVE_50_BX_25ns",{'file': 'SimGeneral.MixingModule.mix_POISSON_average_cfi','BX':25, 'B': (-12,3), 'N': 50})
+    addMixingScenario("Run3_Flat55To75_PoissonOOTPU",{'file': 'SimGeneral.MixingModule.mix_Run3_Flat55To75_PoissonOOTPU_cfi'})
+    defineMixing(): 'N' -> process.mix.input.nbPileupEvents.averageNumber, 'BX' -> process.mix.bunchspace, 'B' -> process.mix.minBunch / maxBunch
+SimGeneral/MixingModule/python/mix_POISSON_average_cfi.py: type = 'poisson', sequential = cms.untracked.bool(False), minBunch -5, maxBunch 3, bunchspace 450 (overridden by the scenario)
+SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py: minBunch = -12, maxBunch = 3, bunchspace = 25, type = 'probFunction', manage_OOT = True
+SimGeneral/MixingModule/python/mix_Run3_Flat55To75_PoissonOOTPU_cfi.py: probValue 0 for 0-54, 1/21 = 0.047619 for 55-75
+Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py: comEnergy = 14000.0, crossSection = 71.39e+09, SoftQCD:inelastic = on
+Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py: SigmaTotal:mode = 0, SigmaTotal:sigmaEl = 21.89, SigmaTotal:sigmaTot = 100.309, MultipartonInteractions:pT0Ref=1.41, ecmPow=0.03344
+Configuration/Generator/python/: MinBias_13TeV_pythia8_TuneCUETP8M1_cfi, MinBias_14TeV_pythia8_TuneCUETP8M1_cfi, MinBias_TuneZ2star_*_pythia6_cff, Hydjet_*_MinBias_* (no 13.6 TeV CP5 fragment)
+Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py (3207-3218, 'Run4D110'): 'Geom': 'ExtendedRun4D110', 'BeamSpot': 'DBrealisticHLLHC', 'GT': 'auto:phase2_realistic_T33', 'Era': 'Phase2C17I13M9'
+Configuration/AlCa/python/autoCond.py (111): 'phase2_realistic' : '150X_mcRun4_realistic_v1'; (95): 'phase1_2024_realistic' : '150X_mcRun3_2024_realistic_v2'
+IOMC/EventVertexGenerators/python/VtxSmearedRealisticHLLHC_cfi.py: VtxSmeared = HLLHCEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)   # SimBeamSpotHLLHCObjectsRcd
+IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py: VtxSmeared = BetafuncEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)    # SimBeamSpotObjectsRcd
+IOMC/EventVertexGenerators/python/VtxSmearedParameters_cfi.py (1101-1117), HLLHCVtxSmearingParameters:
+    MeanXIncm = MeanYIncm = MeanZIncm = 0, TimeOffsetInns = 0.0, EprotonInGeV = 6500.0, CrossingAngleInurad = 510.0, CrabFrequencyInMHz = 400.0, RF800 = False,
+    BetaCrossingPlaneInm = 0.20, BetaSeparationPlaneInm = 0.20, HorizontalEmittance = 2.5e-06, VerticalEmittance = 2.05e-06, BunchLengthInm = 0.090,
+    CrabbingAngleCrossingInurad = 380.0, CrabbingAngleSeparationInurad = 0.0
+IOMC/EventVertexGenerators/python/VtxSmearedHLLHC14TeV_cfi.py: HLLHCVtxSmearingParameters.clone(EprotonInGeV = cms.double(7000))
+IOMC/EventVertexGenerators/src/HLLHCEvtVtxGenerator.cc (131-132): z = (shoot() - 0.5) * 6.0 * fBunchLength; t = (shoot() - 0.5) * 6.0 * fBunchLength;  (accept-reject on intensity(x, y, z, t))
+IOMC/EventVertexGenerators/src/BetafuncEvtVtxGenerator.cc (84, 97): tmp_sigz = RandGaussQ::shoot(engine, 0., fSigmaZ); tmp_sigt = RandGaussQ::shoot(engine, 0., fSigmaZ)
+doc/tmp/Gen4Phase2.md (53): SimBeamSpotHLLHCObjectsRcd payload SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1 (GT 150X_mcRun4_realistic_v1); not re-checked with conddb for this chapter
+```
+
+Library sizes: PU 200 x 7 crossings (-3..3) = 1400 minimum-bias events per signal event; Run 3 scenario
+~65 x 16 crossings (-12..3) = 1040; this book's mixing (chapter 10, bunch crossings -1..1, mean 60) 193 for
+this event: 71 + 68 + 54 library events for bunch crossings -1, 0 and +1.

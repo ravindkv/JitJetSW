@@ -1,0 +1,293 @@
+% chapter_02_PS.tex -- JitJet chapter 02: the parton shower. \input by doc/JitJet.tex (Rule D).
+% Every number is from test/02_PS/out/ (ledger_02_PS.txt, genPartAnalyzer_02_PS.log, step1_GEN_02_PS.log) or
+% test/01_ME/out/ and test/04_MPI/out/ for the comparisons; the companion doc/chapter/chapter_02_PS.md lists them in full.
+\chapter{02 -- PS: the parton shower dresses the $b$ quark with gluons}
+\label{ch:02_PS}
+
+\section{What this chapter is about}
+
+In chapter 01 the event was the bare matrix element: an antiquark and a quark in, a $b$ and a $\bar b$ out, each with
+$\pt = 113.2\GeV$, fourteen entries in the record and nothing else. A quark that is kicked to $113\GeV$ does not stay
+alone: it radiates gluons, as an accelerated electron radiates photons, and the gluons radiate further gluons or split
+into quark pairs. Pythia8 computes this radiation with its \emph{parton shower}: a chain of $1\to2$ branchings
+($q\to qg$, $g\to gg$, $g\to q\bar q$) ordered in the transverse momentum of the emission, started at the scale of the
+hard process and stopped at a cut-off of about half a GeV, below which perturbation theory is no longer trusted and
+the hadronisation of chapter 05 takes over. There are two showers. The \emph{initial-state radiation} (ISR) is
+emitted by the incoming $\bar u$ and $u$ before they collide and is generated backwards from the hard process towards
+the protons, guided by the parton distribution functions. The \emph{final-state radiation} (FSR) is emitted by the
+outgoing $b$ and $\bar b$ after the collision. This chapter switches on exactly these two steps,
+\code{PartonLevel:ISR} and \code{PartonLevel:FSR}, and leaves multiparton interactions, hadronisation and decays off,
+so that the final state is still made of partons.
+
+What happens to our event is small in size and large in meaning. The record grows from 14 to 34 entries; the shower
+branches five times, all on the $b$ side: one $b\to bg$, three $g\to gg$ and one $g\to d\bar d$. The $b$ quark that
+leaves the shower carries $46.9\GeV$ instead of $113.2\GeV$; the six partons of its system together still carry
+$113.6\GeV$, all within $\Delta R = 0.31$ of the quark. The $\bar b$ does not radiate at all and the ISR evolution
+produces no emission. The first lesson of the journey is written in these numbers: the momentum of the hard process
+is carried by the jet, not by the quark, and the jet exists before any hadron does.
+
+\begin{plainwords}[The parton shower in plain words]
+The hard process is calculated at one scale, $\ptHat = 113\GeV$. Between that scale and the hadron scale of
+$1\GeV$ there are two orders of magnitude in which the strong coupling is still perturbative, and where the
+probability of emitting a gluon of transverse momentum $\pt$ grows like $\alpha_s\,\mathrm{d}\pt^2/\pt^2$: soft and
+collinear gluons are emitted copiously. The shower generates them one by one, from the hardest down, each emission
+taking its momentum from the parton that radiates and from a \emph{recoiler}, the colour partner of the radiator
+(a dipole). Every emission is kept in the record, together with a new copy of every parton whose momentum changed.
+Nothing is created or lost: the energy of the event stays $13600\GeV$, the momentum of the $b$ is shared among the
+$b$ and its radiation.
+\end{plainwords}
+
+\section{From the previous chapter}
+
+The input of this chapter is the configuration of chapter 01 with two switches turned on: the only differences
+between \code{test/01\_ME/step1\_GEN\_01\_ME\_cfg.py} and \code{test/02\_PS/step1\_GEN\_02\_PS\_cfg.py} are
+\code{PartonLevel:ISR = on}, \code{PartonLevel:FSR = on} and the file names. The same fragment, the same tune, the
+same random seed (\code{initialSeed = 123456789} of the \code{generator} engine in
+\code{IOMC/RandomEngine/python/IOMC\_cff.py}) and the same beam energy mean that Pythia8 draws the same hard process:
+the incoming $\bar u$ with $x_1 = 2.174\times10^{-3}$ and $u$ with $x_2 = 0.3901$, $\sqrt{\hat s} = 396.1\GeV$,
+$\ptHat = 113.2\GeV$, the $b$ at $\eta = -1.44$, $\phi = -2.15$ and the $\bar b$ at $\eta = -3.75$, $\phi = 0.99$ are
+identical in the two logs and ledgers, and the first page of the analyzer PDF, the display of the hard process, is
+the same picture as in chapter 01.
+
+What changes is everything that comes after the hard process. The shower adds 15 entries with the status codes
+51--53 and raises the final state from 6 to 11 partons. The beam remnants, which Pythia8 builds only after the
+showers, are drawn with a different random sequence: in chapter 01 the proton of the $\bar u$ left a $ud_1$ diquark,
+a $u$ of $132.8\GeV$ and a $u$ of $9.1\GeV$ at $\eta = 3.36$; here it leaves a $ud_0$ diquark and two $u$ quarks of
+$415\GeV$ and $552\GeV$ beyond $\abseta = 7$. This is the first sign of a caveat that matters for the whole
+book, stated plainly in section~\ref{sec:02_PS_numbers}: the hard process is the same event in chapters 01 to 06,
+the emissions of the shower are not.
+
+\section{The numbers of the event}
+\label{sec:02_PS_numbers}
+
+\paragraph{The shower that Pythia8 ran.} Table~\ref{tab:02_PS_settings} lists the settings that govern the two
+showers, from the settings table that Pythia 8.311 prints at the start of \code{step1\_GEN\_02\_PS.log} (it prints
+only the parameters that differ from its defaults) and from the Pythia8 documentation for the rest. The shower
+model is the default \emph{simple shower} of Pythia8 (\code{PartonShowers:model = 1}; the FSR class
+\code{SimpleTimeShower} is named in the warning of the log, its ISR counterpart is \code{SimpleSpaceShower}), a \pt-ordered dipole shower:
+emissions are generated in decreasing \pt, each from a radiator--recoiler pair that shares a colour line. The CP5
+tune sets the strong coupling of both showers to $\alpha_s(M_Z) = 0.118$ with two-loop running, the value of the
+PDF set \code{NNPDF31\_nnlo\_as\_0118}, instead of the Pythia8 default $0.1365$ with one-loop running; a smaller
+coupling means fewer and softer emissions. The starting scale of both showers is the factorisation scale of the
+hard process, $\sqrt{Q^2} = 113.3\GeV$ (the Info listing of the log: \code{Max pT scale for ISR = 1.133e+02, FSR =
+1.133e+02}). The FSR stops at \code{TimeShower:pTmin}; its default $0.5\GeV$ is too low for the two-loop coupling and
+Pythia8 raised it itself: \code{Warning in SimpleTimeShower::init: pTmin too low, raised to 0.611}. The ISR is
+regularised by \code{SpaceShower:pT0Ref = 2.0} ($2.0\GeV$), a Pythia8 default that the tune does not touch.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{The settings of the two showers in this run, from the Pythia8 settings table of
+\code{test/02\_PS/out/step1\_GEN\_02\_PS.log} (``Now'' and ``Default'' columns) and, for the parameters left at
+their default, from the Pythia 8.311 documentation (\code{share/Pythia8/xmldoc}). ``CP5'' is
+\code{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings\_cfi.py}.}
+\label{tab:02_PS_settings}
+\begin{tabular}{lll}
+\toprule
+parameter & this run (set by) & Pythia8 default \\
+\midrule
+\code{PartonLevel:ISR}, \code{PartonLevel:FSR} & on, on (\code{run\_02\_PS.sh}) & on, on \\
+\code{PartonLevel:MPI}, \code{HadronLevel:all} & off, off (\code{run\_02\_PS.sh}) & on, on \\
+\code{PartonShowers:model} & 1, the simple shower (default) & 1 \\
+\code{TimeShower:alphaSvalue}, \code{alphaSorder} & 0.118, 2 (CP5) & 0.1365, 1 \\
+\code{SpaceShower:alphaSvalue}, \code{alphaSorder} & 0.118, 2 (CP5) & 0.1365, 1 \\
+\code{TimeShower:pTmin} & $0.5\GeV$, raised to $0.611\GeV$ at init & $0.5\GeV$ \\
+\code{SpaceShower:pT0Ref}, \code{ecmPow} & $2.0\GeV$, 0 (default) & $2.0\GeV$, 0 \\
+\code{PDF:pSet} & \code{LHAPDF6:NNPDF31\_nnlo\_as\_0118} (CP5) & 13, NNPDF2.3 LO \\
+starting scale of ISR and FSR (Info listing) & $113.3\GeV = \sqrt{Q^2}$ of the hard process & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{How to read the record.} Pythia8 marks every entry of the event record with a status code that says in
+which step it was produced; CMSSW copies the code into the \code{genParticles} collection. The hard process uses
+21 (incoming) and 23 (outgoing); the ISR uses 41--49 (41 incoming on the space-like branch, 43 outgoing produced by a
+branching, 44 outgoing shifted by a branching); the FSR uses 51--59: 51 is an outgoing parton produced by a branching,
+52 is a \emph{copy} of a parton whose momentum changed because it was the recoiler of a branching, 53 the same for
+an incoming parton. A parton is therefore never modified in place: when the $b$ radiates, the record keeps the
+original $b$ (status 23), adds the $b$ and the gluon after the branching (status 51) and, each time the $b$ is the
+recoiler of a later branching, a new copy (status 52). The analyzer follows the ``last copy'' of the $b$ through the
+chain. The final-state partons are copied once more with status 1 after the beam remnants are attached (the
+primordial transverse momentum of the incoming partons is added at that step: the $\bar b$ goes from $113.221$ to
+$114.048\GeV$ without having radiated).
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{The five FSR branchings of the event, read from the \code{genParticles} of
+\code{test/02\_PS/out/step1\_GEN\_02\_PS.root} with FWLite (the full record is in the companion). Index = position
+in the collection; the recoiler is the colour partner that absorbs the recoil and is copied with status 52 (outgoing)
+or 53 (incoming). The last column is the vector sum of the \pt{} of the two daughters.}
+\label{tab:02_PS_chain}
+\begin{tabular}{@{}c@{\hspace{6pt}}l@{\hspace{6pt}}r@{\hspace{6pt}}l@{\hspace{6pt}}r@{\hspace{6pt}}l@{\hspace{6pt}}r@{}}
+\toprule
+branching & radiator (idx, st) & $\pt$ [GeV] & daughters (idx, st) & $\pt$ [GeV] & recoiler (idx $\to$ copy, st) & $|\sum\vec\pt|$ \\
+\midrule
+1 & $b$ (5, 23) & 113.22 & $b$ (6, 51), $g$ (7, 51) & 47.70, 65.58 & incoming $u$ (3 $\to$ 8, 53) & 113.22 \\
+2 & $g$ (7, 51) & 65.58 & $g$ (9, 51), $g$ (10, 51) & 61.70, 4.11 & incoming $u$ (8 $\to$ 11, 53) & 65.68 \\
+3 & $g$ (10, 51) & 4.11 & $d$ (12, 51), $\bar d$ (13, 51) & 2.46, 7.66 & $g$ (9 $\to$ 14, 52) & 10.10 \\
+4 & $g$ (14, 52) & 55.60 & $g$ (15, 51), $g$ (16, 51) & 51.94, 5.02 & $\bar d$ (13 $\to$ 17, 52) & 56.95 \\
+5 & $g$ (15, 51) & 51.94 & $g$ (18, 51), $g$ (19, 51) & 43.12, 9.66 & $b$ (6 $\to$ 20, 52) & 52.76 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The five branchings.} Table~\ref{tab:02_PS_chain} is the shower of this event. The Info listing of the
+log counts it: \code{Number of MPI = 1, ISR = 0, FSRproc = 5} (the one ``MPI'' is the hard process itself). The
+first branching is the hardest, as the \pt{} ordering demands: the $b$ of $113.22\GeV$ emits a gluon of $65.58\GeV$
+and keeps $47.70\GeV$; the two together have the \pt{} of the original $b$ to the last digit and an invariant mass
+of $11.6\GeV$, and they are $\Delta R = 0.156$ apart. This is a collinear emission, not a wide-angle one: the gluon
+carries more \pt{} than the quark but flies in the same direction. The gluon then splits into two gluons, the softer
+of which splits into a $d\bar d$ pair, and the harder gluon splits twice more. The recoil of the first two branchings
+is taken by the incoming $u$, the colour partner of the $b$ in the $u\bar u\to b\bar b$ colour flow: its energy
+moves from $2652.93$ to $2656.06\GeV$, that is $x_2$ from $0.39014$ to $0.39060$ (the two status-53 entries). The
+other three recoils go to the shower partons themselves (status 52). The $b$ is recoiler of the last branching and
+ends at $46.88\GeV$ (index 20, status 52, the copy the analyzer reports) and at $47.04\GeV$ in its status-1 copy.
+
+\paragraph{Where the momentum went.} The six final-state partons of the $b$ side ($b$, three gluons, $d$, $\bar d$:
+indices 24 to 29) have a vector \pt{} of $113.56\GeV$, a scalar sum of $113.75\GeV$, an energy of $256.9\GeV$ and
+an invariant mass of $13.8\GeV$; the farthest of them, the $\bar d$ of $6.3\GeV$, is $\Delta R = 0.311$ from the
+$b$, the gluon of $43.2\GeV$ is at $0.161$. A jet of radius 0.4 drawn around the $b$ would contain them all and
+measure $113.6\GeV$: the shower did not change the jet, it changed what the jet is made of. The analyzer sees it
+from the other side: its ``net $b+\bar b$'' is the vector sum of the two \emph{quarks} and jumps from
+$0.0$ to $66.4\GeV$, with a scalar sum of $160.1\GeV$ instead of $226.4\GeV$. That imbalance is the radiation
+that is still in the record, six entries lower; the vector sum of the $b$ system and the $\bar b$ is $0.6\GeV$, the
+rest being the primordial $k_\mathrm{T}$ and the recoil of the incoming $u$. The $\bar b$ at $\eta = -3.75$ radiated
+nothing: in a shower every emission is a random draw against the Sudakov factor, and a $b$ quark of $113\GeV$ has a
+sizeable probability to emit nothing above the cut-off. The same holds for the ISR: the evolution from $113.3\GeV$
+down to the cut-off happened to produce no emission. One reason it is not rare here is kinematic: the $u$ carries
+$x_2 = 0.39$, and the backward evolution of a valence quark that already has a large $x$ must find a parent with
+an even larger $x$, which the steeply falling parton distribution disfavours.
+
+\begin{plainwords}[Why this shower is not the shower of chapters 04 to 06]
+Pythia8 does not run ISR, FSR and multiparton interactions one after the other; it runs them \emph{interleaved} in
+one \pt-ordered evolution, in which at every step the next emission is the one with the highest \pt{} among all
+three. With MPI switched off, as here, the sequence of random numbers after the hard process is different from the
+sequence with MPI on, and so are the emissions. The same event in chapter 04 (\code{test/04\_MPI/out/},
+MPI on) has \code{ISR = 28, FSRproc = 64} branchings counted in its log, and its analyzer reports at stage 2 a $b$ of
+$91.6\GeV$ and a $\bar b$ of $118.6\GeV$, both status 52, net $27.3\GeV$, against $46.9\GeV$, $113.2\GeV$ (status 23)
+and $66.4\GeV$ here. The hard process is the same event, the shower emissions are not identical between this
+chapter and the later ones; chapters 04, 05 and 06 are identical to each other at parton level. This chapter shows
+what a shower does, isolated; the shower that the detector will see is the one of chapter 04.
+\end{plainwords}
+
+\section{Ledger and display}
+
+\begin{table}[htbp]
+\centering\small
+\caption{The ledger of the stage: the generator record before (\code{test/01\_ME/out/ledger\_01\_ME.txt},
+\code{genPartAnalyzer\_01\_ME.log}) and after the shower (\code{test/02\_PS/out/ledger\_02\_PS.txt},
+\code{genPartAnalyzer\_02\_PS.log}). $E$ and \pt{} are sums over the final-state (status 1) particles of the region;
+the whole event is $13600\GeV$ in both. The $b$ and $\bar b$ rows are the last quark copies the analyzer follows
+(status 23 before, status 52 and 23 after); the $b$ system row is the $b$ with its five radiated partons.}
+\label{tab:02_PS_ledger}
+\begin{tabular}{lrrr}
+\toprule
+quantity & before (01, ME) & after (02, PS) & difference \\
+\midrule
+entries in \code{genParticles} & 14 & 34 & $+20$ \\
+\quad hard process (status 21--29) & 4 & 4 & 0 \\
+\quad FSR (status 51--59) & 0 & 15 & $+15$ \\
+\quad ISR (status 41--49) & 0 & 0 & 0 \\
+\quad beam remnants (status 61--69) & 2 & 2 & 0 \\
+\quad final state (status 1) & 6 & 11 & $+5$ \\
+\midrule
+final-state energy, all [GeV] & 13600.0 & 13600.0 & 0.0 \\
+final-state scalar \pt, all [GeV] & 228.6 & 230.7 & $+2.1$ \\
+$\abseta < 2.5$: $n$ / $E$ / \pt{} [GeV] & 1 / 253.1 / 113.6 & 6 / 256.9 / 113.7 & $+5$ / $+3.8$ / $+0.1$ \\
+$3.0 < \abseta < 5.2$: $n$ / $E$ / \pt{} [GeV] & 2 / 2423.7 / 113.0 & 1 / 2413.9 / 114.0 & $-1$ / $-9.8$ / $+1.0$ \\
+$\abseta > 5.5$: $n$ / $E$ / \pt{} [GeV] & 3 / 10923.1 / 2.1 & 4 / 10929.2 / 2.9 & $+1$ / $+6.1$ / $+0.8$ \\
+visible ($\abseta < 5.2$): $n$ / $E$ [GeV] & 3 / 2676.9 & 7 / 2670.8 & $+4$ / $-6.1$ \\
+\midrule
+$b$ quark \pt{} [GeV] & 113.2 & 46.9 & $-66.3$ \\
+$\bar b$ quark \pt{} [GeV] & 113.2 & 113.2 & 0.0 \\
+$b$ system ($b$ + radiation) vector \pt{} [GeV] & 113.2 & 113.6 & $+0.4$ \\
+net $|\vec\pt(b) + \vec\pt(\bar b)|$ [GeV] & 0.0 & 66.4 & $+66.4$ \\
+scalar $\pt(b) + \pt(\bar b)$ [GeV] & 226.4 & 160.1 & $-66.3$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:02_PS_ledger} closes the ledger and figure~\ref{fig:02_PS_display} shows the result. The shower added twenty entries and five final-state partons, all of
+them in the tracker region $\abseta < 2.5$ next to the $b$; it moved no energy between the regions beyond what the
+re-drawn beam remnants did (the $u$ of $9.1\GeV$ at $\eta = 3.36$ of chapter 01 is gone, the forward region now
+holds the $\bar b$ alone; the remnants beyond $\abseta = 5.5$ gained one entry and $6\GeV$). The energy of the
+event is conserved to the first decimal and the visible energy changes by $6\GeV$ out of $2671$. The one large number
+of the table, $-66.3\GeV$ on the $b$ quark, is not a loss: the $b$ system row shows it was moved to the five partons
+that now share the jet with the quark.
+
+\begin{figure}[!tb]
+\centering
+\includegraphics[width=\textwidth]{02_PS/out/genPartAnalyzer_02_PS_page-2.png}
+\caption{The $\eta$--$\phi$ display of the event after the shower (\code{GenPartAnalyzer}, page 2 of
+\code{test/02\_PS/out/genPartAnalyzer\_02\_PS.pdf} as \code{genPartAnalyzer\_02\_PS\_page-2.png}; the marker size
+grows with $\log\pt$; page 1, the hard process, is the display of chapter 01): the $b$ at $46.9\GeV$ with its five
+radiated partons (green triangles, labelled when above $5\GeV$), the untouched $\bar b$, and the vector sum
+$b+\bar b$ of $66.4\GeV$ (magenta star). All five emissions sit within $\Delta R = 0.31$ of the $b$: on this scale
+the jet is already one blob.}
+\label{fig:02_PS_display}
+\end{figure}
+
+\section{Open problems for Phase-2}
+
+The shower of this chapter is steered by two python files of the release, both imported by the fragment
+\path{Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py}. What follows is what they contain in
+\code{CMSSW\_15\_0\_5}, and what it means for the HL-LHC.
+
+\paragraph{CP5 showers: a 2017 tune of 13 TeV data, extrapolated.}
+\path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py} starts from \code{Tune:pp 14} and
+\code{Tune:ee 7} (the Monash 2013 tune of Pythia8); for the showers it changes only the coupling, setting
+\code{SpaceShower:alphaSvalue} and \code{TimeShower:alphaSvalue} to 0.118 with \code{alphaSorder=2}. The
+directory name says when: the CP tunes were derived in 2017 from underlying-event measurements at 13 TeV
+(CMS-GEN-17-001). The energy dependence of the tune is the single parameter \code{MultipartonInteractions:ecmPow =
+0.03344} in the formula $\pt^0 = \pt^{0,\mathrm{ref}}\,(E_\mathrm{cm}/E_\mathrm{cm}^\mathrm{ref})^{\mathrm{ecmPow}}$
+with \code{pT0Ref = 1.41} and the reference energy at its Pythia8 default \code{MultipartonInteractions:ecmRef =
+7000} GeV (not set in the file): the cut-off is $1.442\GeV$ at $13.6\TeV$ and $1.443\GeV$ at $14\TeV$, a change of
+one per mille, so going from Run 3 to the HL-LHC energy is harmless for the formula; what is open is whether a
+power law fitted between 7 and 13 TeV holds at 14, which no file in the release addresses. This parameter enters
+chapter 04, not this one: for the ISR the regularisation is \code{SpaceShower:pT0Ref = 2.0} with
+\code{SpaceShower:ecmPow = 0.0} and \code{samePTasMPI = off}, Pythia8 defaults that CMS never tuned, so the ISR
+cut-off has no energy dependence at all. The FSR cut-off \code{TimeShower:pTmin = 0.5} is also untouched, and Pythia8
+overrides it at initialisation (raised to $0.611\GeV$, in every log of this book). At the HL-LHC the soft end of
+the ISR spectrum is what populates $1.5 < \abseta < 3.0$, the acceptance of the HGCal, with low-\pt{} partons on
+top of 200 pileup collisions; the cut-off that decides how many of them exist is a default of 2014.
+
+\paragraph{The ``Run 3'' copy of CP5 only changed two cross sections.} The release also has
+\path{Configuration/Generator/python/MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py}. Its \code{diff} against the
+2017 file is two lines: \code{SigmaTotal:sigmaEl = 22.08} and \code{SigmaTotal:sigmaTot = 101.037} instead of
+$21.89$ and $100.309$ (the total and elastic $pp$ cross sections used with \code{SigmaTotal:mode = 0}, which fixes
+them by hand instead of letting Pythia8 compute them for the actual energy). Every shower, MPI and colour-reconnection
+parameter is byte-identical. Our fragment, like all 40 \code{*14TeV*} fragments of
+\path{Configuration/Generator/python/} that use CP5 (\path{TTbar_14TeV_TuneCP5_cfi.py},
+\path{MinBias_14TeV_pythia8_TuneCP5_cfi.py}, \path{QCD_Pt_80_120_14TeV_TuneCP5_cfi.py}, \ldots), imports the
+2017 file; none of them imports the Run 3 one (0 of 40), and there is no \code{MCTunes} directory for 14 TeV or
+Phase-2. The Phase-2 pileup of the release validation is built from exactly these fragments:
+\path{Configuration/PyReleaseValidation/python/relval_steps.py} uses \code{MinBias\_14TeV\_pythia8\_TuneCP5} with
+\code{AVE\_200\_BX\_25ns} for the \code{Run4} datasets. So the 200 minimum-bias collisions of a Phase-2 event, and
+the showers of its signal, run with the 13 TeV numbers of 2017 and even with the 13 TeV total cross section that the
+Run 3 copy corrected.
+
+\paragraph{The shower-uncertainty weights carry a note that says it.}
+\path{Configuration/Generator/python/PSweightsPythia/PythiaPSweightsSettings_cfi.py}, the block that adds the
+ISR/FSR $\mu_R$ variations as event weights (not included in our fragment, which is why the GEN file carries no
+such weights), ends with \code{UncertaintyBands:ISRpTmin2Fac = 20} and the comment ``for consistency with UL and
+P8.240 set to 20, to be optimized and changed for Run 3 re-MC''. The optimisation announced for Run 3 is not in
+\code{CMSSW\_15\_0\_5}; for Phase-2 nothing is planned in the file.
+
+\paragraph{Pythia8CommonSettings has no version at all.}
+\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py} holds eight lines used by every CMS Pythia8
+fragment of Run 2, Run 3 and Phase-2 alike: \code{Beams:setProductionScalesFromLHEF} = off,
+\code{Tune:preferLHAPDF} = 2, \code{Main:timesAllowErrors} = 10000, \code{Check:epTolErr} = 0.01 (the energy--momentum
+conservation tolerance, loosened by a factor 100 from the Pythia8 default $10^{-4}$, visible in the settings table
+of the log), \code{SLHA:minMassSM} = 1000, \code{ParticleDecays:limitTau0} = on, \code{ParticleDecays:tau0Max} = 10 and
+\code{ParticleDecays:allowPhotonRadiation} = on. None of them concerns the shower directly; \code{tau0Max = 10}
+(in mm) will matter in chapters 06 and 09, because it decides which particles decay in Pythia8 and which are handed
+to Geant4, and in Phase-2 the first tracker layer and the MTD timing layer sit where that boundary falls. The file
+carries no date and \code{cvmfs} carries no git history, so I could not establish from the release when it was last
+changed; its content is the same for the 13 TeV and the 14 TeV fragments in the same directory.
+
+\paragraph{What the event itself says.} In this event the $\bar b$ at $\eta = -3.75$ radiated nothing, by chance.
+On average it radiates, and its gluons land between $\abseta = 3$ and $5$: in the 2024 detector this is the HF, in
+Phase-2 it is the HF too, just outside the HGCal. The $b$ at $\eta = -1.44$ radiated five partons within $\Delta R <
+0.31$; their number and their energy sharing are what a jet algorithm, a $b$ tagger or a jet-mass measurement sees,
+and they are governed by $\alpha_s^\mathrm{FSR} = 0.118$ and \code{TimeShower:pTmin} of
+table~\ref{tab:02_PS_settings}. Neither has been revisited for 14 TeV, and chapters 04 and 07 will show how much of
+the jet they make.

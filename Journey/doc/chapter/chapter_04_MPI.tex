@@ -1,0 +1,294 @@
+% chapter_04_MPI.tex -- chapter 04 of the JitJet book: multiparton interactions and beam remnants.
+% Script: test/04_MPI/run_04_MPI.sh; every number is from test/04_MPI/out/ (ledger_04_MPI.txt, genPartAnalyzer_04_MPI.log,
+% step1_GEN_04_MPI.log) or from FWLite on test/04_MPI/out/step1_GEN_04_MPI.root (companion chapter_04_MPI.md, section 4).
+\chapter{04 -- MPI: the other partons of the two protons scatter too, and the proton remnants are built}
+\label{ch:04_MPI}
+\providecommand{\ptz}{\ensuremath{p_{\mathrm{T}0}}}  % the MPI regulator
+
+\section{What this chapter is about}
+
+A proton is not one parton. When the $\bar u$ of one proton and the $u$ of the other produce our \bbbar{} pair
+(chapter~\ref{ch:01_ME}), the two protons pass through each other as a whole, and nothing forbids a second,
+third, \dots{} pair of partons from scattering in the same collision. Pythia8 calls these extra scatterings
+\emph{multiparton interactions} (MPI); their products, together with the radiation they emit, form the
+\emph{underlying event} that every jet measurement has to live with. This chapter switches them on
+(\code{PartonLevel:MPI = on}) and lets Pythia8 finish its \emph{parton level}: the MPI, the \emph{primordial
+$k_\mathrm{T}$} given to every incoming parton, and the \emph{beam remnants}, the partons of the two protons that
+took part in nothing and still carry most of the $13.6\TeV$. Hadronisation and decays stay off
+(\code{HadronLevel:Hadronize = off}, \code{HadronLevel:Decay = off}), so the output is still a record of quarks and
+gluons.
+
+The event grows from 11 final-state partons (chapter~\ref{ch:02_PS}) to 169: Pythia8 generated 31~MPI besides
+the hard process. This chapter counts them, looks at how hard they are, where they go, how much of them lands near
+the two $b$ jets, and what the regulator $\ptz$ of the CP5 tune has to do with it. From here on the event is
+final at parton level: chapters~\ref{ch:05_Had} and~\ref{ch:06_Decay} build on exactly this record.
+
+\begin{plainwords}[Multiparton interactions in one sentence]
+Every $2\to2$ QCD scattering has a cross section that grows like $1/\pt^4$ towards small \pt, so at some
+\pt{} the parton--parton cross section exceeds the proton--proton one: the only consistent reading is that
+several parton pairs scatter in the same $pp$ collision. Pythia8 generates them one after the other in
+decreasing \pt, with the hard process ($\ptHat = 113\GeV$) first, and damps the divergence with a regulator,
+$\alpha_s(\pt^2)/\pt^4 \to \alpha_s(\pt^2+\ptz^2)/(\pt^2+\ptz^2)^2$. The number of MPI per collision is
+what the tune (here CP5) is fitted to reproduce; a minimum-bias collision (chapter~\ref{ch:08_PU}) is the same
+mechanism without any hard process on top.
+\end{plainwords}
+
+\section{From the previous chapter}
+
+Chapter~\ref{ch:03_MnM} changed nothing (a leading-order $2\to2$ process has nothing to match or merge), so the
+input of this stage is the configuration of chapter~\ref{ch:02_PS} with one more switch,
+\code{PartonLevel:MPI = on}; same fragment, same seeds, same conditions. What is kept is the hard process:
+the four entries of status 21--23 are identical in every generator chapter (incoming $\bar u$ with $x=0.0022$
+and $u$ with $x=0.3901$, $\sqrt{\hat s}=396.1\GeV$, $b$ and $\bar b$ at $\pt=113.2\GeV$, $\eta=-1.44$ and
+$-3.75$).\footnote{\code{ledger\_04\_MPI.txt}, identical lines in \code{ledger\_02\_PS.txt}; the Pythia8 listing of the
+hard process is in \code{step1\_GEN\_04\_MPI.log}.}
+
+What changes is everything after the hard process, including the parton shower of chapter~\ref{ch:02_PS}.
+Pythia8 does not run the showers and then the MPI: it runs ISR, FSR and MPI in one sequence of decreasing \pt{}
+(the \emph{interleaved evolution}), each candidate emission or interaction competing for the next step. With
+MPI on, the random numbers are consumed in a different order from the first MPI trial on, and every later
+emission is a different draw. Table~\ref{tab:04_shower} shows the result: the shower of chapter~\ref{ch:02_PS}
+had no ISR and five FSR emissions, the $b$ lost more than half of its \pt{} to its radiation ($113.2\to46.9\GeV$)
+and the $\bar b$ did not radiate at all; the shower inside this event has 28~ISR and 64~FSR emissions, the $b$
+ends at $91.6\GeV$ and the $\bar b$ at $118.6\GeV$. Neither is ``more right''; they are two draws of the same
+probability distribution. The shower of this chapter is the one that stays: chapters~\ref{ch:05_Had}
+and~\ref{ch:06_Decay} are identical to it at parton level.
+
+\begin{table}[htb]
+\centering\small
+\caption{The parton shower of this event in chapter~\ref{ch:02_PS} (MPI off) and in this chapter (MPI on), same
+hard process, same seeds. The $b$ and $\bar b$ are their last shower copies (status 52; status 23 for the
+$\bar b$ of chapter~\ref{ch:02_PS}, which did not radiate). Emission counts from the Pythia8 ``Info Listing''
+of \code{step1\_GEN\_02\_PS.log} and \code{step1\_GEN\_04\_MPI.log} (its ``Number of MPI'' includes the hard
+process), the rest from \code{genPartAnalyzer\_02\_PS.log} and \code{genPartAnalyzer\_04\_MPI.log}.}
+\label{tab:04_shower}
+\begin{tabular}{lrrr}
+\toprule
+after the parton shower (stage 2) & chapter 02 & chapter 04 & difference \\
+\midrule
+ISR emissions & 0 & 28 & $+28$ \\
+FSR emissions & 5 & 64 & $+59$ \\
+MPI (Pythia8 count, hard process included) & 1 & 32 & $+31$ \\
+partons drawn at stage 2 & 7 & 57 & $+50$ \\
+$b$: \pt{} [GeV] & 46.88 & 91.59 & $+44.71$ \\
+$\bar b$: \pt{} [GeV] & 113.22 & 118.57 & $+5.35$ \\
+$|\vec\pt(b)+\vec\pt(\bar b)|$ [GeV] (recoil against the radiation) & 66.40 & 27.29 & $-39.11$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{plainwords}[Interleaved evolution]
+Pythia8 orders ISR, FSR and MPI in one falling \pt{} scale, starting at the hard scale ($113.2\GeV$ here, the
+``Max \pt{} scale'' of the log) and stopping at the shower cut-off and at the MPI regulator. At each step the
+three candidates propose a \pt, the highest wins, and the event is updated before the next step. The MPI
+switch changes the shower not because the physics of ISR or FSR changed but because the sequence of random draws
+did; only the hard process, chosen before the evolution starts, is untouched.
+\end{plainwords}
+
+\section{The numbers of the event}
+
+\paragraph{How many interactions, and how hard.}
+The MPI partons carry status 31 (incoming) and 33 (outgoing) in the record; the 124 entries of the group
+31--39 are 62 of each, two incoming and two outgoing partons per interaction, so this collision has 31~MPI on top
+of the hard process, the ``Number of MPI = 32'' of the Pythia8 log.\footnote{\code{ledger\_04\_MPI.txt} (status
+groups), \code{step1\_GEN\_04\_MPI.log} (Info Listing). The status-31 count is the method of
+\code{test/common/minBiasGenStats.py} for the pileup library of chapter~\ref{ch:08_PU}.} The same log explains
+why so many: the impact parameter of the collision is small, $b=0.31$ in Pythia8's units, which gives an
+``enhancement factor'' of 3.709 for the MPI rate; a hard process selects central collisions, where the two
+protons overlap most. For comparison, the 250 minimum-bias collisions of chapter~\ref{ch:08_PU} have 7.0
+interactions on average (median 3, maximum 39).\footnote{\code{test/08\_PU/out/genstats\_08\_PU.txt}.} The
+interactions are soft: figure~\ref{fig:04_mpipt} gives the \pt{} of the outgoing pair of each of the 31, from
+$6.65\GeV$ ($s\,g\to s\,g$) down to $0.24\GeV$; 18 of the 31 are below $1\GeV$ and only five above $4\GeV$.
+Their 62 outgoing partons are 39 gluons, 11 $u$, 7 $d$, 4 $s$ and one $c$ (quark or antiquark), from incoming
+partons with momentum fractions $x$ between $2.9\times10^{-7}$ and $0.24$ (median $3.0\times10^{-3}$): the
+sea of the two protons at small $x$, where gluons dominate.\footnote{FWLite on \code{step1\_GEN\_04\_MPI.root};
+the list is in section 4 of the companion.}
+
+\begin{figure}[htb]
+\centering
+\begin{tikzpicture}[x=1.6cm, y=0.22cm]
+\draw[->] (0,0) -- (5.4,0) node[right, font=\small] {$\pt$ of the pair [GeV]};
+\draw[->] (0,0) -- (0,14) node[above, font=\small] {interactions};
+\histbar{0}{6}\histbar{1}{12}\histbar{2}{3}\histbar{3}{5}\histbar{4}{5}
+\foreach \x/\l in {0/$<0.5$, 1/0.5--1, 2/1--2, 3/2--4, 4/$>4$} \node[below, font=\small] at (\x+0.5,0) {\l};
+\foreach \y in {5,10} \draw (0.1,\y) -- (-0.1,\y) node[left, font=\scriptsize] {\y};
+\end{tikzpicture}
+\caption{The 31 multiparton interactions of the event by the \pt{} of their outgoing parton pair (FWLite on
+\code{step1\_GEN\_04\_MPI.root}, status-33 partons grouped by their mothers). The regulator of the CP5 tune at
+$13.6\TeV$ is $\ptz=1.44\GeV$; the generation stops at \code{MultipartonInteractions:pTmin} $=0.2\GeV$
+(Pythia8 default).}
+\label{fig:04_mpipt}
+\end{figure}
+
+\paragraph{The regulator $\ptz$ and its energy dependence.}
+The MPI cross section is regulated by $\ptz$, which Pythia8 scales with the collision energy,
+\[
+\ptz(\sqrt s)=\ptz^{\mathrm{Ref}}\left(\frac{\sqrt s}{E_{\mathrm{Ref}}}\right)^{\epsilon},
+\qquad
+\ptz^{\mathrm{Ref}}=1.41\GeV,\quad E_{\mathrm{Ref}}=7\TeV,\quad \epsilon=0.03344 ,
+\]
+with \code{MultipartonInteractions:pT0Ref} and \code{ecmPow} from the CP5 block
+(\path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py}) and \code{ecmRef} at its Pythia8
+default. This gives $\ptz=1.4395\GeV$ at $13\TeV$, $1.4417\GeV$ at $13.6\TeV$ (the ``pT0 = 1.44'' of the
+initialisation in the log) and $1.4431\GeV$ at $14\TeV$: a $0.1\%$ step from Run~3 to the HL-LHC. The same
+initialisation prints what the regulator does: with $\ptz=1.44\GeV$ the integrated parton--parton cross section
+above the cut-off is $\sigma_{\mathrm{int}}=500.67\mb$ against a non-diffractive $pp$ cross section
+$\sigma_{\mathrm{ND}}=55.42\mb$; their ratio, 9.0, is the mean number of interactions per non-diffractive
+collision before the impact-parameter weighting. The other CP5 MPI parameters are the matter profile
+(\code{bProfile=2}, a double Gaussian with \code{coreRadius=0.7634} and \code{coreFraction=0.63}) and
+$\alpha_s(M_Z)=0.118$ at NLO for the MPI, the showers and the hard process.
+
+\begin{plainwords}[What a tune is]
+Pythia8 cannot compute $\ptz$, the proton's matter profile or how often colour lines
+reconnect; these are parameters fitted to data. CP5 (\code{Tune:pp 14}, Monash 2013, with the CMS changes of the
+block above) was fitted by CMS in 2017 (CMS-GEN-17-001) to underlying-event and minimum-bias data at 7 and
+$13\TeV$ with NNPDF3.1 at NNLO. Everything in this chapter except the hard process depends on them; the ``Up''/``Down'' variants of the block
+(\code{pT0Ref} 1.407 and 1.46) are the tune uncertainty.
+\end{plainwords}
+
+\paragraph{Primordial $k_\mathrm{T}$.}
+The partons inside a proton are not exactly collinear with it. Once the interleaved evolution is finished,
+Pythia8 gives every incoming parton of every interaction a small transverse kick and takes the recoil from the
+remnants: the 64 entries of status 61 are these 64 incoming partons, two per interaction, with a mean
+$k_\mathrm{T}$ of $1.09\GeV$ (median $0.77\GeV$, largest $3.89\GeV$).\footnote{FWLite on
+\code{step1\_GEN\_04\_MPI.root}, status-61 entries.} The outgoing partons of each interaction are then copied
+with the kick included: the $b$ goes from $\pt=91.59$ to $91.74\GeV$, the $\bar b$ from 118.57 to
+$116.36\GeV$, and the net $|\vec\pt(b)+\vec\pt(\bar b)|$ from 27.29 to $25.08\GeV$. In this file these final
+copies have no daughters, so they are the status-1 partons of the record; in chapter~\ref{ch:05_Had}, where
+they fragment, the same copies appear as status 62 (the analyzer still reports the status-52 copies, 91.59 and $118.57\GeV$, the last with a stage code).
+
+\paragraph{Colour reconnection.}
+With 32 interactions the event has 32 colour-connected systems stretched between the two remnants. Pythia8's
+MPI-based colour reconnection (\code{ColourReconnection:mode} at its default 0, CP5 strength \code{range=5.176})
+merges the colour lines of the softer interactions with the harder ones, which shortens the strings and reduces
+the number of hadrons. It acts on colour indices, which \code{genParticles} does not store; its effect appears
+only when the strings break in chapter~\ref{ch:05_Had}, and nothing in the momenta of this record changes.
+
+\paragraph{Beam remnants, and why the record still has $13\,600\GeV$.}
+Each proton gave one parton to each of the 32 interactions; what is left is the beam remnant. Pythia8 builds it so that the proton's flavour content is restored: a
+valence quark taken out leaves a diquark (a $ud$ or $uu$ pair, pdg 2101, 2103 or 2203), a sea quark taken out
+leaves its antiquark partner, and so on. This event has 13 remnant partons, all single quarks or antiquarks
+($u$, $d$, $\bar u$, $\bar d$, $\bar s$) and no diquark: with 32 partons extracted from each proton,
+including the valence $u$ at $x=0.39$ of the hard process, no valence pair was left intact. They carry
+$1783.0\GeV$ of energy and $6.5\GeV$ of scalar \pt{} in total; eleven of the 13 have $\abseta>3.5$ and the
+two hardest, 416 and $350\GeV$, are at $\eta=7.0$ and $-7.3$, in the beam pipe.\footnote{FWLite on
+\code{step1\_GEN\_04\_MPI.root}: the status-1 partons whose mother is a beam proton (status 4). In chapter~\ref{ch:05_Had}
+the same 13 partons carry status 63.} Energy and momentum are conserved exactly: the 169 final-state partons sum
+to $E=13\,600.0\GeV$ and $\sum\vec\pt=0$, because the remnants take what the interactions did not, and the
+primordial-$k_\mathrm{T}$ recoil is given to them. Of the $13.6\TeV$, $4274.7\GeV$ sits in the 57 partons of
+the hard process and its showers, $7542.4\GeV$ in the 99 partons of the MPI and their showers, and
+$1783.0\GeV$ in the remnants; the hard system has $326.6\GeV$ of scalar \pt, the MPI $148.1\GeV$, the remnants
+$6.5\GeV$.
+
+\paragraph{What reaches the two $b$ jets.}
+For the jet chapters, how much MPI activity lands near the $b$ and $\bar b$? Inside
+$\Delta R<0.4$ of the $b$ (status 52, $\eta=-1.57$, $\phi=-2.08$) the final-state partons from the hard process
+and its showers carry $126.6\GeV$ of \pt{} and those from the MPI $0.9\GeV$; around the $\bar b$ the numbers
+are 116.4 and $0.8\GeV$. In the tracker acceptance, $\abseta<2.5$, the 80 final-state partons are 44 from the
+hard system ($190.9\GeV$ of \pt), 35 from the MPI ($63.3\GeV$) and one remnant quark ($0.3\GeV$): the underlying
+event of this collision is a quarter of the central \pt, spread over the whole $\eta$--$\phi$ plane, and less
+than one per cent inside the jet cones.
+
+\section{Ledger and display}
+
+Table~\ref{tab:04_ledger} closes the ledger of the stage against chapter~\ref{ch:02_PS}
+(chapter~\ref{ch:03_MnM} only copied the file). The stage adds 158 final-state partons and $250.5\GeV$ of scalar
+\pt{} but no energy: the $13\,600\GeV$ move from $\abseta>5.5$, where the two spectators of
+chapter~\ref{ch:02_PS} sat with $10\,929\GeV$, into $3.0<\abseta<5.2$ ($+2493.5\GeV$, the MPI partons and their
+showers at small $x$) and the tracker ($+385.2\GeV$); the visible energy doubles from 2670.8 to $5740.0\GeV$, and
+$2.5<\abseta<3.0$, empty before, receives 17 partons and $190.5\GeV$. Figure~\ref{fig:04_display} is the
+$\eta$--$\phi$ display at the end of the stage: 169 partons, 61 from the MPI and 13 remnants next to the
+2 + 26 + 67 of the hard process and its showers (the analyzer's legend attributes every radiated parton to the
+process that created its ancestor).
+
+\begin{table}[htb]
+\centering\small
+\caption{Ledger of the stage: the record and the final state (status 1) before (chapter~\ref{ch:02_PS},
+\code{ledger\_02\_PS.txt}) and after (\code{ledger\_04\_MPI.txt}) multiparton interactions and beam remnants. Regions:
+tracker ($\abseta<2.5$), the gap to the HF edge, the forward calorimeter, and $\abseta>5.2$, which Geant4 is not
+given (chapter~\ref{ch:09_G4}).}
+\label{tab:04_ledger}
+\footnotesize\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{chapter 02 (MPI off)} & \multicolumn{3}{c}{chapter 04 (MPI on)} & \multicolumn{3}{c}{difference} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+ & $n$ & $E$ [GeV] & \pt{} [GeV] & $n$ & $E$ [GeV] & \pt{} [GeV] & $n$ & $E$ [GeV] & \pt{} [GeV] \\
+\midrule
+record (all entries) & 34 & & & 745 & & & $+711$ & & \\
+\quad hard process (21--29) & 4 & & & 4 & & & 0 & & \\
+\quad MPI (31--39) & 0 & & & 124 & & & $+124$ & & \\
+\quad ISR (41--49) & 0 & & & 190 & & & $+190$ & & \\
+\quad FSR (51--59) & 15 & & & 192 & & & $+177$ & & \\
+\quad primordial $k_\mathrm{T}$, remnants (61--69) & 2 & & & 64 & & & $+62$ & & \\
+\midrule
+final state (status 1), all partons & 11 & 13600.0 & 230.7 & 169 & 13600.0 & 481.2 & $+158$ & 0.0 & $+250.5$ \\
+\quad $\abseta<2.5$ & 6 & 256.9 & 113.7 & 80 & 642.1 & 254.5 & $+74$ & $+385.2$ & $+140.8$ \\
+\quad $2.5<\abseta<3.0$ & 0 & 0.0 & 0.0 & 17 & 190.5 & 22.3 & $+17$ & $+190.5$ & $+22.3$ \\
+\quad $3.0<\abseta<5.2$ & 1 & 2413.9 & 114.0 & 50 & 4907.4 & 183.0 & $+49$ & $+2493.5$ & $+69.0$ \\
+\quad $5.2<\abseta<5.5$ & 0 & 0.0 & 0.0 & 3 & 245.3 & 2.5 & $+3$ & $+245.3$ & $+2.5$ \\
+\quad $\abseta>5.5$ & 4 & 10929.2 & 2.9 & 19 & 7614.7 & 18.9 & $+15$ & $-3314.5$ & $+16.0$ \\
+\quad visible ($\abseta<5.2$) & 7 & 2670.8 & 227.8 & 147 & 5740.0 & 459.8 & $+140$ & $+3069.2$ & $+232.0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{04_MPI/out/genPartAnalyzer_04_MPI_page-2.png}\\[6pt]
+\includegraphics[width=\textwidth]{04_MPI/out/genPartAnalyzer_04_MPI_page-3.png}
+\caption{The event of this chapter in the $\eta$--$\phi$ plane (\code{genPartAnalyzer\_04\_MPI.pdf}, pages 2 and 3;
+marker size grows with $\log\pt$, the \pt{} is written for $\pt>5\GeV$). Top: after the parton shower inside the
+MPI event (57 partons: the $b$ at $91.6\GeV$, the $\bar b$ at $118.6\GeV$, 26 ISR and 29 FSR partons); compare
+with the shower of chapter~\ref{ch:02_PS}, which has 7. Bottom: the end of the parton level, 169 partons; the
+61 partons from the multiparton interactions (cyan squares) are soft and spread over the whole plane, the 13
+beam remnants (grey diamonds) sit at large $\abseta$, 19 partons beyond $\abseta=6$ are drawn as crosses on the
+border. The magenta star is the vector sum $\vec\pt(b)+\vec\pt(\bar b)$, $27.3\GeV$, the recoil of the \bbbar{}
+pair against its radiation.}
+\label{fig:04_display}
+\end{figure}
+
+\section{Open problems for Phase-2}
+
+
+
+\paragraph{CP5 is a 2017 tune extrapolated to $14\TeV$ through one exponent.}
+The block used by the fragment of this book, \path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py},
+sets \code{pT0Ref=1.41}, \code{ecmPow=0.03344}, \code{coreRadius=0.7634}, \code{coreFraction=0.63} and
+\code{ColourReconnection:range=5.176}; these were fitted to 7 and $13\TeV$ data (CMS-GEN-17-001; the release
+records only the tune name), and the only handle that knows about the beam energy is \code{ecmPow}, which moves $\ptz$ from $1.4395\GeV$ at $13\TeV$ to
+$1.4431\GeV$ at $14\TeV$. The Pythia8 default is \code{ecmPow=0.215} (Monash); CP5's value, six times smaller,
+means an almost energy-independent regulator, so the MPI activity in CP5 grows with $\sqrt s$ nearly as fast as
+the parton densities at small $x$ do. No $14\TeV$ measurement tests this extrapolation yet; the release contains no $14\TeV$ tune, and the directory \path{MCTunes2017/} holds only the
+CP1--CP5 blocks of 2017 with their ``Up''/``Down'' variants and the two colour-reconnection alternatives
+\path{PythiaCP5CR1TuneSettings_cfi.py} (\code{ColourReconnection:mode=1}, \code{BeamRemnants:remnantMode=1},
+\code{pT0Ref=1.375}) and \path{PythiaCP5CR2TuneSettings_cfi.py} (\code{mode=2}, \code{pT0Ref=1.454},
+\code{ecmPow=0.0555}), alternatives for systematic studies, not replacements. What could not be established:
+which data entered the CP5 fit (the release records only the tune name) and whether a newer CMS tune exists
+outside the release; inside it there is none, and no $14\TeV$ or Phase-2 variant of the MPI parameters.
+
+\paragraph{The only Run-3 update is the total cross section, and most fragments do not use it.}
+The release has a second directory, \path{Configuration/Generator/python/MCTunesRun3ECM13p6TeV/}, whose
+\path{PythiaCP5Settings_cfi.py} differs from the 2017 file in two lines only: \code{SigmaTotal:sigmaEl}
+(22.08 instead of $21.89\mb$) and \code{SigmaTotal:sigmaTot} (101.037 instead of $100.309\mb$). With
+\code{SigmaTotal:mode = 0} Pythia8 takes these total and elastic cross sections as fixed numbers at whatever beam
+energy is set, and derives from them the non-diffractive cross section that normalises the MPI rate, the
+$\sigma_{\mathrm{ND}}=55.42\mb$ printed at $13.6\TeV$ in \code{step1\_GEN\_04\_MPI.log}. Our fragment and the
+release's minimum-bias fragment \path{Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py} (the
+pileup library of chapter~\ref{ch:08_PU}, and the \path{RelValMinBias_14TeV} input that
+\path{Configuration/PyReleaseValidation/python/relval_steps.py} mixes at \path{AVE_200_BX_25ns} for the Phase-2
+workflows) both import the 2017 block, i.e.\ the $13\TeV$ cross sections; only six B-physics and soft-QCD
+fragments import the $13.6\TeV$ one, and no file in the release carries $14\TeV$ values. At PU~200 a per-cent
+change in the MPI activity of one minimum-bias collision is a per-cent change of the whole pileup energy in every
+crossing.
+
+\paragraph{Pileup is MPI without a hard process.}
+The minimum-bias collisions of chapter~\ref{ch:08_PU} are generated with \code{SoftQCD:inelastic = on} and the
+same CP5 block: their 7.0 interactions on average (\code{genstats\_08\_PU.txt}) come from the same $\ptz$,
+matter profile and colour reconnection as the 31 interactions of this event, so the pileup jets of
+chapter~\ref{ch:08_PU} are made of exactly the objects studied here. Table~\ref{tab:04_ledger} shows where they
+go: 17 partons with $190.5\GeV$ added in $2.5<\abseta<3.0$ and 49 with $2493.5\GeV$ in $3.0<\abseta<5.2$, the
+HGCal endcap and the extended Phase-2 tracker ($\abseta<4.0$), the regions Run~3 measures least precisely and
+that constrained the tune the least.
+
+

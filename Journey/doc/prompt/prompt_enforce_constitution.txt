@@ -1,0 +1,12 @@
+We NEED a MAJOR restructuring of the project. 
+
+Please enforce the ../Constitution.txt
+
+More details below for the chapters 8,  9, 10, 11:
+
+The files  in the ../doc/tmp/pu/2024/ need spliting based on the different stages e.g.:
+(8) PU stage: the making of minimum bias events from pythia -> which when overlaid on signal increase the pT of the jets and also the jets. So we have (8a)signal event and (8b) pileup eventsand the overlaid (8a + 8b)
+(9) Geant4 stage: then the next stage is when we hand over the signal and pileup events to the Geant4, it drops some of the low pT and high eta particles. Again showing same effect on signal and pileup events e.g. (9a), (9b), (9a + 9b).
+(10) SIM stage: then the SIM stage where we pass the signal and pileup events separatly to the CMS simulation. Here we decsribe the premix library as we now have hits. Again show (10a), (10b), (10a + 10b). Here also we investigate if there is any cut on the hits.
+(11) DIGI stage: Here we show the digitation stage and agin if there is any cuts and show (11a), (11b), (11a+11b). I think at  this stage the pileup events are already mixed with signal so we might not have them separatly. 
+

@@ -1,0 +1,309 @@
+% chapter_05_Had.tex -- chapter 05 of the JitJet book: hadronisation (Lund strings), HadronLevel:Hadronize on, Decay off.
+% Numbers: test/05_Had/out/ledger_05_Had.txt, genPartAnalyzer_05_Had.log, step1_GEN_05_Had.log, and the FWLite counts of
+% doc/chapter/chapter_05_Had.md (section 4) read from step1_GEN_05_Had.root; the parton level of chapter 04 from
+% test/04_MPI/out/ledger_04_MPI.txt.
+\chapter{05 -- Hadronisation: the 169 partons become 320 primary hadrons}
+\label{ch:05_Had}
+
+\section{What this chapter is about}
+Up to chapter~\ref{ch:04_MPI} the event is made of quarks and gluons. Nothing with a colour charge has ever
+reached a detector: when the partons fly apart, the colour field between them does not spread out like an
+electric field but is squeezed into a narrow tube, a \emph{string}, whose energy grows with its length until it
+is cheaper to create a new quark--antiquark pair from the field than to stretch it further. This is
+hadronisation, and in Pythia8 it is done by the Lund string model, switched on in this chapter with
+\code{HadronLevel:Hadronize = on} while the decays of the hadrons stay off (\code{HadronLevel:Decay = off}).
+The final state of this chapter is therefore the set of \emph{primary hadrons}: the particles the strings
+produce directly, including the unstable ones ($\pi^0$, $\rho$, $\omega$, $K^*$, $\Delta$, $B^*$) that the next
+chapter will decay. There are 320 of them, made from the 169 partons of chapter~\ref{ch:04_MPI}, and they carry
+exactly the $13600.0\GeV$ of the two protons.\footnote{All numbers of this chapter are read from
+\code{test/05\_Had/out/}: \code{ledger\_05\_Had.txt} (the record and the final state by kind and region),
+\code{genPartAnalyzer\_05\_Had.log} (the $b$ and $\bar b$ chains, stage by stage), \code{step1\_GEN\_05\_Had.log}
+(the Pythia8 settings and the hard process) and the FWLite counts of the companion
+\code{doc/chapter/chapter\_05\_Had.md}, section~4, read from \code{step1\_GEN\_05\_Had.root}.}
+
+The chapter follows the two partons of the hard process to the end of their colour strings: the $b$ quark
+with $\pt=91.7\GeV$ becomes a $B^-$ meson with $\pt=94.3\GeV$, the $\bar b$ with $116.4\GeV$ a $B^{*+}$ with
+$114.2\GeV$, both within $\Delta R<0.01$ of the quark. That a $b$ hadron keeps almost all of the momentum of
+its quark is the single most important fact of this chapter for jet physics: it is what makes a $b$ jet
+different from a light-quark or a gluon jet, and it is set by one fragmentation function and two numbers
+that CMS has never tuned.
+
+\section{From the previous chapter}
+Chapter~\ref{ch:04_MPI} ended with 169 partons in the final state (status~1 in that file): the two $b$ quarks
+after their showers, 61 partons from the 31 additional multiparton interactions, 26 from the initial-state
+and 67 from the final-state radiation, and 13 beam-remnant quarks, all colour connected, with
+$\sum E=13600.0\GeV$ and $\sum\pt=481.2\GeV$. This chapter regenerates the same event with the same seeds,
+so the parton level is identical: the same 169 partons are in this file with status~62 (156 outgoing
+partons with their primordial $k_T$ included) and 63 (13 beam remnants), with the same $13600.0\GeV$ and
+$481.2\GeV$, the same $b$ quark ($\pt=91.74\GeV$, $\eta=-1.57$) and $\bar b$ ($116.36\GeV$, $\eta=-3.75$).
+Everything up to status~63 is kept. New in the record are 165 copies of the partons with status 71--79 (the
+partons as they enter the strings, reordered so that every colour singlet is contiguous) and the 320
+primary hadrons: the record grows from 745 to 1230 entries. Gone is every free colour charge: the final
+state of this chapter has 169 charged and 151 neutral hadrons and not a single parton.
+
+\begin{plainwords}[Why hadronisation cannot be computed and must be modelled]
+The parton shower stops at a scale of about $1\GeV$ (\code{TimeShower:pTmin}, raised to $0.611\GeV$ in the
+log), where the strong coupling becomes too large for perturbation theory. From there to the hadrons there
+is no formula, only a model with parameters fitted to data. Pythia8 uses the Lund string model, in which the colour field between a quark and an antiquark (or between the colour
+ends of a chain of gluons) is a string with a constant tension $\kappa\approx1\GeV/\mathrm{fm}$. The string
+breaks by creating $q\bar q$ pairs along its length, and each piece between two breaks becomes one hadron.
+The model has a handful of parameters (which flavour is created at a break, how much momentum a hadron
+takes, how much transverse momentum it gets); they were fitted once to $e^+e^-$ data at LEP, and CMS
+inherits them unchanged through the tune CP5.
+\end{plainwords}
+
+\section{The numbers of the event}
+\paragraph{The strings.}
+Grouping the 320 primary hadrons by the set of partons they descend from gives 26 colour singlets, from
+2 to 42 hadrons each (mean~12.3), listed in the companion. Twenty-two are ordinary strings with a quark at
+one end and an antiquark at the other, from a plain $q\bar q$ pair up to chains of 10, 17 and 18 gluons
+between the ends; two are \emph{junction} strings with three quark ends ($uud$ and $uds$), the leftovers of
+the two proton remnants; two are \emph{ministrings}, $q\bar q$ pairs of mass $1.3$ and $2.2\GeV$, too light to
+fragment and turned directly into two hadrons each. The most energetic string carries $3630.7\GeV$ along the
+beam (a $u\bar d$ pair with 18 gluons, 42 hadrons); the heaviest has a mass of $1083.9\GeV$ (33 hadrons).
+Table~\ref{tab:05strings} gives the two strings of the hard process: the $b$ quark is colour connected
+through three gluons to an $\bar s$ quark created in the shower, a string of mass $12.8\GeV$ that gives six
+hadrons; the $\bar b$ sits at the end of a plain two-parton string with a $d$ quark from the other side of
+the event, of mass $99.6\GeV$, that gives only four hadrons because the $\bar b$ end keeps almost everything.
+
+\begin{table}[htbp]
+\centering\small
+\caption{The two strings of the hard process and their primary hadrons (FWLite, \code{step1\_GEN\_05\_Had.root};
+quark momenta of status~62, hadron momenta of the status-1 primary hadrons; $x_E=E(\text{hadron})/E(\text{quark})$).}
+\label{tab:05strings}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrl}
+\toprule
+string & quark \pt & quark $E$ & $M$ & $E$ & $n_{\rm had}$ & primary hadrons (GeV) \\
+\midrule
+$b\,g\,g\,g\,\bar s$ & 91.74 & 230.0 & 12.8 & 285.1 & 6 & $B^-$: $\pt=94.28$, $E=235.9$, $x_E=1.025$ \\
+ & & & & & & $+\ \pi^0\,\pi^+\,\pi^0\,\pi^0\,K^0$ (\pt{} 0.1 to 7.2) \\
+$d\,\bar b$ & 116.36 & 2469.9 & 99.6 & 2471.2 & 4 & $B^{*+}$: $\pt=114.17$, $E=2421.4$, $x_E=0.980$ \\
+ & & & & & & $+\ \pi^-\,K^+\,K^{*-}$ (50 GeV between them) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The fragmentation function and the $b$ hadrons.}
+At each break the model draws the fraction $z$ of the remaining light-cone momentum of the string end that
+the new hadron takes, from the Lund symmetric fragmentation function
+\[
+  f(z) \propto \frac{1}{z}\,(1-z)^{a}\,\exp\!\left(-\frac{b\,m_T^2}{z}\right),\qquad
+  m_T^2 = m^2 + \pt^2 ,
+\]
+with $a=0.68$ (\code{StringZ:aLund}) and $b=0.98\GeV^{-2}$ (\code{StringZ:bLund}). For a light hadron
+($m_T\approx0.5\GeV$) the exponential hardly matters and $f(z)$ peaks at small $z$: a light string end hands
+out its momentum in many small steps, which is why the $u\bar d$ string of $3630.7\GeV$ gives 42 hadrons. For a
+hadron containing the heavy quark at the string end, $m_T^2\approx m_B^2\approx28\GeV^2$ makes the exponential
+kill all small $z$; in addition Pythia8 applies the Bowler modification for heavy quarks, an extra factor
+$1/z^{\,r_Q\,b\,m_Q^2}$ with $r_b=0.855$ (\code{StringZ:rFactB}) and the $b$ mass $m_b=4.8\GeV$ of the hard
+process. The result is a function that peaks near $z\approx0.8$--$0.9$ and vanishes at $z\to0$: the first
+hadron produced at a $b$ end takes most of the string momentum, and the light hadrons that share the string
+with it are soft. The event shows exactly this. The $B^-$ carries $x_E=1.025$ of the energy of its $b$ quark
+and 83\% of the energy of the whole six-parton string ($235.9$ of $285.1\GeV$); it can carry \emph{more} than
+its quark because the string also holds the three gluons and the $\bar s$ end, whose momentum is shared along
+the string. The $B^{*+}$ carries $x_E=0.980$ of its $\bar b$ and leaves $50\GeV$ to three light hadrons. Both $b$
+hadrons are within $\Delta R$ of $0.009$ and $0.001$ of their quark: hadronisation does not move the $b$
+direction, it only dresses it. The five light hadrons of the $b$ string have $\pt$ between $0.1$ and
+$7.2\GeV$; within $\Delta R<0.4$ of the $B^-$ there are eight other primary hadrons with $\sum\pt=20.4\GeV$,
+within $\Delta R<0.4$ of the $B^{*+}$ a single $K^{*-}$ of $1.8\GeV$.
+
+Which hadron is made at a break is the second draw of the model: a $q\bar q$ pair is created with
+probability $u:d:s = 1:1:0.217$ (\code{StringFlav:probStoUD}), a diquark pair with probability 0.081 relative
+to a quark pair (\code{StringFlav:probQQtoQ}, the source of the 34 baryons), and the new meson is a vector
+rather than a pseudoscalar with a flavour-dependent ratio: $0.5$ for $u,d$ (\code{StringFlav:mesonUDvector}),
+$0.55$ for $s$, $2.2$ for $b$ (\code{StringFlav:mesonBvector}). The last number is why the $\bar b$ became a
+$B^{*+}$ and not a $B^+$: with a vector-to-pseudoscalar ratio of 2.2 the excited state is drawn 69\% of the
+time, and the $B^{*+}$ will decay to $B^+\gamma$ in chapter~\ref{ch:06_Decay}.
+
+\begin{plainwords}[Why a $b$ jet is not a light jet]
+A light quark hands its momentum to a long chain of pions, each with a few per cent of it; a $b$ quark hands
+80--100\% of it to one $B$ hadron in one step, because the Lund function with the Bowler term makes small $z$
+impossible for a heavy end. A $b$ jet is therefore one heavy particle plus a few soft hadrons, and the jet
+response of the detector, the $b$-tagging, the fraction of energy lost in neutrinos when the $B$ decays
+(chapter~\ref{ch:06_Decay}) all follow from this one function and the two numbers $r_b$ and $b$, fitted to
+$e^+e^-$ data at the $Z$ pole.
+\end{plainwords}
+
+\paragraph{The species.}
+Table~\ref{tab:05species} counts the 320 primary hadrons: 286 mesons and 34 baryons, two of
+them with a $b$ quark and two with a $c$ quark (a $\bar D^0$ and a $D^{*+}$ from a $c\bar c$ pair created in the
+shower, with $\pt$ of only $2.0$ and $1.9\GeV$). The pions, charged and neutral, are 132; the vector mesons
+$\rho$ and $\omega$, 77, are as many as the charged pions, which is the vector-to-pseudoscalar ratio of 0.5 at
+work (two spin states for the pseudoscalar against six for the vector, suppressed by their mass); the
+kaons and $K^*$, 56, reflect the strangeness suppression 0.217. The spectrum is soft: 124 hadrons have
+$\pt<0.5\GeV$, 226 have $\pt<1\GeV$, only 8 have $\pt>5\GeV$ and only the two $B$ hadrons exceed $10\GeV$.
+The transverse momentum of a light hadron comes from the Gaussian $\pt$ kick of each string break, of width
+$\sigma=0.335\GeV$ (\code{StringPT:sigma}); this is where the $+24.5\GeV$ of scalar $\sum\pt$ of the ledger
+comes from, $0.16\GeV$ per additional particle.
+
+\begin{table}[htbp]
+\centering\small
+\caption{The 320 primary hadrons by class (FWLite count of the status-1 particles of
+\code{step1\_GEN\_05\_Had.root}, listed by species in the companion, section~4).}
+\label{tab:05species}
+\begin{tabular}{lrrrl}
+\toprule
+class & $n$ & $\sum E$ [GeV] & $\sum\pt$ [GeV] & species \\
+\midrule
+pions & 132 & 2736.5 & 108.5 & $\pi^\pm$ 86, $\pi^0$ 46 \\
+light vector and $\eta$ mesons & 94 & 3169.2 & 99.0 & $\rho^\pm$ 34, $\rho^0$ 25, $\omega$ 18, $\eta$ 14, $\eta'$ 3 \\
+kaons & 39 & 1173.6 & 39.0 & $K^\pm$ 22, $K^0$ 17 \\
+$K^*$ & 17 & 414.8 & 13.1 & $K^{*0}$ 9, $K^{*\pm}$ 8 \\
+nucleons & 19 & 2888.6 & 18.0 & $n$ 10, $p$ 9 \\
+other light baryons & 15 & 523.8 & 15.7 & $\Lambda$ 3, $\Sigma$ 3, $\Sigma^*$ 4, $\Delta$ 5 \\
+charm hadrons & 2 & 36.2 & 3.9 & $\bar D^0$, $D^{*+}$ \\
+bottom hadrons & 2 & 2657.3 & 208.5 & $B^-$, $B^{*+}$ \\
+\midrule
+all & 320 & 13600.0 & 505.7 & 169 charged, 151 neutral \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\paragraph{Energy is conserved exactly.}
+The ledger of chapter~\ref{ch:04_MPI} closed at $13600.0\GeV$ and this one closes at $13600.0\GeV$: not
+approximately, but string by string. String fragmentation takes the total four-momentum of each colour
+singlet and distributes it among its hadrons; the last two hadrons of every string are made together from
+whatever four-momentum is left (the ``final joining''), so that each string conserves energy and momentum
+by construction. In this event the 26 strings have $|\Delta E|<0.5\MeV$ each between their partons and
+their hadrons. What hadronisation does create is mass: the 169 partons had $\sum m=30.8\GeV$ (the two $b$
+quarks, the constituent masses of the remnants), the 320 hadrons have $\sum m=176.7\GeV$, taken from the
+kinetic energy of the strings. Pythia8 then checks the sum over the whole event and would reject it if the
+mismatch exceeded \code{Check:epTolErr}, set to $0.01$ by CMS in
+\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py} (Pythia8 default $10^{-4}$); the check never
+fires here.
+
+\paragraph{Colour reconnection.}
+Before the strings are formed, Pythia8 may rearrange the colour connections between the 32 scattering systems
+of the event (the hard process and 31 MPI): this is colour reconnection (CR), and in the MPI-based model used by
+CP5 (\code{ColourReconnection:mode = 0}) a system of scale $\pt$ is merged into a harder one with probability
+$(p_{\mathrm{T},0}^{\mathrm{rec}})^2/((p_{\mathrm{T},0}^{\mathrm{rec}})^2+\pt^2)$, with $p_{\mathrm{T},0}^{\mathrm{rec}}=\mathrm{range}\times p_{\mathrm{T},0}$. CP5 sets
+\code{ColourReconnection:range = 5.176} (Pythia8 default 1.8, the largest change CP5 makes to the hadron level);
+with the $p_{\mathrm{T},0}=1.44\GeV$ of this run (\path{step1_GEN_05_Had.log}) a system of $\pt\approx7.5\GeV$ is merged
+half of the time, and the soft MPI systems almost always. CR shortens the total string length and so lowers
+the number of hadrons per MPI; it is the knob with which the tune reproduces the measured $\langle\pt\rangle$
+versus charged multiplicity. It is why the 32 systems of this event end up as 26 strings, several with ten
+and more gluons from different scatterings. It leaves no separate status code in the record (status~79
+belongs to the other CR models): its effect is in the colour indices of the status-62 partons.
+
+\section{Ledger and display}
+Table~\ref{tab:05ledger} is the ledger of the stage: the 169 partons before (identical to the final state of
+chapter~\ref{ch:04_MPI}, and present in this file as status~62 and 63) against the 320 primary hadrons after.
+The energy is unchanged in total but moves between regions: the forward strings span many units of
+rapidity and their hadrons land where the string, not the parton, was. The region beyond $\abseta=5.5$ loses
+$604.6\GeV$ and the ring $5.2<\abseta<5.5$ gains $565.4\GeV$ (fifteen hadrons there instead of three
+partons), while the tracker region gains 61 particles and $42.5\GeV$. The visible energy within $\abseta<5.2$
+goes from $5740.0$ to $5779.2\GeV$, less than 1\% of a change; the scalar $\sum\pt$ rises by 5\% for the
+reason given above. Figure~\ref{fig:05display} is the $\eta$--$\phi$ display of the primary hadrons: the
+$B^-$ at $(-1.57,-2.09)$ and the $B^{*+}$ at $(-3.75,1.01)$ are the only two large markers; the rest is the
+soft spray of the 26 strings, denser at large $\abseta$, with 25 hadrons beyond $\abseta=6$ drawn on the
+border.
+
+\begin{plainwords}[What a detector will see of this stage]
+Nothing of the strings themselves, only the hadrons, and only after the next chapter has decayed the unstable
+ones. But the split made here decides what kind of energy arrives: 169 charged hadrons with $355\GeV$ of \pt{}
+for the tracker, 151 neutral ones with $151\GeV$, among them 46 $\pi^0$ that will become photons in the
+electromagnetic calorimeter. The jet energy scale is the detector response to this mixture, and the mixture is
+set by the Lund parameters.
+\end{plainwords}
+
+\begin{center}\begin{minipage}{\textwidth}\centering\footnotesize
+\captionof{table}{Ledger of the hadronisation stage, event 1:1:1. Before: the 169 partons of chapter~\ref{ch:04_MPI}
+(\code{test/04\_MPI/out/ledger\_04\_MPI.txt}, final state), after: the 320 primary hadrons
+(\code{test/05\_Had/out/ledger\_05\_Had.txt}); the $b$ and $\bar b$ rows from \code{genPartAnalyzer\_05\_Had.log},
+the masses from the FWLite count of the companion. $E$ and \pt{} in GeV, \pt{} scalar sums.}
+\label{tab:05ledger}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{before (partons)} & \multicolumn{3}{c}{after (primary hadrons)} & \multicolumn{3}{c}{difference} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+ & $n$ & $\sum E$ & $\sum\pt$ & $n$ & $\sum E$ & $\sum\pt$ & $n$ & $\sum E$ & $\sum\pt$ \\
+\midrule
+final state & 169 & 13600.0 & 481.2 & 320 & 13600.0 & 505.7 & $+151$ & $0.0$ & $+24.5$ \\
+\quad partons & 169 & 13600.0 & 481.2 & 0 & 0.0 & 0.0 & $-169$ & $-13600.0$ & $-481.2$ \\
+\quad charged hadrons & 0 & 0.0 & 0.0 & 169 & 8863.8 & 355.0 & $+169$ & $+8863.8$ & $+355.0$ \\
+\quad neutral hadrons & 0 & 0.0 & 0.0 & 151 & 4736.2 & 150.7 & $+151$ & $+4736.2$ & $+150.7$ \\
+\midrule
+$\abseta<2.5$ (tracker) & 80 & 642.1 & 254.5 & 141 & 684.6 & 259.9 & $+61$ & $+42.5$ & $+5.4$ \\
+$2.5<\abseta<3.0$ & 17 & 190.5 & 22.3 & 30 & 196.8 & 24.6 & $+13$ & $+6.3$ & $+2.3$ \\
+$3.0<\abseta<5.2$ (HF) & 50 & 4907.4 & 183.0 & 94 & 4897.9 & 192.4 & $+44$ & $-9.5$ & $+9.4$ \\
+$5.2<\abseta<5.5$ & 3 & 245.3 & 2.5 & 15 & 810.7 & 7.9 & $+12$ & $+565.4$ & $+5.4$ \\
+$\abseta>5.5$ & 19 & 7614.7 & 18.9 & 40 & 7010.1 & 20.9 & $+21$ & $-604.6$ & $+2.0$ \\
+visible, $\abseta<5.2$ & 147 & 5740.0 & 459.8 & 265 & 5779.2 & 476.9 & $+118$ & $+39.2$ & $+17.1$ \\
+\midrule
+$\sum m$ of the final state & & 30.8 & & & 176.7 & & & $+145.9$ & \\
+$b$ quark $\to$ $B^-$, \pt & & & 91.74 & & & 94.28 & & & $+2.54$ \\
+$\bar b$ quark $\to$ $B^{*+}$, \pt & & & 116.36 & & & 114.17 & & & $-2.19$ \\
+$|\vec\pt(b)+\vec\pt(\bar b)|$ & & & 25.08 & & & 20.30 & & & $-4.78$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}\end{center}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{05_Had/out/genPartAnalyzer_05_Had_page-4.png}
+\caption{The event after hadronisation (\code{test/05\_Had/out/genPartAnalyzer\_05\_Had\_page-4.png}, page 4 of
+\code{genPartAnalyzer\_05\_Had.pdf}): the 320 primary hadrons in $\eta$--$\phi$, marker size $\propto\log\pt$,
+the $B^-$ (red) and the $B^{*+}$ (blue) matched to the $b$ and $\bar b$ chains, the star their vector sum.
+Page 3 of the same file shows the 169 partons the strings were made of, with the quarks at the same places.}
+\label{fig:05display}
+\end{figure}
+
+
+\FloatBarrier
+\section{Open problems for Phase-2}
+\paragraph{The hadronisation of CP5 is Pythia8 as delivered.}
+The tune of this event, CP5, is the file
+\path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py} of the release, 21 settings: \code{Tune:pp 14}
+and \code{Tune:ee 7} (the Monash 2013 tune as base), the MPI parameters (\code{pT0Ref=1.41}, \code{ecmPow=0.03344},
+\code{coreRadius}, \code{coreFraction}), \code{ColourReconnection:range=5.176}, $\alpha_S=0.118$ at second order for
+the showers and the MPI, the PDF \code{NNPDF31\_nnlo\_as\_0118} and the total cross sections. It does not contain a
+single \code{StringZ}, \code{StringPT} or \code{StringFlav} parameter, nor does \path{Pythia8CommonSettings_cfi.py}
+(\code{Check:epTolErr = 0.01} and the decay settings of chapter~\ref{ch:06_Decay}). The fragmentation of every CMS
+Pythia8 sample is therefore the Pythia8 default, which in the Pythia 8.311 of this release
+(\path{$PYTHIA8DATA/Fragmentation.xml}, \path{FlavourSelection.xml}) is \code{StringZ:aLund = 0.68}, \code{bLund = 0.98},
+\code{rFactB = 0.855}, \code{rFactC = 1.32}, \code{aExtraDiquark = 0.97}, \code{StringPT:sigma = 0.335},
+\code{StringFlav:probStoUD = 0.217}, \code{probQQtoQ = 0.081}, \code{mesonBvector = 2.20}; the ``changes only'' table
+that Pythia8 prints in \path{step1_GEN_05_Had.log} lists none of them. These are the Monash 2013 values fitted to LEP
+and SLD $e^+e^-$ data. \code{rFactB}, the Bowler parameter that fixes how much of the $b$ momentum the $B$ hadron
+takes, was fitted to the $B$-hadron energy fraction measured at the $Z$ pole and has never been set by CMS: not in
+CP5, not in its \code{TuneUp}/\code{TuneDown} variants (which vary only the MPI and CR parameters), not in the Run-3
+copy \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py} (which differs from the 2017 file only in
+\code{SigmaTotal:sigmaEl = 22.08}, \code{sigmaTot = 101.037}). The only CMS files that touch any string parameter
+are the colour-reconnection variants for the top-mass systematics, \path{MCTunes2017/PythiaCP5CR1TuneSettings_cfi.py}
+(\code{ColourReconnection:mode=1} with \code{StringZ:aLund=0.38}, \code{bLund=0.64}, \code{probQQtoQ=0.078},
+\code{probStoUD=0.2}) and \code{CP5CR2} (\code{mode=2}). Since when: the directory is \code{MCTunes2017} and CP5 dates
+from the 2017 tuning campaign (CMS-GEN-17-001); the release on \code{cvmfs} carries no git history, so the date at
+which the file took its present content could not be established here.
+
+\paragraph{Hadronisation does not know the collider energy, the jets do.}
+None of the string parameters depends on $\sqrt s$: a $b$ string of $12.8\GeV$ fragments the same way at
+13.6 and at $14\TeV$, and the Phase-2 relvals use the same tune file: \path{TTbar_14TeV_TuneCP5_cfi.py},
+\path{QCD_Pt15To7000_Flat_14TeV_TuneCP5_cff.py} and \path{MinBias_14TeV_pythia8_TuneCP5_cfi.py} (the fragments of
+\path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}) all import
+\path{MCTunes2017.PythiaCP5Settings_cfi}; there is no \code{MCTunes} directory for $14\TeV$. What changes at the
+HL-LHC is everything around this stage: at $14\TeV$ the flavour composition of the jets shifts towards gluon
+jets, which fragment into more and softer hadrons (the 20-parton string of this event gives 42 hadrons, the
+$b$ string 6), and the response of a particle-flow detector depends on that multiplicity and on the
+charged-to-neutral split (169 to 151 here). The colour reconnection of CP5 is tuned to the Run-2 underlying
+event, and \code{ColourReconnection:range} enters through $p_{\mathrm{T},0}$, which CP5 scales as
+$(\sqrt s/7\TeV)^{0.03344}$ (\code{MultipartonInteractions:ecmPow}); with 200 pileup collisions per crossing,
+each hadronised separately with the same strings, an error in the soft hadron spectrum ($\sigma$, $a$, $b$)
+under every jet is multiplied by 200.
+
+\paragraph{What the Phase-2 jet-energy calibration will need from this stage.}
+Three things, none of which is in a configuration file today. (i) Flavour-dependent corrections and their
+uncertainty: $b$, light-quark and gluon jets respond differently because of the fragmentation function; the
+standard estimate of the uncertainty is the difference to an independent hadronisation model, which the release
+has (\path{Configuration/Generator/python/Herwig7Settings/Herwig7CH3TuneSettings_cfi.py}, the cluster model of
+Herwig7), but no Phase-2 relval workflow with Herwig7 exists in \path{upgradeWorkflowComponents.py}. (ii) A $b$-jet energy scale with a $b$-fragmentation uncertainty: the
+fraction $x_E$ of the $b$ momentum in the $B$ hadron is governed by \code{rFactB = 0.855}, a LEP number, whose
+variations ($r_b$, $b$) have to be propagated to the $b$-jet response together with the semileptonic branching
+fractions of chapter~\ref{ch:06_Decay}; with the Phase-2 tracker to $\abseta=4$ and the MTD timing layer, $b$
+jets will be tagged over a wider region than today. (iii) The forward region: $94$ primary hadrons with
+$4897.9\GeV$ sit in $3.0<\abseta<5.2$, where Phase-2 puts HGCal and a tracker up to $\abseta=4$ instead of the
+HF alone; the multiplicity and neutral fraction the strings give there have never been measured by CMS and
+are an extrapolation of the central tune. Whether the jet-energy-correction payloads of the Phase-2 global
+tags carry flavour-dependent corrections lives in the conditions database, not in the python of the release,
+and was not checked here.
