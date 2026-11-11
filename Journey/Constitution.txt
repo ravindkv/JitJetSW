@@ -32,6 +32,28 @@ Rule E:
 Rule F: 
     The test dir can hold common scripts to avoid duplications with test/XYZ
 
+Rule G: Checkpoint chapters (12_L1T, 13_HLT)
+    A checkpoint is a stage which does not add/remove energy from the event: it looks at the event and DECIDES whether the event is kept.
+    The decision is taken in several major steps, so a checkpoint chapter is big and is broken into sections, one per step:
+    (G1) doc/chapter/chapter_XYZ.tex has (B1), (B2), then ONE SECTION PER MAJOR STEP in place of (B3), then (B4) and (B5)
+    (G2) every step section is 2-3 pages and illustrates, for our event, step by step how the decision is built: what the step receives
+         from the previous step, what it does (the algorithm in plain words), its parameters/thresholds, the numbers of our event,
+         and an eta-phi display plot showing how the event looks AFTER this step
+    (G3) the ledger of (B4) has two parts: the energy the trigger SEES from step to step (nothing is added to or removed from the recorded
+         event), and the DECISION: which algorithms/paths fired and by which margin; the display is the event as the last step sees it
+    (G4) the plugins analyse the different steps (one plugin per group of steps, one pdf per plugin); the same three samples as 10_SIM/11_DIGI
+         (signal alone, one pileup collision alone, signal + pileup) show how the pileup changes the decision
+    (G5) the companion (C1)-(C4) is unchanged; (C4) lists the numbers step by step
+    The steps:
+        12_L1T: (1) calorimeter trigger primitives (ECAL, HCAL)
+                (2) calorimeter Layer-1: receives, calibrates and sums the trigger primitives into trigger towers
+                (3) calorimeter Layer-2: jets, e/gamma, taus, energy sums
+                (4) muon trigger primitives and the muon track finders (BMTF, OMTF, EMTF)
+                (5) the global muon trigger (uGMT)
+                (6) the global trigger (uGT): every algorithm of the menu in parallel, the final decision
+        13_HLT: (1) L1 seed and prescale (2) calorimeter jets (3) tracking and vertex (4) particle flow and PF jets (5) the decision of the paths
+                (to be confirmed when the chapter is written)
+
 List of chapters:
     01: ME
     02: PS
@@ -44,6 +66,9 @@ List of chapters:
     09: G4
     10: SIM
     11: DIGI
+    12: L1T (checkpoint, Rule G: the Level-1 trigger of 2024, six steps)
+    13: HLT (checkpoint, Rule G: the High Level Trigger; future)
 
 Length of each chapter:
     5 pdf pages +-2
+    checkpoint chapters (Rule G): 20-25 pdf pages (2-3 pages per step)

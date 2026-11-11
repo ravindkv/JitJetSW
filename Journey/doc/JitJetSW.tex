@@ -1,7 +1,7 @@
-% JitJet.tex -- JitJet: Journey is the Jet. ONE bbbar event and the SAME event followed at every stage.
+% JitJetSW.tex -- JitJet: Journey is the Jet. ONE bbbar event and the SAME event followed at every stage.
 % The book (Rule D of ../Constitution.txt): every chapter doc/chapter/chapter_XX_YYY.tex is \input here, in the order
 % of the journey. Compile from this directory:
-%     pdflatex JitJet.tex && pdflatex JitJet.tex
+%     pdflatex JitJetSW.tex && pdflatex JitJetSW.tex
 % The figures are read from ../test/<chapter>/out/ (the PNG pages made by the chapter scripts); the chapters quote the
 % numbers of ../test/<chapter>/out/*.log and *.txt, listed in full in the companions doc/chapter/chapter_XX_YYY.md.
 % This TeX Live (2020) has no siunitx, tcolorbox or pgfplots: units are typed by hand (\GeV ...), boxes are the
@@ -94,6 +94,14 @@
   \end{minipage}\end{lrbox}\noindent\fcolorbox{plainrule}{plainbg}{\usebox{\plainbox}}\par\medskip}
 
 \captionsetup{font=small,labelfont=bf,width=0.95\textwidth}
+% floats: allow a page to be mostly figures and tables, so that they stay next to the text that quotes them
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
 \setlist{nosep,leftmargin=*}
 \emergencystretch=1.5em
 \setcounter{secnumdepth}{1}
@@ -109,8 +117,9 @@
 \title{\textbf{JitJet: Journey is the Jet}\\[6pt]
   \large ONE \bbbar{} event, the SAME event, followed at every stage of the CMS simulation:\\
   matrix element, parton shower, matching and merging, multiparton interactions, hadronisation, decays,\\
-  generator jets, pileup, the hand-over to Geant4, the detector simulation and the digitisation}
-\author{\code{JitJetSW/Journey}, \code{doc/JitJet.tex}}
+  generator jets, pileup, the hand-over to Geant4, the detector simulation, the digitisation\\
+  and the Level-1 trigger}
+\author{\code{JitJetSW/Journey}, \code{doc/JitJetSW.tex}}
 \date{CMSSW\_15\_0\_5, the 2024 CMS detector (Run 3), $pp$ at $13.6\TeV$; the event is run 1, lumi 1, event 1 of
   \code{test/06\_Decay/out/step1\_GEN\_06\_Decay.root}}
 
@@ -126,7 +135,8 @@ one chapter per stage. Every chapter is built the same way (the constitution of 
 gives the numbers of the event that explain the physics of the stage, closes its ledger (how much energy the
 stage added to or removed from the event, with the $\eta$--$\phi$ display of the event at that stage) and ends
 with the open problems of the stage for the Phase-2 (HL-LHC) detector, found by digging into the CMSSW
-configuration. Every chapter has a script, \code{test/<chapter>/run\_<chapter>.sh}, that produces exactly the files
+configuration. A stage that does not change the event but decides whether it is kept, a \emph{checkpoint} (the
+Level-1 trigger of chapter~\ref{ch:12_L1T}), is a longer chapter with one section per step of the decision. Every chapter has a script, \code{test/<chapter>/run\_<chapter>.sh}, that produces exactly the files
 it quotes in \code{test/<chapter>/out/}, and a technical companion, \code{doc/chapter/chapter\_<chapter>.md}, with the
 \code{cmsDriver.py} and \code{cmsRun} commands, the walk-through of the configurations, and every number in full.
 The output of each chapter is the input of the next: \code{test/runAll.sh} runs the whole journey in order.
@@ -147,6 +157,7 @@ chapter & stage & what the stage does to the event \\
 \ref{ch:09_G4} & G4 & the hand-over to Geant4: which particles it accepts and drops \\
 \ref{ch:10_SIM} & SIM & the detector simulation: field, decays, showers, hits; the library and the mixing \\
 \ref{ch:11_DIGI} & DIGI & the digitisation: the signal alone, one collision alone, signal with pileup \\
+\ref{ch:12_L1T} & L1T & checkpoint: the Level-1 trigger, from trigger primitives to the decision of the menu \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -164,5 +175,6 @@ chapter & stage & what the stage does to the event \\
 \input{chapter/chapter_09_G4}
 \input{chapter/chapter_10_SIM}
 \input{chapter/chapter_11_DIGI}
+\input{chapter/chapter_12_L1T}
 
 \end{document}

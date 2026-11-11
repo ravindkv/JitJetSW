@@ -26,3 +26,6 @@ Journey/doc/*.aux
 Journey/doc/*.log
 Journey/doc/tmp
 Journey/test/tmp
+
+Journey/test/12_L1T/out
+Journey/test/12_L1T/*.log

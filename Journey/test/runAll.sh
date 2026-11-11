@@ -2,14 +2,14 @@
 # runAll.sh: the whole journey of the ONE bbbar event, chapter by chapter (Rule E: every chapter reads the output of the
 # previous one). Each chapter is test/<chapter>/run_<chapter>.sh, writing to test/<chapter>/out/; the log of this run is
 # test/runAll.log. Run from an initialized CMSSW_15_0_5 environment (cd CMSSW_15_0_5/src && cmsenv).
-#   ./runAll.sh                      all eleven chapters
+#   ./runAll.sh                      all twelve chapters
 #   CHAPTERS="09_G4 10_SIM" ./runAll.sh      a subset (their inputs must exist)
 #   FROM=08_PU ./runAll.sh           from a chapter on
 # Rough cost on one core: chapters 01-08 a few minutes, 09 about 5 minutes, 10 about one hour (library of 250 collisions
-# through Geant4, SimHitAnalyzer pages of three samples, the mixing), 11 about one hour (the PU = 60 DIGI step).
+# through Geant4, SimHitAnalyzer pages of three samples, the mixing), 11 about one hour (the PU = 60 DIGI step), 12 one minute.
 set -euo pipefail
 test_dir=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-all="01_ME 02_PS 03_MnM 04_MPI 05_Had 06_Decay 07_GenJet 08_PU 09_G4 10_SIM 11_DIGI"
+all="01_ME 02_PS 03_MnM 04_MPI 05_Had 06_Decay 07_GenJet 08_PU 09_G4 10_SIM 11_DIGI 12_L1T"
 chapters=${CHAPTERS:-$all}
 if [[ -n ${FROM:-} ]]; then
   chapters=${all#*$FROM}; chapters="$FROM$chapters"

@@ -1,0 +1,18 @@
+The next chapter is going to be  12_L1T. Since this chapter is going to be big. I am thinking of breaking it into multiple sections based on the major steps involved in the L1T decision. We can have 2-3 pages for every section so the total pages can be around 20-25. The whole idea is education. We should take the inputs from the 11_DIGI chapter and illustrate step by step how L1T decided to keep the event. We can also update the ../Constitution.txt for L1T (and also for HLT which we will cover in future). 
+Below, I have some idea how to structure the 12_L1T. Feel free to tweak it to reflect L1T for 2024:
+
+The calorimeter trigger consists of two layers: Layer-1 
++ receives, 
++ calibrates, and 
++ sorts the local energy deposits ("trigger primitives") 
+which are sent to the trigger by the ECAL and HCAL; Layer-2 uses these calibrated trigger primitives to reconstruct and calibrate the physics objects such as electrons, tau leptons, jets, and energy sums
+
+The muon trigger system includes
++ muon track finders (MTF) which reconstruct muons in the barrel (BMTF), overlap (OMTF), and endcap (EMTF) regions of the detector, and the global muon trigger (µGMT, pronounced micro-GMT) for final muon selection. 
+The µGT finally collects muons and calorimeter objects and executes every algorithm in the menu in parallel for the final trigger decision.
+
+then the the Layer-2 calorimeter and  µGMT is combined  in the Global Trigger
+
+
+We should also try to have plugins to analyse different steps of L1T and illustrate the eta-phi display plot how things change for our event.
+

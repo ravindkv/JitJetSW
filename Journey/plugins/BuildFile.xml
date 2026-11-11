@@ -80,4 +80,9 @@
 <use name="SimDataFormats/DigiSimLinks"/>
 <use name="SimDataFormats/RPCDigiSimLink"/>
 <use name="SimDataFormats/GEMDigiSimLink"/>
+<use name="DataFormats/L1TMuon"/>
+<use name="DataFormats/L1DTTrackFinder"/>
+<use name="L1Trigger/L1TCalorimeter"/>
+<use name="L1Trigger/L1TMuon"/>
+<use name="CalibFormats/CaloTPG"/>
 <flags EDM_PLUGIN="1"/>
