@@ -127,8 +127,8 @@ background on; GEM: efficiency 0.98, intrinsic noise off, window bx $-5$ to $+3$
 linked to a signal particle and $12\,263$ without a link: electronics noise above threshold. The pixels are clean, 4982
 linked digis for 1902 hits, 2.6 pixels per crossing, and 7 noise digis in the whole pixel detector; the strips are
 not, 2.3 strips per hit ($19\,513$ linked digis for 8370 hits) and $12\,256$ noise strips above the zero suppression.
-In the ECAL the selective readout flagged 2 of the 2448 barrel trigger towers and 15 of the
-624 endcap supercrystals as high interest and read them in full; the rest passed through the zero suppression,
+In the ECAL the selective readout selected 2 of the 2448 barrel trigger towers and 15 of the
+624 endcap supercrystals for full readout; the rest passed through the zero suppression,
 leaving 399 EB and 372 EE data frames of the $61\,200$ and $14\,648$ crystals, and 981 of the $137\,216$ preshower
 strips. The 5521 EB cells with a hit became 399 digis: the zero-suppression threshold of a low-interest tower (a DB
 payload) is far above what most cells of a shower receive. In the HCAL the digitiser makes a frame for every one of
@@ -141,7 +141,7 @@ at $\eta=-3.75$ sits in the HF ring beyond the tracker.
 
 \textbf{(11b) One collision alone.} Library event 72 is an ordinary inelastic collision: 2097 tracker hits, 5308
 linked digis, and $12\,376$ noise strips, as many as the signal sample, so that its $17\,684$ tracker digis are
-70\,\% noise. The ECAL keeps 285 EB and 55 EE frames (one supercrystal high interest), the ES 360; the HCAL zero
+70\,\% noise. The ECAL keeps 285 EB and 55 EE frames (one supercrystal read in full), the ES 360; the HCAL zero
 suppression keeps 2972 HB/HE frames, nearly as many as for the signal (3285), because most of them are noise
 fluctuations of empty channels above a level of 8 or 9 ADC. Its 11 CSC hits (a forward particle reaching ME1) give
 18 linked strip digis among 176, the other 158 and the 3 wire-group digis being noise. The right panel of
@@ -177,10 +177,155 @@ because the deconvolution pulse of the APV sampled $25\ns$ early still has a lar
 because sampled $25\ns$ late it has almost none. In the calorimeters there is no sorting: one frame per channel, and
 the summed amplitudes in ADC counts grow from the signal alone to the bunch crossing by a factor 5.5 in the EB (3426 to
 $18\,927$), 12.9 in the EE (2088 to $26\,952$), 12.8 in the ES, 2.1 in the HB, 9.7 in the HE ($14\,537$ to $141\,454$)
-and 3.8 in the HF. The selective readout now flags 23 barrel towers and 175 of the 624 endcap supercrystals as high
-interest, the EE digis go from 372 to 4144 and the HB/HE zero suppression keeps 5839 frames. The muon system, empty
+and 3.8 in the HF. The selective readout now reads 23 barrel towers and 175 of the 624 endcap supercrystals in
+full, the EE digis go from 372 to 4144 and the HB/HE zero suppression keeps 5839 frames. The muon system, empty
 for the signal, has 2016 digis: 12 DT wires (9 from the early bunch crossing: a drift time is hundreds of ns), 1888
 CSC strips (305 in-time, 62 early, 36 late, 1485 noise), 91 CSC wire groups without a link, 10 RPC and 15 GEM strips.
+
+\section{Made here for the next stage: the trigger primitives}
+\label{sec:11_tp}
+
+\textbf{What they are.} Two of the products listed above are not digis in the sense of this chapter:
+\code{simEcalTriggerPrimitiveDigis} and \code{simHcalTriggerPrimitiveDigis}. Nobody will reconstruct the event
+from them. A \emph{trigger primitive} is the message that a calorimeter sends, every 25\,ns, to the Level-1 trigger
+of chapter~\ref{ch:12_L1T}: one transverse energy for a whole \emph{trigger tower}, on 8 bits, with a few flag bits.
+The data frames of this chapter cannot play that role. They are read out only \emph{after} the trigger has said
+yes, there are $75\,848$ ECAL crystals with ten samples each, and the trigger has about four microseconds. So each
+calorimeter has a second output in parallel with its data frames: coarse (one number for 25 crystals, or for all the
+depths of an HCAL tower), fast (computed for every bunch crossing, whether anything happened or not) and lossy.
+It is all the Level-1 trigger will ever know of the calorimeters.
+
+\begin{plainwords}[The grid of the calorimeter trigger]
+The trigger sees the calorimeters as towers numbered by two integers, $i\eta=\pm1\ldots\pm41$ (no 0) and
+$i\phi=1\ldots72$. In the barrel a tower is $5\times5$ ECAL crystals and the HCAL tower behind them,
+$0.087\times0.087$ in $\eta\times\phi$ ($5^\circ$ in $\phi$). The barrel ECAL ends at $|i\eta|=17$, the barrel HCAL
+at 16, the endcaps at 28; towards the endcap edge the towers grow in $\eta$ (tower 28 covers
+$2.65<\abseta<3.0$, four times the area of a barrel tower); $|i\eta|=29$ is not used; 30 to 41 are the HF,
+$3.0<\abseta<5.2$, where a primitive is $10^\circ$ wide in $\phi$ ($20^\circ$ for $|i\eta|\geq40$). In all
+$2\times28\times72=4032$ ECAL primitives, 4032 for HB and HE, and 792 for the HF: 8856 numbers per bunch crossing,
+each an integer count of $0.5\GeV$ of transverse energy, at most 255 counts ($127.5\GeV$).
+\end{plainwords}
+
+\textbf{How they are made.} In the ECAL (\code{EcalTrigPrimProducer}; the classes of
+\path{SimCalorimetry/EcalTrigPrimAlgos} are named after the FENIX chips of the front-end they emulate) the samples
+of each crystal are linearised and the five crystals of a strip are summed; an amplitude filter with fixed weights
+turns the samples into a pulse height and a peak finder keeps it only in the crossing where it is maximal
+(\code{binOfMaximum = 6}, where the digitiser puts the maximum of an in-time pulse); the five strips of a tower are
+added, and a lookup table converts the sum to the 8-bit $E_{\mathrm T}$ and to a \emph{trigger-tower flag}: low,
+mid or high interest. A fine-grain bit says whether the energy sits in two adjacent strips, as for an electron or a
+photon. The weights, pedestals, linearisation constants and thresholds are nineteen payloads of the global tag
+(\code{EcalTPG*Rcd}). In the HCAL (\code{HcalTrigPrimDigiProducer}) the charge of every depth of a tower is
+linearised with a per-channel lookup table (with $1/16\GeV$ per count), the depths are summed, the time samples
+are combined with database weights that can subtract the tail of the previous crossing, a peak finder picks the
+crossing (\code{PeakFinderAlgorithm = 2}) and the result is compressed to 8 bits, since 2018 linearly, $0.5\GeV$
+per count; six feature bits (depth profile and timing) go with it. In the HF the long and the short fibres of a
+tower are summed over two samples. The parameters of the two producers are in \path{thresholds_11_DIGI.txt}.
+
+\textbf{Why they are made in the DIGI job, when the Level-1 trigger is the next chapter.} For three reasons, the
+first of which leaves no choice.
+\emph{(1) Their input does not survive this job.} The primitives are computed from the \emph{unsuppressed} frames:
+every crystal, every sample, noise included (\code{Label = simEcalUnsuppressedDigis}). Those frames exist only
+between the digitiser and the selective readout; the event content keeps the HCAL ones but not the ECAL barrel and
+endcap ones (\path{SimCalorimetry/Configuration/python/SimCalorimetry_EventContent_cff.py}), and the 2050 barrel
+frames that this chapter wrote out of $61\,200$ are not enough to recompute a tower sum. After the DIGI job the
+ECAL primitive cannot be made any more.
+\emph{(2) The DIGI job itself needs them.} The selective readout of the ECAL, which decides what
+chapter~\ref{ch:11_DIGI} wrote, is driven by the trigger-tower flags: \code{simEcalDigis} has
+\code{trigPrimProducer = simEcalTriggerPrimitiveDigis}, and the task is written in that order with the comment
+``ECAL Trigger Primitives (needed by SRP)'' (\path{SimCalorimetry/Configuration/python/ecalDigiSequence_cff.py}). The
+trigger primitive is an \emph{input} of the ECAL digis, not a by-product.
+\emph{(3) It is where they are made in the detector.} The primitive is computed by the electronics of each
+calorimeter, the electronics this chapter simulates, not by the trigger, and it is part of the data: the
+\code{DIGI2RAW} step packs it with the frames (\path{EventFilter/EcalDigiToRaw/python/ecalDigiToRaw_cfi.py},
+\code{labelTT}). In the production DIGI, L1 and DIGI2RAW are one job and the seam does not show; this book cuts
+the journey into stages, and the cut between this chapter and the next passes \emph{behind} the trigger primitives. The muon chambers are the opposite case:
+their trigger primitives are made from the stored muon digis by the L1 step itself, and belong to
+chapter~\ref{ch:12_L1T}.
+
+\textbf{The numbers of the event.} The three samples of this chapter exist for the last time: from
+chapter~\ref{ch:12_L1T} on, only the signal with its pileup is followed. Table~\ref{tab:11_tp} counts their
+primitives (the analyzer \code{TrigPrimAnalyzer}, \path{test/11_DIGI/out/trigprim_11_DIGI.txt}).
+
+\begin{table}[!htb]
+\centering\small\setlength{\tabcolsep}{4pt}
+\caption{The trigger primitives with $E_{\mathrm T}>0$, their summed $E_{\mathrm T}$ and the largest one
+(\code{trigprim\_11\_DIGI.txt}, section 1), out of 2448 (EB), 1584 (EE), 2304 (HB), 1728 (HE) and 792 (HF).}
+\label{tab:11_tp}
+\begin{tabular}{l rrr c rrr c rrr}
+\toprule
+ & \multicolumn{3}{c}{(11a) signal alone} & & \multicolumn{3}{c}{(11b) event 72 alone} & & \multicolumn{3}{c}{(11a+11b) signal + pileup} \\
+\cmidrule(lr){2-4}\cmidrule(lr){6-8}\cmidrule(lr){10-12}
+ & $>0$ & $\sum E_{\mathrm T}$ & max & & $>0$ & $\sum E_{\mathrm T}$ & max & & $>0$ & $\sum E_{\mathrm T}$ & max \\
+ & & [GeV] & [GeV] & & & [GeV] & [GeV] & & & [GeV] & [GeV] \\
+\midrule
+ECAL barrel (EB) & 200 & 114.5 & 3.0 & & 157 & 83.5 & 1.0 & & 594 & 408.0 & 5.0 \\
+ECAL endcap (EE) & 98 & 85.5 & 6.5 & & 72 & 44.0 & 2.0 & & 594 & 1273.5 & 11.5 \\
+HCAL barrel (HB) & 13 & 7.0 & 1.0 & & 11 & 5.5 & 0.5 & & 153 & 129.5 & 8.0 \\
+HCAL endcap (HE) & 13 & 25.0 & 10.0 & & 0 & 0.0 & -- & & 335 & 271.5 & 10.0 \\
+HF & 39 & 148.5 & 89.0 & & 4 & 2.0 & 0.5 & & 741 & 1329.0 & 89.0 \\
+\midrule
+all & 363 & 380.5 & 89.0 & & 244 & 135.0 & 2.0 & & 2417 & 3411.5 & 89.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{What a primitive measures.} For the ECAL the file still holds the energy that the particles left in the
+crystals (the \code{PCaloHit}s of chapter~\ref{ch:10_SIM}), and the analyzer sums it per trigger tower as transverse
+energy. The signal alone left $120.7\GeV$ of $E_{\mathrm T}$ in 2799 of the 4032 ECAL towers. In the 33 towers where
+it left at least a quarter of a GeV and a primitive was sent, the deposits add up to $51.0\GeV$ and the primitives
+to $50.0\GeV$: the primitive is the transverse energy of the tower, to the half GeV. But $52.6\GeV$ are spread over
+some 2700 towers with less than $0.25\GeV$ each, and 40 towers with $17.1\GeV$ fall just short of one count: for
+these the primitive is zero. More than half of what the signal deposited in the ECAL is invisible to the trigger.
+
+\emph{Most ECAL primitives are noise.} The signal alone sends 298 ECAL primitives; 265 of them, $150.0\GeV$, come
+from towers where it deposited less than $0.25\GeV$. Library event 72 deposited $14.6\GeV$ of $E_{\mathrm T}$ in
+the whole ECAL, in only four towers as much as a quarter of a GeV, and still sends 229 primitives, $127.5\GeV$, the
+largest $2\GeV$: the sum of 25 noisy crystals fluctuates up to a count in one tower in seventeen. No particle is behind
+these numbers, and every step of the Level-1 trigger will need a threshold because of them.
+
+\emph{One primitive per bunch crossing.} A primitive digi stores a few consecutive crossings, and their sums show
+that the calorimeters talk to the trigger continuously (\code{trigprim\_11\_DIGI.txt}, section 2). For the signal
+alone the ECAL sends 218.0, 140.5, [200.0], 138.5 and $138.0\GeV$ in crossings $-2$ to $+2$: some $140\GeV$ of
+noise in every crossing, and $60\GeV$ more in ours. With the pileup it sends 240.5, 967.5, [1681.5], 379.0 and
+$93.0\GeV$, and the HB and HE 3.0, 266.5, [401.0] and $336.0\GeV$: the crossings $-1$ and $+1$, with their 71 and
+54 collisions, are events of their own for the trigger, which will judge each of them separately.
+
+\emph{The primitives decide what the ECAL reads out.} A tower with a primitive of at least $2\GeV$ is flagged mid
+interest, of at least $4\GeV$ high interest (the payload is
+\path{EcalTPGPhysicsConst_2018_mc_EB_4.0_2.0_EE_4.0_2.0}). The signal alone has two barrel towers flagged mid
+($2.5$ and $3.0\GeV$) and none high: these are exactly the two barrel towers that the selective readout read in
+full above. With the pileup there are 14 mid towers and one high ($5.0\GeV$ at $(i\eta,i\phi)=(-4,4)$): a mid
+tower is read in full alone, a high one with its eight neighbours, $14+9=23$ towers, the number found above. In the
+endcap 120 mid and 105 high towers give the 175 supercrystals. Every full-readout decision of this chapter was
+taken by a trigger primitive.
+
+\emph{The two jets.} Figure~\ref{fig:11_tp} shows the primitives of the signal alone and of the signal with its
+pileup, and the $b$ jet tower by tower. The $\bar b$ jet, in the HF, is narrow: one primitive
+of $89.0\GeV$ at $i\eta=-34$, and $124.0\GeV$ in the $9\times9$ towers around the jet axis. The $b$ jet, on the
+barrel--endcap boundary, is spread out: a column of ECAL towers at $i\eta=-19$ with $6.5$, $6.0$ and $5.0\GeV$
+and three HCAL towers with $10.0$, $4.0$ and $3.5\GeV$; around its axis the ECAL primitives hold $32.0\GeV$ of
+the $41.6\GeV$ deposited there and the HCAL ones $23.5\GeV$. With the pileup the same windows hold $75.5\GeV$
+for the $b$ jet and $200.5\GeV$ for the $\bar b$ jet: the pileup adds $20\GeV$ to one and $76.5\GeV$ to the
+other, and it lights up the HF and the last rings of the endcap ECAL. This is the event chapter~\ref{ch:12_L1T}
+receives: 2417 primitives, $3411.5\GeV$, of which the signal accounts for a tenth.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.325\textwidth,trim=0 0 475 0,clip]{11_DIGI/out/trigPrim_signal_11_DIGI_ecaltp_run1_event1.png}\hfill
+\includegraphics[width=0.325\textwidth,trim=0 0 475 0,clip]{11_DIGI/out/trigPrim_signal_11_DIGI_hcaltp_run1_event1.png}\hfill
+\includegraphics[width=0.325\textwidth,trim=0 0 475 0,clip]{11_DIGI/out/trigPrim_signal_11_DIGI_jet1_ecaltp_run1_event1.png}\\[2pt]
+\includegraphics[width=0.325\textwidth,trim=0 0 475 0,clip]{11_DIGI/out/trigPrim_mixed_11_DIGI_ecaltp_run1_event1.png}\hfill
+\includegraphics[width=0.325\textwidth,trim=0 0 475 0,clip]{11_DIGI/out/trigPrim_mixed_11_DIGI_hcaltp_run1_event1.png}\hfill
+\includegraphics[width=0.325\textwidth,trim=0 0 475 0,clip]{11_DIGI/out/trigPrim_signal_11_DIGI_jet1_hcaltp_run1_event1.png}
+\caption{The trigger primitives (\code{trigPrim\_<case>\_11\_DIGI\_*.png}). Left and middle columns: the ECAL and
+the HCAL primitives (with the HF beyond $\abseta=3$) on the trigger-tower grid, one coloured cell per tower, colour
+= $E_{\mathrm T}$ on a logarithmic scale from $0.25$ to $256\GeV$; top (11a) the signal alone, bottom (11a+11b) the
+signal with its pileup; magenta circles: the two \code{ak4GenJets}. Right column: the $b$ jet of the signal alone
+tower by tower, ECAL (top) and HCAL (bottom) primitives of the $17\times17$ towers around the jet axis with their
+$E_{\mathrm T}$ in GeV; black: the tower of the axis, $(i\eta,i\phi)=(-19,49)$; red: the $9\times9$ towers around
+it, the size of a Level-1 jet.}
+\label{fig:11_tp}
+\end{figure}
 
 \section{Ledger and display}
 

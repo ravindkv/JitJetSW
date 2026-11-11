@@ -1,7 +1,8 @@
 % chapter_12_L1T.tex -- chapter 12 of the JitJet book: the Level-1 trigger, the first checkpoint (Rule G of the
-% Constitution: B1, B2, one section per step, B4, B5).
-% Every number comes from test/12_L1T/out/ (ledger_12_L1T.txt, l1t_{signal,pileup,mixed}_12_L1T.log,
-% settings_12_L1T.txt, truth_12_L1T.txt, the PNG pages); the companion doc/chapter/chapter_12_L1T.md lists them.
+% Constitution: B1, B2, one section per step, B4, B5). ONE sample: the event with its pileup (Rule H: the signal and
+% the pileup are followed apart only up to chapter 11).
+% Every number comes from test/12_L1T/out/ (ledger_12_L1T.txt, l1t_12_L1T.log, settings_12_L1T.txt,
+% truth_12_L1T.txt, the PNG pages); the companion doc/chapter/chapter_12_L1T.md lists them.
 
 \chapter{12 -- L1T: the Level-1 trigger looks at the event and decides to keep it}
 \label{ch:12_L1T}
@@ -42,8 +43,7 @@ algorithm of the \emph{menu} on them, all in parallel; if at least one fires, th
 \centering
 \begin{tikzpicture}[x=0.93cm, font=\footnotesize, >={Stealth[length=2mm]},
   box/.style={draw, rounded corners=2pt, minimum height=10mm, text width=3.25cm, align=center, inner sep=2.5pt},
-  calo/.style={box, fill=green!12}, mu/.style={box, fill=blue!10}, gt/.style={box, fill=red!12, text width=2.6cm, minimum height=22mm},
-  mod/.style={font=\tiny\ttfamily}]
+  calo/.style={box, fill=green!12}, mu/.style={box, fill=blue!10}, gt/.style={box, fill=red!12, text width=2.6cm, minimum height=22mm}]
 \node[calo] (etp) at (0,1.75) {ECAL primitives\\{\tiny\ttfamily simEcalTriggerPrimitiveDigis}};
 \node[calo] (htp) at (0,0.55) {HCAL primitives\\{\tiny\ttfamily simHcalTriggerPrimitiveDigis}};
 \node[calo] (l1) at (4.25,1.15) {Layer-1: towers\\{\tiny\ttfamily simCaloStage2Layer1Digis}};
@@ -69,8 +69,8 @@ algorithm of the \emph{menu} on them, all in parallel; if at least one fires, th
 
 \begin{table}[!htb]
 \centering\small\setlength{\tabcolsep}{4pt}
-\caption{The six steps at a glance: what each one sends to the next, and how much of it there is in our event with
-its pileup (12a+12b). Every arrow of figure~\ref{fig:12_chain} is a reduction.}
+\caption{The six steps at a glance: what each one sends to the next, and how much of it there is in our event.
+Every arrow of figure~\ref{fig:12_chain} is a reduction.}
 \label{tab:12_glance}
 \begin{tabular}{@{}c>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{6.9cm}>{\raggedright\arraybackslash}p{4.3cm}@{}}
 \toprule
@@ -87,165 +87,111 @@ step & who & sends, every 25\,ns & in our event \\
 \end{table}
 
 The chapter has one section per step. Each says what the step receives, what it does, with which parameters, what
-the numbers of our event are, and shows the event in $\eta$--$\phi$ as it looks after the step. Three samples are
-followed with the same configuration (\path{test/12_L1T/run_12_L1T.sh}), the three of
-chapters~\ref{ch:10_SIM} and~\ref{ch:11_DIGI}: (12a) the signal alone; (12b) one pileup collision alone, library
-event 72; (12a+12b) the signal with the 71, 68 and 54 collisions of bunch crossings $-1$, 0 and $+1$, the event as
-CMS would see it. The comparison is the point of the chapter: \emph{the same collision is judged differently
-once the pileup is on top of it}, 19 algorithms of the menu fire on the signal alone and 57 on the signal with its
-pileup.
+the numbers of our event are, and shows the event in $\eta$--$\phi$ as it looks after the step. \emph{One} event is
+followed (\path{test/12_L1T/run_12_L1T.sh}): the event as CMS sees it, the signal with the 71, 68 and 54 collisions
+of bunch crossings $-1$, 0 and $+1$ on top. Chapter~\ref{ch:11_DIGI} was the last stage at which the signal and
+the pileup existed apart; a trigger, like a detector, is only ever given their sum. Where the chapter needs to know
+who made an object, it asks the truth that the file still carries: the two generator jets of
+chapter~\ref{ch:07_GenJet}, and the simulated particles behind a muon.
 
 \section{From the previous chapter}
 
-The three files of chapter~\ref{ch:11_DIGI} enter (Rule E), \path{test/11_DIGI/out/step3_DIGI_signal_11_DIGI.root},
-\path{..._pileup_...} and \path{..._mixed_...}: the digis of every subdetector, 43\,762 for the signal alone,
-23\,363 for library event 72, 551\,889 for the signal with its pileup. The L1T uses very little of this. Of the
-520\,289 tracker digis of the mixed event it uses none. Of the calorimeters it does not read the zero-suppressed
-data frames of chapter~\ref{ch:11_DIGI} at all, but two collections that the \code{DIGI} job had already made from
-the \emph{unsuppressed} frames and that chapter~\ref{ch:11_DIGI} mentioned only in passing:
-\code{simEcalTriggerPrimitiveDigis} and \code{simHcalTriggerPrimitiveDigis}. Step~1 of this chapter was therefore
-computed in the previous job (\path{SimCalorimetry/Configuration/python/ecalDigiSequence_cff.py},
-\path{hcalDigiSequence_cff.py}); this is also why \code{-s L1} cannot run on its own without two extra lines (the
-companion, section~1). Of the muon system it uses the wire, strip and pad digis: 2016 in the mixed event, 8 (RPC
-noise) in the signal alone.
+One file of chapter~\ref{ch:11_DIGI} enters (Rule E), \path{test/11_DIGI/out/step3_DIGI_mixed_11_DIGI.root}: the
+$551\,889$ digis of the signal with its pileup. The L1T uses very little of them. Of the $520\,289$ tracker digis it
+uses none. Of the calorimeters it does not read the zero-suppressed data frames at all, but the two collections
+that the \code{DIGI} job made from the unsuppressed frames for exactly this purpose,
+\code{simEcalTriggerPrimitiveDigis} and \code{simHcalTriggerPrimitiveDigis}: section~\ref{sec:11_tp} of
+chapter~\ref{ch:11_DIGI} explained what they are, how they are made and why they are made there. Step~1 of this
+chapter was therefore computed in the previous job, and this is why \code{-s L1} cannot run on its own without two
+extra lines (the companion, section~1). Of the muon system it uses the wire, strip and pad digis, 2016 of them.
+
+What that section established, in four lines. The trigger sees the calorimeters on a grid of trigger towers,
+$i\eta=\pm1\ldots\pm41$ and $i\phi=1\ldots72$ ($|i\eta|\leq17$ barrel, 18 to 28 endcap, 30 to 41 HF, 29 unused),
+one 8-bit transverse energy per tower and bunch crossing, $0.5\GeV$ per count. A primitive measures the energy
+deposited in its tower to half a GeV, but a tower with less than that sends nothing, and noise alone makes one
+tower in seventeen send a count. Of the $3411.5\GeV$ of primitives of our event, the signal alone would have sent
+$380.5\GeV$: nine tenths of what the trigger receives is pileup.\footnote{All numbers of this chapter are in
+\path{test/12_L1T/out/}: \path{ledger_12_L1T.txt} (step by step), \path{l1t_12_L1T.log} (the analyzers
+\code{L1TCaloAnalyzer}, \code{L1TMuonAnalyzer}, \code{L1TGlobalAnalyzer}), \path{settings_12_L1T.txt} (the module
+parameters) and \path{truth_12_L1T.txt}; the companion lists them. Numbers about the signal alone are quoted from
+chapter~\ref{ch:11_DIGI}.}
 
 What is kept: everything. The \code{L1} process copies its input and adds its products under the process name
 \code{L1}, about fifty collections, the output of every board of figure~\ref{fig:12_chain}. What changes is the
-granularity at which the event is looked at. The signal that was 5521 barrel crystals with a hit in
-chapter~\ref{ch:10_SIM} and 399 barrel data frames of ten samples in chapter~\ref{ch:11_DIGI} is, for the trigger,
-a few hundred 8-bit numbers on a grid of $82\times72$ towers.\footnote{All numbers of this chapter are in
-\path{test/12_L1T/out/}: \path{ledger_12_L1T.txt} (the three samples side by side), \path{l1t_<case>_12_L1T.log} (the
-analyzers \code{L1TCaloAnalyzer}, \code{L1TMuonAnalyzer}, \code{L1TGlobalAnalyzer}), \path{settings_12_L1T.txt} (the
-module parameters) and \path{truth_12_L1T.txt}; the companion lists them.}
-
-\begin{plainwords}[The grid of the calorimeter trigger]
-The trigger sees the calorimeters as \emph{trigger towers}, numbered by two integers: $i\eta=\pm1\ldots\pm41$ (no
-0) and $i\phi=1\ldots72$. In the barrel a tower is $5\times5$ ECAL crystals and the HCAL tower behind them,
-$0.087\times0.087$ in $\eta\times\phi$ ($5^\circ$ in $\phi$). The barrel ECAL ends at $|i\eta|=17$, the barrel HCAL
-at 16, the endcaps at 28; towards the endcap edge the towers grow in $\eta$ (tower 28 covers
-$2.65<\abseta<3.0$, four times the area of a barrel tower); $|i\eta|=29$ is not used; 30 to 41 are the HF,
-$3.0<\abseta<5.2$, where a primitive is $10^\circ$ wide in $\phi$ ($20^\circ$ for $|i\eta|\geq40$). In all
-$2\times28\times72=4032$ ECAL and 4032 HCAL towers and 792 HF primitives. Energies are transverse and integer: 8
-bits with $0.5\GeV$ per count for a primitive (at most $127.5\GeV$), 9 bits for a Layer-1 tower. The $\eta$--$\phi$
-pages of this chapter draw this grid, one coloured cell per tower.
-\end{plainwords}
+granularity at which the event is looked at: half a million digis become, for the trigger, 8856 small integers.
 
 \section{Step 1: the calorimeter trigger primitives}
 
-\textbf{What the step does.} Every 25\,ns each calorimeter front-end computes one transverse energy per trigger
-tower and sends it on an optical link to Layer-1. In the ECAL (\code{EcalTrigPrimProducer}) the ten samples of the
-crystals of a strip of five are linearised and summed, an amplitude filter with fixed weights extracts the pulse
-height, a peak finder assigns it to one bunch crossing (\code{binOfMaximum = 6}, the sample where
-chapter~\ref{ch:11_DIGI} put the pulse maximum), the five strips of a tower are added and the sum is converted to
-$E_{\mathrm T}$ on the 8-bit scale; one more bit, the \emph{fine-grain} bit, says whether the energy is
-concentrated in two adjacent strips, as for an electron or a photon. The weights, pedestals, linearisation
-constants and the spike killer are nineteen database payloads of the global tag (\code{EcalTPG*Rcd}), nine of them
-tagged \code{2018\_mc} and five \code{2024\_mc}. In the HCAL (\code{HcalTrigPrimDigiProducer}) the charge of every depth of a tower is
-linearised with a per-channel lookup table (LSB $1/16\GeV$, \code{tpScales.HBHE.LSBQIE11}), the depths are summed
-(up to seven in the endcap), the time samples are combined with weights that can subtract the tail of the previous
-crossing (they come from the database, \code{overrideDBweightsAndFilterHB/HE = False}), a peak finder picks
-the crossing (\code{peakFilter = True}, \code{PeakFinderAlgorithm = 2}) and the result is compressed to 8 bits;
-since 2018 the compression is linear, $0.5\GeV$ per count (\code{linearLUTs = True} under \code{run2\_HCAL\_2018},
-\path{CalibCalorimetry/CaloTPG/python/CaloTPGTranscoder_cfi.py}). Six feature bits go with it (depth profile and
-timing, for long-lived particles). In the HF the long and the short fibres of a tower are summed over two time samples
-(\code{numberOfSamplesHF = 2}).
+\textbf{What the step does.} Every 25\,ns each calorimeter front-end sends one transverse energy per trigger tower
+to Layer-1 on optical links: 4032 from the ECAL, 4032 from HB and HE, 792 from the HF. The primitive of a tower is
+a small time series (five consecutive crossings for the ECAL, four for the HCAL), and the trigger takes one value
+per crossing: for our event the one of bunch crossing 0, the \emph{sample of interest}. The emulator of the
+calorimeter trigger processes this crossing only (\path{L1Trigger/L1TCaloLayer1/plugins/L1TCaloLayer1.cc}: ``Currently
+we only read and process the `hit' BX only''); in the detector the crossings $-1$ and $+1$, with their 71 and 54
+collisions, go through the same six steps as events of their own.
+
+\textbf{The numbers of the event.} Table~\ref{tab:12_tp} counts what arrives, and figure~\ref{fig:12_tp} shows it.
 
 \begin{table}[!htb]
-\centering\small\setlength{\tabcolsep}{4pt}
-\caption{Step 1: the three kinds of calorimeter trigger primitive (\code{settings\_12\_L1T.txt}, section 3, and the
-data formats).}
-\label{tab:12_tppar}
-\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.2cm}@{}}
-\toprule
- & ECAL (EB, EE) & HCAL (HB, HE) & HF \\
-\midrule
-made from & the unsuppressed frames of the crystals & the unsuppressed QIE11 frames, all depths of a tower & the QIE10 frames, long and short fibres \\
-one primitive is & $5\times5$ crystals in EB, $0.087\times0.087$ & one HCAL tower, same grid & one $\eta$ ring $\times$ $10^\circ$ ($20^\circ$ for $|i\eta|\geq40$) \\
-how many & $2448+1584$ & $2304+1728$ & 792 \\
-$E_{\mathrm T}$ & 8 bits, $0.5\GeV$ per count & 8 bits, $0.5\GeV$ per count (computed with $1/16\GeV$) & 8 bits, $0.5\GeV$ per count \\
-bunch crossing & peak finder, maximum in sample 6 & peak finder (\code{PeakFinderAlgorithm = 2}) & sum of two samples \\
-other bits & fine-grain bit, spike flag & 6 feature bits (depth, timing) & 2 bits (long/short fibres, minimum bias) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{The numbers of the event.} Table~\ref{tab:12_tp} counts the primitives above zero. Three things are worth
-looking at.
-
-\begin{table}[!htb]
-\centering\small\setlength{\tabcolsep}{4pt}
-\caption{Step 1: the trigger primitives with $E_{\mathrm T}>0$, their summed $E_{\mathrm T}$ and the largest one,
-out of 2448 (EB), 1584 (EE), 2304 (HB), 1728 (HE) and 792 (HF) primitives (\code{ledger\_12\_L1T.txt}, section 1).}
+\centering\small
+\caption{Step 1: the trigger primitives of bunch crossing 0 (\code{ledger\_12\_L1T.txt}, section 1).}
 \label{tab:12_tp}
-\begin{tabular}{l rrr c rrr c rrr}
+\begin{tabular}{l rrrr}
 \toprule
- & \multicolumn{3}{c}{(12a) signal alone} & & \multicolumn{3}{c}{(12b) event 72 alone} & & \multicolumn{3}{c}{(12a+12b) signal + pileup} \\
-\cmidrule(lr){2-4}\cmidrule(lr){6-8}\cmidrule(lr){10-12}
- & $>0$ & $\sum E_{\mathrm T}$ & max & & $>0$ & $\sum E_{\mathrm T}$ & max & & $>0$ & $\sum E_{\mathrm T}$ & max \\
- & & [GeV] & [GeV] & & & [GeV] & [GeV] & & & [GeV] & [GeV] \\
+ & primitives & with $E_{\mathrm T}>0$ & $\sum E_{\mathrm T}$ [GeV] & largest [GeV] \\
 \midrule
-ECAL barrel (EB) & 200 & 114.5 & 3.0 & & 157 & 83.5 & 1.0 & & 594 & 408.0 & 5.0 \\
-ECAL endcap (EE) & 98 & 85.5 & 6.5 & & 72 & 44.0 & 2.0 & & 594 & 1273.5 & 11.5 \\
-HCAL barrel (HB) & 13 & 7.0 & 1.0 & & 11 & 5.5 & 0.5 & & 153 & 129.5 & 8.0 \\
-HCAL endcap (HE) & 13 & 25.0 & 10.0 & & 0 & 0.0 & -- & & 335 & 271.5 & 10.0 \\
-HF & 39 & 148.5 & 89.0 & & 4 & 2.0 & 0.5 & & 741 & 1329.0 & 89.0 \\
+ECAL barrel (EB), $|i\eta|\leq17$ & 2448 & 594 & 408.0 & 5.0 \\
+ECAL endcap (EE), $18\leq|i\eta|\leq28$ & 1584 & 594 & 1273.5 & 11.5 \\
+HCAL barrel (HB), $|i\eta|\leq16$ & 2304 & 153 & 129.5 & 8.0 \\
+HCAL endcap (HE), $17\leq|i\eta|\leq28$ & 1728 & 335 & 271.5 & 10.0 \\
+HF, $30\leq|i\eta|\leq41$ & 792 & 741 & 1329.0 & 89.0 \\
 \midrule
-all & 363 & 380.5 & 89.0 & & 244 & 135.0 & 2.0 & & 2417 & 3411.5 & 89.0 \\
+all & 8856 & 2417 & 3411.5 & 89.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\emph{Where the energy is.} Three quarters of it are in two places: the HF ($1329\GeV$, 741 of its 792 primitives
+are lit) and the endcap ECAL ($1273.5\GeV$). The barrel, with more than half of the towers, holds $537.5\GeV$. The
+pileup is roughly flat in $\eta$, the towers are not: a tower at the edge of the endcap is four times larger than
+a barrel tower and collects several soft particles where a barrel tower collects a fraction of one, so that the
+half-GeV count that hides most of the pileup in the barrel does not hide it there. In figure~\ref{fig:12_tp} the
+two rings at $2.5<\abseta<3$ of the ECAL and the whole HF are bright bands, and the barrel a dust of one- and
+two-count towers.
 
 \emph{The two jets look completely different.} The $\bar b$ jet ($\pt=115.9\GeV$ at $\eta=-3.75$) falls in the
-HF, where a jet is narrow in tower units: one primitive at $i\eta=-34$ carries $89.0\GeV$, two thirds of the
-jet, and its neighbour at $i\eta=-33$ another $12.5\GeV$; the HF primitives of the signal sum to $148.5\GeV$. The
-$b$ jet ($117.8\GeV$ at $\eta=-1.59$) sits on the barrel--endcap boundary and is spread over a dozen towers
-around $(i\eta,i\phi)=(-18,50)$: the largest ECAL primitive of the whole event is $6.5\GeV$ and the largest HCAL
-one $10.0\GeV$. In the $9\times9$ towers around its centre the ECAL primitives add up to $32.5\GeV$ and the HCAL
-ones to $21.5\GeV$, $54\GeV$ for a jet of $118\GeV$: the primitives are not calibrated for hadrons, and a
-tower-level threshold of one count ($0.5\GeV$) on each of the two calorimeters cuts the soft part of the jet away.
-Figure~\ref{fig:12_tpzoom} shows the jet tower by tower. Its photons and electrons are a column of ECAL towers at
-$i\eta=-19$, the second ring of the endcap ($6.5$, $6.0$ and $5.0\GeV$ in three consecutive towers in $\phi$); its
-hadrons are three HCAL towers, $10.0\GeV$ at $(-18,50)$ and $3.5+4.0\GeV$ two towers lower in $\phi$. Neither
-calorimeter alone has a tower above $10\GeV$ in a jet of $118\GeV$.
+HF, where a jet is narrow in tower units: one primitive at $i\eta=-34$ carries $89.0\GeV$ and its neighbour at
+$i\eta=-33$ another $15.5\GeV$; the $9\times9$ towers around it hold $200.5\GeV$. The $b$ jet sits on the
+barrel--endcap boundary, $\eta=-1.59$, and is spread over a dozen towers (figure~\ref{fig:12_tpzoom}): a column of
+ECAL towers at $i\eta=-19$ with $5.5$, $6.5$ and $6.5\GeV$ and three HCAL towers with $10.0$, $4.5$ and
+$3.0\GeV$; no tower of either calorimeter is above $10\GeV$. Its generator jet has $117.8\GeV$, of which
+$37.5\GeV$ are the neutrino of the semileptonic $B^-$ decay of chapter~\ref{ch:06_Decay}; what a calorimeter can
+see at best is the $79.8\GeV$ of chapter~\ref{ch:07_GenJet}. In the $9\times9$ towers around it the ECAL
+primitives add up to $45.0\GeV$ and the HCAL ones to $25.0\GeV$, pileup included. The jet that the trigger will
+build is still visible in figure~\ref{fig:12_tp} only because it is in a quiet region of the detector.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_jet2_ecaltp_run1_event1.png}\hfill
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_jet2_hcaltp_run1_event1.png}
-\caption{Step 1, the $b$ jet of the signal alone tower by tower: the ECAL primitives (left) and the HCAL primitives
-(right) of the $17\times17$ towers around $(i\eta,i\phi)=(-18,50)$, one square per tower with its $E_{\mathrm T}$
-in GeV (\code{l1t\_signal\_12\_L1T\_calo\_jet2\_ecaltp/hcaltp\_run1\_event1.png}). The red square is the $9\times9$ window
-that step~3 will use; it holds $32.5\GeV$ of ECAL and $21.5\GeV$ of HCAL primitives.}
-\label{fig:12_tpzoom}
-\end{figure}
-
-\emph{Most ECAL primitives are noise.} Library event 72 deposited $9.4\GeV$ in 1217 barrel crystals in
-chapter~\ref{ch:10_SIM}, yet 157 barrel towers send a primitive, $83.5\GeV$ in all, none above $1.0\GeV$: one or
-two counts each. The primitive is made from the unsuppressed frames, noise included, and the sum of 25 crystals
-fluctuates above half a count in about one tower in fifteen. The signal alone has 200 such towers. For a single
-tower it is harmless; summed over 4032 towers it is $100$ to $200\GeV$ of transverse energy that no particle
-deposited, and it is the reason why every later step has a threshold.
-
-\emph{The pileup arrives in the endcaps and in the HF.} With 193 collisions on top, the barrel grows by a factor
-3.6 (EB) but the endcap ECAL by 15 (from $85.5$ to $1273.5\GeV$) and the HF by 9: the pileup is
-roughly flat in $\eta$, the towers are not. A tower at the edge of the endcap is four times larger than a barrel
-tower and collects several soft particles where a barrel tower collects a fraction of one: the half-GeV count that
-hides most of the pileup in the barrel does not hide it there. Figure~\ref{fig:12_tp} shows it: the signal alone is two spots
-and a dust of one-count towers; with the pileup the two rings at $2.5<\abseta<3$ of the ECAL and the whole HF light
-up, and the $b$ jet is still visible only because it is in a quiet region.
-
-\begin{figure}[!htb]
-\centering
-\includegraphics[width=0.43\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_ecaltp_run1_event1.png}\hfill
-\includegraphics[width=0.43\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_hcaltp_run1_event1.png}\\[2pt]
-\includegraphics[width=0.43\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_calo_ecaltp_run1_event1.png}\hfill
-\includegraphics[width=0.43\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_calo_hcaltp_run1_event1.png}
-\caption{Step 1, the trigger primitives on the trigger-tower grid, colour = $E_{\mathrm T}$ of the tower on a
-logarithmic scale from $0.25$ to $256\GeV$ (\code{l1t\_<case>\_12\_L1T\_calo\_ecaltp/hcaltp\_run1\_event1.png}). Left: ECAL,
-right: HCAL (with the HF beyond $\abseta=3$). Top: (12a) the signal alone; bottom: (12a+12b) the signal with its
-pileup. Magenta circles: the two \code{ak4GenJets} of chapter~\ref{ch:07_GenJet}. The dotted lines are the
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_ecaltp_run1_event1.png}\hfill
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_hcaltp_run1_event1.png}
+\caption{Step 1, the trigger primitives of the event on the trigger-tower grid, one coloured cell per tower, colour
+= $E_{\mathrm T}$ on a logarithmic scale from $0.25$ to $256\GeV$
+(\code{l1t\_12\_L1T\_calo\_ecaltp/hcaltp\_run1\_event1.png}). Left: ECAL; right: HCAL, with the HF beyond
+$\abseta=3$. Magenta circles: the two \code{ak4GenJets} of chapter~\ref{ch:07_GenJet}. The dotted lines are the
 barrel--endcap and endcap--HF boundaries.}
 \label{fig:12_tp}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_jet2_ecaltp_run1_event1.png}\hfill
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_jet2_hcaltp_run1_event1.png}
+\caption{Step 1, the $b$ jet tower by tower: the ECAL primitives (left) and the HCAL primitives (right) of the
+$17\times17$ towers around $(i\eta,i\phi)=(-18,50)$, one square per tower with its $E_{\mathrm T}$ in GeV
+(\code{l1t\_12\_L1T\_calo\_jet2\_ecaltp/hcaltp\_run1\_event1.png}). The red square is the $9\times9$ window that step~3
+will use; it holds $45.0\GeV$ of ECAL and $25.0\GeV$ of HCAL primitives. The towers outside the jet are the pileup
+and the noise.}
+\label{fig:12_tpzoom}
 \end{figure}
 
 \section{Step 2: calorimeter Layer-1}
@@ -258,10 +204,10 @@ the transverse energy by a scale factor that depends on $|i\eta|$ and on the ene
 $3\GeV$ to above $70\GeV$. And it \emph{sums} the calibrated ECAL and HCAL values into one tower word of 16 bits:
 9 bits of $E_{\mathrm T}$ ($0.5\GeV$ per count, saturating at $255.5\GeV$), 3 bits for the ratio of the two
 energies on a logarithmic scale, and flag bits (which of the two is larger, the ECAL fine-grain bit, an HCAL
-feature bit). The towers of a ring are then sorted and sent to Layer-2. It is the first place where the ECAL and the HCAL energy of the same $\eta$--$\phi$ cell meet. The scale
-factors are not in the configuration: they are the payload \code{L1TCaloParams\_static\_2024\_v0\_1\_mc} of the
-record \code{L1TCaloParamsRcd} in the global tag, the same numbers as
-\path{L1Trigger/L1TCalorimeter/python/caloParams_2024_v0_1_cfi.py}; the analyzer prints the three tables
+feature bit). The towers of a ring are then sorted and sent to Layer-2. It is the first place where the ECAL and
+the HCAL energy of the same $\eta$--$\phi$ cell meet. The scale factors are not in the configuration: they are the
+payload \code{L1TCaloParams\_static\_2024\_v0\_1\_mc} of the record \code{L1TCaloParamsRcd} in the global tag, the same
+numbers as \path{L1Trigger/L1TCalorimeter/python/caloParams_2024_v0_1_cfi.py}; the analyzer prints the three tables
 (companion, section~4).
 
 \textbf{The parameters.} Table~\ref{tab:12_sf} is what the tables do. For the ECAL the factor is a calibration,
@@ -272,11 +218,11 @@ python file reads ``ZERO-SUPPRESS $<$1GeV (i.e. 0.5GeV) IN THE BARREL ONLY''). F
 primitive is divided between the two (or four) $5^\circ$ towers it covers, each getting half (a quarter) of it
 \emph{rounded down} to half a GeV (\path{L1Trigger/L1TCaloLayer1/src/L1TCaloLayer1FetchLUTs.cc}: ``Divide by two
 (since two duplicate towers are sent)''), so that a one-count HF primitive disappears. Three zero suppressions,
-then, hidden in what is called a calibration, each aimed at the pileup of step~1.
+then, hidden in what is called a calibration, each aimed at the pileup and the noise of step~1.
 
 \begin{table}[!htb]
 \centering\small\setlength{\tabcolsep}{4.5pt}
-\caption{Step 2: the Layer-1 scale factors of the global tag (\code{l1t\_mixed\_12\_L1T.log}, lines
+\caption{Step 2: the Layer-1 scale factors of the global tag (\code{l1t\_12\_L1T.log}, lines
 \code{caloParams layer1...ScaleFactors}), for some rings and three of the 14 bins of the primitive's $E_{\mathrm T}$.}
 \label{tab:12_sf}
 \begin{tabular}{l ccccccc}
@@ -292,64 +238,263 @@ HCAL, $E_{\mathrm T}\geq1\GeV$ & 1 & 1 & 1 & 1 & 1 & 1 / 1 / 1 & 1, then $\div2$
 \end{tabular}
 \end{table}
 
-\textbf{The numbers of the event.} For the signal alone the step changes little: the ECAL primitives go from
-$200.0$ to $161.5\GeV$ (rings 26--28 held $40\GeV$ of low primitives, now zero), the HF from
-$148.5$ to $131.0\GeV$ (the rounding), and the seed tower of the $b$ jet, $(-18,50)$, becomes
-$3.5\times1.26\rightarrow4.0\GeV$ of ECAL plus $10.0\GeV$ of HCAL, a tower of $14.0\GeV$. The $89\GeV$ HF
-primitive becomes two towers of $44.5\GeV$ side by side in $\phi$. For the signal with its pileup the step removes
-more than a quarter of what it receives (table~\ref{tab:12_l1}): $696\GeV$ of the $1681.5\GeV$ of ECAL primitives, almost all
-of it in the last three rings (the ring $i\eta=+28$ alone receives $315\GeV$ of ECAL and $58\GeV$ of HCAL
-primitives and comes out with $181\GeV$; ring $+27$ goes from $126$ to $32\GeV$), and $227\GeV$ of the
-$1329\GeV$ of the HF. After the step the event is 2535 towers and $2441\GeV$; the same collision without pileup
-was 280 towers and $319.5\GeV$. Figure~\ref{fig:12_hfzoom} shows the step at work on the $\bar b$ jet: the
-$89.0\GeV$ primitive at $i\eta=-34$ becomes two towers of $44.5\GeV$, the $12.5\GeV$ one next to it two towers of
-$6.0\GeV$ (half a GeV is lost in the rounding), a primitive of $1.5\GeV$ two towers of $0.5\GeV$, and the five
-primitives of $0.5\GeV$ around the jet vanish: $124\GeV$ of primitives in the window, $119\GeV$ of towers. In figure~\ref{fig:12_l1} the endcap rings have thinned out with respect to
-figure~\ref{fig:12_tp} but ring 28 is still the brightest band of the map: this is where the pileup jets of
-step~3 will be seeded.
+\textbf{The numbers of the event.} The step removes more than a quarter of what it receives
+(table~\ref{tab:12_l1}): $696\GeV$ of the $1681.5\GeV$ of ECAL primitives and $227\GeV$ of the $1329\GeV$ of the
+HF. Figure~\ref{fig:12_rings} shows where, ring by ring. The ECAL loss is almost all in the last three rings of the
+endcap: rings 26 to 28 receive $1154\GeV$, $991\GeV$ of it from the ECAL, and come out with $452\GeV$ (the ring
+$i\eta=+28$ alone receives $315\GeV$ of ECAL and $58\GeV$ of HCAL primitives and keeps $181\GeV$; ring $+27$ goes
+from $126$ to $32\GeV$). The HF loses a little in every ring, to the rounding. The barrel and the rest of the
+endcap are hardly touched: the barrel rings receive $541.5\GeV$ and keep $494.5\GeV$. After the step the event is
+2535 towers and $2441\GeV$, and tower ring 28 is still the brightest band of figure~\ref{fig:12_l1}: this is where
+the pileup jets of step~3 will be seeded.
 
 \begin{table}[!htb]
-\centering\small\setlength{\tabcolsep}{3.5pt}
+\centering\small
 \caption{Step 2: what Layer-1 makes of the primitives, summed transverse energy in GeV in and out of the step
-(\code{ledger\_12\_L1T.txt}, section 1; the rings in section 2).}
+(\code{ledger\_12\_L1T.txt}, sections 1 and 2).}
 \label{tab:12_l1}
-\begin{tabular}{l rrr c rrr c rrr}
+\begin{tabular}{l rrr c l rr}
 \toprule
- & \multicolumn{3}{c}{(12a) signal alone} & & \multicolumn{3}{c}{(12b) event 72 alone} & & \multicolumn{3}{c}{(12a+12b) signal + pileup} \\
-\cmidrule(lr){2-4}\cmidrule(lr){6-8}\cmidrule(lr){10-12}
- & in & out & change & & in & out & change & & in & out & change \\
-\midrule
-ECAL (EB + EE) & 200.0 & 161.5 & $-38.5$ & & 127.5 & 97.5 & $-30.0$ & & 1681.5 & 985.5 & $-696.0$ \\
-HCAL (HB + HE) & 32.0 & 27.0 & $-5.0$ & & 5.5 & 1.5 & $-4.0$ & & 401.0 & 353.5 & $-47.5$ \\
-HF & 148.5 & 131.0 & $-17.5$ & & 2.0 & 0.0 & $-2.0$ & & 1329.0 & 1102.0 & $-227.0$ \\
-\midrule
-towers with $E_{\mathrm T}>0$ & & 280 & & & & 188 & & & & 2535 & \\
-$\sum E_{\mathrm T}$ of the towers & 380.5 & 319.5 & $-61.0$ & & 135.0 & 99.0 & $-36.0$ & & 3411.5 & 2441.0 & $-970.5$ \\
-\quad barrel, $|i\eta|\leq17$ & & 117.0 & & & & 85.0 & & & & 494.5 & \\
-\quad endcap, $18\leq|i\eta|\leq28$ & & 71.5 & & & & 14.0 & & & & 844.5 & \\
-\quad forward, $|i\eta|\geq30$ & & 131.0 & & & & 0.0 & & & & 1102.0 & \\
+ & in & out & change & & towers after the step & $E_{\mathrm T}>0$ & $\sum E_{\mathrm T}$ \\
+\cmidrule(lr){1-4}\cmidrule(lr){6-8}
+ECAL (EB + EE) & 1681.5 & 985.5 & $-696.0$ & & barrel, $|i\eta|\leq17$ & 644 & 494.5 \\
+HCAL (HB + HE) & 401.0 & 353.5 & $-47.5$ & & endcap, $18\leq|i\eta|\leq28$ & 609 & 844.5 \\
+HF & 1329.0 & 1102.0 & $-227.0$ & & forward, $|i\eta|\geq30$ & 1282 & 1102.0 \\
+all & 3411.5 & 2441.0 & $-970.5$ & & all (of 5760) & 2535 & 2441.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_jet1_hcaltp_run1_event1.png}\hfill
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_jet1_layer1_run1_event1.png}
-\caption{Step 2 at work on the $\bar b$ jet of the signal alone, in the HF: the HCAL primitives (left; a primitive
-is two towers wide in $\phi$, the grey frames) and the Layer-1 towers made of them (right)
-(\code{l1t\_signal\_12\_L1T\_calo\_jet1\_hcaltp/layer1\_run1\_event1.png}). Each primitive is shared between its two towers
-and rounded down to $0.5\GeV$; the black square is the seed tower of step~3, $(i\eta,i\phi)=(-34,12)$.}
+\begin{tikzpicture}[x=1cm, y=0.011cm, font=\scriptsize]
+\draw[black!55, fill=black!12, line width=0.2pt] (0.000,0) rectangle (0.176,38.0);
+\fill[red!55!black] (0.028,0) rectangle (0.148,24.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (0.176,0) rectangle (0.352,36.5);
+\fill[red!55!black] (0.204,0) rectangle (0.324,24.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (0.352,0) rectangle (0.528,46.0);
+\fill[red!55!black] (0.380,0) rectangle (0.500,39.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (0.528,0) rectangle (0.704,38.5);
+\fill[red!55!black] (0.556,0) rectangle (0.676,31.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (0.704,0) rectangle (0.880,48.5);
+\fill[red!55!black] (0.732,0) rectangle (0.852,41.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (0.880,0) rectangle (1.056,64.5);
+\fill[red!55!black] (0.908,0) rectangle (1.028,55.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (1.056,0) rectangle (1.232,53.5);
+\fill[red!55!black] (1.084,0) rectangle (1.204,43.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (1.232,0) rectangle (1.408,148.5);
+\fill[red!55!black] (1.260,0) rectangle (1.380,140.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (1.408,0) rectangle (1.584,75.0);
+\fill[red!55!black] (1.436,0) rectangle (1.556,68.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (1.584,0) rectangle (1.760,50.5);
+\fill[red!55!black] (1.612,0) rectangle (1.732,42.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (1.760,0) rectangle (1.936,51.5);
+\fill[red!55!black] (1.788,0) rectangle (1.908,41.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (1.936,0) rectangle (2.112,36.0);
+\fill[red!55!black] (1.964,0) rectangle (2.084,26.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (2.112,0) rectangle (2.288,369.0);
+\fill[blue!60!black] (2.140,0) rectangle (2.260,125.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (2.288,0) rectangle (2.464,119.0);
+\fill[blue!60!black] (2.316,0) rectangle (2.436,21.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (2.464,0) rectangle (2.640,75.5);
+\fill[blue!60!black] (2.492,0) rectangle (2.612,33.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (2.640,0) rectangle (2.816,43.0);
+\fill[blue!60!black] (2.668,0) rectangle (2.788,43.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (2.816,0) rectangle (2.992,37.0);
+\fill[blue!60!black] (2.844,0) rectangle (2.964,37.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (2.992,0) rectangle (3.168,24.5);
+\fill[blue!60!black] (3.020,0) rectangle (3.140,25.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (3.168,0) rectangle (3.344,19.5);
+\fill[blue!60!black] (3.196,0) rectangle (3.316,20.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (3.344,0) rectangle (3.520,10.0);
+\fill[blue!60!black] (3.372,0) rectangle (3.492,10.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (3.520,0) rectangle (3.696,16.0);
+\fill[blue!60!black] (3.548,0) rectangle (3.668,16.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (3.696,0) rectangle (3.872,41.0);
+\fill[blue!60!black] (3.724,0) rectangle (3.844,41.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (3.872,0) rectangle (4.048,27.0);
+\fill[blue!60!black] (3.900,0) rectangle (4.020,28.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (4.048,0) rectangle (4.224,10.5);
+\fill[blue!60!black] (4.076,0) rectangle (4.196,10.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (4.224,0) rectangle (4.400,9.5);
+\fill[blue!60!black] (4.252,0) rectangle (4.372,9.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (4.400,0) rectangle (4.576,16.0);
+\fill[blue!60!black] (4.428,0) rectangle (4.548,15.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (4.576,0) rectangle (4.752,9.5);
+\fill[blue!60!black] (4.604,0) rectangle (4.724,7.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (4.752,0) rectangle (4.928,15.0);
+\fill[blue!60!black] (4.780,0) rectangle (4.900,13.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (4.928,0) rectangle (5.104,20.5);
+\fill[blue!60!black] (4.956,0) rectangle (5.076,19.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (5.104,0) rectangle (5.280,12.5);
+\fill[blue!60!black] (5.132,0) rectangle (5.252,11.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (5.280,0) rectangle (5.456,16.0);
+\fill[blue!60!black] (5.308,0) rectangle (5.428,14.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (5.456,0) rectangle (5.632,18.5);
+\fill[blue!60!black] (5.484,0) rectangle (5.604,15.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (5.632,0) rectangle (5.808,17.0);
+\fill[blue!60!black] (5.660,0) rectangle (5.780,16.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (5.808,0) rectangle (5.984,18.0);
+\fill[blue!60!black] (5.836,0) rectangle (5.956,17.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (5.984,0) rectangle (6.160,20.0);
+\fill[blue!60!black] (6.012,0) rectangle (6.132,18.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (6.160,0) rectangle (6.336,19.0);
+\fill[blue!60!black] (6.188,0) rectangle (6.308,18.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (6.336,0) rectangle (6.512,28.5);
+\fill[blue!60!black] (6.364,0) rectangle (6.484,25.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (6.512,0) rectangle (6.688,16.5);
+\fill[blue!60!black] (6.540,0) rectangle (6.660,15.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (6.688,0) rectangle (6.864,20.0);
+\fill[blue!60!black] (6.716,0) rectangle (6.836,18.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (6.864,0) rectangle (7.040,16.0);
+\fill[blue!60!black] (6.892,0) rectangle (7.012,15.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (7.040,0) rectangle (7.216,21.0);
+\fill[blue!60!black] (7.068,0) rectangle (7.188,20.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (7.216,0) rectangle (7.392,13.0);
+\fill[blue!60!black] (7.244,0) rectangle (7.364,12.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (7.392,0) rectangle (7.568,16.5);
+\fill[blue!60!black] (7.420,0) rectangle (7.540,15.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (7.568,0) rectangle (7.744,19.0);
+\fill[blue!60!black] (7.596,0) rectangle (7.716,18.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (7.744,0) rectangle (7.920,14.5);
+\fill[blue!60!black] (7.772,0) rectangle (7.892,13.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (7.920,0) rectangle (8.096,16.5);
+\fill[blue!60!black] (7.948,0) rectangle (8.068,14.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (8.096,0) rectangle (8.272,15.5);
+\fill[blue!60!black] (8.124,0) rectangle (8.244,14.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (8.272,0) rectangle (8.448,6.5);
+\fill[blue!60!black] (8.300,0) rectangle (8.420,6.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (8.448,0) rectangle (8.624,10.0);
+\fill[blue!60!black] (8.476,0) rectangle (8.596,9.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (8.624,0) rectangle (8.800,16.0);
+\fill[blue!60!black] (8.652,0) rectangle (8.772,14.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (8.800,0) rectangle (8.976,26.5);
+\fill[blue!60!black] (8.828,0) rectangle (8.948,25.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (8.976,0) rectangle (9.152,13.0);
+\fill[blue!60!black] (9.004,0) rectangle (9.124,9.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (9.152,0) rectangle (9.328,16.5);
+\fill[blue!60!black] (9.180,0) rectangle (9.300,15.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (9.328,0) rectangle (9.504,17.5);
+\fill[blue!60!black] (9.356,0) rectangle (9.476,15.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (9.504,0) rectangle (9.680,18.0);
+\fill[blue!60!black] (9.532,0) rectangle (9.652,15.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (9.680,0) rectangle (9.856,11.5);
+\fill[blue!60!black] (9.708,0) rectangle (9.828,11.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (9.856,0) rectangle (10.032,7.0);
+\fill[blue!60!black] (9.884,0) rectangle (10.004,7.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (10.032,0) rectangle (10.208,7.0);
+\fill[blue!60!black] (10.060,0) rectangle (10.180,7.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (10.208,0) rectangle (10.384,9.5);
+\fill[blue!60!black] (10.236,0) rectangle (10.356,9.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (10.384,0) rectangle (10.560,11.0);
+\fill[blue!60!black] (10.412,0) rectangle (10.532,11.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (10.560,0) rectangle (10.736,8.5);
+\fill[blue!60!black] (10.588,0) rectangle (10.708,8.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (10.736,0) rectangle (10.912,12.0);
+\fill[blue!60!black] (10.764,0) rectangle (10.884,12.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (10.912,0) rectangle (11.088,26.0);
+\fill[blue!60!black] (10.940,0) rectangle (11.060,26.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (11.088,0) rectangle (11.264,40.0);
+\fill[blue!60!black] (11.116,0) rectangle (11.236,41.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (11.264,0) rectangle (11.440,55.0);
+\fill[blue!60!black] (11.292,0) rectangle (11.412,55.5);
+\draw[black!55, fill=black!12, line width=0.2pt] (11.440,0) rectangle (11.616,91.5);
+\fill[blue!60!black] (11.468,0) rectangle (11.588,60.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (11.616,0) rectangle (11.792,126.0);
+\fill[blue!60!black] (11.644,0) rectangle (11.764,32.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (11.792,0) rectangle (11.968,373.0);
+\fill[blue!60!black] (11.820,0) rectangle (11.940,181.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (11.968,0) rectangle (12.144,41.5);
+\fill[red!55!black] (11.996,0) rectangle (12.116,33.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (12.144,0) rectangle (12.320,45.0);
+\fill[red!55!black] (12.172,0) rectangle (12.292,36.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (12.320,0) rectangle (12.496,44.0);
+\fill[red!55!black] (12.348,0) rectangle (12.468,33.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (12.496,0) rectangle (12.672,56.5);
+\fill[red!55!black] (12.524,0) rectangle (12.644,50.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (12.672,0) rectangle (12.848,53.5);
+\fill[red!55!black] (12.700,0) rectangle (12.820,45.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (12.848,0) rectangle (13.024,56.0);
+\fill[red!55!black] (12.876,0) rectangle (12.996,48.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (13.024,0) rectangle (13.200,62.5);
+\fill[red!55!black] (13.052,0) rectangle (13.172,53.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (13.200,0) rectangle (13.376,60.5);
+\fill[red!55!black] (13.228,0) rectangle (13.348,51.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (13.376,0) rectangle (13.552,65.5);
+\fill[red!55!black] (13.404,0) rectangle (13.524,57.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (13.552,0) rectangle (13.728,52.5);
+\fill[red!55!black] (13.580,0) rectangle (13.700,44.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (13.728,0) rectangle (13.904,54.5);
+\fill[red!55!black] (13.756,0) rectangle (13.876,42.0);
+\draw[black!55, fill=black!12, line width=0.2pt] (13.904,0) rectangle (14.080,50.0);
+\fill[red!55!black] (13.932,0) rectangle (14.052,36.0);
+\draw[->] (0,0) -- (14.23,0) node[right] {$i\eta$};
+\draw[->] (0,0) -- (0,410);
+\node[anchor=west] at (0.1,400) {$\sum E_{\mathrm T}$ of the ring [GeV]};
+\draw (0,100) -- (-0.08,100) node[left] {100};
+\draw[black!20, line width=0.2pt] (0,100) -- (14.08,100);
+\draw (0,200) -- (-0.08,200) node[left] {200};
+\draw[black!20, line width=0.2pt] (0,200) -- (14.08,200);
+\draw (0,300) -- (-0.08,300) node[left] {300};
+\draw[black!20, line width=0.2pt] (0,300) -- (14.08,300);
+\node[anchor=north, inner sep=1.5pt] at (0.088,-6) {$-41$};
+\node[anchor=north west, inner sep=1.5pt] at (2.024,-6) {$-30$};
+\node[anchor=north east, inner sep=1.5pt] at (2.200,-6) {$-28$};
+\node[anchor=north, inner sep=1.5pt] at (4.136,-6) {$-17$};
+\node[anchor=north east, inner sep=1.5pt] at (6.952,-6) {$-1$};
+\node[anchor=north west, inner sep=1.5pt] at (7.128,-6) {1};
+\node[anchor=north, inner sep=1.5pt] at (9.944,-6) {17};
+\node[anchor=north east, inner sep=1.5pt] at (11.880,-6) {28};
+\node[anchor=north west, inner sep=1.5pt] at (12.056,-6) {30};
+\node[anchor=north, inner sep=1.5pt] at (13.992,-6) {41};
+\node at (1.06,340) {HF};
+\node at (3.08,340) {endcap};
+\node at (7.04,120) {barrel};
+\node at (11.00,340) {endcap};
+\node at (13.02,340) {HF};
+\end{tikzpicture}
+\caption{Step 2 ring by ring: the summed $E_{\mathrm T}$ of the 72 towers of each $\eta$ ring
+(\code{ledger\_12\_L1T.txt}, section 2). Grey: the ECAL + HCAL primitives that enter Layer-1; colour: the towers that
+leave it (blue: barrel and endcap, red: HF). The grey above the colour is what the step removes: the low primitives
+of ECAL rings 26 to 28, and the rounding of the HF primitives. The two spikes in the HF at $i\eta=-34,-33$ are the
+$\bar b$ jet.}
+\label{fig:12_rings}
+\end{figure}
+
+Figure~\ref{fig:12_hfzoom} shows the step at work on the $\bar b$ jet: the $89.0\GeV$ primitive at $i\eta=-34$
+becomes two towers of $44.5\GeV$ side by side in $\phi$, the $15.5\GeV$ one next to it two towers of $7.5\GeV$
+(half a GeV is lost in the rounding), and every primitive of $0.5\GeV$ vanishes: $200.5\GeV$ of primitives in the
+window, $190.5\GeV$ of towers. For the $b$ jet the seed tower $(-18,50)$ becomes
+$3.5\times1.26\rightarrow4.0\GeV$ of ECAL plus $10.0\GeV$ of HCAL, a tower of $14.0\GeV$.
+
+\begin{plainwords}[One tower word, bit by bit]
+The tower $(-18,50)$ leaves Layer-1 as 16 bits (\path{L1Trigger/L1TCaloLayer1/src/UCTTower.cc}). Bits 0 to 8:
+$E_{\mathrm T}=28$ counts, $14.0\GeV$, the sum of 8 counts of ECAL and 20 of HCAL. Bits 9 to 11: the ratio code 1,
+the difference of the two energies in powers of two ($\log_2 20=4$, $\log_2 8=3$). Bit 12, ``one of the two is
+zero'': 0. Bit 13, ``the ECAL is the larger'': 0, this tower is hadronic. Bits 14 and 15, the HCAL feature bit and
+the ECAL fine-grain bit: 0. Layer-2 never sees the two energies separately: for its jets it uses the first nine
+bits, for electrons and photons the ratio and the flags. The tower $(27,62)$, with $12.5\GeV$ of ECAL and no HCAL,
+has bits 12 and 13 set; the HF tower $(-34,11)$ of the $\bar b$ jet, $44.5\GeV$, has bit 12 (an HF tower has no
+ECAL) and bit 14, which in the HF means ``above the minimum-bias threshold''.
+\end{plainwords}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_jet1_hcaltp_run1_event1.png}\hfill
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_jet1_layer1_run1_event1.png}
+\caption{Step 2 at work on the $\bar b$ jet, in the HF: the HCAL primitives (left; a primitive is two towers wide
+in $\phi$, four for $|i\eta|\geq40$, the grey frames) and the Layer-1 towers made of them (right)
+(\code{l1t\_12\_L1T\_calo\_jet1\_hcaltp/layer1\_run1\_event1.png}). Each primitive is shared between its towers and rounded
+down to $0.5\GeV$; the black square is the seed tower of step~3, $(i\eta,i\phi)=(-34,12)$, the red one its
+$9\times9$ window. The column at $i\eta=-28$, on the right, is the last ring of the endcap.}
 \label{fig:12_hfzoom}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_layer1_run1_event1.png}\hfill
-\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_calo_layer1_run1_event1.png}
-\caption{Step 2, the Layer-1 towers (ECAL + HCAL, calibrated), left the signal alone, right the signal with its
-pileup (\code{l1t\_<case>\_12\_L1T\_calo\_layer1\_run1\_event1.png}). Left: 280 towers, $319.5\GeV$; right: 2535 towers,
-$2441\GeV$. This map is the whole input of step 3.}
+\includegraphics[width=0.93\textwidth]{12_L1T/out/l1t_12_L1T_calo_layer1_run1_event1.png}
+\caption{Step 2, the Layer-1 towers of the event (ECAL + HCAL, calibrated): 2535 towers, $2441\GeV$
+(\code{l1t\_12\_L1T\_calo\_layer1\_run1\_event1.png}). This map is the whole input of step 3.}
 \label{fig:12_l1}
 \end{figure}
 
@@ -363,8 +508,8 @@ on them at once (\code{L1TStage2Layer2Producer}; the algorithms are
 \begin{plainwords}[A Level-1 jet in four lines]
 (1) \emph{Seed}: any tower of at least $4\GeV$ (\code{jetSeedThreshold = 4}) that is the largest of the
 $9\times9$ towers around it (ties are broken by a fixed mask, so that two equal towers cannot both win).
-(2) \emph{Window}: the jet is the sum of those 81 towers, $0.78\times0.78$ in $\eta\times\phi$ in the barrel, about
-the area of an anti-$k_{\mathrm T}$ jet of radius 0.4.
+(2) \emph{Window}: the jet is the sum of those 81 towers, $0.78\times0.78$ in $\eta\times\phi$ in the barrel,
+comparable to an anti-$k_{\mathrm T}$ jet of radius 0.4.
 (3) \emph{Pileup}: take the nine $\eta$ rings the window spans, add up \emph{all 72 towers in $\phi$} of each
 ring, and scale to the nine towers of the window, $\times9/72$: this estimate of what a quiet window of the same
 $\eta$ contains is subtracted (the ``$\phi$-ring'' subtraction, \code{jetPUSUsePhiRing = 1}). (4)
@@ -376,7 +521,7 @@ The $\phi$-ring subtraction is the 2024 choice. From 2016 to 2022 the estimate c
 three quietest of four $3\times9$ strips around the window; the payload still carries the name
 (\code{jetPUSType = ChunkyDonut}) but the flag wins: the method \code{create} of the jet algorithm reads
 \code{if (params\_->jetPUSUsePhiRing())} \code{PUSubMethod = "PhiRing1"}. The analyzer recomputes the estimate from the
-towers and finds the emulator's value for all fourteen jets of the chapter.
+towers and finds the emulator's value for all twelve jets of the event.
 
 The other three algorithms, briefly. \emph{e/$\gamma$}: a seed tower of $2\GeV$ and its neighbours above
 $1\GeV$ form a cluster of at most 8 towers, kept if its shape, its HCAL fraction and the fine-grain bit look
@@ -388,84 +533,84 @@ the HF), and the jet sums HTT and HTM (the scalar and vector sum of the jets abo
 that is $\abseta<2.5$; HTMHF with the HF jets).
 
 \textbf{The numbers of the event: the two jets.} Table~\ref{tab:12_jets} follows the two jets of the signal
-through the four lines of the box, without and with the pileup, and figure~\ref{fig:12_zoomb} shows the $b$ jet
-tower by tower.
+through the four lines of the box, and figure~\ref{fig:12_zoomb} shows them tower by tower.
 
 \begin{table}[!htb]
 \centering\small
 \caption{Step 3: the arithmetic of the two signal jets in Layer-2, in GeV (\code{ledger\_12\_L1T.txt}, section 3).
-``$\phi$ rings'' is the summed $E_{\mathrm T}$ of the nine rings of the window over all $\phi$.}
+``$\phi$ rings'' is the summed $E_{\mathrm T}$ of the nine rings of the window over all $\phi$. The generator jets
+are those of chapter~\ref{ch:07_GenJet}.}
 \label{tab:12_jets}
-\begin{tabular}{@{}l rr c rr@{}}
+\begin{tabular}{@{}l rr@{}}
 \toprule
- & \multicolumn{2}{c}{$b$ jet, $\eta=-1.59$} & & \multicolumn{2}{c}{$\bar b$ jet, $\eta=-3.75$ (HF)} \\
-\cmidrule(lr){2-3}\cmidrule(lr){5-6}
- & alone & with pileup & & alone & with pileup \\
+ & $b$ jet, $\eta=-1.59$ & $\bar b$ jet, $\eta=-3.75$ (HF) \\
 \midrule
-\code{ak4GenJet} \pt{} (chapter~\ref{ch:07_GenJet}) & 117.8 & 117.8 & & 115.9 & 115.9 \\
-seed tower $(i\eta,i\phi)$ & $(-18,50)$ & $(-18,50)$ & & $(-34,12)$ & $(-34,12)$ \\
-seed tower & 14.0 & 14.0 & & 44.5 & 44.5 \\
-$9\times9$ window & 55.5 & 71.0 & & 119.0 & 190.5 \\
-$\phi$ rings of the window & 66.0 & 158.0 & & 123.0 & 487.0 \\
-pileup estimate ($\times9/72$) & 8.0 & 19.5 & & 15.0 & 60.5 \\
-window $-$ pileup & 47.5 & 51.5 & & 104.0 & 130.0 \\
-calibration factor & 2.16 & 2.07 & & 1.09 & 1.05 \\
-\textbf{L1 jet $E_{\mathrm T}$} & \textbf{102.5} & \textbf{106.5} & & \textbf{113.0} & \textbf{137.0} \\
-L1 jet $\eta$, $\phi$ & $-1.52$, $-1.98$ & $-1.52$, $-1.98$ & & $-3.74$, $1.00$ & $-3.74$, $1.00$ \\
+\code{ak4GenJet} \pt{} (without the neutrino) & 117.8 (79.8) & 115.9 (115.9) \\
+seed tower $(i\eta,i\phi)$ & $(-18,50)$ & $(-34,12)$ \\
+seed tower & 14.0 & 44.5 \\
+$9\times9$ window & 71.0 & 190.5 \\
+$\phi$ rings of the window & 158.0 & 487.0 \\
+pileup estimate ($\times9/72$) & 19.5 & 60.5 \\
+window $-$ pileup & 51.5 & 130.0 \\
+calibration factor & 2.07 & 1.05 \\
+\textbf{L1 jet $E_{\mathrm T}$} & \textbf{106.5} & \textbf{137.0} \\
+L1 jet $\eta$, $\phi$ & $-1.52$, $-1.98$ & $-3.74$, $1.00$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\emph{The $b$ jet.} Its window holds $55.5\GeV$, less than half of the $117.8\GeV$ of the generator jet: this
-is the response of the uncalibrated towers of step~1 at the barrel--endcap boundary. The pileup estimate is not
-zero even without pileup, $8.0\GeV$: the jet itself is in its own rings (its two central rings hold $27$ and
-$22.5\GeV$ of the $66\GeV$), so the method subtracts a seventh of the jet from the jet. The calibration then has to
-repair both, a factor 2.16, and lands at $102.5\GeV$, 13\,\% below the truth. With the pileup the window gains
-$15.5\GeV$ (to $71.0$), the estimate gains $11.5\GeV$ (to $19.5$): the subtraction removes three quarters of what
-the pileup added, and the jet comes out at $106.5\GeV$, $4\GeV$ higher. For a jet in a quiet part of the
-detector the Level-1 trigger is stable against 68 collisions. Its direction does not move at all: a Level-1 jet
-points to the centre of its seed tower, $(\eta,\phi)=(-1.52,-1.98)$, at $\Delta R=0.13$ from the generator jet.
+\emph{The $b$ jet.} Its window holds $71.0\GeV$ for a jet of $79.8\GeV$ of visible particles, pileup included: this
+is the response of uncalibrated towers at the barrel--endcap boundary. The nine rings of the window hold
+$158\GeV$, and an eighth of that, $19.5\GeV$, is subtracted. The estimate is not only pileup: the window is part of
+its own rings, so that $71.0/8=8.9\GeV$ of the $19.5\GeV$ are the jet subtracted from itself. What is left,
+$51.5\GeV$, is two thirds of the visible jet, and the calibration has to repair both the response and the
+over-subtraction: a factor 2.07, which lands at $106.5\GeV$. That is $10\,\%$ below the generator jet with its
+neutrino and a third above what the calorimeter could see: the lookup table knows the average jet of this
+$E_{\mathrm T}$ and $\eta$, not that this one hid $37.5\GeV$ in a neutrino. The direction is that of the centre of
+the seed tower, $(\eta,\phi)=(-1.52,-1.98)$, at $\Delta R=0.13$ from the generator jet.
 
-\emph{The $\bar b$ jet.} In the HF the response is close to one (the window holds $119\GeV$ for a $115.9\GeV$
-jet), the calibration is 1.09 and the jet is $113.0\GeV$. But here the pileup adds $71.5\GeV$ to the window, while
-the rings gain $364\GeV$, an eighth of which is the $45.5\GeV$ by which the estimate grows: the pileup under
-the jet is $26\GeV$ above the average of its rings (in a tower the jet has already lit, a pileup deposit of half
-a count survives the rounding of step~2; in an empty tower it does not). These $26\GeV$ stay in the jet, which
-becomes $137.0\GeV$, 18\,\% above the truth. This difference of $24\GeV$ decides an algorithm in step~6.
+\emph{The $\bar b$ jet.} In the HF the picture is the opposite. The window holds $190.5\GeV$ for a generator jet
+of $115.9\GeV$: here most of the excess is pileup, the same towers held $124\GeV$ of primitives without it
+(chapter~\ref{ch:11_DIGI}). The rings hold $487\GeV$ and the estimate is $60.5\GeV$; what is left is $130\GeV$,
+the calibration is close to one, 1.05, and the jet comes out at $137.0\GeV$, 18\,\% above the truth: the pileup
+under this jet was above the average of its rings, and the difference stays in the jet. These $21\GeV$ decide an
+algorithm in step~6.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_jet2_layer1_run1_event1.png}\hfill
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_calo_jet2_layer1_run1_event1.png}\\[3pt]
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_calo_jet1_layer1_run1_event1.png}\hfill
-\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_calo_jet1_layer1_run1_event1.png}
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_jet2_layer1_run1_event1.png}\hfill
+\includegraphics[width=0.47\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_12_L1T_calo_jet1_layer1_run1_event1.png}
 \caption{Step 3, the two signal jets as the firmware sees them: the Layer-1 towers around the seed, one square per
-tower with its $E_{\mathrm T}$ in GeV; left the signal alone, right with its pileup
-(\code{l1t\_<case>\_12\_L1T\_calo\_jet2/jet1\_layer1\_run1\_event1.png}). Top: the $b$ jet, seed $(-18,50)$, window $55.5$ and
-$71.0\GeV$. Bottom: the $\bar b$ jet in the HF, seed $(-34,12)$, window $119.0$ and $190.5\GeV$. Black: the seed
-tower; red: the $9\times9$ window; blue: the nine $\eta$ rings of the pileup estimate, which continue over all 72
-towers in $\phi$.}
+tower with its $E_{\mathrm T}$ in GeV (\code{l1t\_12\_L1T\_calo\_jet2/jet1\_layer1\_run1\_event1.png}). Left: the $b$
+jet, seed $(-18,50)$, window $71.0\GeV$. Right: the $\bar b$ jet in the HF, seed $(-34,12)$, window $190.5\GeV$.
+Black: the seed tower; red: the $9\times9$ window; blue: the nine $\eta$ rings of the pileup estimate, which
+continue over all 72 towers in $\phi$.}
 \label{fig:12_zoomb}
 \end{figure}
 
-\textbf{The numbers of the event: everything else.} The signal alone gives Layer-2 very little: the two jets, one
-e/$\gamma$ candidate of $3.5\GeV$ and two $\tau$ candidates, the larger one, $54.5\GeV$ at $(-1.57,-1.93)$,
-being the core of the $b$ jet. Library event 72 alone gives \emph{nothing}: no tower reaches the $4\GeV$ of a jet
-seed or the $2\GeV$ of a cluster seed (its largest tower is $1.0\GeV$), and the only non-zero quantity is
-$\mathrm{ETT}=99\GeV$, the sum of its 188 one-count towers. A minimum-bias collision is invisible to the object
-triggers; this is the design. With the pileup, however, all three lists are full (figure~\ref{fig:12_l2}): 12 jets,
-12 e/$\gamma$ and 12 $\tau$ candidates, the maximum the boards send. Ten of the twelve jets are new, and six of
-them sit at $\eta=\pm2.74$, seeded in ring 28, the large towers that Layer-1 had left as the brightest band:
-$75.5$, $56.0$, $36.5$, $22.5$, $13.5$ and $12.5\GeV$. Their windows hold 58 to $94\GeV$ and their pileup
-estimates $54.5$ and $65.0\GeV$ (the same for all jets of the same $\eta$, as the method wants), so what is left
-is 3 to $39.5\GeV$, and the calibration, made for real jets whose towers respond low, multiplies it by 1.9 to 4.2.
-The $75.5\GeV$ one, at $(-2.74,1.00)$, shares its $\phi$ with the $\bar b$ jet and has part of that jet's tail in
-its window; the others are fluctuations of the pileup (table~\ref{tab:12_alljets}).
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.93\textwidth]{12_L1T/out/l1t_12_L1T_calo_layer2_run1_event1.png}
+\caption{Step 3, the twelve Layer-2 jets on the Layer-1 towers (\code{l1t\_12\_L1T\_calo\_layer2\_run1\_event1.png}): red,
+the $9\times9$ windows with the jet $E_{\mathrm T}$; blue, the $\phi$ rings of the two leading jets. The two jets
+in the magenta circles are the signal; the six at $\abseta=2.74$ are seeded in tower ring 28.}
+\label{fig:12_l2}
+\end{figure}
+
+\textbf{The numbers of the event: everything else.} All three lists that Layer-2 sends are full
+(figure~\ref{fig:12_l2}, table~\ref{tab:12_alljets}): 12 jets, 12 e/$\gamma$ and 12 $\tau$ candidates, the maximum.
+Ten of the twelve jets have no generator jet behind them, and six of those sit at $\eta=\pm2.74$, seeded in ring
+28, the large towers that Layer-1 had left as the brightest band: $75.5$, $56.0$, $36.5$, $22.5$, $13.5$ and
+$12.5\GeV$. Their windows hold 58 to $94\GeV$ and their pileup estimates $54.5$ and $65.0\GeV$ (the same for all
+jets of the same $\eta$, as the method wants), so what is left is 3 to $39.5\GeV$, and the calibration, made for
+real jets whose towers respond low, multiplies it by 1.9 to 4.2 (figure~\ref{fig:12_calib}). The $75.5\GeV$ one, at $(-2.74,1.00)$, shares its
+$\phi$ with the $\bar b$ jet and has part of that jet's tail in its window; the others are fluctuations of the
+pileup. The largest $\tau$ candidate, $59.5\GeV$ at $(-1.57,-1.93)$, is the core of the $b$ jet; the largest
+e/$\gamma$ candidate has $15.5\GeV$ and sits at $\eta=2.52$, in the pileup of the endcap.
 
 \begin{table}[!htb]
 \centering\small
-\caption{Step 3: the twelve jets Layer-2 sends to the global trigger for the signal with its pileup, in GeV
-(\code{ledger\_12\_L1T.txt}, section 3).}
+\caption{Step 3: the twelve jets Layer-2 sends to the global trigger, in GeV (\code{ledger\_12\_L1T.txt}, section 3).}
 \label{tab:12_alljets}
 \begin{tabular}{rrr c rrrr l}
 \toprule
@@ -474,36 +619,51 @@ $E_{\mathrm T}$ & $\eta$ & $\phi$ & seed $(i\eta,i\phi)$ & seed & window & pileu
 137.0 & $-3.74$ & $1.00$ & $(-34,12)$ & 44.5 & 190.5 & 60.5 & 1.05 & the $\bar b$ jet \\
 106.5 & $-1.52$ & $-1.98$ & $(-18,50)$ & 14.0 & 71.0 & 19.5 & 2.07 & the $b$ jet \\
 75.5 & $-2.74$ & $1.00$ & $(-28,12)$ & 12.0 & 94.0 & 54.5 & 1.91 & ring 28, next to the $\bar b$ jet \\
-56.0 & $2.74$ & $-0.06$ & $(28,72)$ & 12.0 & 90.5 & 65.0 & 2.20 & pileup, ring 28 \\
-36.5 & $-2.74$ & $-0.58$ & $(-28,66)$ & 12.0 & 69.5 & 54.5 & 2.43 & pileup, ring 28 \\
-22.5 & $2.74$ & $-3.02$ & $(28,38)$ & 10.5 & 73.0 & 65.0 & 2.81 & pileup, ring 28 \\
-18.0 & $0.91$ & $1.70$ & $(11,20)$ & 8.0 & 20.0 & 15.0 & 3.60 & pileup, barrel \\
-17.0 & $0.91$ & $-2.50$ & $(11,44)$ & 4.5 & 19.5 & 15.0 & 3.78 & pileup, barrel \\
-15.5 & $1.52$ & $0.91$ & $(18,11)$ & 4.0 & 15.0 & 12.0 & 5.17 & pileup, endcap \\
-14.0 & $-0.30$ & $0.30$ & $(-4,4)$ & 5.5 & 23.5 & 20.0 & 4.00 & pileup, barrel \\
-13.5 & $-2.74$ & $2.22$ & $(-28,26)$ & 10.5 & 58.0 & 54.5 & 3.86 & pileup, ring 28 \\
-12.5 & $2.74$ & $1.00$ & $(28,12)$ & 11.0 & 68.0 & 65.0 & 4.17 & pileup, ring 28 \\
+56.0 & $2.74$ & $-0.06$ & $(28,72)$ & 12.0 & 90.5 & 65.0 & 2.20 & no generator jet, ring 28 \\
+36.5 & $-2.74$ & $-0.58$ & $(-28,66)$ & 12.0 & 69.5 & 54.5 & 2.43 & no generator jet, ring 28 \\
+22.5 & $2.74$ & $-3.02$ & $(28,38)$ & 10.5 & 73.0 & 65.0 & 2.81 & no generator jet, ring 28 \\
+18.0 & $0.91$ & $1.70$ & $(11,20)$ & 8.0 & 20.0 & 15.0 & 3.60 & no generator jet, barrel \\
+17.0 & $0.91$ & $-2.50$ & $(11,44)$ & 4.5 & 19.5 & 15.0 & 3.78 & no generator jet, barrel \\
+15.5 & $1.52$ & $0.91$ & $(18,11)$ & 4.0 & 15.0 & 12.0 & 5.17 & no generator jet, endcap \\
+14.0 & $-0.30$ & $0.30$ & $(-4,4)$ & 5.5 & 23.5 & 20.0 & 4.00 & no generator jet, barrel \\
+13.5 & $-2.74$ & $2.22$ & $(-28,26)$ & 10.5 & 58.0 & 54.5 & 3.86 & no generator jet, ring 28 \\
+12.5 & $2.74$ & $1.00$ & $(28,12)$ & 11.0 & 68.0 & 65.0 & 4.17 & no generator jet, ring 28 \\
+\midrule
+524.5 & & & & & 792.5 & 500.5 & & all twelve \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.93\textwidth]{12_L1T/out/l1t_mixed_12_L1T_calo_layer2_run1_event1.png}
-\caption{Step 3, the twelve Layer-2 jets of the signal with its pileup on the Layer-1 towers
-(\code{l1t\_mixed\_12\_L1T\_calo\_layer2\_run1\_event1.png}): red, the $9\times9$ windows with the jet $E_{\mathrm T}$;
-blue, the $\phi$ rings of the two leading jets. The two jets in the magenta circles are the signal; the six at
-$\abseta=2.74$ are seeded in tower ring 28.}
-\label{fig:12_l2}
+\begin{tikzpicture}[x=0.085cm, y=0.95cm, font=\scriptsize]
+\draw[->] (0,0.7) -- (146,0.7) node[right] {window $-$ pileup [GeV]};
+\draw[->] (0,0.7) -- (0,5.7) node[above right] {calibration factor};
+\foreach \x in {0,20,...,140} \draw (\x,0.7) -- (\x,0.62) node[below] {\x};
+\foreach \y in {1,2,3,4,5} { \draw (0,\y) -- (-1,\y) node[left] {\y}; \draw[black!15] (0,\y) -- (142,\y); }
+\foreach \x/\y in {51.5/2.07, 5/3.60, 4.5/3.78, 3/5.17, 3.5/4.00} \fill[blue!60!black] (\x,\y) circle (1.6pt);
+\foreach \x/\y in {39.5/1.91, 25.5/2.20, 15/2.43, 8/2.81, 3.5/3.86, 3/4.17} \fill[orange!85!black] (\x,\y) circle (1.6pt);
+\fill[red!55!black] (130,1.05) circle (1.6pt);
+\node[anchor=west] at (53,2.2) {the $b$ jet: $51.5\times2.07=106.5$};
+\node[anchor=east] at (129,1.3) {the $\bar b$ jet (HF): $130.0\times1.05=137.0$};
+\node[anchor=west, text=orange!85!black] at (41,1.75) {ring 28: $39.5\times1.91=75.5$};
+\node[anchor=west] at (8,5.2) {$3.0\times5.17=15.5$};
+\end{tikzpicture}
+\caption{Step 3, the calibration of the twelve jets (table~\ref{tab:12_alljets}): the factor by which Layer-2
+multiplies what is left of the window after the pileup subtraction. Blue: barrel and endcap; orange: seeded in ring
+28; red: HF. The lookup table is steep at low energy: a window with $3\GeV$ left becomes a jet of $15\GeV$.}
+\label{fig:12_calib}
 \end{figure}
 
-The sums tell the same story in one number each (table~\ref{tab:12_ledger}). HTT counts only jets above
-$30\GeV$ within $\abseta<2.5$, so it is the $b$ jet alone, $102.5$ and $106.5\GeV$: stable. ETT goes from
-$188.5$ to $1339\GeV$. And the missing transverse energy of this event, which has none (the two jets are back to
-back and nothing escapes), is $\mathrm{ETMHF}=65.5\GeV$ for the signal alone, because the towers of the $b$ jet
-respond at half the scale of those of the $\bar b$ jet and the sums are made of uncalibrated towers; with the
-pileup it is $106.5\GeV$, and $\mathrm{HTMHF}$, the same made of calibrated jets, goes from $21.5$ to $170\GeV$
-because the three pileup jets of ring 28 above $30\GeV$ enter it.
+
+The sums tell the same story in one number each. HTT counts only jets above $30\GeV$ within $\abseta<2.5$, so it
+is the $b$ jet alone, $106.5\GeV$: the jets of ring 28 and of the HF do not enter it. ETT, the sum of the towers of
+barrel and endcap, is $1339\GeV$. The missing transverse energy is real in this event, but small: the neutrino,
+$37.5\GeV$ at $\phi=-2.10$ (\code{genMetTrue} of chapter~\ref{ch:06_Decay}). The trigger finds
+$\mathrm{ETMHF}=106.5\GeV$ at $\phi=-2.67$: three times too much, because the sum is made of uncalibrated towers,
+in which the $b$ jet weighs $71\GeV$ and the $\bar b$ jet opposite to it $190\GeV$, and of all the pileup towers.
+$\mathrm{HTMHF}$, the same made of calibrated jets, is $170\GeV$, because the three ring-28 jets above $30\GeV$
+enter it.
 
 \FloatBarrier
 \section{Step 4: muon trigger primitives and track finders}
@@ -515,14 +675,13 @@ bending angle in $\phi$ (\code{simDtTriggerPrimitiveDigis}). A CSC finds a patte
 layers (the anode pattern, ALCT, which gives $\eta$ and the bunch crossing) and a pattern of half-strips (the
 cathode pattern, CLCT, which gives $\phi$ and the bend) and correlates them into one stub, the LCT
 (\code{simCscTriggerPrimitiveDigis}); in Run~3 the GEM pads in front of ME1/1 can confirm it. The RPCs send their
-hits as they are. The stubs go to three track finders that divide the detector in $\eta$: the BMTF
-($\abseta<0.83$; DT and RPC merged by the TwinMux; since 2021 a Kalman filter, \code{simKBmtfDigis}), the OMTF
-($0.83<\abseta<1.24$; DT, CSC and RPC compared with stored patterns) and the EMTF ($1.24<\abseta<2.4$; CSC and
-RPC). Each is divided in $\phi$ into processors (12 wedges of $30^\circ$ in the barrel, 6 sectors of $60^\circ$
-per side elsewhere, 36 processors in all) that link stubs of different stations into a track and assign it a \pt{}
-from the bending between stations: the EMTF with a boosted decision tree stored as a lookup table of $2^{30}$
-addresses (\code{PtAssignmentEngine2017}, forest \code{L1TMuonEndCapForest\_v9\_Run3\_2023\_mc}). Each processor sends
-up to three candidates, with a quality that says how many stations took part (table~\ref{tab:12_tf}).
+hits as they are. Unlike the calorimeter primitives, these are made here, in the L1 job, from the muon digis that
+chapter~\ref{ch:11_DIGI} stored. The stubs go to three track finders that divide the detector in $\eta$
+(table~\ref{tab:12_tf}). Each is divided in $\phi$ into processors (12 wedges of $30^\circ$ in the barrel, 6
+sectors of $60^\circ$ per side elsewhere, 36 processors in all) that link stubs of different stations into a track
+and assign it a \pt{} from the bending between stations: the EMTF with a boosted decision tree stored as a lookup
+table of $2^{30}$ addresses (\code{PtAssignmentEngine2017}, forest \code{L1TMuonEndCapForest\_v9\_Run3\_2023\_mc}). Each
+processor sends up to three candidates, with a quality that says how many stations took part.
 
 \begin{table}[!htb]
 \centering\small
@@ -542,14 +701,13 @@ module & \code{simKBmtfDigis} & \code{simOmtfDigis} & \code{simEmtfDigis} \\
 \end{tabular}
 \end{table}
 
-\textbf{The numbers of the event.} For the signal alone this section is empty, and so it is for library event 72:
-no stub, no candidate, no muon (table~\ref{tab:12_ledger}). The generator event of chapter~\ref{ch:06_Decay} has no muon above
-$1\GeV$, and chapter~\ref{ch:10_SIM} found no hit in any muon chamber.
-The signal with its pileup has a muon trigger story, entirely made by the pileup (figure~\ref{fig:12_muon}). The
-2016 muon digis of chapter~\ref{ch:11_DIGI} give 11 ALCTs and 8 CLCTs in the CSCs, correlated into 8 LCTs, and 11
-GEM pads in 7 clusters; no DT segment. The EMTF receives 12 stubs, 8 CSC and 4 RPC, of which 8 are in bunch
-crossing 0 (and four of them a second time: a chamber at the edge of a sector is also given to the neighbouring
-sector). Four of the CSC stubs line up:
+\textbf{The numbers of the event.} The two $b$ jets give the muon system nothing: the generator event of
+chapter~\ref{ch:06_Decay} has no muon above $1\GeV$, and chapter~\ref{ch:10_SIM} found no hit of the signal in any
+muon chamber. The event has a muon trigger story all the same (figure~\ref{fig:12_muon}). The 2016 muon digis of
+chapter~\ref{ch:11_DIGI} give 11 ALCTs and 8 CLCTs in the CSCs, correlated into 8 LCTs, and 11 GEM pads in 7
+clusters; no DT segment. The EMTF receives 12 stubs, 8 CSC and 4 RPC, of which 8 are in bunch crossing 0 (and four
+of them a second time: a chamber at the edge of a sector is also given to the neighbouring sector). Four of the
+CSC stubs line up:
 
 \begin{center}\small
 \begin{tabular}{lcccccc}
@@ -575,24 +733,25 @@ it, and the algorithms of step~6 ask for a minimum quality: 12 or more for a sin
 double-muon one, 4 for the ``open'' ones.)
 
 \begin{plainwords}[Who is this muon]
-The file still has the simulated truth of the pileup (\code{mix:MergedTrackTruth}, 45\,282
+The file still has the simulated truth of every collision (\code{mix:MergedTrackTruth}, $45\,282$
 \code{TrackingParticle}s), and \path{truth_12_L1T.txt} lists what points to the trigger muon: a real $\mu^-$ of
 $\pt=2.78\GeV$ at $\eta=-2.08$, from the 21st in-time pileup collision, with 6 tracker hits and 29 hits in the
-muon chambers, \emph{produced at $r=58.5\cm$, $z=-214\cm$}, in the middle of the tracker: a decay in flight. The decay point
-lies exactly on the line of flight of a $K^-$ of $3.27\GeV$ of the same collision ($\eta=-2.04$, 19 tracker
-hits), its mother. Not a muon of the hard process, not even a prompt muon: a kaon of the pileup that
+muon chambers, \emph{produced at $r=58.5\cm$, $z=-214\cm$}, in the middle of the tracker: a decay in flight. The
+decay point lies exactly on the line of flight of a $K^-$ of $3.27\GeV$ of the same collision ($\eta=-2.04$, 19
+tracker hits), its mother. Not a muon of the hard process, not even a prompt muon: a kaon of the pileup that
 happened to decay before the calorimeter. The trigger measured $3.0\GeV$ for $2.78\GeV$.
 \end{plainwords}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_muon_etaphi_run1_event1.png}\hfill
-\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_muon_rz_run1_event1.png}
-\caption{Steps 4 and 5, the muon trigger of the signal with its pileup, in $\eta$--$\phi$ and in $r$--$z$
-(\code{l1t\_mixed\_12\_L1T\_muon\_etaphi/rz\_run1\_event1.png}). Triangles: CSC stubs; dots: RPC stubs (full: bunch crossing
-0, open: another one); red circles: the two EMTF candidates; star and black line: the one muon the $\mu$GMT keeps,
+\includegraphics[width=0.8\textwidth]{12_L1T/out/l1t_12_L1T_muon_etaphi_run1_event1.png}\\[4pt]
+\includegraphics[width=0.8\textwidth]{12_L1T/out/l1t_12_L1T_muon_rz_run1_event1.png}
+\caption{Steps 4 and 5, the muon trigger of the event, in $\eta$--$\phi$ (top) and in $r$--$z$ (bottom)
+(\code{l1t\_12\_L1T\_muon\_etaphi/rz\_run1\_event1.png}). Triangles: CSC stubs; dots: RPC stubs (full: bunch crossing 0,
+open: another one); red circles: the two EMTF candidates; star and black line: the one muon the $\mu$GMT keeps,
 $3.0\GeV$ at $\eta=-2.09$, through the four CSC stations. The dashed lines are the limits of the three track
-finders, $\abseta=0.83$, 1.24 and 2.4. The signal jets (magenta) have nothing to do with it.}
+finders, $\abseta=0.83$, 1.24 and 2.4. The signal jets (magenta) have nothing to do with it. The right panels list
+the stubs, the candidates and the muon.}
 \label{fig:12_muon}
 \end{figure}
 
@@ -613,15 +772,15 @@ muon for an isolation bit (\code{simGmtCaloSumDigis}).
 negative side with identical coordinates, $(\eta,\phi)=(-2.088,-2.880)$. The $\mu$GMT recognises a ghost,
 discards the quality-7 candidate and sends \emph{one} muon: $\pt=3.0\GeV$, charge $-1$, quality 15, at the
 vertex $(\eta,\phi)=(-2.066,3.098)$. The extrapolation moved it by $0.31$ in $\phi$, across the $\pm\pi$ line: a
-$3\GeV$ track curls that much between the collision point and the second station. Table~\ref{tab:12_gmt} shows the integers
-behind it: a transverse momentum in steps of $0.5\GeV$, $\pt=(\mathrm{hwPt}-1)\times0.5\GeV$; a pseudorapidity in
-steps of $0.010875$; and an azimuth in units of $2\pi/576$ counted \emph{from the edge of the processor's own
-sector}, a sector being 96 units wide. The same muon is at 96, the far edge, for processor 2 and at 0, the near
-edge, for processor 3: the two numbers are the same place.
+$3\GeV$ track curls that much between the collision point and the second station. Table~\ref{tab:12_gmt} shows the
+integers behind it: a transverse momentum in steps of $0.5\GeV$, $\pt=(\mathrm{hwPt}-1)\times0.5\GeV$; a
+pseudorapidity in steps of $0.010875$; and an azimuth in units of $2\pi/576$ counted \emph{from the edge of the
+processor's own sector}, a sector being 96 units wide. The same muon is at 96, the far edge, for processor 2 and
+at 0, the near edge, for processor 3: the two numbers are the same place.
 
 \begin{table}[!htb]
 \centering\small
-\caption{Step 5: the two EMTF candidates and the muon the $\mu$GMT makes of them (\code{l1t\_mixed\_12\_L1T.log}, lines
+\caption{Step 5: the two EMTF candidates and the muon the $\mu$GMT makes of them (\code{l1t\_12\_L1T.log}, lines
 \code{TFCand} and \code{uGMT muon}).}
 \label{tab:12_gmt}
 \begin{tabular}{@{}l ccc ccc c@{}}
@@ -637,9 +796,9 @@ $\mu$GMT muon, at the vertex & & & & & $-2.066$ & $3.098$ & \\
 \end{tabular}
 \end{table}
 
-Without the ghost removal the
-event would have two muons at the same place and would fire every dimuon algorithm with a low threshold; the menu
-has 180 algorithms with a muon in them, so this small step protects the rate of almost half the menu.
+Without the ghost removal the event would have two muons at the same place and would fire every dimuon algorithm
+with a low threshold; the menu has 180 algorithms with a muon in them, so this small step protects the rate of
+almost half the menu.
 
 \FloatBarrier
 \section{Step 6: the global trigger}
@@ -673,165 +832,203 @@ event: the FinalOR of a simulated event is always 1. In data the prescale column
 ``is the FinalOR 1'' but ``which algorithms fired'', and which of them the analysis one has in mind can use.
 \end{plainwords}
 
-\textbf{The numbers of the event.} Table~\ref{tab:12_algos} lists what fires. Library event 72 alone fires 8
-algorithms, none of which looks at an object: \code{L1\_ZeroBias}, its copy, \code{L1\_AlwaysTrue}, the three beam
-pick-up algorithms and the two minimum-bias algorithms that ask for one HF tower on each side. These eight fire in
-every sample and are left out of the table.
-
-The signal alone fires 11 more, all of them single-jet algorithms, and the list reads like the description of the
-event: a jet above $90\GeV$ (the $\bar b$ jet at $113.0\GeV$ and the $b$ jet at $102.5\GeV$ both satisfy
-\code{JET90}; the object map of the emulator, printed in the log, names them), a jet above $35\GeV$ within
-$\abseta<2.5$ (the $b$ jet), a jet above $90\GeV$ beyond $\abseta=2.5$ and one above $35\GeV$ beyond 3 (the
-$\bar b$ jet). \code{L1\_SingleJet120} does not fire: the event misses it by $7\GeV$. No sum algorithm fires
-(HTT is $17.5\GeV$ below its lowest threshold, 120; ETMHF, at $65.5\GeV$, is $4.5\GeV$ below 70).
+\textbf{The numbers of the event.} 57 of the 408 algorithms fire. Eight of them do not look at any object and
+would fire on any simulated crossing: \code{L1\_ZeroBias}, its copy, \code{L1\_AlwaysTrue}, the three beam pick-up
+algorithms and the two minimum-bias algorithms that ask for one HF tower on each side. Table~\ref{tab:12_algos}
+lists the other 49 with the objects that satisfy them, which the emulator records for every condition (the object
+map, printed in the log), and figure~\ref{fig:12_ladders} shows where the event stands on the thresholds of the
+menu.
 
 \begin{table}[!htb]
 \centering\footnotesize
-\caption{Step 6: the algorithms of \code{L1Menu\_Collisions2024\_v1\_3\_0} that fire ($\bullet$) on the signal alone
-(12a, 19 algorithms) and on the signal with its pileup (12a+12b, 57), without the 8 that fire on every simulated
-event, with the object that satisfies them and the margin to the threshold (\code{ledger\_12\_L1T.txt}, section 6).
-Library event 72 alone (12b) fires none of these.}
+\caption{Step 6: the 49 algorithms of \code{L1Menu\_Collisions2024\_v1\_3\_0} that fire on an object of the event, with
+what satisfies them and the margin to the threshold (\code{ledger\_12\_L1T.txt}, section 6). 14 are satisfied by
+the two signal jets alone; the other 35 need an object that has no generator jet or signal particle behind it.}
 \label{tab:12_algos}
-\begin{tabular}{@{}>{\raggedright\arraybackslash\ttfamily}p{5.7cm}cc>{\raggedright\arraybackslash}p{7.9cm}@{}}
+\begin{tabular}{@{}>{\raggedright\arraybackslash\ttfamily}p{5.9cm}c>{\raggedright\arraybackslash}p{8.2cm}@{}}
 \toprule
-\normalfont algorithm (\code{L1\_...}) & 12a & 12a+b & what satisfies it \\
+\normalfont algorithm (\code{L1\_...}) & \normalfont how many & what satisfies it \\
 \midrule
-SingleJet35, 60, 90 & $\bullet$ & $\bullet$ & the $\bar b$ jet, $113.0\rightarrow137.0\GeV$ (and the $b$ jet); 90 passed by 23 / $47\GeV$ \\
-SingleJet120 & & $\bullet$ & the $\bar b$ jet at $137.0\GeV$: failed by 7, then passed by $17\GeV$ \\
-SingleJet35er2p5 & $\bullet$ & $\bullet$ & the $b$ jet, $102.5\rightarrow106.5\GeV$ (\code{120er2p5} failed by 17.5 / $13.5\GeV$) \\
-SingleJet35, 60, 90\_FWD2p5; SingleJet35\_FWD3p0 & $\bullet$ & $\bullet$ & the $\bar b$ jet ($\abseta>2.48$; $\abseta>3.0$) \\
-SingleJet120\_FWD2p5, 120\_FWD3p0 & & $\bullet$ & the $\bar b$ jet at $137.0\GeV$ \\
-SingleJet8erHE, 10erHE, 12erHE & $\bullet$ & $\bullet$ & the $b$ jet ($1.39<\abseta<2.96$) \\
+SingleJet35, 60, 90, 120 & 4 & the $\bar b$ jet, $137.0\GeV$ (the $b$ jet, $106.5\GeV$, also satisfies the first three): 120 passed by $17\GeV$, 180 failed by $43\GeV$ \\
+SingleJet35er2p5 & 1 & the $b$ jet ($\abseta<2.52$); \code{120er2p5} failed by $13.5\GeV$ \\
+SingleJet35, 60, 90, 120\_FWD2p5; SingleJet35, 120\_FWD3p0 & 6 & the $\bar b$ jet ($\abseta>2.48$; $\abseta>3.0$); the ring-28 jets also satisfy \code{35} and \code{60\_FWD2p5} \\
+SingleJet8erHE, 10erHE, 12erHE & 3 & the $b$ jet ($1.39<\abseta<2.96$), and the ring-28 jets \\
 \midrule
-SingleMuCosmics, SingleMuOpen, each also \_EMTF; SingleMu0\_DQ, SingleMu0\_EMTF, SingleMu3 & & $\bullet$ & the pileup muon, $3.0\GeV$, quality 15: \code{SingleMu3} passed by $0\GeV$ \\
-Mu3\_Jet30er2p5 & & $\bullet$ & the pileup muon and the $b$ jet \\
-SingleEG8er2p5 & & $\bullet$ & an e/$\gamma$ candidate of $8.0\GeV$ at $\eta=2.13$: passed by $0\GeV$ \\
-DoubleJet\_110\_35\_DoubleJet35\_ Mass\_Min800, Min850 & & $\bullet$ & a jet above 110 and one above $35\GeV$, and two jets above $35\GeV$ with a mass above 800 (850) GeV: the $\bar b$ jet and a pileup jet at $\eta=+2.74$ \\
-DoubleJet45\_Mass\_Min550, Min600\_ IsoTau45er2p1\_RmOvlp\_dR0p5 & & $\bullet$ & the same two jets and the $b$ jet as a $\tau$ of $59.5\GeV$ \\
-DoubleJet\_85\_35\_DoubleJet35\_ Mass\_Min600, Min650\_Mu3OQ & & $\bullet$ & jets as above and the pileup muon \\
-DoubleJet\_70\_35\_DoubleJet35\_ Mass\_Min500, Min550\_ETMHF65 & & $\bullet$ & jets as above and ETMHF \\
-ETMHF70, 80, 90, 100 & & $\bullet$ & $\mathrm{ETMHF}=65.5\rightarrow106.5\GeV$: 100 passed by 6.5, 110 failed by $3.5\GeV$ \\
-ETMHF70, 80, 90, 100\_HTT60er & & $\bullet$ & the same and $\mathrm{HTT}=106.5\GeV$ \\
-HTMHF100, 120, 125, 130, 150 & & $\bullet$ & $\mathrm{HTMHF}=21.5\rightarrow170.0\GeV$ \\
-CICADA\_VLoose, Loose, Medium, Tight, VTight & & $\bullet$ & anomaly score $23.0\rightarrow181.7$; thresholds 113, 116, 121, 127, 131 \\
+SingleMuCosmics, SingleMuOpen, each also \_EMTF; SingleMu0\_DQ, SingleMu0\_EMTF, SingleMu3 & 7 & the muon of the kaon decay, $3.0\GeV$, quality 15: \code{SingleMu3} passed by $0\GeV$, \code{SingleMu5} failed by 2 \\
+Mu3\_Jet30er2p5 & 1 & that muon and the $b$ jet \\
+SingleEG8er2p5 & 1 & an e/$\gamma$ candidate of $8.0\GeV$ at $\eta=2.13$: passed by $0\GeV$ \\
+DoubleJet\_110\_35\_DoubleJet35\_ Mass\_Min800, Min850 & 2 & a jet above 110 and one above $35\GeV$, and two jets above $35\GeV$ with a mass above 800 (850) GeV: the $\bar b$ jet and the ring-28 jet at $\eta=+2.74$ \\
+DoubleJet45\_Mass\_Min550, Min600\_ IsoTau45er2p1\_RmOvlp\_dR0p5 & 2 & the same two jets and the $b$ jet as a $\tau$ of $59.5\GeV$ \\
+DoubleJet\_85\_35\_DoubleJet35\_ Mass\_Min600, Min650\_Mu3OQ & 2 & jets as above and the muon \\
+DoubleJet\_70\_35\_DoubleJet35\_ Mass\_Min500, Min550\_ETMHF65 & 2 & jets as above and ETMHF \\
+ETMHF70, 80, 90, 100 & 4 & $\mathrm{ETMHF}=106.5\GeV$ (the neutrino has $37.5\GeV$): 100 passed by 6.5, 110 failed by $3.5\GeV$ \\
+ETMHF70, 80, 90, 100\_HTT60er & 4 & the same and $\mathrm{HTT}=106.5\GeV$ \\
+HTMHF100, 120, 125, 130, 150 & 5 & $\mathrm{HTMHF}=170.0\GeV$ \\
+CICADA\_VLoose, Loose, Medium, Tight, VTight & 5 & anomaly score 181.7; thresholds 113, 116, 121, 127, 131 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-With the pileup 38 more algorithms fire, and only three of them are about the signal. \code{L1\_SingleJet120} and
-its two forward versions fire because the $\bar b$ jet kept $24\GeV$ of pileup in step~3 and went from $113$ to
-$137\GeV$: the same collision passes a threshold it had failed. The other 35 are made by the pileup alone or by
-the pileup combined with the signal: seven single-muon algorithms and a muon+jet one by the kaon decay of step~4;
-eight algorithms designed for vector-boson fusion (two jets far apart in $\eta$ with a large invariant mass) by
-the pair of the $\bar b$ jet at $\eta=-3.74$ and a pileup jet at $\eta=+2.74$, six units of rapidity apart;
-thirteen missing-energy algorithms by the fake ETMHF and HTMHF of step~3; one e/$\gamma$ algorithm by a pileup
-cluster of $8\GeV$; and all five CICADA algorithms, whose
-score goes from 23 for the signal alone (and 0 for the minimum-bias collision) to 182, far above the tightest
-threshold of 131. Figure~\ref{fig:12_ladders} shows where the event stands on the thresholds of the menu.
+The first four lines of the table read like a description of the signal: a jet above $120\GeV$, a jet above
+$35\GeV$ within $\abseta<2.5$, a jet above $120\GeV$ beyond $\abseta=3$, a jet in the endcap. These 14 algorithms
+are satisfied by the two jets of table~\ref{tab:12_jets}. Even so, the highest of them owes its margin to the
+pileup: \code{L1\_SingleJet120} fires on the $\bar b$ jet at $137.0\GeV$, a jet whose generator-level \pt{} is
+$115.9\GeV$, below the threshold.
+
+The other 35 algorithms need something that the hard collision did not make: seven single-muon algorithms and a
+muon+jet one need the kaon decay of step~4; eight algorithms designed for vector-boson fusion (two jets far apart
+in $\eta$ with a large invariant mass) need the pair of the $\bar b$ jet at $\eta=-3.74$ and a ring-28 jet at
+$\eta=+2.74$, six units of rapidity apart; thirteen missing-energy algorithms need an ETMHF three times the
+neutrino and the HTMHF of step~3; one e/$\gamma$ algorithm a cluster of $8\GeV$ in the endcap; and the five CICADA
+algorithms an anomaly score of 182, far above the tightest threshold of 131: to the autoencoder a hard dijet with
+a jet in the HF under 68 collisions does not look like the bulk of what it was trained on.
 
 \begin{plainwords}[One algorithm, evaluated by hand]
 \code{L1\_DoubleJet\_110\_35\_DoubleJet35\_Mass\_Min800} is the expression \code{comb\{JET110,JET35\} AND
 mass\_inv\{JET35,JET35\}[MASS\_MIN\_800]}: two conditions. The first asks for a jet of at least $110\GeV$ and another
-of at least $35\GeV$: the $\bar b$ jet ($137.0\GeV$) with any of four others; the signal alone, $113.0$ and
-$102.5\GeV$, would pass it too. The second asks for two jets above $35\GeV$ with
+of at least $35\GeV$: the $\bar b$ jet ($137.0\GeV$) with any of four others. The second asks for two jets above
+$35\GeV$ with
 $M^2/2=E_{\mathrm T1}E_{\mathrm T2}(\cosh\Delta\eta-\cos\Delta\phi)\geq800^2/2=320\,000\GeV^2$ (the menu
 stores the cut in this form; the firmware takes $\cosh$ and $\cos$ from lookup tables). For the two signal jets,
 $\Delta\eta=2.2$ and $\Delta\phi=2.98$: $137.0\times106.5\times5.65=82\,000$, a mass of $406\GeV$: fails. For the
-$\bar b$ jet and the pileup jet of $56.0\GeV$ at $\eta=+2.74$, $\Delta\eta=6.48$: $137.0\times56.0\times326=
+$\bar b$ jet and the ring-28 jet of $56.0\GeV$ at $\eta=+2.74$, $\Delta\eta=6.48$: $137.0\times56.0\times326=
 2\,500\,000$, a mass of $2.2\TeV$: passes. The object map of the emulator lists four pairs that pass, every one
-with a pileup jet in it. A jet of $56\GeV$ that is two thirds calibration factor, placed six units of rapidity away
-from a real jet, makes a ``vector-boson-fusion'' event of $2.2\TeV$.
+with a jet that has no generator jet behind it. A jet of $56\GeV$ that is two thirds calibration factor, placed six
+units of rapidity away from a real jet, makes a ``vector-boson-fusion'' event of $2.2\TeV$.
 \end{plainwords}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.8\textwidth]{12_L1T/out/l1t_signal_12_L1T_global_ladders_run1_event1.png}\\[4pt]
-\includegraphics[width=0.8\textwidth]{12_L1T/out/l1t_mixed_12_L1T_global_ladders_run1_event1.png}
-\caption{Step 6, the ``ladders'' of the menu, top for the signal alone, bottom for the signal with its pileup
-(\code{l1t\_<case>\_12\_L1T\_global\_ladders\_run1\_event1.png}). One line per family of single-object algorithms; the
-ticks are the thresholds of the menu in GeV, green if the algorithm fired, red if not; the blue triangle is the
-event. The right panel gives the margins. The pileup moves the event up every ladder except the two that look only
-at the $b$ jet (\code{SingleJet..er2p5}, \code{HTT..er}).}
+\includegraphics[width=0.93\textwidth]{12_L1T/out/l1t_12_L1T_global_ladders_run1_event1.png}
+\caption{Step 6, the ``ladders'' of the menu (\code{l1t\_12\_L1T\_global\_ladders\_run1\_event1.png}). One line per family
+of single-object algorithms; the ticks are the thresholds of the menu in GeV, green if the algorithm fired, red if
+not; the blue triangle is the event. The right panel gives the margins.}
 \label{fig:12_ladders}
 \end{figure}
 
-For the analysis this book is heading to, jets, the algorithm that matters is \code{L1\_SingleJet90}: in the HLT
-menu of the release (\path{HLTrigger/Configuration/python/HLT_GRun_cff.py}) it is the seed of \code{HLT\_PFJet110} and
-\code{HLT\_PFJet140}, \code{L1\_SingleJet120} is the seed of \code{HLT\_PFJet200}, \code{L1\_SingleJet90\_FWD2p5} of
-\code{HLT\_PFJetFwd140}, and \code{L1\_ZeroBias} of \code{HLT\_PFJet40}, 60 and 80. Our event passes
-\code{L1\_SingleJet90} with a margin of $23\GeV$ without pileup and $47\GeV$ with it, and would pass it on the
-$b$ jet alone by $12.5\GeV$. It is the door through which the event enters chapter 13.
+\textbf{The record of one decision.} The emulator keeps, for every algorithm, the conditions and the objects that
+satisfied them; the analyzer prints it. For the seed of this book and two of its neighbours
+(\path{l1t_12_L1T.log}, objects as (E$_{\mathrm T}$, $\eta$, $\phi$)):
 
-\FloatBarrier
-\section{Ledger and display}
+\begin{lstlisting}[style=txt]
+fired: bit=307 name=L1_SingleJet90 expression="JET90" | SingleJET_i231=1 (2 combinations): Jet[0](137.0,-3.74,1.00) or Jet[1](106.5,-1.52,-1.98)
+fired: bit=312 name=L1_SingleJet35er2p5 expression="JET35[JET-ETA_2p52]" | SingleJET_i235=1 (1 combination): Jet[1](106.5,-1.52,-1.98)
+fired: bit=19 name=L1_SingleMu3 expression="MU3[MU-QLTY_SNGL]" | SingleMU_i12=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
+\end{lstlisting}
 
-A checkpoint has a ledger with two columns that never mix. The first is the energy the trigger \emph{sees}, step
-by step (table~\ref{tab:12_ledger}, top); nothing of it is added to or taken from the recorded event, whose digis
-are those of chapter~\ref{ch:11_DIGI}, untouched. The second is the decision (bottom).
+\noindent \code{L1\_SingleJet90} is one condition, \code{JET90}, true for two objects, either of which would have
+been enough; with the $\eta$ cut only the $b$ jet remains; and the muon algorithm asks, besides $3\GeV$, for the
+quality bits 12 to 15 (\code{MU-QLTY\_SNGL}), which the four-station track of step~4 has.
+
+\textbf{What the decision opens.} A Level-1 algorithm is a \emph{seed}: every path of the High Level Trigger of
+chapter 13 starts by asking whether one or a few named algorithms fired, and reconstructs nothing if they did not.
+Table~\ref{tab:12_seeds} lists the single-jet paths of the HLT menu of the release
+(\path{HLTrigger/Configuration/python/HLT_GRun_cff.py}) with their seeds and what our event did with them. For the
+analysis this book is heading to, jets, the algorithm that matters is \code{L1\_SingleJet90}, the seed of
+\code{HLT\_PFJet110} and \code{HLT\_PFJet140}: our event passes it with a margin of $47\GeV$ on the $\bar b$ jet and
+of $16.5\GeV$ on the $b$ jet alone. It is the door through which the event enters chapter 13.
 
 \begin{table}[!htb]
 \centering\small
-\caption{The ledger of the Level-1 trigger (\code{ledger\_12\_L1T.txt}). Top: the transverse energy seen at each
-step, in GeV. Middle: the objects handed from step to step. Bottom: the decision.}
-\label{tab:12_ledger}
-\begin{tabular}{@{}p{8.6cm} rrr@{}}
+\caption{Step 6: the Level-1 seeds of the single-jet HLT paths (\code{L1SeedsLogicalExpression} of the \code{hltL1s*}
+modules of \code{HLT\_GRun\_cff.py}) and their decision for our event (\code{l1t\_12\_L1T.log}, lines \code{algo:}).}
+\label{tab:12_seeds}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{5.4cm}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}p{6.4cm}@{}}
 \toprule
- & (12a) & (12b) & (12a+12b) \\
- & signal alone & event 72 alone & signal + pileup \\
+Level-1 seed & our event & HLT paths it opens \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{energy seen (GeV)}} \\
-step 1: $\sum E_{\mathrm T}$ of the ECAL primitives & 200.0 & 127.5 & 1681.5 \\
-step 1: $\sum E_{\mathrm T}$ of the HCAL primitives (with HF) & 180.5 & 7.5 & 1730.0 \\
-step 2: $\sum E_{\mathrm T}$ of the Layer-1 towers & 319.5 & 99.0 & 2441.0 \\
-\quad removed by Layer-1 & $-61.0$ & $-36.0$ & $-970.5$ \\
-step 3: ETT (towers, $|i\eta|\leq28$) & 188.5 & 99.0 & 1339.0 \\
-step 3: sum of the $9\times9$ windows of the jets & 174.5 & 0 & 792.5 \\
-\quad removed by the pileup subtraction & $-23.0$ & 0 & $-500.5$ \\
-step 3: sum of the jet $E_{\mathrm T}$ (subtracted, calibrated) & 215.5 & 0 & 524.5 \\
-step 3: HTT (jets $>30\GeV$, $\abseta<2.5$) & 102.5 & 0 & 106.5 \\
-step 3: ETM / ETMHF & 52.5 / 65.5 & 3.5 / 3.5 & 50.0 / 106.5 \\
-step 3: HTM / HTMHF & 102.0 / 21.5 & 0 / 0 & 106.0 / 170.0 \\
-\midrule
-\multicolumn{4}{@{}l}{\emph{objects}} \\
-step 1: primitives with $E_{\mathrm T}>0$ (of 8856) & 363 & 244 & 2417 \\
-step 2: towers with $E_{\mathrm T}>0$ (of 5760) & 280 & 188 & 2535 \\
-step 3: jets / e/$\gamma$ / $\tau$ sent to the $\mu$GT & 2 / 1 / 2 & 0 / 0 / 0 & 12 / 12 / 12 \\
-\quad L1 jet of the $b$ jet ($117.8\GeV$) & 102.5 & -- & 106.5 \\
-\quad L1 jet of the $\bar b$ jet ($115.9\GeV$) & 113.0 & -- & 137.0 \\
-step 4: CSC stubs (LCT) / stubs given to the EMTF & 0 / 0 & 0 / 0 & 8 / 12 \\
-step 4: candidates of BMTF / OMTF / EMTF & 0 / 0 / 0 & 0 / 0 / 0 & 0 / 0 / 2 \\
-step 5: muons sent to the $\mu$GT & 0 & 0 & 1 \\
-\midrule
-\multicolumn{4}{@{}l}{\emph{decision}} \\
-step 6: algorithms fired, of 408 & 19 & 8 & 57 \\
-\quad that look at an object & 11 & 0 & 49 \\
-\quad highest single-jet threshold passed (margin) & 90 ($+23.0$) & none & 120 ($+17.0$) \\
-\quad \code{L1\_SingleJet90}, the seed of \code{HLT\_PFJet110} & fired & -- & fired \\
-\quad CICADA anomaly score & 23.0 & 0 & 181.7 \\
-FinalOR & 1 & 1 & 1 \\
+\code{L1\_ZeroBias} & fired (always, in the simulation) & \code{HLT\_PFJet40}, \code{60}, \code{80}; \code{HLT\_PFJetFwd40}, \code{60} \\
+\code{L1\_SingleJet90} & fired, by $47.0\GeV$ & \code{HLT\_PFJet110}, \code{HLT\_PFJet140} \\
+\code{L1\_SingleJet120} & fired, by $17.0\GeV$ & \code{HLT\_PFJet200} \\
+\code{L1\_SingleJet160er2p5 OR L1\_SingleJet180 OR L1\_SingleJet200} & not fired (180 failed by $43.0\GeV$) & \code{HLT\_PFJet260} to \code{550}; \code{HLT\_PFJetFwd260} to \code{500} \\
+\code{L1\_SingleJet60\_FWD2p5} & fired & \code{HLT\_PFJetFwd80} \\
+\code{L1\_SingleJet90\_FWD2p5} & fired & \code{HLT\_PFJetFwd140} \\
+\code{L1\_SingleJet120\_FWD2p5} & fired & \code{HLT\_PFJetFwd200} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Read downwards, the first column of numbers is the price of speed. The collision put two jets of $118$ and
-$116\GeV$ in the detector. At step~1 the trigger sees $380\GeV$ of transverse energy, much of it noise; at
-step~3 the two jets are $55.5$ and $119\GeV$ of towers, and only the calibration brings them back to $102.5$ and
-$113\GeV$. The third column is the price of the pileup: nine times more energy at step~1, ten more jets at
-step~3, a muon at step~5, three times as many algorithms at step~6. Layer-1 removes $970\GeV$ of it and the
-$\phi$-ring subtraction of Layer-2 another $500\GeV$ from the jet windows, and what is left is enough to change
-the answer of 38 algorithms. The one algorithm the journey needs gives the same answer in both columns.
+\FloatBarrier
+\section{Ledger and display}
+
+A checkpoint has a ledger with two parts that never mix. The first is the energy the trigger \emph{sees}, step by
+step (table~\ref{tab:12_ledger}, top); nothing of it is added to or taken from the recorded event, whose digis are
+those of chapter~\ref{ch:11_DIGI}, untouched. The second is the decision (bottom).
+
+\begin{table}[!htb]
+\centering\small
+\caption{The ledger of the Level-1 trigger (\code{ledger\_12\_L1T.txt}). Top: the transverse energy seen at each
+step, in GeV, and what the step did to it. Middle: the objects handed from step to step. Bottom: the decision.}
+\label{tab:12_ledger}
+\begin{tabular}{@{}p{8.2cm} r l@{}}
+\toprule
+\multicolumn{3}{@{}l}{\emph{energy seen (GeV)}} \\
+step 1: $\sum E_{\mathrm T}$ of the ECAL primitives & 1681.5 & \\
+step 1: $\sum E_{\mathrm T}$ of the HCAL primitives (with HF) & 1730.0 & \\
+step 2: $\sum E_{\mathrm T}$ of the Layer-1 towers & 2441.0 & $-970.5$ removed by Layer-1 \\
+step 3: ETT (towers, $|i\eta|\leq28$) & 1339.0 & \\
+step 3: sum of the $9\times9$ windows of the 12 jets & 792.5 & \\
+step 3: sum of the jet $E_{\mathrm T}$ (subtracted, calibrated) & 524.5 & $-500.5$ pileup estimates \\
+step 3: HTT (jets $>30\GeV$, $\abseta<2.5$) & 106.5 & \\
+step 3: ETM / ETMHF & 50.0 / 106.5 & the neutrino: 37.5 \\
+step 3: HTM / HTMHF & 106.0 / 170.0 & \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{objects}} \\
+step 1: primitives with $E_{\mathrm T}>0$ & 2417 & of 8856 \\
+step 2: towers with $E_{\mathrm T}>0$ & 2535 & of 5760 \\
+step 3: jets / e/$\gamma$ / $\tau$ sent to the $\mu$GT & 12 / 12 / 12 & the maximum \\
+\quad L1 jet of the $b$ jet & 106.5 & generator 117.8 (79.8 visible) \\
+\quad L1 jet of the $\bar b$ jet & 137.0 & generator jet 115.9 \\
+step 4: CSC stubs (LCT) / stubs given to the EMTF & 8 / 12 & \\
+step 4: candidates of BMTF / OMTF / EMTF & 0 / 0 / 2 & \\
+step 5: muons sent to the $\mu$GT & 1 & 3.0 GeV, a pileup kaon decay \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{decision}} \\
+step 6: algorithms fired & 57 & of 408 \\
+\quad that look at an object & 49 & \\
+\quad satisfied by the two signal jets alone & 14 & \\
+\quad highest single-jet threshold passed & 120 & by 17.0 GeV \\
+\quad \code{L1\_SingleJet90}, the seed of \code{HLT\_PFJet110} & fired & by 47.0 GeV \\
+\quad CICADA anomaly score & 181.7 & tightest threshold 131 \\
+FinalOR & 1 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read downwards, the table is the price of speed and of pileup together. The collision put two jets of $80$ and
+$116\GeV$ of visible particles in the detector. At step~1 the trigger sees $3411.5\GeV$ of transverse energy,
+nine tenths of it pileup and noise. Layer-1 removes $970\GeV$ with its thresholds, and the $\phi$-ring subtraction
+of Layer-2 another $500\GeV$ from the jet windows; what is left is twelve jets and $524.5\GeV$, of which the two
+real jets are $243.5\GeV$. The global trigger then says yes 57 times, 14 of them for the two jets the journey has
+followed since chapter~\ref{ch:01_ME}. The one algorithm the journey needs is among those 14.
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[x=0.0036cm, y=0.62cm, font=\footnotesize]
+\foreach \y/\v/\c/\t in {5/3411.5/black!22/{step 1: trigger primitives},
+                         4/2441.0/black!22/{step 2: Layer-1 towers}}
+{ \fill[\c] (0,\y-0.36) rectangle (\v,\y+0.36); \node[anchor=west] at (30,\y) {\v\,GeV: \t}; }
+\foreach \y/\v/\c/\t in {3/792.5/black!22/{step 3: the $9\times9$ windows of the twelve jets},
+                         2/524.5/black!22/{step 3: the twelve jets, subtracted and calibrated},
+                         1/243.5/red!45/{of which the two signal jets ($137.0+106.5$)},
+                         0/195.7/magenta!45/{the two generator jets, visible particles ($115.9+79.8$)}}
+{ \fill[\c] (0,\y-0.36) rectangle (\v,\y+0.36); \node[anchor=west] at (\v,\y) {\v\,GeV: \t}; }
+\draw (0,-0.6) -- (0,5.6);
+\end{tikzpicture}
+\caption{The energy part of the ledger as a picture: the transverse energy the trigger holds at each step
+(table~\ref{tab:12_ledger}), down to the two jets it is looking for.}
+\label{fig:12_funnel}
+\end{figure}
 
 Figure~\ref{fig:12_objects} is the display of the event at the end of the chapter: all that is left of it for the
-global trigger. Compare it with figure~\ref{fig:11_mixed}, the 551\,889 digis of the same event: the two magenta
+global trigger. Compare it with figure~\ref{fig:11_mixed}, the $551\,889$ digis of the same event: the two magenta
 circles are again the only thing the two pictures share, and now each has a red square in it.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_signal_12_L1T_global_objects_run1_event1.png}\hfill
-\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{12_L1T/out/l1t_mixed_12_L1T_global_objects_run1_event1.png}
-\caption{The event as the global trigger receives it, left the signal alone (2 jets, 1 e/$\gamma$, 2 $\tau$), right
-the signal with its pileup (12 jets, 12 e/$\gamma$, 12 $\tau$, 1 muon)
-(\code{l1t\_<case>\_12\_L1T\_global\_objects\_run1\_event1.png}). Red squares: jets with their $E_{\mathrm T}$ in GeV; blue
+\includegraphics[width=0.93\textwidth]{12_L1T/out/l1t_12_L1T_global_objects_run1_event1.png}
+\caption{The event as the global trigger receives it: 12 jets, 12 e/$\gamma$, 12 $\tau$, 1 muon and the sums
+(\code{l1t\_12\_L1T\_global\_objects\_run1\_event1.png}). Red squares: jets with their $E_{\mathrm T}$ in GeV; blue
 triangles: $\tau$ candidates; green dots: e/$\gamma$ candidates; star: the muon; the ticks on the left edge: the
 direction of the missing transverse energy with HF (orange) and of the missing $H_{\mathrm T}$ (violet). Magenta
 circles: the two generator jets.}
@@ -855,7 +1052,7 @@ $\mu$GMT and the $\mu$GT of 2024 are all still executed on the Phase-2 detector;
 \code{phase2\_trigger} lists \code{simBmtfDigis}, \code{simEmtfDigis}, \code{simGmtStage2Digis} explicitly). The header
 of the file says of the forward calorimeter: ``At the moment, there is no emulator available for upgrade HF Trigger
 Primitives, so these missing (required!) inputs are presently ignored by downstream modules.'' The HCAL
-trigger-primitive emulator has no Phase-2 modifier at all
+trigger-primitive emulator of chapter~\ref{ch:11_DIGI} has no Phase-2 modifier at all
 (\path{SimCalorimetry/HcalTrigPrimProducers/python/hcaltpdigi_cfi.py}: the last modifiers are \code{run3\_HB} and
 \code{run3\_common}), and the Phase-2 calorimeter-trigger modules read \code{simHcalTriggerPrimitiveDigis}, the
 collection of step~1 of this chapter. The Phase-2 ECAL barrel primitive (one per crystal, the reason for the new
@@ -865,14 +1062,14 @@ includes; the era uses \code{simEcalEBTriggerPrimitiveDigis}, made from the Run-
 chapter~\ref{ch:11_DIGI} found in the same state.
 
 \textbf{The pileup subtraction of the Phase-2 calorimeter towers was fitted in 2019.} The module that plays the
-role of our Layer-1 (\path{l1tTowerCalibrationProducer_cfi.py} in \path{L1Trigger/L1CaloTrigger/python/}) opens with ``Choosen
-settings 6 March 2019, 10\_3\_X MTD samples''; its pileup estimate counts the towers hit, converts the count to a
-number of vertices and the number of vertices to an energy per tower with ``Parameters derived on 6 March 2019 on
-10\_3\_X MTD samples''. The 2024 calorimeter-jet emulator
-(\path{l1tPhase2CaloJetEmulator_cfi.py}) carries the same numbers without the comment, under jet calibrations
-``derived 26 June 2024 on 14\_0\_0\_pre3 131X QCD sample''. This chapter showed for PU 60 what such an estimate is
-worth when the detector is not uniform (a jet's own energy in its ring, tower ring 28): scaled linearly to PU 200 the towers of
-step~2 would hold some $8\TeV$, and the estimate that decides how much of it is a jet is a fit on 2019 samples.
+role of our Layer-1 (\path{l1tTowerCalibrationProducer_cfi.py} in \path{L1Trigger/L1CaloTrigger/python/}) opens with
+``Choosen settings 6 March 2019, 10\_3\_X MTD samples''; its pileup estimate counts the towers hit, converts the count
+to a number of vertices and the number of vertices to an energy per tower with ``Parameters derived on 6 March
+2019 on 10\_3\_X MTD samples''. The 2024 calorimeter-jet emulator (\path{l1tPhase2CaloJetEmulator_cfi.py}) carries the
+same numbers without the comment, under jet calibrations ``derived 26 June 2024 on 14\_0\_0\_pre3 131X QCD sample''.
+This chapter showed for PU 60 what such an estimate is worth when the detector is not uniform (a jet's own energy
+in its rings, tower ring 28): scaled linearly to PU 200 the towers of step~2 would hold some $8\TeV$, and the
+estimate that decides how much of it is a jet is a fit on 2019 samples.
 
 \textbf{A sum that is always zero.} Line 115 of \path{SimL1Emulator_cff.py} configures the Phase-2 calorimeter
 $H_{\mathrm T}$ with \code{BXVCaloJetsInputTag = ("L1CaloJet", "CaloJets")}. No module has the label \code{L1CaloJet}:
@@ -902,7 +1099,8 @@ differs between the Technical Design Report and the firmware.
 \code{phase2\_hgcalV10}, \code{V11} and \code{V16} together, and the trigger takes its settings from the first two:
 \path{L1Trigger/L1THGCal/python/l1tHGCalBackEndLayer1Producer_cfi.py} switches the layer calibration off with ``we
 still don't have layer calibrations for $>=$V9 geometry'', the trigger geometry class is
-\code{HGCalTriggerGeometryV9Imp3}, and the e/$\gamma$ identification in use (\code{v10\_3151}) was ``trained using TPG software version 3.15.1''.
+\code{HGCalTriggerGeometryV9Imp3}, and the e/$\gamma$ identification in use (\code{v10\_3151}) was ``trained using
+TPG software version 3.15.1''.
 
 \textbf{The Phase-2 menu is ``the first prototype menu''.} The Phase-2 global trigger is a separate
 \code{cmsDriver} step (\code{L1P2GT}) whose default menu is \code{step1\_2024}
@@ -921,7 +1119,8 @@ stands, and the jet triggers on which jet calibration relies are not written yet
 assembled from payloads of different years: the calorimeter parameters \code{2024\_v0\_1} (the release has
 \code{v0\_3} and two 2025 versions in python), with, in the python of that version, jet compression tables
 \code{2017v1} and the jet calibration \code{lut\_calib\_2023v0\_ECALZS\_PhiRing}; nine of the nineteen ECAL
-trigger-primitive payloads \code{2018\_mc}; the HCAL ones \code{2019} and \code{2022}; the barrel muon parameters \code{Stage2v1\_2018\_mc}; and in the EMTF the era \code{Run3\_2021} selects
-\code{PtAssignmentEngine2017} with the comment ``TODO - implement ver 2021''
-(\path{L1Trigger/L1TMuonEndCap/src/EMTFSetup.cc}). The prescales are absent. Whoever compares a simulated trigger
-efficiency with data should know which of the six steps were simulated as of 2024.
+trigger-primitive payloads \code{2018\_mc}; the HCAL ones \code{2019} and \code{2022}; the barrel muon parameters
+\code{Stage2v1\_2018\_mc}; and in the EMTF the era \code{Run3\_2021} selects \code{PtAssignmentEngine2017} with the
+comment ``TODO - implement ver 2021'' (\path{L1Trigger/L1TMuonEndCap/src/EMTFSetup.cc}). The prescales are absent.
+Whoever compares a simulated trigger efficiency with data should know which of the six steps were simulated as of
+2024.

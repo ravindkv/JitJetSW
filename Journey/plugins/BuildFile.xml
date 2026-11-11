@@ -85,4 +85,5 @@
 <use name="L1Trigger/L1TCalorimeter"/>
 <use name="L1Trigger/L1TMuon"/>
 <use name="CalibFormats/CaloTPG"/>
+<use name="Geometry/CaloTopology"/>
 <flags EDM_PLUGIN="1"/>

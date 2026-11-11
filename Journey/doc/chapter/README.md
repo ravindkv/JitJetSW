@@ -16,8 +16,14 @@ The chapters are `01_ME 02_PS 03_MnM 04_MPI 05_Had 06_Decay 07_GenJet 08_PU 09_G
 is the input of chapter N+1 (Rule E), and `test/runAll.sh` runs them in order. Common configurations and helpers live in
 `test/common/` (Rule F): `jitjet_common.sh` (sourced by every script), the analyzer configurations
 (`genPartAnalyzer_cfg.py`, `genJetAnalyzer_cfg.py`, `genJetPileup_cfg.py`, `simAnalyzer_cfg.py`, `simHitAnalyzer_cfg.py`,
-`digiAnalyzer_cfg.py`, `l1tAnalyzer_cfg.py`) and the ledger scripts (`genLedger.py`, `g4Ledger.py`, `simLedger.py`, `digiLedger.py`,
-`digiThresholds.py`, `minBiasGenStats.py`, `l1tLedger.py`, `l1tSettings.py`, `l1tTruth.py`).
+`digiAnalyzer_cfg.py`, `trigPrimAnalyzer_cfg.py`, `l1tAnalyzer_cfg.py`) and the ledger scripts (`genLedger.py`, `g4Ledger.py`,
+`simLedger.py`, `digiLedger.py`, `digiThresholds.py`, `trigPrimLedger.py`, `minBiasGenStats.py`, `l1tLedger.py`, `l1tSettings.py`,
+`l1tTruth.py`).
+
+Signal and pileup (Rule H): up to `11_DIGI` a chapter may follow three samples (the signal alone, one pileup collision
+alone, the signal with its pileup). `11_DIGI` is the last stage at which they exist apart; from `12_L1T` on there is one
+sample, the mixed event, and no `<case>` in the file names. Whatever a later chapter needs to know about the signal
+alone is computed in chapter 11 and quoted from there.
 
 ## The .tex chapter (Rule B): exactly five sections, 5 +- 2 pages
 
@@ -49,6 +55,22 @@ is the input of chapter N+1 (Rule E), and `test/runAll.sh` runs them in order. C
   `doc/chapter/checkChapter.sh <XX_YYY>` (pages in `doc/build/`), and render the pages with
   `pdftoppm -r 60 -png JitJet.pdf check` to look at tables and figures.
 
+## The hand-over section (Rule B6): at most one, 2-3 pages more
+
+When a stage makes something that only a later stage uses, it is explained where it is made, in one extra section
+between B3 and B4:
+
+```latex
+\section{Made here for the next stage: ...}    % B6: what it is, how it is made, why it is made HERE, the numbers of the event
+\label{sec:XX_...}                             % the later chapter refers back to it
+```
+
+Chapter 11 is the model: the calorimeter `TriggerPrimitiveDigis` (`simEcalTriggerPrimitiveDigis`,
+`simHcalTriggerPrimitiveDigis`) are made by the DIGI job and used by the Level-1 trigger of chapter 12
+(`plugins/TrigPrimAnalyzer.cc`, `test/common/trigPrimAnalyzer_cfg.py`, `trigPrimLedger.py` ->
+`out/trigprim_11_DIGI.txt`). The section title must start with "Made here for the next stage"; `checkChapter.sh`
+then accepts six sections and 2-3 more pages. The later chapter recalls the result in a few lines and refers back.
+
 ## A checkpoint chapter (Rule G): 12_L1T, 13_HLT, 20-25 pages
 
 A stage that decides whether the event is kept, instead of changing its energy, is written step by step:
@@ -66,15 +88,17 @@ A stage that decides whether the event is kept, instead of changing its energy, 
 
 - Every step section has the same four parts: **What the step does** (the hardware or software in plain words, the
   module that emulates it), **The parameters** (where they are: python, global-tag payload), **The numbers of the event**
-  for the three samples (signal alone, one pileup collision alone, signal + pileup), and a display of the event *after*
-  the step. Chapter 12 is the model: `plugins/L1TCaloAnalyzer.cc`, `L1TMuonAnalyzer.cc`, `L1TGlobalAnalyzer.cc` (one
-  analyzer per group of steps, one PDF each, the pages as PNG; shared layout in `plugins/L1TDisplay.h`).
+  (one sample, the mixed event: Rule H), and a display of the event *after* the step. Who made an object (the signal, the
+  pileup, noise) is read from the truth in the file: the generator jets, the `TrackingParticle`s behind a muon.
+  Chapter 12 is the model: `plugins/L1TCaloAnalyzer.cc`, `L1TMuonAnalyzer.cc`, `L1TGlobalAnalyzer.cc` (one analyzer per
+  group of steps, one PDF each, the pages as PNG; shared layout in `plugins/L1TDisplay.h`).
 - The pages have a text panel on the right: include them at full width (`width=0.93\textwidth`) when the panel matters,
   or crop the panel away for a side-by-side pair: `\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{...}`
   (the PNG is 1396 pixels wide, the panel is the right 34 %).
 - `\FloatBarrier` before the sections where a figure must not drift into the next step.
 - The ledger of B4 has two parts that never mix: energy seen (nothing is added to or removed from the recorded event)
-  and the decision. The comparison of the three samples is the point: say what the pileup changes in the decision.
+  and the decision. Say which of the fired algorithms the signal objects satisfy on their own and which need an object
+  the hard collision did not make: that is what the pileup changes in the decision.
 
 ## The .md companion (Rule C): exactly four sections
 

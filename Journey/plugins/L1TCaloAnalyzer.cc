@@ -61,6 +61,7 @@ namespace {
     float ecalTP = 0, hcalTP = 0;              // the primitives (HF: the primitive of the 2 or 4 towers, in its first tower)
     float l1 = 0, l1Em = 0, l1Had = 0;         // the Layer-1 tower and its two calibrated inputs
     int ecalRaw = 0, hcalRaw = 0, l1Raw = 0;   // the integers
+    int l1Ratio = 0, l1Flags = 0;              // the E/H ratio code and the flag bits of the Layer-1 tower word
     int hcalWidth = 0;                         // phi width of the HCAL primitive that starts here (0: none)
     bool ecalFG = false;
   };
@@ -278,6 +279,8 @@ void L1TCaloAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
     c.l1 = 0.5 * it->hwPt();
     c.l1Em = 0.5 * it->hwEtEm();
     c.l1Had = 0.5 * it->hwEtHad();
+    c.l1Ratio = it->hwEtRatio();
+    c.l1Flags = it->hwQual();
     const char* region = std::abs(ieta) <= 17 ? "barrel" : std::abs(ieta) <= 28 ? "endcap" : "forward";
     l1[region].add(c.l1, it->hwPt(), false, ieta, iphi);
     l1["all"].add(c.l1, it->hwPt(), false, ieta, iphi);
@@ -321,7 +324,7 @@ void L1TCaloAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
         }
       }
     std::cout << "  Layer1 top tower " << i << ": ieta=" << top[i][1] << " iphi=" << top[i][2] << " et=" << c.l1 << " ecalTP=" << c.ecalTP
-              << " hcalTP=" << (std::abs(top[i][1]) >= 30 ? hf : c.hcalTP) << " calibratedEm=" << c.l1Em << " calibratedHad=" << c.l1Had << "\n";
+              << " hcalTP=" << (std::abs(top[i][1]) >= 30 ? hf : c.hcalTP) << " calibratedEm=" << c.l1Em << " calibratedHad=" << c.l1Had << " | tower word: et=" << c.l1Raw << " ratio=" << c.l1Ratio << " flags=" << c.l1Flags << "\n";
   }
 
   // ------------------------------------------------------------------ step 3: the Layer-2 objects

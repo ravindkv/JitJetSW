@@ -9,12 +9,18 @@ Rule A: Every chapter XYZ has
     (A3) doc/chapter/chapter_XYZ.tex the book chapter: physics
     (A4) doc/chapter/chapter_XYZ.md  the technical companion, not compiled into the .tex
 
-Rule B: The doc/chapter/chapter_XYZ.tex has exactly these sections
+Rule B: The doc/chapter/chapter_XYZ.tex has exactly these sections (B1-B5, and (B6) only when it applies)
     (B1) What this chapter is about in 1-2 paragraphs 
     (B2) connection to the previous chapter in 1-2 paragraphs
     (B3) the numbers supporting/explaining the physics of the chapter.
     (B4) ledger table summerising  how much energy was added/removed from the event and the eta-phi display plot
     (B5) open problems for the Phase-2 LHC, after a DETAILED digging inside CMSSW (e.g. what cuts/thresholds/calibrations have not been updated since Run-2 or Run-3 
+    (B6) OPTIONAL hand-over section "Made here for the next stage: ...", placed between (B3) and (B4), in 2-3 pages: when a stage makes
+         something that is not used by the stage itself but by a LATER stage, it is explained where it is MADE: what it is,
+         how it is made, why it is made here and not in the stage that uses it, and its numbers for our event.
+         At most one per chapter. The first case: the calorimeter "TriggerPrimitiveDigis" (simEcalTriggerPrimitiveDigis,
+         simHcalTriggerPrimitiveDigis) are made in 11_DIGI and used in 12_L1T, so they are explained in chapter_11_DIGI.tex;
+         chapter_12_L1T.tex only recalls them and refers back.
 
 Rule C: The doc/chapter/chapter_XYZ.md companion has exactly these sections
     (C1) The cmsDriver commands. How to run and what each argument mean
@@ -41,11 +47,12 @@ Rule G: Checkpoint chapters (12_L1T, 13_HLT)
          and an eta-phi display plot showing how the event looks AFTER this step
     (G3) the ledger of (B4) has two parts: the energy the trigger SEES from step to step (nothing is added to or removed from the recorded
          event), and the DECISION: which algorithms/paths fired and by which margin; the display is the event as the last step sees it
-    (G4) the plugins analyse the different steps (one plugin per group of steps, one pdf per plugin); the same three samples as 10_SIM/11_DIGI
-         (signal alone, one pileup collision alone, signal + pileup) show how the pileup changes the decision
+    (G4) the plugins analyse the different steps (one plugin per group of steps, one pdf per plugin); ONE sample only, the mixed event
+         (Rule H). What the pileup does to the decision is read from the truth the file still carries (the genJets of the signal,
+         the simulated particles behind an object), not from separate signal and pileup samples
     (G5) the companion (C1)-(C4) is unchanged; (C4) lists the numbers step by step
     The steps:
-        12_L1T: (1) calorimeter trigger primitives (ECAL, HCAL)
+        12_L1T: (1) calorimeter trigger primitives (ECAL, HCAL): made in the DIGI job, explained in chapter 11 (B6), recalled here
                 (2) calorimeter Layer-1: receives, calibrates and sums the trigger primitives into trigger towers
                 (3) calorimeter Layer-2: jets, e/gamma, taus, energy sums
                 (4) muon trigger primitives and the muon track finders (BMTF, OMTF, EMTF)
@@ -53,6 +60,15 @@ Rule G: Checkpoint chapters (12_L1T, 13_HLT)
                 (6) the global trigger (uGT): every algorithm of the menu in parallel, the final decision
         13_HLT: (1) L1 seed and prescale (2) calorimeter jets (3) tracking and vertex (4) particle flow and PF jets (5) the decision of the paths
                 (to be confirmed when the chapter is written)
+
+Rule H: Signal and pileup are followed separately only up to 11_DIGI
+    The DIGI stage is the LAST stage at which the signal and the pileup exist apart. Up to 11_DIGI (08_PU, 09_G4, 10_SIM, 11_DIGI)
+    a chapter may show the three samples: signal alone, one pileup collision alone, signal + pileup (mixed).
+    (H1) from 12_L1T onwards (12_L1T, 13_HLT and every later stage) ONLY the mixed event is followed: no separate signal or pileup
+         sample, in the scripts (one cmsDriver/cmsRun, one analyzer job, no <case> in the file names), in the .tex and in the .md
+    (H2) the input (Rule E) of 12_L1T is therefore the mixed file of 11_DIGI only: test/11_DIGI/out/step3_DIGI_mixed_11_DIGI.root
+    (H3) anything that still needs the signal alone or the pileup alone (e.g. the trigger primitives of the signal alone) is
+         computed and shown in 11_DIGI, the last chapter where it exists; later chapters quote it from there
 
 List of chapters:
     01: ME
@@ -65,10 +81,11 @@ List of chapters:
     08: PU
     09: G4
     10: SIM
-    11: DIGI
-    12: L1T (checkpoint, Rule G: the Level-1 trigger of 2024, six steps)
-    13: HLT (checkpoint, Rule G: the High Level Trigger; future)
+    11: DIGI (the last chapter with signal and pileup apart, Rule H; with the hand-over section (B6) on the TriggerPrimitiveDigis)
+    12: L1T (checkpoint, Rule G: the Level-1 trigger of 2024, six steps; the mixed event only, Rule H)
+    13: HLT (checkpoint, Rule G: the High Level Trigger; the mixed event only, Rule H; future)
 
 Length of each chapter:
     5 pdf pages +-2
+    a chapter with a hand-over section (B6): 2-3 pdf pages more
     checkpoint chapters (Rule G): 20-25 pdf pages (2-3 pages per step)

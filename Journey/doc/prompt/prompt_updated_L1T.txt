@@ -1,0 +1,9 @@
+Thanks a lot. Please implement the following:
+
+
+(1) Please explain in the ../doc/chapter/chapter_11_DIGI.tex in 2-3 pages about the “TriggerPrimitiveDigis” , what they are and how/why we make them at the DIGI stage when it is going to be used in L1T.
+
+(2) Since the DIGI stage is the only stage where we can have signal and pileup separately, we do not have to keep them separately for future stages such as 12_L1T and onwards. Please drop the separate treatment of signal and pileup treatment from everywhere in 12_L1T. Focus on the mixed.
+
+(3) Please update the constitution a bit to reflect these.
+

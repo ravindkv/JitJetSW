@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # checkChapter.sh: compile one chapter of the book on its own (with the preamble of doc/JitJetSW.tex) and report what
-# the Constitution asks for: the page count (5 +- 2; 20-25 for the checkpoint chapters 12_L1T and 13_HLT of Rule G),
-# the sections (the five of Rule B; for a checkpoint chapter B1, B2, one section per step, B4, B5), the overfull lines,
-# the missing figures; render the pages as PNG to look at them.
+# the Constitution asks for: the page count (5 +- 2, plus 2-3 for a hand-over section; 20-25 for the checkpoint
+# chapters 12_L1T and 13_HLT of Rule G), the sections (the five of Rule B, plus at most one hand-over section "Made
+# here for the next stage: ..." of Rule B6; for a checkpoint chapter B1, B2, one section per step, B4, B5), the
+# overfull lines, the missing figures; render the pages as PNG to look at them.
 #   doc/chapter/checkChapter.sh 01_ME            # -> doc/build/chapter_01_ME.pdf, chapter_01_ME_page-N.png, the report
 #   doc/chapter/checkChapter.sh 01_ME nopng      # without the PNG rendering
 set -euo pipefail
@@ -27,8 +28,14 @@ if (( checkpoint )); then
   echo "== chapter $ch: $pages pages (a checkpoint chapter: the Constitution, Rule G, asks for 20-25)"
   echo "-- sections (Rule G: B1, B2, one section per step, B4, B5):"
 else
-  echo "== chapter $ch: $pages pages (the Constitution asks for 5 +- 2)"
-  echo "-- sections (Rule B asks for exactly five):"
+  handover=$(grep -cE '^\\section\{Made here for the next stage' "$doc/chapter/chapter_$ch.tex" || true)
+  if (( handover )); then
+    echo "== chapter $ch: $pages pages (the Constitution asks for 5 +- 2, plus 2-3 for the hand-over section of Rule B6)"
+    echo "-- sections (Rule B: five, plus the hand-over section):"
+  else
+    echo "== chapter $ch: $pages pages (the Constitution asks for 5 +- 2)"
+    echo "-- sections (Rule B asks for exactly five):"
+  fi
 fi
 { grep -oE '^\\section\{[^}]*\}' "$doc/chapter/chapter_$ch.tex" || true; } | sed 's/^/   /'
 n=$(grep -cE '^\\section\{' "$doc/chapter/chapter_$ch.tex" || true)
@@ -36,7 +43,7 @@ if (( checkpoint )); then
   steps=$(grep -cE '^\\section\{Step [0-9]' "$doc/chapter/chapter_$ch.tex" || true)
   (( n == steps + 4 )) || echo "   WARNING: $n sections, of which $steps step sections (expected B1, B2, the steps, B4, B5)"
 else
-  (( n == 5 )) || echo "   WARNING: $n sections"
+  (( n == 5 + handover && handover <= 1 )) || echo "   WARNING: $n sections"
 fi
 echo "-- overfull / underfull lines:"
 { grep -cE '^(Overfull|Underfull)' "chapter_$ch.log" || true; } | sed 's/^/   /'

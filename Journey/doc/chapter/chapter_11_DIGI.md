@@ -2,7 +2,11 @@
 
 The digitisation of the SimHits of chapter 10, for the signal alone (11a), for one pileup collision alone (11b) and
 for the signal with its pileup mixed in (11a+11b). Script: `test/11_DIGI/run_11_DIGI.sh`; everything it produces is
-in `test/11_DIGI/out/`. The chapter text is `doc/chapter/chapter_11_DIGI.tex`. All commands below are run from
+in `test/11_DIGI/out/`. The chapter text is `doc/chapter/chapter_11_DIGI.tex`. This is the last chapter with the three
+samples (Rule H of the Constitution): from chapter 12 on only the mixed event is followed, so everything a later
+chapter needs to know about the signal alone is computed here. The chapter has a hand-over section (Rule B6), "Made
+here for the next stage: the trigger primitives": the DIGI step also makes the calorimeter trigger primitives that the
+Level-1 trigger of chapter 12 uses; sections 3 and 4.7 of this companion are about them. All commands below are run from
 `test/` of an initialized CMSSW_15_0_5 (`cmsenv`), with `J=$CMSSW_BASE/src/JitJetSW/Journey`.
 
 ## 1. The cmsDriver.py commands
@@ -133,9 +137,9 @@ collection, process `SIMFULL`), the generator record (`GEN`, `GENJET`) and the p
 | `edm::DetSetVector<StripDigiSimLink> simSiStripDigis` and `prunedDigiSimLinks:siStrip` | the strip links |
 | `EBDigiCollection simEcalDigis:ebDigis`, `EEDigiCollection simEcalDigis:eeDigis` | the ECAL data frames after the selective readout (10 samples with gain id); `EBSrFlag` / `EESrFlag` `simEcalDigis:ebSrFlags/eeSrFlags`: the selective-readout flag per trigger tower / supercrystal |
 | `ESDigiCollection simEcalPreshowerDigis` | the preshower frames (3 samples) after the zero suppression |
-| `EcalTriggerPrimitiveDigi simEcalTriggerPrimitiveDigis` | the ECAL trigger primitives that drive the selective readout |
+| `EcalTriggerPrimitiveDigi simEcalTriggerPrimitiveDigis` | the ECAL trigger primitives: 4032 per event (one per trigger tower, EB 2448 + EE 1584), each with 5 time samples (the sample of interest is index 2) of 8-bit compressed ET (0.5 GeV per count), a fine-grain bit and the trigger-tower flag. They drive the selective readout inside this job and are step 1 of the Level-1 trigger of chapter 12 |
 | `HcalDataFrameContainer<QIE11DataFrame> simHcalDigis:HBHEQIE11DigiCollection`, `<QIE10DataFrame> simHcalDigis:HFQIE10DigiCollection`, `HODataFrame simHcalDigis` | the HCAL frames after the zero suppression; the same three under `simHcalUnsuppressedDigis` are the frames of every channel (plus the legacy `HBHEDataFrame`, `HFDataFrame` collections, empty, and the `ZDCDataFrame`) |
-| `HcalTriggerPrimitiveDigi simHcalTriggerPrimitiveDigis` | the HCAL trigger primitives |
+| `HcalTriggerPrimitiveDigi simHcalTriggerPrimitiveDigis` | the HCAL trigger primitives: 4824 per event (HB 2304, HE 1728, HF 792), 4 time samples for HB / HE (2 presamples) and 2 for the HF, 8-bit compressed ET and feature bits; decoded to GeV with the `CaloTPGTranscoder` of the event setup (`hcaltpdigi_cff`). Used by the Level-1 trigger of chapter 12 only |
 | `MuonDigiCollection<DTLayerId,DTDigi> simMuonDTDigis` and `<DTLayerId,DTDigiSimLink>` | DT wire digis (TDC time) and links |
 | `MuonDigiCollection<CSCDetId,CSCStripDigi/CSCWireDigi/CSCComparatorDigi> simMuonCSCDigis` and `edm::DetSetVector<StripDigiSimLink> simMuonCSCDigis:MuonCSCStripDigiSimLinks/MuonCSCWireDigiSimLinks` | CSC strip (8 SCA samples), wire-group and comparator digis and links |
 | `MuonDigiCollection<RPCDetId,RPCDigi> simMuonRPCDigis` and `edm::DetSetVector<RPCDigiSimLink> simMuonRPCDigis:RPCDigiSimLink` | RPC strip digis (strip, bx) and links |
@@ -197,8 +201,65 @@ the counts are exact. Products:
 | `digiAnalyzer_<case>_11_DIGI_etaphi_run1_event<E>.png`, `..._rz_run1_event<E>.png` | the same pages as PNG (E = 1 for the signal and the mixed event, 72 for the pileup collision; the stale `event67` PNGs are from an earlier run with the old SKIP) |
 | `digiAnalyzer_<case>_11_DIGI.log` | the counts: per subdetector `nDigis`, `signal / inTime / early / late / noLink` (tracker and muon) or `sumAmplitude[ADC]` (calorimeters), the pileup summary, the total |
 | `digiAnalyzer_<case>_11_DIGI.root` | the `TFileService` file (empty histograms directory; the drawing goes to the PDF) |
-| `thresholds_11_DIGI.txt` | every threshold-like parameter of the digitisers of the mixed configuration, then the full parameter sets |
+| `thresholds_11_DIGI.txt` | every threshold-like parameter of the digitisers of the mixed configuration, then the full parameter sets (now including the two trigger-primitive producers, `simEcalTriggerPrimitiveDigis` and `simHcalTriggerPrimitiveDigis`) |
 | `ledger_11_DIGI.txt` | the three logs side by side: digis per subdetector and origin, calorimeter amplitudes |
+
+### The trigger primitives (`TrigPrimAnalyzer`)
+
+The second analyzer of the chapter (`$J/plugins/TrigPrimAnalyzer.cc`, configuration
+`test/common/trigPrimAnalyzer_cfg.py`) looks at what the DIGI step makes for the Level-1 trigger. It also runs once
+per sample (the function `trigprim` of `run_11_DIGI.sh`); the commands, from `run_11_DIGI.log`:
+
+```bash
+cd $J/test/11_DIGI/out
+cmsRun ../../common/trigPrimAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step3_DIGI_signal_11_DIGI.root \
+  maxEvents=1 eventsToProcess=1:1:1 globalTag=auto:phase1_2024_realistic era=Run3_2024 geometry=DB:Extended \
+  pdfFile=trigPrim_signal_11_DIGI.pdf pngPrefix=trigPrim_signal_11_DIGI savePNG=1 mixed=0 \
+  sampleLabel="chapter 11_DIGI (11a): the signal alone|trigger primitives made by the DIGI step|bbbar, pTHat > 100 GeV, no pileup" \
+  > trigPrim_signal_11_DIGI.log 2>&1                           # 10 s each
+cmsRun ../../common/trigPrimAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step3_DIGI_pileup_11_DIGI.root \
+  maxEvents=1 eventsToProcess=1:1:72 globalTag=auto:phase1_2024_realistic era=Run3_2024 geometry=DB:Extended \
+  pdfFile=trigPrim_pileup_11_DIGI.pdf pngPrefix=trigPrim_pileup_11_DIGI savePNG=1 mixed=0 \
+  sampleLabel="chapter 11_DIGI (11b): one pileup collision|trigger primitives made by the DIGI step|library event 72, no signal" \
+  > trigPrim_pileup_11_DIGI.log 2>&1
+cmsRun ../../common/trigPrimAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step3_DIGI_mixed_11_DIGI.root \
+  maxEvents=1 eventsToProcess=1:1:1 globalTag=auto:phase1_2024_realistic era=Run3_2024 geometry=DB:Extended \
+  pdfFile=trigPrim_mixed_11_DIGI.pdf pngPrefix=trigPrim_mixed_11_DIGI savePNG=1 mixed=1 \
+  sampleLabel="chapter 11_DIGI (11a+11b): signal + pileup|trigger primitives made by the DIGI step|PU = 60 per bx, bx -1..1 (playback)" \
+  > trigPrim_mixed_11_DIGI.log 2>&1
+python3 ../../common/trigPrimLedger.py . 11_DIGI > trigprim_11_DIGI.txt
+```
+
+What the analyzer does. It reads `simEcalTriggerPrimitiveDigis` and `simHcalTriggerPrimitiveDigis` and decodes the
+sample of interest of every primitive to GeV: for the ECAL `compressedEt() x 0.5 GeV`, for the HCAL with the
+`CaloTPGTranscoder` of the event setup (the configuration loads `SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff`
+for it, as the L1 job of chapter 12 does). It draws them on the 82 x 72 trigger-tower grid (ieta -41..41, iphi 1..72;
+an HF primitive is drawn over the 2 or 4 towers in phi it covers) and, for every generator jet above `jetPtMin = 30`
+GeV, the 17 x 17 towers around the tower of the jet axis with the ET written in each and the 9 x 9 window of a
+Level-1 jet. It then compares the primitives with what the file knows otherwise:
+
+- the transverse energy the particles left in the crystals: the `PCaloHit`s `g4SimHits:EcalHitsEB/EE` summed per
+  trigger tower (`EcalTrigTowerConstituentsMap`, record `IdealGeometryRecord`; the reason for the `Geometry/CaloTopology`
+  dependency in `plugins/BuildFile.xml`) as E / cosh(eta) of the crystal. With `mixed=1` the file holds only the hits of
+  the signal (the pileup hits live in the `CrossingFrame`, which is not stored), so a primitive without a deposit
+  behind it is pileup or noise;
+- the time samples stored with every primitive (5 for the ECAL, 4 for HB / HE, 2 for the HF), summed per sample;
+- the ECAL trigger-tower flag of every primitive (`ttFlag()`: 0 low, 1 mid, 3 high interest) against the
+  selective-readout flags `simEcalDigis:ebSrFlags / eeSrFlags` (3 = full readout) that follow from it.
+
+Options: `mixed` (above), `jetPtMin`, `zMax = 256` (the top of the logarithmic colour scale, GeV), `pdfFile`,
+`pngPrefix`, `savePNG`, `sampleLabel`, `eventsToProcess`, `globalTag`, `era`, `geometry`. Products:
+
+| file | content |
+|---|---|
+| `trigPrim_<case>_11_DIGI.pdf` | the pages: ECAL primitives, HCAL primitives, and two pages per generator jet (not for the pileup collision, which has no jet above 30 GeV) |
+| `trigPrim_<case>_11_DIGI_ecaltp_run1_event<E>.png`, `..._hcaltp_...` | the tower maps (figure 11.2 of the chapter, left and middle columns: signal and mixed) |
+| `trigPrim_<case>_11_DIGI_jet<N>_ecaltp_run1_event1.png`, `..._jet<N>_hcaltp_...` | the towers around generator jet N (1 = the b jet, pt 117.8 GeV; 2 = the bbar jet, in the HF); figure 11.2, right column: `trigPrim_signal_11_DIGI_jet1_*` |
+| `trigPrim_<case>_11_DIGI.log` | every number: `format:`, `TP <region>:`, `ECAL TP time samples`, `HCAL TP time samples`, `ECAL TT flags`, `EB tower read in full:`, `ECAL SR flags`, `ECAL deposits <region>:`, `GenJet N:`, `top tower N:` |
+| `trigprim_11_DIGI.txt` | the three logs side by side (`common/trigPrimLedger.py`): section 4.7 |
+
+Note the numbering: these pages are numbered by *generator* jet (jet 1 = the b jet), the pages of chapter 12 by
+*Level-1* jet (jet 1 = the bbar jet, the larger at Level-1).
 
 ## 4. The tables
 
@@ -469,3 +530,201 @@ All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
 | muon | `SimMuon/DTDigitizer/python/muonDTDigis_cfi.py`, `SimMuon/CSCDigitizer/python/muonCSCDigis_cfi.py`, `SimMuon/RPCDigitizer/python/muonRPCDigis_cfi.py`, `SimMuon/GEMDigitizer/python/muonGEMDigis_cfi.py`, `muonME0Digis_cfi.py`, `SimMuon/GEMDigitizer/plugins/GEMDigiProducer.cc` (`fillDescriptions`), `SimMuon/Configuration/python/SimMuon_cff.py` |
 | ageing | `SLHCUpgradeSimulations/Configuration/python/aging.py` (`customise_aging_300/1000/3000`, `ageHcal`, `ageEcal`, `agedHGCal`, `ageSiPM`) |
 | mixing, premixing | `Configuration/StandardSequences/python/Mixing.py`, `SimGeneral/MixingModule/python/mix_POISSON_average_cfi.py`, `mix_2024_25ns_RunIII2024Summer24_PoissonOOTPU_cfi.py`, `mix_probFunction_25ns_PoissonOOTPU_cfi.py`, `Configuration/PyReleaseValidation/python/relval_steps.py` (`'Run4'`: `AVE_200_BX_25ns`), `Configuration/StandardSequences/python/DataMixerPreMix_cff.py`, `Mixing/Base/src/BMixingModule.cc`, `Mixing/Base/src/PileUp.cc`, `SimGeneral/MixingModule/plugins/MixingModule.cc` |
+
+### 4.7 The trigger primitives: `trigprim_11_DIGI.txt` (the output of `common/trigPrimLedger.py`, in full)
+
+The numbers of the section "Made here for the next stage: the trigger primitives" of the chapter (table 11.2 is
+section 1 of the file).
+
+```
+== trigPrimLedger 11_DIGI
+(11a)      signal: run:lumi:event 1:1:1
+(11b)      pileup: run:lumi:event 1:1:72
+(11a+11b)  mixed: run:lumi:event 1:1:1
+format: ECAL samples per primitive=5 sampleOfInterest=2 | HCAL (HB, HE) samples per primitive=4 presamples=2
+
+-- 1. The trigger primitives: primitives with ET > 0 / sum ET [GeV] / largest ET [GeV]
+                                            (11a) signal                  (11b) pileup               (11a+11b) mixed
+ECAL, EB (of 2448)                     200 / 114.5 / 3.0              157 / 83.5 / 1.0             594 / 408.0 / 5.0
+ECAL, EE (of 1584)                       98 / 85.5 / 6.5               72 / 44.0 / 2.0           594 / 1273.5 / 11.5
+ECAL, all (of 4032)                    298 / 200.0 / 6.5             229 / 127.5 / 2.0          1188 / 1681.5 / 11.5
+HCAL, HB (of 2304)                        13 / 7.0 / 1.0                11 / 5.5 / 0.5             153 / 129.5 / 8.0
+HCAL, HE (of 1728)                      13 / 25.0 / 10.0                 0 / 0.0 / 0.0            335 / 271.5 / 10.0
+HCAL, HF (of 792)                      39 / 148.5 / 89.0                 4 / 2.0 / 0.5           741 / 1329.0 / 89.0
+HCAL, all (of 4824)                    65 / 180.5 / 89.0                15 / 7.5 / 0.5          1229 / 1730.0 / 89.0
+all primitives (of 8856)                     363 / 380.5                   244 / 135.0                 2417 / 3411.5
+
+-- 2. One primitive per bunch crossing: sum ET [GeV] of the time samples stored with every primitive
+      (25 ns per sample; [ ] is the sample of interest, the bunch crossing of the event)
+(11a)      signal
+   ECAL     bx -2..+2:      218    140.5 [     200]    138.5      138
+   HB + HE  bx -2..+1:        3        2 [      32]      4.5
+   HF       bx -1.. 0:                 0 [   148.5]
+(11b)      pileup
+   ECAL     bx -2..+2:      239      124 [   127.5]    128.5      128
+   HB + HE  bx -2..+1:      3.5      2.5 [     5.5]      4.5
+   HF       bx -1.. 0:                 0 [       2]
+(11a+11b)  mixed
+   ECAL     bx -2..+2:    240.5    967.5 [  1681.5]      379       93
+   HB + HE  bx -2..+1:        3    266.5 [     401]      336
+   HF       bx -1.. 0:              1114 [    1329]
+
+-- 3. What the ECAL primitives do inside the DIGI step: the trigger-tower flag of every primitive (low / mid / high
+      interest) and the selective-readout decision of the ECAL digitisation that follows from it
+                                                       (11a)           (11b)       (11a+11b)
+EB towers flagged mid interest                             2               0              14
+EB towers flagged high interest                            0               0               1
+EB towers read in full (of 2448)                           2               0              23
+   with a high flag themselves                             0               0               1
+   others (mid flag, or next to a high one)                2               0              22
+EE towers flagged mid interest                             5               1             120
+EE towers flagged high interest                            3               0             105
+EE supercrystals read in full (of 624)                    15               1             175
+(11a)      EB tower read in full: ieta=-17 iphi=46 ecalTP=2.5 ttFlag=1
+(11a)      EB tower read in full: ieta=11 iphi=27 ecalTP=3 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-3 iphi=3 ecalTP=0.5 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-3 iphi=4 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-3 iphi=5 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-3 iphi=55 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-4 iphi=3 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-4 iphi=4 ecalTP=5 ttFlag=3
+(11a+11b)  EB tower read in full: ieta=-4 iphi=5 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-5 iphi=3 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-5 iphi=4 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-5 iphi=5 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=-9 iphi=42 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-10 iphi=38 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-13 iphi=67 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-17 iphi=46 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=1 iphi=22 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=1 iphi=51 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=4 iphi=8 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=4 iphi=23 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=6 iphi=33 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=10 iphi=40 ecalTP=2.5 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=11 iphi=27 ecalTP=3.5 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=13 iphi=47 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=14 iphi=25 ecalTP=2 ttFlag=1
+
+-- 4. What an ECAL primitive measures: the primitives against the transverse energy that the particles of the sample
+      left in the crystals of each tower (PCaloHits; in the mixed sample only the hits of the signal are in the file)
+(11a)      signal
+   ECAL deposits: 2799 towers, 120.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 33 (deposit 51.0 GeV, primitives 50.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 265 (150.0 GeV) | deposits >= 0.25 GeV without a primitive: 40 (17.1 GeV) | deposits below 0.25 GeV per tower: 52.6 GeV
+   EB   deposits: 1573 towers, 43.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 17 (deposit 16.7 GeV, primitives 16.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 183 (98.5 GeV) | deposits >= 0.25 GeV without a primitive: 18 (7.1 GeV) | deposits below 0.25 GeV per tower: 19.9 GeV
+   EE   deposits: 1226 towers, 77.0 GeV | towers with a deposit >= 0.25 GeV and a primitive: 16 (deposit 34.3 GeV, primitives 34.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 82 (51.5 GeV) | deposits >= 0.25 GeV without a primitive: 22 (10.0 GeV) | deposits below 0.25 GeV per tower: 32.7 GeV
+(11b)      pileup
+   ECAL deposits: 1195 towers, 14.6 GeV | towers with a deposit >= 0.25 GeV and a primitive: 0 (deposit 0.0 GeV, primitives 0.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 229 (127.5 GeV) | deposits >= 0.25 GeV without a primitive: 4 (1.2 GeV) | deposits below 0.25 GeV per tower: 13.4 GeV
+   EB   deposits: 557 towers, 6.0 GeV | towers with a deposit >= 0.25 GeV and a primitive: 0 (deposit 0.0 GeV, primitives 0.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 157 (83.5 GeV) | deposits >= 0.25 GeV without a primitive: 2 (0.6 GeV) | deposits below 0.25 GeV per tower: 5.4 GeV
+   EE   deposits: 638 towers, 8.6 GeV | towers with a deposit >= 0.25 GeV and a primitive: 0 (deposit 0.0 GeV, primitives 0.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 72 (44.0 GeV) | deposits >= 0.25 GeV without a primitive: 2 (0.6 GeV) | deposits below 0.25 GeV per tower: 8.0 GeV
+(11a+11b)  mixed
+   ECAL deposits: 2799 towers, 120.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 49 (deposit 57.8 GeV, primitives 101.5 GeV)
+        primitives without a deposit >= 0.25 GeV: 1139 (1580.0 GeV) | deposits >= 0.25 GeV without a primitive: 24 (10.3 GeV) | deposits below 0.25 GeV per tower: 52.6 GeV
+   EB   deposits: 1573 towers, 43.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 19 (deposit 16.9 GeV, primitives 18.5 GeV)
+        primitives without a deposit >= 0.25 GeV: 575 (389.5 GeV) | deposits >= 0.25 GeV without a primitive: 16 (6.9 GeV) | deposits below 0.25 GeV per tower: 19.9 GeV
+   EE   deposits: 1226 towers, 77.0 GeV | towers with a deposit >= 0.25 GeV and a primitive: 30 (deposit 40.8 GeV, primitives 83.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 564 (1190.5 GeV) | deposits >= 0.25 GeV without a primitive: 8 (3.5 GeV) | deposits below 0.25 GeV per tower: 32.7 GeV
+
+-- 5. The two generator jets in the primitives: the 9 x 9 towers around the jet axis, sum ET [GeV]
+(11a)      GenJet 1: pt=117.788 eta=-1.58908 phi=-2.08403 towerIeta=-19 towerIphi=49 | 9x9 towers around it: ecalTP=32 (13 towers) hcalTP=23.5 (10 primitives) ecalDepositEt=41.6009 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 0 0 23.5 0
+(11a)      GenJet 2: pt=115.944 eta=-3.74635 phi=1.00816 towerIeta=-34 towerIphi=12 | 9x9 towers around it: ecalTP=0 (0 towers) hcalTP=124 (11 primitives) ecalDepositEt=0 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 0 124 0 0
+(11a+11b)  GenJet 1: pt=117.788 eta=-1.58908 phi=-2.08403 towerIeta=-19 towerIphi=49 | 9x9 towers around it: ecalTP=48 (32 towers) hcalTP=27.5 (16 primitives) ecalDepositEt=41.6009 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 0 0.5 27.5 1.5
+(11a+11b)  GenJet 2: pt=115.944 eta=-3.74635 phi=1.00816 towerIeta=-34 towerIphi=12 | 9x9 towers around it: ecalTP=0 (0 towers) hcalTP=200.5 (45 primitives) ecalDepositEt=0 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 48.25 200.5 0 0
+
+-- 6. The largest primitives (ECAL + HCAL of the tower)
+(11a)      top tower 0: ieta=-34 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=89 hcalSamples=0,89,0,0
+(11a)      top tower 1: ieta=-18 iphi=50 ecalTP=3.5 ttFlag=1 fineGrain=0 ecalDepositEt=3.44173 hcalTP=10 hcalSamples=0,0,10,0
+(11a)      top tower 2: ieta=-33 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=12.5 hcalSamples=0,12.5,0,0
+(11a)      top tower 3: ieta=-19 iphi=48 ecalTP=6.5 ttFlag=3 fineGrain=0 ecalDepositEt=6.57903 hcalTP=3.5 hcalSamples=0,0,3.5,0
+(11a)      top tower 4: ieta=-33 iphi=13 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=9.5 hcalSamples=0,9.5,0,0
+(11a)      top tower 5: ieta=-34 iphi=13 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=7.5 hcalSamples=0,7.5,0,0
+(11b)      top tower 0: ieta=26 iphi=3 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 1: ieta=26 iphi=37 ecalTP=1.5 ttFlag=0 fineGrain=0 ecalDepositEt=0.162433 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 2: ieta=27 iphi=5 ecalTP=1 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 3: ieta=6 iphi=13 ecalTP=1 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 4: ieta=15 iphi=19 ecalTP=1 ttFlag=0 fineGrain=0 ecalDepositEt=0.0749165 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 5: ieta=6 iphi=72 ecalTP=1 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11a+11b)  top tower 0: ieta=-34 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=89 hcalSamples=1,89,0,0
+(11a+11b)  top tower 1: ieta=-33 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=15.5 hcalSamples=0,15.5,0,0
+(11a+11b)  top tower 2: ieta=-18 iphi=50 ecalTP=3.5 ttFlag=1 fineGrain=0 ecalDepositEt=3.44173 hcalTP=10 hcalSamples=0,0,10,0
+(11a+11b)  top tower 3: ieta=-33 iphi=13 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=12 hcalSamples=0.5,12,0,0
+(11a+11b)  top tower 4: ieta=-28 iphi=11 ecalTP=10.5 ttFlag=3 fineGrain=0 ecalDepositEt=0 hcalTP=1 hcalSamples=0,1.5,1,0.5
+(11a+11b)  top tower 5: ieta=-28 iphi=65 ecalTP=9 ttFlag=3 fineGrain=0 ecalDepositEt=0 hcalTP=2.5 hcalSamples=0,1,2.5,1.5
+```
+
+How the chapter reads it.
+
+- Section 1 is table 11.2. The mixed column is also the first table of chapter 12 (its step 1).
+- Section 2, "one primitive per bunch crossing": the ECAL sample sums of the signal alone are 218.0, 140.5, [200.0],
+  138.5, 138.0 GeV: about 140 GeV of noise per crossing and 60 GeV more in ours.
+- Section 3: the thresholds of the flags are 2 GeV (mid) and 4 GeV (high), from the payload of `EcalTPGPhysicsConstRcd`,
+  `EcalTPGPhysicsConst_2018_mc_EB_4.0_2.0_EE_4.0_2.0` (`conddb list 150X_mcRun3_2024_realistic_v2 | grep EcalTPG`
+  lists the 19 `EcalTPG*Rcd` payloads). Mixed barrel: 14 mid + 1 high towers; a mid tower is read in full alone, a high
+  one with its 8 neighbours: 14 + 9 = 23 towers, the 23 `EB tower read in full` lines (the eight with `ttFlag=0` are
+  the neighbours of (-4, 4)).
+- Section 4, signal alone: 120.7 GeV of ET deposited in 2799 ECAL towers; 33 towers with at least 0.25 GeV and a
+  primitive (deposit 51.0 GeV, primitives 50.0 GeV); 40 towers with at least 0.25 GeV (17.1 GeV) and no primitive;
+  52.6 GeV in towers below 0.25 GeV; 265 of the 298 primitives (150.0 GeV) without such a deposit. 51.0 + 17.1 + 52.6 =
+  120.7. Library event 72: 14.6 GeV deposited, 4 towers with 0.25 GeV, 229 primitives (127.5 GeV): 229 / 4032 = one
+  tower in 17.6.
+- Section 5, the 9 x 9 towers around the jet axes: the b jet 32.0 (ECAL) + 23.5 (HCAL) = 55.5 GeV alone, 48.0 + 27.5 =
+  75.5 GeV with the pileup (+20.0); the bbar jet 124.0 and 200.5 GeV (+76.5). Chapter 12 centres its window on the
+  seed tower of the Level-1 jet, (-18, 50) instead of the jet-axis tower (-19, 49), and finds 45.0 + 25.0 = 70.0 GeV
+  for the b jet: the two windows differ by one tower in each direction.
+
+The parameters of the two producers (`thresholds_11_DIGI.txt`, section 2; the HCAL one abbreviated to the lines the
+chapter uses):
+
+```
+[simEcalTriggerPrimitiveDigis] EcalTrigPrimProducer
+   BarrelOnly                                                   False
+   Debug                                                        False
+   Famos                                                        False
+   InstanceEB
+   InstanceEE
+   Label                                                        simEcalUnsuppressedDigis
+   TcpOutput                                                    False
+   binOfMaximum                                                 6
+[simHcalTriggerPrimitiveDigis] HcalTrigPrimDigiProducer
+   FG_HF_thresholds                                             [17, 255]
+   FG_threshold                                                 12
+   PeakFinderAlgorithm                                          2
+   RunZS                                                        False
+   ZS_threshold                                                 1
+   applySaturationFix                                           True
+   inputUpgradeLabel                                            [cms.InputTag("simHcalUnsuppressedDigis","HBHEQIE11DigiCollection"), cms.InputTag("simHcalUnsuppressedDigis","HFQIE10DigiCollection")]
+   latency                                                      1
+   numberOfPresamples                                           2
+   numberOfPresamplesHF                                         1
+   numberOfSamples                                              4
+   numberOfSamplesHF                                            2
+   tpScales.HBHE.LSBQIE11                                       0.0625
+   upgradeHB                                                    True
+   upgradeHE                                                    True
+   upgradeHF                                                    True
+   useTDCInMinBiasBits                                          False
+```
+
+`Label = simEcalUnsuppressedDigis`: the ECAL primitives are made from the unsuppressed frames, which are not stored.
+`binOfMaximum = 6` is the sample where the digitiser puts the maximum of an in-time pulse. `tpScales.HBHE.LSBQIE11 =
+0.0625`: 1/16 GeV per count of the linearised HCAL sum, before the compression to 0.5 GeV per count.
+
+### 4.8 Files of the release quoted in the hand-over section
+
+All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
+
+| statement | file, line |
+|---|---|
+| the ECAL primitive is made before, and for, the selective readout | `SimCalorimetry/Configuration/python/ecalDigiSequence_cff.py`: 5 (`# ECAL Trigger Primitives (needed by SRP)`), 12 (`ecalDigiTask = cms.Task(simEcalTriggerPrimitiveDigis, simEcalDigis, simEcalPreshowerDigis)`) |
+| the selective readout reads the primitives | `SimCalorimetry/EcalSelectiveReadoutProducers/python/ecalDigis_cfi.py`: 35 (`trigPrimProducer = cms.string('simEcalTriggerPrimitiveDigis')`) |
+| the ECAL primitive producer and its input | `SimCalorimetry/EcalTrigPrimProducers/python/ecalTriggerPrimitiveDigis_cfi.py`: 10 (`binOfMaximum = 6`), 14 (`Label = 'simEcalUnsuppressedDigis'`) |
+| the algorithm, named after the FENIX chips | `SimCalorimetry/EcalTrigPrimAlgos/interface/EcalFenixLinearizer.h`, `EcalFenixEtStrip.h`, `EcalFenixAmplitudeFilter.h`, `EcalFenixPeakFinder.h`, `EcalFenixStrip.h` (the strip), `EcalFenixEtTot.h`, `EcalFenixTcp.h`, `EcalFenixTcpFormatEB.h` / `EE.h`, `EcalFenixFgvbEB.h` (the tower), `EcalTrigPrimFunctionalAlgo.h` |
+| what is stored: the primitives and the unsuppressed HCAL frames, not the unsuppressed EB / EE frames | `SimCalorimetry/Configuration/python/SimCalorimetry_EventContent_cff.py`: 8, 14 (`keep *_sim{Ecal,Hcal}TriggerPrimitiveDigis_*_*`), 45 (`run2_common`: `keep *_simHcalUnsuppressedDigis_*_*`), 36 (only the `ESDigiCollection` of `simEcalUnsuppressedDigis`), 51 (`EBDigiCollection_simEcalUnsuppressedDigis` only under `run3_ecal_devel`) |
+| the primitives are packed into the raw data | `EventFilter/EcalDigiToRaw/python/ecalDigiToRaw_cfi.py`: 12 (`labelTT = cms.InputTag("simEcalTriggerPrimitiveDigis")`) |
+| the HCAL primitive producer | `SimCalorimetry/HcalTrigPrimProducers/python/hcaltpdigi_cfi.py`: 124 (`PeakFinderAlgorithm = 2`), 133-137 (`numberOfSamplesHF = 2`, `numberOfPresamplesHF = 1` under `run2_HF_2017`); the algorithm is `SimCalorimetry/HcalTrigPrimAlgos/src/HcalTriggerPrimitiveAlgo.cc` |
+| the muon trigger primitives are made by the L1 step instead | `L1Trigger/Configuration/python/SimL1Emulator_cff.py` (`simDtTriggerPrimitiveDigis`, `simCscTriggerPrimitiveDigis`): chapter 12 |

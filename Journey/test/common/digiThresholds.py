@@ -5,7 +5,8 @@
 # Section 1 lists, per digitiser (process.mix.digitizers.<name>) and per digi producer after the mixing (simEcalDigis,
 # simEcalPreshowerDigis, simHcalDigis, simHcalUnsuppressedDigis, simMuon*Digis, simSiStripDigis ...), every parameter whose name
 # suggests a threshold, a noise, a zero suppression, a readout window or a cut; section 2 dumps the full parameter set
-# of the tracker, ECAL and HCAL digitisers and of the selective-readout / zero-suppression producers for the companion.
+# of the tracker, ECAL and HCAL digitisers, of the selective-readout / zero-suppression producers and of the two
+# calorimeter trigger-primitive producers for the companion.
 import os, re, sys
 
 cfg = sys.argv[1]
@@ -72,7 +73,7 @@ for label, m in mods:
 
 print('\n-- 2. the full parameter sets of the tracker, calorimeter and zero-suppression modules')
 for label, m in mods:
-    if not any(x in label for x in ('pixel', 'strip', 'ecal', 'hcal', 'simEcalDigis', 'simHcalDigis', 'simEcalPreshowerDigis', 'mix (bunch')):
+    if not any(x in label for x in ('pixel', 'strip', 'ecal', 'hcal', 'simEcalDigis', 'simHcalDigis', 'simEcalPreshowerDigis', 'mix (bunch', 'TriggerPrimitiveDigis')):
         continue
     print('[%s] %s' % (label, getattr(m, 'type_', lambda: '')() if hasattr(m, 'type_') else ''))
     for k, v in walk(m, ''):

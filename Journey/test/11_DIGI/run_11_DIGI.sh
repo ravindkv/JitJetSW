@@ -17,6 +17,9 @@
 # Output in test/11_DIGI/out/:
 #   step3_DIGI_<case>_11_DIGI.root, .log, .driver.log   case = signal, pileup, mixed (configs in test/11_DIGI/)
 #   digiAnalyzer_<case>_11_DIGI.pdf, .root, .log        eta-phi and r-z pages of the digis with the counts (DigiAnalyzer) + PNG
+#   trigPrim_<case>_11_DIGI.pdf, .log + PNG             the calorimeter trigger primitives the DIGI step makes for the Level-1
+#                                                       trigger of chapter 12 (TrigPrimAnalyzer): tower maps, the towers around the jets
+#   trigprim_11_DIGI.txt                                the trigger primitives of the three samples side by side (common/trigPrimLedger.py)
 #   thresholds_11_DIGI.txt                              the thresholds and settings of every digitiser (common/digiThresholds.py)
 #   ledger_11_DIGI.txt                                  the ledger of the three samples (common/digiLedger.py)
 # Variables: PU=60 BUNCHES=-1,1 SKIP=71 (jitjet_common.sh) CASES="signal pileup mixed" REUSE=1 (keep existing DIGI files)
@@ -68,7 +71,23 @@ draw() {  # draw <case> <event> <label>
 [[ " $CASES " == *" signal "* ]] && draw signal "$EVENT" "chapter $CHAPTER (11a): the signal digitised|bbbar, pTHat > $PTHATMIN GeV|2024 detector, 13.6 TeV|no pileup"
 [[ " $CASES " == *" pileup "* ]] && draw pileup "$pu_event" "chapter $CHAPTER (11b): one pileup collision digitised|library event $((SKIP + 1))|SoftQCD inelastic, 13.6 TeV|2024 detector, no signal"
 [[ " $CASES " == *" mixed "* ]] && draw mixed "$EVENT" "chapter $CHAPTER (11a+11b): signal + pileup digitised|PU = $PU per bx (Poisson), bx $bx_min..$bx_max|the collisions of the chapter 10 mixing (playback)|2024 detector, 13.6 TeV"
+# ------------------------------------------------------------------------------------------ the trigger primitives
+# The DIGI step also makes simEcalTriggerPrimitiveDigis and simHcalTriggerPrimitiveDigis, the coarse copy of the calorimeter
+# data that the Level-1 trigger of chapter 12 will use. This is the last chapter with the signal and the pileup apart
+# (from chapter 12 on only the mixed event is followed), so the three samples are compared here.
+trigprim() {  # trigprim <case> <event> <mixed 0/1> <label>
+  local case=$1 ev=$2 mixed=$3 label=$4
+  local a=trigPrim_${case}_${CHAPTER}
+  find "${OUT:?}" -maxdepth 1 -name "${a:?}_*.png" -delete
+  run_cmsrun "$COMMON/trigPrimAnalyzer_cfg.py" "$OUT/$a.log" inputFiles="file:$OUT/step3_DIGI_${case}_${CHAPTER}.root" maxEvents=1 eventsToProcess="$ev" \
+    globalTag="$CONDITIONS" era="$ERA" geometry="$GEOMETRY" pdfFile="$a.pdf" pngPrefix="$a" savePNG="$PNG" mixed="$mixed" sampleLabel="$label"
+  grep -E '^== TrigPrimAnalyzer|^  TP (ECAL|HCAL):' "$OUT/$a.log"
+}
+[[ " $CASES " == *" signal "* ]] && trigprim signal "$EVENT" 0 "chapter $CHAPTER (11a): the signal alone|trigger primitives made by the DIGI step|bbbar, pTHat > $PTHATMIN GeV, no pileup"
+[[ " $CASES " == *" pileup "* ]] && trigprim pileup "$pu_event" 0 "chapter $CHAPTER (11b): one pileup collision|trigger primitives made by the DIGI step|library event $((SKIP + 1)), no signal"
+[[ " $CASES " == *" mixed "* ]] && trigprim mixed "$EVENT" 1 "chapter $CHAPTER (11a+11b): signal + pileup|trigger primitives made by the DIGI step|PU = $PU per bx, bx $bx_min..$bx_max (playback)"
+python3 "$COMMON/trigPrimLedger.py" "$OUT" "$CHAPTER" > "$OUT/trigprim_${CHAPTER}.txt" 2> "$OUT/trigprim_${CHAPTER}.log" || { tail -20 "$OUT/trigprim_${CHAPTER}.log" >&2; exit 1; }
 python3 "$COMMON/digiThresholds.py" "$CHDIR/step3_DIGI_mixed_${CHAPTER}_cfg.py" > "$OUT/thresholds_${CHAPTER}.txt" 2> "$OUT/thresholds_${CHAPTER}.log" ||
   { tail -20 "$OUT/thresholds_${CHAPTER}.log" >&2; exit 1; }
 python3 "$COMMON/digiLedger.py" "$OUT" "$CHAPTER" > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" || { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
-echo "  Thresholds: thresholds_${CHAPTER}.txt; ledger: ledger_${CHAPTER}.txt"
+echo "  Thresholds: thresholds_${CHAPTER}.txt; ledger: ledger_${CHAPTER}.txt; trigger primitives: trigprim_${CHAPTER}.txt"

@@ -19,8 +19,8 @@ quotes. `doc/chapter/README.md` says how a chapter is written.
 | `08_PU` | pileup at generator level: 250 minimum-bias collisions (GEN), one drawn; the signal + its 68 in-time collisions re-clustered | `step1_GEN_MinBias_08_PU.root`, `genstats_08_PU.txt`, `genJetAnalyzer_08_PU.pdf`, ledger |
 | `09_G4` | the hand-over to Geant4: transport-only SIM of the signal and of all library collisions (what is accepted, what is dropped) | `step2_G4_signal_09_G4.root`, `step2_G4_pileup_09_G4.root`, SimAnalyzer pages, `ledger_09_G4.txt` (g4Ledger.py) |
 | `10_SIM` | full Geant4 physics switched on stage by stage (B, decays, EM, hadronic); the signal, the library and the mixing at SimHit level, station by station | `step2_SIM_{B,B_Decay,B_Decay_EM,signal,pileup}_10_SIM.root`, SimAnalyzer and SimHitAnalyzer pages (`signal/`, `pileup/`, `mixed/`), `step3_MIX_10_SIM.root` (the playback record of the mixing), ledger |
-| `11_DIGI` | digitisation: the signal alone, one collision alone, the signal with PU = 60 in bx -1..1 | `step3_DIGI_{signal,pileup,mixed}_11_DIGI.root`, DigiAnalyzer pages, `thresholds_11_DIGI.txt`, ledger |
-| `12_L1T` | checkpoint (Rule G): the Level-1 trigger of 2024 in six steps (calorimeter trigger primitives, Layer-1, Layer-2, muon track finders, uGMT, uGT), for the same three samples | `step4_L1_{signal,pileup,mixed}_12_L1T.root`, L1TCaloAnalyzer / L1TMuonAnalyzer / L1TGlobalAnalyzer pages, `settings_12_L1T.txt`, `truth_12_L1T.txt`, ledger |
+| `11_DIGI` | digitisation: the signal alone, one collision alone, the signal with PU = 60 in bx -1..1 (the last chapter with signal and pileup apart); the calorimeter trigger primitives made here for the Level-1 trigger | `step3_DIGI_{signal,pileup,mixed}_11_DIGI.root`, DigiAnalyzer pages, `thresholds_11_DIGI.txt`, ledger, TrigPrimAnalyzer pages, `trigprim_11_DIGI.txt` |
+| `12_L1T` | checkpoint (Rule G): the Level-1 trigger of 2024 in six steps (calorimeter trigger primitives, Layer-1, Layer-2, muon track finders, uGMT, uGT), for the mixed event only (the signal with its pileup) | `step4_L1_12_L1T.root`, L1TCaloAnalyzer / L1TMuonAnalyzer / L1TGlobalAnalyzer pages, `settings_12_L1T.txt`, `truth_12_L1T.txt`, ledger |
 
     cd CMSSW_15_0_5/src && cmsenv && cd JitJetSW/Journey/test
     ./runAll.sh                       # the whole journey in order (about three hours, chapters 10 and 11 dominate)
@@ -76,6 +76,12 @@ to stdout; the chapter scripts convert the pages to PNG (`pdftoppm -cropbox`) fo
   links; the signal ak4GenJets as circles. The log has the counts per subdetector and origin and the summed
   amplitudes. Options: `eventsToProcess`, `pdfFile`, `pngPrefix`, `sampleLabel`, `jetPtMin`, `ecalMinAmp`, `hcalMinAmp`,
   `hcalSignalTS` (-1: the sample of interest of the frame), `hcalNSumTS`, `maxDrawn` (thinning for the drawing only).
+- **TrigPrimAnalyzer** (`test/common/trigPrimAnalyzer_cfg.py`): the calorimeter trigger primitives of one event of a
+  GEN-SIM-DIGI file (`simEcalTriggerPrimitiveDigis`, `simHcalTriggerPrimitiveDigis`, made by the DIGI step for the
+  Level-1 trigger) on the trigger-tower grid, the towers around the generator jets one by one, the transverse energy
+  deposited per ECAL tower (PCaloHits) against the primitive, the sum per bunch crossing of the primitive digi, and the
+  ECAL trigger-tower flags that drive the selective readout. `test/common/trigPrimLedger.py` puts the three samples of
+  chapter 11 side by side (`trigprim_11_DIGI.txt`).
 - **JourneyTransportPhysics**: a Geant4 physics list with all particles and no process, so that only the
   transportation acts (chapters 09 and 10). A physics list built outside the release cannot be mixed with the
   simulation "biglib" (its own static Geant4), so those cmsRun jobs run with the biglib directories removed from

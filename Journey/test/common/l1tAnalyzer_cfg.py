@@ -4,8 +4,8 @@
 #   L1TMuonAnalyzer    steps 4-5: muon trigger primitives, track finders (BMTF, OMTF, EMTF), global muon trigger
 #   L1TGlobalAnalyzer  step 6: the objects the global trigger receives, the menu, the decision, the thresholds
 #
-#   cmsRun l1tAnalyzer_cfg.py inputFiles=file:step4_L1_mixed_12_L1T.root eventsToProcess=1:1:1 \
-#          pdfPrefix=l1t_mixed_12_L1T sampleLabel="(12a+12b) signal + pileup|PU 60"
+#   cmsRun l1tAnalyzer_cfg.py inputFiles=file:step4_L1_12_L1T.root eventsToProcess=1:1:1 \
+#          pdfPrefix=l1t_12_L1T sampleLabel="chapter 12: the Level-1 trigger of 2024|with PU = 60 per bx"
 #
 # writes <pdfPrefix>_calo.pdf, <pdfPrefix>_muon.pdf, <pdfPrefix>_global.pdf and, with savePNG=1, one PNG per page:
 # <pdfPrefix>_calo_{ecaltp,hcaltp,layer1,layer2,jet<N>_{ecaltp,hcaltp,layer1}}_run<R>_event<E>.png,
@@ -17,7 +17,7 @@ import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 
 options = VarParsing('analysis')
-options.inputFiles = 'file:step4_L1_signal_12_L1T.root'
+options.inputFiles = 'file:step4_L1_12_L1T.root'
 options.maxEvents = 1
 options.register('globalTag', 'auto:phase1_2024_realistic', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'global tag of the L1 step (menu, calorimeter-trigger parameters, HCAL TP scale)')
