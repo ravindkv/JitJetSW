@@ -58,8 +58,15 @@ Rule G: Checkpoint chapters (12_L1T, 13_HLT)
                 (4) muon trigger primitives and the muon track finders (BMTF, OMTF, EMTF)
                 (5) the global muon trigger (uGMT)
                 (6) the global trigger (uGT): every algorithm of the menu in parallel, the final decision
-        13_HLT: (1) L1 seed and prescale (2) calorimeter jets (3) tracking and vertex (4) particle flow and PF jets (5) the decision of the paths
-                (to be confirmed when the chapter is written)
+        13_HLT: (1) the raw event (DIGI2RAW), the L1 seed and the prescale: hltGtStage2Digis, HLTL1TSeed, HLTPrescaler
+                (2) calorimeter jets: ECAL/HCAL rec-hits, calorimeter towers, AK4 calo jets and their corrections, the calo-jet cut
+                (3) tracking and vertices: pixel tracks and vertices, the vertices kept, the iterative tracking, the PF vertices
+                (4) particle flow and PF jets: PF candidates, AK4 PF jets, rho and the jet energy corrections
+                (5) the decision of the paths: the last filters, TriggerResults, the datasets and the streams
+                The menu is the GRun menu of the release (the 2025 menu; HLT:@relval2024 is a fake menu); the seeds that name
+                algorithms missing from the 2024 L1 menu of 12_L1T are adapted by python/hltL1Menu_cff.py (Rule E: it reads
+                the L1 menu from the output of 12_L1T). The path followed through the steps is HLT_PFJet110, seeded by
+                L1_SingleJet90.
 
 Rule H: Signal and pileup are followed separately only up to 11_DIGI
     The DIGI stage is the LAST stage at which the signal and the pileup exist apart. Up to 11_DIGI (08_PU, 09_G4, 10_SIM, 11_DIGI)
@@ -83,7 +90,7 @@ List of chapters:
     10: SIM
     11: DIGI (the last chapter with signal and pileup apart, Rule H; with the hand-over section (B6) on the TriggerPrimitiveDigis)
     12: L1T (checkpoint, Rule G: the Level-1 trigger of 2024, six steps; the mixed event only, Rule H)
-    13: HLT (checkpoint, Rule G: the High Level Trigger; the mixed event only, Rule H; future)
+    13: HLT (checkpoint, Rule G: the High Level Trigger of the GRun menu of the release, five steps; the mixed event only, Rule H)
 
 Length of each chapter:
     5 pdf pages +-2

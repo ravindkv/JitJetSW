@@ -12,13 +12,13 @@ The rules are `Journey/Constitution.txt`; this file is the practical companion f
 | `doc/chapter/chapter_<XX_YYY>.tex` | the book chapter (physics), `\input` by `doc/JitJetSW.tex`; no preamble, starts with `\chapter{...}` |
 | `doc/chapter/chapter_<XX_YYY>.md` | the technical companion, not compiled into the book |
 
-The chapters are `01_ME 02_PS 03_MnM 04_MPI 05_Had 06_Decay 07_GenJet 08_PU 09_G4 10_SIM 11_DIGI 12_L1T`; the output of chapter N
+The chapters are `01_ME 02_PS 03_MnM 04_MPI 05_Had 06_Decay 07_GenJet 08_PU 09_G4 10_SIM 11_DIGI 12_L1T 13_HLT`; the output of chapter N
 is the input of chapter N+1 (Rule E), and `test/runAll.sh` runs them in order. Common configurations and helpers live in
 `test/common/` (Rule F): `jitjet_common.sh` (sourced by every script), the analyzer configurations
 (`genPartAnalyzer_cfg.py`, `genJetAnalyzer_cfg.py`, `genJetPileup_cfg.py`, `simAnalyzer_cfg.py`, `simHitAnalyzer_cfg.py`,
-`digiAnalyzer_cfg.py`, `trigPrimAnalyzer_cfg.py`, `l1tAnalyzer_cfg.py`) and the ledger scripts (`genLedger.py`, `g4Ledger.py`,
+`digiAnalyzer_cfg.py`, `trigPrimAnalyzer_cfg.py`, `l1tAnalyzer_cfg.py`, `hltAnalyzer_cfg.py`) and the ledger scripts (`genLedger.py`, `g4Ledger.py`,
 `simLedger.py`, `digiLedger.py`, `digiThresholds.py`, `trigPrimLedger.py`, `minBiasGenStats.py`, `l1tLedger.py`, `l1tSettings.py`,
-`l1tTruth.py`).
+`l1tTruth.py`, `hltMenu.py`, `hltLedger.py`).
 
 Signal and pileup (Rule H): up to `11_DIGI` a chapter may follow three samples (the signal alone, one pileup collision
 alone, the signal with its pileup). `11_DIGI` is the last stage at which they exist apart; from `12_L1T` on there is one
@@ -91,7 +91,9 @@ A stage that decides whether the event is kept, instead of changing its energy, 
   (one sample, the mixed event: Rule H), and a display of the event *after* the step. Who made an object (the signal, the
   pileup, noise) is read from the truth in the file: the generator jets, the `TrackingParticle`s behind a muon.
   Chapter 12 is the model: `plugins/L1TCaloAnalyzer.cc`, `L1TMuonAnalyzer.cc`, `L1TGlobalAnalyzer.cc` (one analyzer per
-  group of steps, one PDF each, the pages as PNG; shared layout in `plugins/L1TDisplay.h`).
+  group of steps, one PDF each, the pages as PNG; shared layout in `plugins/L1TDisplay.h`). Chapter 13 does the same for
+  the HLT with `plugins/HLTPathAnalyzer.cc` (steps 1 and 5), `HLTCaloAnalyzer.cc`, `HLTTrackAnalyzer.cc`, `HLTPFAnalyzer.cc`
+  (`plugins/HLTDisplay.h`), and draws one path of the menu module by module (TikZ, from `menu_13_HLT.txt`).
 - The pages have a text panel on the right: include them at full width (`width=0.93\textwidth`) when the panel matters,
   or crop the panel away for a side-by-side pair: `\includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{...}`
   (the PNG is 1396 pixels wide, the panel is the right 34 %).

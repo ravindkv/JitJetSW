@@ -86,4 +86,7 @@
 <use name="L1Trigger/L1TMuon"/>
 <use name="CalibFormats/CaloTPG"/>
 <use name="Geometry/CaloTopology"/>
+<use name="HLTrigger/HLTcore"/>
+<use name="CondFormats/JetMETObjects"/>
+<use name="JetMETCorrections/Objects"/>
 <flags EDM_PLUGIN="1"/>

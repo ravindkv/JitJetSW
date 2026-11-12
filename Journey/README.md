@@ -2,7 +2,7 @@
 
 ONE bbbar event (Pythia8 `q qbar -> b bbar`, 13.6 TeV, tune CP5, pTHat > 100 GeV; run 1, lumi 1, event 1) and the
 SAME event followed through every stage of the CMS simulation, one chapter per stage. The rules of the book are
-`Constitution.txt`; the book is `doc/JitJetSW.tex` (`pdflatex JitJetSW.tex` twice in `doc/`), which inputs the twelve
+`Constitution.txt`; the book is `doc/JitJetSW.tex` (`pdflatex JitJetSW.tex` twice in `doc/`), which inputs the thirteen
 chapters `doc/chapter/chapter_<XX_YYY>.tex`; every chapter has a technical companion `doc/chapter/chapter_<XX_YYY>.md`
 and a script `test/<XX_YYY>/run_<XX_YYY>.sh` that produces, in `test/<XX_YYY>/out/`, exactly the files the chapter
 quotes. `doc/chapter/README.md` says how a chapter is written.
@@ -21,6 +21,7 @@ quotes. `doc/chapter/README.md` says how a chapter is written.
 | `10_SIM` | full Geant4 physics switched on stage by stage (B, decays, EM, hadronic); the signal, the library and the mixing at SimHit level, station by station | `step2_SIM_{B,B_Decay,B_Decay_EM,signal,pileup}_10_SIM.root`, SimAnalyzer and SimHitAnalyzer pages (`signal/`, `pileup/`, `mixed/`), `step3_MIX_10_SIM.root` (the playback record of the mixing), ledger |
 | `11_DIGI` | digitisation: the signal alone, one collision alone, the signal with PU = 60 in bx -1..1 (the last chapter with signal and pileup apart); the calorimeter trigger primitives made here for the Level-1 trigger | `step3_DIGI_{signal,pileup,mixed}_11_DIGI.root`, DigiAnalyzer pages, `thresholds_11_DIGI.txt`, ledger, TrigPrimAnalyzer pages, `trigprim_11_DIGI.txt` |
 | `12_L1T` | checkpoint (Rule G): the Level-1 trigger of 2024 in six steps (calorimeter trigger primitives, Layer-1, Layer-2, muon track finders, uGMT, uGT), for the mixed event only (the signal with its pileup) | `step4_L1_12_L1T.root`, L1TCaloAnalyzer / L1TMuonAnalyzer / L1TGlobalAnalyzer pages, `settings_12_L1T.txt`, `truth_12_L1T.txt`, ledger |
+| `13_HLT` | checkpoint (Rule G): DIGI2RAW and the High Level Trigger (the GRun menu of the release, its seeds adapted to the 2024 L1 menu by `python/hltL1Menu_cff.py`) in five steps (raw event and L1 seed, calorimeter jets, tracking and vertices, particle flow and PF jets, the decision of the paths), for the mixed event only | `step5_HLT_13_HLT.root`, HLTPathAnalyzer / HLTCaloAnalyzer / HLTTrackAnalyzer / HLTPFAnalyzer pages, `menu_13_HLT.txt`, ledger |
 
     cd CMSSW_15_0_5/src && cmsenv && cd JitJetSW/Journey/test
     ./runAll.sh                       # the whole journey in order (about three hours, chapters 10 and 11 dominate)
@@ -82,6 +83,18 @@ to stdout; the chapter scripts convert the pages to PNG (`pdftoppm -cropbox`) fo
   deposited per ECAL tower (PCaloHits) against the primitive, the sum per bunch crossing of the primitive digi, and the
   ECAL trigger-tower flags that drive the selective readout. `test/common/trigPrimLedger.py` puts the three samples of
   chapter 11 side by side (`trigprim_11_DIGI.txt`).
+- **HLTPathAnalyzer, HLTCaloAnalyzer, HLTTrackAnalyzer, HLTPFAnalyzer** (`test/common/hltAnalyzer_cfg.py`, shared page in
+  `plugins/HLTDisplay.h` on top of `L1TDisplay.h`): the High Level Trigger of one event of a RAW + HLT file (chapter 13).
+  HLTPathAnalyzer reads the menu from the file (`HLTConfigProvider`) and prints, for every path, whether it accepted the
+  event, its L1 seed and the module that stopped it, the datasets and streams, the objects of every filter
+  (`hltTriggerSummaryAOD`) and the raw-data size per subsystem; pages: the unpacked L1 objects and the seed objects, the
+  ladders of the jet paths, the objects of the accepted paths. HLTCaloAnalyzer: rec-hits, calorimeter towers on the
+  trigger-tower grid, AK4 calo jets with their corrections recomputed level by level from the global tag
+  (`FactorizedJetCorrector`, payload `AK4CaloHLT`), the towers around the two signal jets. HLTTrackAnalyzer: clusters,
+  pixel and full tracks, pixel, kept and PF vertices compared with the simulated collisions (`addPileupInfo`,
+  `genParticles:xyz0`). HLTPFAnalyzer: the PF candidates by kind, the AK4 PF jets with their composition and their
+  corrections (payload `AK4PFHLT`, binned in eta and phi), the two signal jets constituent by constituent.
+  `test/common/hltMenu.py` dumps the menu as configured, `hltLedger.py` writes the ledger.
 - **JourneyTransportPhysics**: a Geant4 physics list with all particles and no process, so that only the
   transportation acts (chapters 09 and 10). A physics list built outside the release cannot be mixed with the
   simulation "biglib" (its own static Geant4), so those cmsRun jobs run with the biglib directories removed from

@@ -118,7 +118,7 @@
   \large ONE \bbbar{} event, the SAME event, followed at every stage of the CMS simulation:\\
   matrix element, parton shower, matching and merging, multiparton interactions, hadronisation, decays,\\
   generator jets, pileup, the hand-over to Geant4, the detector simulation, the digitisation\\
-  and the Level-1 trigger}
+  the Level-1 trigger and the High Level Trigger}
 \author{\code{JitJetSW/Journey}, \code{doc/JitJetSW.tex}}
 \date{CMSSW\_15\_0\_5, the 2024 CMS detector (Run 3), $pp$ at $13.6\TeV$; the event is run 1, lumi 1, event 1 of
   \code{test/06\_Decay/out/step1\_GEN\_06\_Decay.root}}
@@ -136,7 +136,7 @@ gives the numbers of the event that explain the physics of the stage, closes its
 stage added to or removed from the event, with the $\eta$--$\phi$ display of the event at that stage) and ends
 with the open problems of the stage for the Phase-2 (HL-LHC) detector, found by digging into the CMSSW
 configuration. A stage that does not change the event but decides whether it is kept, a \emph{checkpoint} (the
-Level-1 trigger of chapter~\ref{ch:12_L1T}), is a longer chapter with one section per step of the decision. Every chapter has a script, \code{test/<chapter>/run\_<chapter>.sh}, that produces exactly the files
+Level-1 trigger of chapter~\ref{ch:12_L1T}, the High Level Trigger of chapter~\ref{ch:13_HLT}), is a longer chapter with one section per step of the decision. Every chapter has a script, \code{test/<chapter>/run\_<chapter>.sh}, that produces exactly the files
 it quotes in \code{test/<chapter>/out/}, and a technical companion, \code{doc/chapter/chapter\_<chapter>.md}, with the
 \code{cmsDriver.py} and \code{cmsRun} commands, the walk-through of the configurations, and every number in full.
 The output of each chapter is the input of the next: \code{test/runAll.sh} runs the whole journey in order.
@@ -158,23 +158,25 @@ chapter & stage & what the stage does to the event \\
 \ref{ch:10_SIM} & SIM & the detector simulation: field, decays, showers, hits; the library and the mixing \\
 \ref{ch:11_DIGI} & DIGI & the digitisation: the signal alone, one collision alone, signal with pileup \\
 \ref{ch:12_L1T} & L1T & checkpoint: the Level-1 trigger, from trigger primitives to the decision of the menu \\
+\ref{ch:13_HLT} & HLT & checkpoint: the High Level Trigger, from the raw event to the decision of the paths \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \tableofcontents
 
-\input{chapter/chapter_01_ME}
-\input{chapter/chapter_02_PS}
-\input{chapter/chapter_03_MnM}
-\input{chapter/chapter_04_MPI}
-\input{chapter/chapter_05_Had}
-\input{chapter/chapter_06_Decay}
-\input{chapter/chapter_07_GenJet}
-\input{chapter/chapter_08_PU}
-\input{chapter/chapter_09_G4}
-\input{chapter/chapter_10_SIM}
-\input{chapter/chapter_11_DIGI}
+%\input{chapter/chapter_01_ME}
+%\input{chapter/chapter_02_PS}
+%\input{chapter/chapter_03_MnM}
+%\input{chapter/chapter_04_MPI}
+%\input{chapter/chapter_05_Had}
+%\input{chapter/chapter_06_Decay}
+%\input{chapter/chapter_07_GenJet}
+%\input{chapter/chapter_08_PU}
+%\input{chapter/chapter_09_G4}
+%\input{chapter/chapter_10_SIM}
+%\input{chapter/chapter_11_DIGI}
 \input{chapter/chapter_12_L1T}
+\input{chapter/chapter_13_HLT}
 
 \end{document}
