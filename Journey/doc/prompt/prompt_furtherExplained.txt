@@ -1,0 +1,1 @@
+Similar to the ../doc/chapter/chapter_12_L1T.tex which has better explanation/description from education/learning point of view. Can you please elaborate ../doc/chapter/chapter_09_G4.tex, ../doc/chapter/chapter_10_SIM.tex, and ../doc/chapter/chapter_11_DIGI.tex. Adjust the number of pages as needed and update that in ../Constitution.txt

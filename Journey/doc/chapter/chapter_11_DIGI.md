@@ -6,7 +6,10 @@ in `test/11_DIGI/out/`. The chapter text is `doc/chapter/chapter_11_DIGI.tex`. T
 samples (Rule H of the Constitution): from chapter 12 on only the mixed event is followed, so everything a later
 chapter needs to know about the signal alone is computed here. The chapter has a hand-over section (Rule B6), "Made
 here for the next stage: the trigger primitives": the DIGI step also makes the calorimeter trigger primitives that the
-Level-1 trigger of chapter 12 uses; sections 3 and 4.7 of this companion are about them. All commands below are run from
+Level-1 trigger of chapter 12 uses; sections 3 and 4.7 of this companion are about them. Section 3 (numbers of the event)
+of the chapter is split into one subsection per digitiser, each with a channel or a data frame followed by hand; those
+worked examples come from `test/11_DIGI/digiExamples_11_DIGI.py` (section 3 below, output in section 4.10) and from the
+payloads and release files of section 4.11. All commands below are run from
 `test/` of an initialized CMSSW_15_0_5 (`cmsenv`), with `J=$CMSSW_BASE/src/JitJetSW/Journey`.
 
 ## 1. The cmsDriver.py commands
@@ -182,7 +185,23 @@ cmsRun ../../common/digiAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step
   > digiAnalyzer_mixed_11_DIGI.log 2>&1
 python3 ../../common/digiThresholds.py ../step3_DIGI_mixed_11_DIGI_cfg.py > thresholds_11_DIGI.txt
 python3 ../../common/digiLedger.py . 11_DIGI > ledger_11_DIGI.txt
+python3 ../digiExamples_11_DIGI.py . > examples_11_DIGI.txt 2> examples_11_DIGI.log     # about 1 minute
 ```
+
+`digiExamples_11_DIGI.py` is not an analyzer but an FWLite script (run by `run_11_DIGI.sh` after the ledger): it reads
+the signal and the mixed DIGI files and the APV pulse file of the release and prints the worked examples of the chapter
+(section 4.10): (1) the thickness of the silicon sensors (the largest |z_exit - z_entry| of the PSimHits in the local
+frame of their module), the charge of the crossings of the full thickness (energy loss / 3.61 eV, per micrometre of
+path), the ADC of the pixel and strip digis (strip digis split by whether a `StripDigiSimLink` exists for the channel), the
+response of `SiPixelDigitizerAlgorithm::missCalibrate` with the parameters of `thresholds_11_DIGI.txt`; (2) the APV25
+deconvolution pulse `SimTracker/SiStripDigitizer/data/APVShapeDeco_320.txt` read at the times of bunch crossings -1, 0,
++1, and the points of figure 11.3; (3) the five largest EB and EE frames of the signal, sample by sample, with the
+in-time energy (PCaloHits of 0 to 100 ns) of the crystal, the frames in towers / supercrystals read in full (from the
+`ebSrFlags` / `eeSrFlags`), the crystals with a deposit above 0.1, 0.3325, 0.5 and 1 GeV and how many of them have a frame,
+and for the EE their approximate eta; (4) the four largest HB/HE (QIE11, with the TDC) and HF (QIE10) frames and the
+median frame; (5) the muon digis of the mixed event (DT times, CSC strips per chamber and their 8 samples, CSC wire time
+bins, RPC and GEM bunch crossings; a small C++ helper declared through `ROOT.gInterpreter` iterates the
+`MuonDigiCollection`s, which PyROOT cannot). Products: `examples_11_DIGI.txt`, `examples_11_DIGI.log`.
 
 What the analyzer does: it reads the digi collections of the table above, places every digi at the position of its
 pixel / strip (module topology), crystal / tower (`CaloGeometry`), wire / strip (muon geometries) and draws two pages,
@@ -255,8 +274,8 @@ Options: `mixed` (above), `jetPtMin`, `zMax = 256` (the top of the logarithmic c
 | file | content |
 |---|---|
 | `trigPrim_<case>_11_DIGI.pdf` | the pages: ECAL primitives, HCAL primitives, and two pages per generator jet (not for the pileup collision, which has no jet above 30 GeV) |
-| `trigPrim_<case>_11_DIGI_ecaltp_run1_event<E>.png`, `..._hcaltp_...` | the tower maps (figure 11.2 of the chapter, left and middle columns: signal and mixed) |
-| `trigPrim_<case>_11_DIGI_jet<N>_ecaltp_run1_event1.png`, `..._jet<N>_hcaltp_...` | the towers around generator jet N (1 = the b jet, pt 117.8 GeV; 2 = the bbar jet, in the HF); figure 11.2, right column: `trigPrim_signal_11_DIGI_jet1_*` |
+| `trigPrim_<case>_11_DIGI_ecaltp_run1_event<E>.png`, `..._hcaltp_...` | the tower maps (figure 11.7 of the chapter, left and middle columns: signal and mixed) |
+| `trigPrim_<case>_11_DIGI_jet<N>_ecaltp_run1_event1.png`, `..._jet<N>_hcaltp_...` | the towers around generator jet N (1 = the b jet, pt 117.8 GeV; 2 = the bbar jet, in the HF); figure 11.7, right column: `trigPrim_signal_11_DIGI_jet1_*`; figure 11.8: `trigPrim_signal_11_DIGI_jet2_hcaltp` and `trigPrim_mixed_11_DIGI_jet2_hcaltp` |
 | `trigPrim_<case>_11_DIGI.log` | every number: `format:`, `TP <region>:`, `ECAL TP time samples`, `HCAL TP time samples`, `ECAL TT flags`, `EB tower read in full:`, `ECAL SR flags`, `ECAL deposits <region>:`, `GenJet N:`, `top tower N:` |
 | `trigprim_11_DIGI.txt` | the three logs side by side (`common/trigPrimLedger.py`): section 4.7 |
 
@@ -373,7 +392,7 @@ with 1802 early and 0 late; strips 436 901 with 121 942 early (27.9 %); the sign
 350 718 / 68 = 5158 in-time digis per collision; muon 2016 digis. Amplitude ratios (11a+11b)/(11a): EB 8899/1260 =
 7.1, EE 12194/1876 = 6.5, ES 230844/17885 = 12.9, HB 29111/16684 = 1.7, HE 141702/20375 = 7.0, HF 30729/8234 = 3.7.
 
-### 4.3 `thresholds_11_DIGI.txt`: the lines quoted in table 11.1 of the chapter
+### 4.3 `thresholds_11_DIGI.txt`: the lines quoted in table 11.2 of the chapter
 
 ```
 [mix.digitizers.pixel]        ThresholdInElectrons_BPix 1600.0  ThresholdInElectrons_BPix_L1 2000.0  ThresholdInElectrons_BPix_L2 1600.0
@@ -412,6 +431,21 @@ with 1802 early and 0 late; strips 436 901 with 121 942 early (27.9 %); the sign
 The CSC strip integration window quoted in the chapter (`signalStartTime = -250`, `signalStopTime = 500` ns) and the
 RPC `Gate = 25` ns are in `SimMuon/CSCDigitizer/python/muonCSCDigis_cfi.py` and `SimMuon/RPCDigitizer/python/muonRPCDigis_cfi.py`
 of the release (`digiThresholds.py` does not match their names).
+
+Two python values of the list above are not what the digitiser uses, and the chapter (table 11.2) says so:
+
+- `strips.pedestal 600.0`, `pedestalSigma 1.5`, `gain 2.0` of `simMuonCSCDigis` are read only with
+  `stripConditions = 'Configurable'`; the configuration has `stripConditions = cms.string('Database')`
+  (`muonCSCDigis_cfi.py`, line 78; `SimMuon/CSCDigitizer/src/CSCDigiProducer.cc`, lines 33-36), so the pedestals, gains
+  and noise come from the global tag: the strip samples of section 4.10 sit at 1016 to 1141 counts, not 600.
+- `hb.simHitToPhotoelectrons 2000.0` (and `he.`) is overwritten: `HcalSimParameters::simHitToPhotoelectrons`
+  (`SimCalorimetry/HcalSimAlgos/src/HcalSimParameters.cc`, lines 64-73) returns `samplingFactor / fCtoGeV /
+  photoelectronsToAnalog`, the gain and the fC per photoelectron of the SiPM being DB values (the condition of line 68 is
+  true for every HCAL subdetector). The HF parameters are `HFSimParameters` (`simHitToPhotoelectrons = 6`).
+- `HBlevel 8`, `HElevel 9`, `HOlevel 24` of `simHcalDigis` are not used either: with `useConfigZSvalues = 0` the
+  thresholds are set to -1 and taken per channel from `HcalZSThresholdsRcd` (`HcalZSAlgoRealistic.cc`, lines 27-44 and
+  82-84). With `use1ts = True` and `HBregion = HEregion = [5, 6]` the loop of `keepMe` (lines 87-93) tests one time slice,
+  index 5 (the sample of interest): a frame is kept if its QIE11 code there reaches the level of the channel.
 
 ### 4.4 The SimHits that went in (chapter 10 files)
 
@@ -536,7 +570,7 @@ All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
 
 ### 4.7 The trigger primitives: `trigprim_11_DIGI.txt` (the output of `common/trigPrimLedger.py`, in full)
 
-The numbers of the section "Made here for the next stage: the trigger primitives" of the chapter (table 11.2 is
+The numbers of the section "Made here for the next stage: the trigger primitives" of the chapter (table 11.3 is
 section 1 of the file).
 
 ```
@@ -664,7 +698,7 @@ EE supercrystals read in full (of 624)                    16               3    
 
 How the chapter reads it.
 
-- Section 1 is table 11.2. The mixed column is also the first table of chapter 12 (its step 1).
+- Section 1 is table 11.3. The mixed column is also the first table of chapter 12 (its step 1).
 - Section 2, "one primitive per bunch crossing": the ECAL sample sums of the signal alone are 426.5, 268.5, [328.5],
   274.0, 280.0 GeV: about 270 GeV of noise per crossing (the first stored sample is higher, as in 2024) and some 55 GeV
   more in ours.
@@ -810,3 +844,217 @@ The numbers, 2024 -> 2025 (the 2024 values from the outputs of 11 November 2026;
 digitiser draws (a different Lorentz angle, more dark-current photoelectrons) shifts the sequence for all the others,
 so the noise of channels whose payloads did not change (the pixel noise, the ES, the HF) is a different draw. Such
 differences are fluctuations, not effects of the 2025 conditions.
+
+### 4.10 The worked examples: `examples_11_DIGI.txt` (the output of `test/11_DIGI/digiExamples_11_DIGI.py`, in full)
+
+```
+== digiExamples 11_DIGI: worked examples from out
+
+-- 1. The silicon: the PSimHits of the signal, the digis made of them
+  PXB PSimHits=  929  thickness(max |dz local|)=285 um  crossings of the full thickness=592: charge median=48008 e (25%: 34430, 75%: 73814) | per um of path: median 84.2 e (25%: 77.6) -> at normal incidence 23993 e
+  PXF PSimHits=  973  thickness(max |dz local|)=290 um  crossings of the full thickness=726: charge median=27594 e (25%: 24603, 75%: 32718) | per um of path: median 82.8 e (25%: 74.0) -> at normal incidence 24015 e
+  TIB PSimHits= 1182  thickness(max |dz local|)=290 um  crossings of the full thickness=983: charge median=46627 e (25%: 33841, 75%: 66749) | per um of path: median 93.5 e (25%: 80.3) -> at normal incidence 27122 e
+  TID PSimHits=  975  thickness(max |dz local|)=290 um  crossings of the full thickness=854: charge median=29232 e (25%: 24414, 75%: 40292) | per um of path: median 88.2 e (25%: 76.3) -> at normal incidence 25571 e
+  TOB PSimHits= 1022  thickness(max |dz local|)=470 um  crossings of the full thickness=710: charge median=71194 e (25%: 54397, 75%: 104233) | per um of path: median 90.5 e (25%: 80.5) -> at normal incidence 42516 e
+  TEC PSimHits= 5191  thickness(max |dz local|)=470 um  crossings of the full thickness=1958: charge median=51076 e (25%: 42988, 75%: 69989) | per um of path: median 88.5 e (25%: 79.5) -> at normal incidence 41610 e
+  pixel digis=4800  ADC median=69  25%=46 75%=105  at full scale (255)=170  below 50=1348
+  pixel ADC response (BPix L2-4, FPix):   1600 e -> ADC  31 ; layer 1: ADC  34
+  pixel ADC response (BPix L2-4, FPix):   2000 e -> ADC  33 ; layer 1: ADC  36
+  pixel ADC response (BPix L2-4, FPix):   5000 e -> ADC  49 ; layer 1: ADC  51
+  pixel ADC response (BPix L2-4, FPix):  10000 e -> ADC  80 ; layer 1: ADC  80
+  pixel ADC response (BPix L2-4, FPix):  15000 e -> ADC 115 ; layer 1: ADC 112
+  pixel ADC response (BPix L2-4, FPix):  20000 e -> ADC 151 ; layer 1: ADC 147
+  pixel ADC response (BPix L2-4, FPix):  25000 e -> ADC 188 ; layer 1: ADC 181
+  pixel ADC response (BPix L2-4, FPix):  30000 e -> ADC 222 ; layer 1: ADC 214
+  pixel ADC response (BPix L2-4, FPix):  40000 e -> ADC 255 ; layer 1: ADC 255
+  pixel ADC reaches 255 at 35592 e (L2-4, FPix)
+  strip digis linked=19418 ADC median=64 25%=33 75%=106 (>=254: 990) | not linked=12184 ADC median=18 25%=15 75%=21 max=85
+  linked strip clusters (runs of adjacent linked strips)=6473, strips per cluster=3.00
+
+-- 2. The APV25 deconvolution pulse of the release (SimTracker/SiStripDigitizer/data/APVShapeDeco_320.txt)
+  2001 values, resolution 0.1 ns, maximum at index 500
+  SiLinearChargeDivider::TimeResponse: the charge is multiplied by shape[t0 + (r/c - tof)/resolution]; a hit of bunch crossing -1 has tof shifted by -25 ns, i.e. it is read 25 ns AFTER its peak
+  read -30.0 ns after the peak: 0.004
+  read -25.0 ns after the peak: 0.065
+  read -20.0 ns after the peak: 0.239
+  read -15.0 ns after the peak: 0.465
+  read -12.5 ns after the peak: 0.582
+  read -10.0 ns after the peak: 0.695
+  read  -5.0 ns after the peak: 0.902
+  read  +0.0 ns after the peak: 1.000
+  read  +5.0 ns after the peak: 0.921
+  read +10.0 ns after the peak: 0.742
+  read +12.5 ns after the peak: 0.635
+  read +15.0 ns after the peak: 0.523
+  read +20.0 ns after the peak: 0.302
+  read +25.0 ns after the peak: 0.121
+  read +30.0 ns after the peak: 0.007
+  read +40.0 ns after the peak: -0.091
+  read +50.0 ns after the peak: -0.108
+  curve (t after the peak [ns], shape): (-40.0,0.004) (-37.5,0.004) (-35.0,0.004) (-32.5,0.004) (-30.0,0.004) (-27.5,0.018) (-25.0,0.065) (-22.5,0.141) (-20.0,0.239) (-17.5,0.349) (-15.0,0.465) (-12.5,0.582) (-10.0,0.695) (-7.5,0.802) (-5.0,0.902) (-2.5,0.975) (0.0,1.000) (2.5,0.979) (5.0,0.921) (7.5,0.840) (10.0,0.742) (12.5,0.635) (15.0,0.523) (17.5,0.412) (20.0,0.302) (22.5,0.203) (25.0,0.121) (27.5,0.056) (30.0,0.007) (32.5,-0.030) (35.0,-0.057) (37.5,-0.077) (40.0,-0.091) (42.5,-0.100) (45.0,-0.105) (47.5,-0.108) (50.0,-0.108) (52.5,-0.107) (55.0,-0.104) (57.5,-0.101) (60.0,-0.097) (62.5,-0.092) (65.0,-0.087) (67.5,-0.083) (70.0,-0.078) (72.5,-0.073) (75.0,-0.068) (77.5,-0.064) (80.0,-0.059)
+  rises above 0.01 at 28.4 ns before the peak; crosses zero 30.5 ns after the peak; minimum -0.108 at 49.2 ns
+
+-- 3. The ECAL data frames of the signal (simEcalDigis), and the energy the particles left in the crystal
+  EB: 156 frames, 10 samples each; gain ids of all samples: {1: 1560}; first three samples of all frames: mean 198.5, rms 3.79 ADC
+    ieta=-82 iphi=239 amplitude=63.3 ADC (max - mean of first 3) deposit (0-100 ns)=3.719 GeV -> 17.0 ADC/GeV | samples [204, 201, 200, 200, 250, 265, 253, 241, 231, 219] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ieta=54 iphi=142 amplitude=56.3 ADC (max - mean of first 3) deposit (0-100 ns)=3.184 GeV -> 17.7 ADC/GeV | samples [205, 202, 204, 202, 245, 260, 251, 242, 230, 222] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ieta=60 iphi=162 amplitude=31.3 ADC (max - mean of first 3) deposit (0-100 ns)=1.388 GeV -> 22.6 ADC/GeV | samples [195, 197, 198, 197, 220, 228, 219, 213, 211, 204] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ieta=-44 iphi=219 amplitude=29.3 ADC (max - mean of first 3) deposit (0-100 ns)=1.599 GeV -> 18.4 ADC/GeV | samples [195, 193, 193, 194, 215, 223, 218, 212, 204, 204] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ieta=-82 iphi=258 amplitude=18.7 ADC (max - mean of first 3) deposit (0-100 ns)=0.455 GeV -> 41.0 ADC/GeV | samples [196, 196, 194, 202, 206, 207, 212, 214, 210, 209] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    crystals with a deposit > 0.5 GeV and a frame: 13, ADC per GeV median 18.4 (deposits 0.58-3.72 GeV)
+    frames in a tower/supercrystal read in full: 100; frames that passed the zero suppression elsewhere: 56
+    crystals with an in-time deposit: 5218 (67.08 GeV); of them with a frame: 86; frames with no deposit: 70
+    deposit > 0.1000 GeV: 113 crystals, 24 of them written
+    deposit > 0.3325 GeV: 30 crystals, 19 of them written
+    deposit > 0.5000 GeV: 17 crystals, 13 of them written
+    deposit > 1.0000 GeV: 6 crystals, 6 of them written
+  EE: 384 frames, 10 samples each; gain ids of all samples: {1: 3840}; first three samples of all frames: mean 199.7, rms 2.07 ADC
+    ix=31 iy=7 z=-1 amplitude=107.3 ADC (max - mean of first 3) deposit (0-100 ns)=7.882 GeV -> 13.6 ADC/GeV | samples [199, 201, 202, 215, 283, 308, 298, 276, 253, 235] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ix=28 iy=13 z=-1 amplitude=107.3 ADC (max - mean of first 3) deposit (0-100 ns)=12.780 GeV -> 8.4 ADC/GeV | samples [195, 197, 198, 213, 281, 304, 294, 271, 253, 238] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ix=30 iy=8 z=-1 amplitude=67.7 ADC (max - mean of first 3) deposit (0-100 ns)=4.129 GeV -> 16.4 ADC/GeV | samples [198, 201, 202, 210, 253, 268, 262, 246, 233, 222] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ix=30 iy=7 z=-1 amplitude=47.0 ADC (max - mean of first 3) deposit (0-100 ns)=3.485 GeV -> 13.5 ADC/GeV | samples [203, 202, 201, 207, 236, 249, 243, 232, 224, 214] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ix=34 iy=10 z=-1 amplitude=45.0 ADC (max - mean of first 3) deposit (0-100 ns)=4.517 GeV -> 10.0 ADC/GeV | samples [202, 202, 199, 204, 236, 246, 243, 233, 224, 215] gains [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    crystals with a deposit > 0.5 GeV and a frame: 32, ADC per GeV median 12.1 (deposits 0.56-12.78 GeV)
+    frames in a tower/supercrystal read in full: 355; frames that passed the zero suppression elsewhere: 29
+    crystals with an in-time deposit: 6117 (288.62 GeV); of them with a frame: 333; frames with no deposit: 51
+    EE crystals > 1 GeV written: 19, |eta| 1.55-1.66 (approx.), deposits 1.03-12.78 GeV
+    EE crystals > 1 GeV NOT written: 15, |eta| 2.20-2.88 (approx.), deposits 1.02-5.81 GeV
+    deposit > 0.1000 GeV: 553 crystals, 111 of them written
+    deposit > 0.3325 GeV: 144 crystals, 49 of them written
+    deposit > 0.5000 GeV: 78 crystals, 32 of them written
+    deposit > 1.0000 GeV: 34 crystals, 19 of them written
+
+-- 4. The HCAL frames of the signal (simHcalDigis)
+  HB/HE QIE11: 4459 frames of 10 time slices, sample of interest at index [5]; median of the smallest sample of each frame: 6
+    subdet=2 ieta=-18 iphi=50 depth=3  ADC [7, 11, 8, 7, 5, 118, 93, 51, 35, 34]  TDC [63, 23, 63, 63, 63, 6, 62, 62, 62, 62]
+    subdet=2 ieta=-18 iphi=48 depth=1  ADC [8, 12, 8, 6, 8, 109, 84, 44, 29, 21]  TDC [63, 63, 63, 63, 63, 6, 62, 62, 62, 62]
+    subdet=2 ieta=-19 iphi=48 depth=1  ADC [3, 6, 7, 6, 8, 100, 77, 38, 19, 13]  TDC [63, 63, 63, 63, 63, 7, 62, 62, 62, 49]
+    subdet=2 ieta=-18 iphi=48 depth=2  ADC [6, 8, 9, 14, 11, 88, 66, 33, 19, 14]  TDC [63, 63, 63, 34, 63, 6, 62, 62, 62, 62]
+    median frame (by max - min): subdet=2 ieta=-16 iphi=31 depth=4  ADC [4, 4, 5, 7, 6, 15, 12, 12, 15, 12]  TDC [63, 63, 63, 63, 63, 32, 42, 63, 31, 63]
+  HF QIE10: 3456 frames of 3 time slices, sample of interest at index [1]; median of the smallest sample of each frame: 3
+    subdet=4 ieta=-34 iphi=11 depth=1  ADC [2, 122, 20]  TDC [-1, -1, -1]
+    subdet=4 ieta=-34 iphi=11 depth=3  ADC [5, 121, 18]  TDC [-1, -1, -1]
+    subdet=4 ieta=-34 iphi=11 depth=2  ADC [3, 103, 15]  TDC [-1, -1, -1]
+    subdet=4 ieta=-34 iphi=11 depth=4  ADC [3, 100, 12]  TDC [-1, -1, -1]
+    median frame (by max - min): subdet=4 ieta=-31 iphi=43 depth=4  ADC [3, 2, 4]  TDC [-1, -1, -1]
+
+-- 5. The muon digis of the mixed event (simMuon*Digis); the iteration is done by a small C++ helper
+  DT digis=12 (wheel station sector superlayer layer wire time[ns]):
+    -2 1 4 2 1 5 564.062
+    2 1 5 1 3 2 564.062
+    -2 1 4 2 4 5 613.281
+    2 2 4 1 2 29 625.781
+    2 2 4 1 1 29 672.656
+    -2 1 4 3 1 30 679.688
+    -2 1 4 2 3 5 710.938
+    2 1 5 1 1 2 721.875
+    -2 1 4 3 2 31 748.438
+    -2 1 4 2 2 5 751.562
+    2 1 5 1 2 3 833.594
+    0 1 10 3 3 18 921.875
+  CSC strip digis=1888 in 13 chambers (endcap station ring chamber: strips)
+    1 1 4 11: 192 strip digis in layers 1,2,3,4,5,6
+    1 1 4 21: 160 strip digis in layers 1,2,3,4,5,6
+    1 1 4 7: 96 strip digis in layers 1,2,3,4,5,6
+    1 1 4 8: 176 strip digis in layers 1,2,3,4,5,6
+    2 1 1 20: 192 strip digis in layers 1,2,3,4,5,6
+    2 1 2 25: 144 strip digis in layers 1,2,3,4,5,6
+    2 1 4 2: 192 strip digis in layers 1,2,3,4,5,6
+    2 1 4 25: 96 strip digis in layers 1,2,3,4,5,6
+    2 1 4 33: 96 strip digis in layers 1,2,3,4,5,6
+    2 2 1 10: 256 strip digis in layers 1,2,3,4,5,6
+    2 2 1 11: 96 strip digis in layers 1,2,3,4,5,6
+    2 3 1 11: 96 strip digis in layers 1,2,3,4,5,6
+    2 4 1 11: 96 strip digis in layers 1,2,3,4,5,6
+  CSC strip with the largest pulse: endcap 1 ME1/4 chamber 8 layer 1 strip 39, 8 samples (50 ns each): 1023 1016 1205 2001 2232 1858 1455 1212
+  CSC strip pulse heights (max - min of the 8 samples): median 5, 90% 15, max 1216
+  a median strip: ME2/1 chamber 10 layer 2 strip 15: 1138 1137 1141 1141 1140 1137 1136 1140
+  CSC wire digis=91 in 13 chambers; first time bin: {'6': 1, '7': 11, '8': 57, '9': 13, '10': 6, '11': 2, '12': 1}
+  RPC digis=10 (region station ring strip bx): -1 1 2 32 0; -1 1 2 21 0; -1 1 2 22 0; -1 1 2 23 0; 0 1 2 65 1; 0 2 -1 18 -3; -1 3 2 12 -2; 1 3 2 9 4; -1 3 3 18 -3; -1 4 3 17 0
+  GEM digis=15 (region station chamber layer strip bx): -1 1 20 1 213 0; -1 1 20 1 214 0; -1 1 20 1 215 0; -1 1 2 1 173 -1; -1 1 2 1 174 -1; -1 1 2 1 175 -1; 1 1 7 1 126 0; 1 1 7 1 127 0; 1 1 7 1 128 0; 1 1 2 2 304 0; -1 1 20 2 210 0; -1 1 2 2 166 1; 1 1 7 2 116 -1; 1 1 7 2 117 -1; 1 1 7 2 118 -1
+```
+
+How the chapter reads it.
+
+- Section 1, the pixels (chapter 11.3, "The pixels"): the sensors are 285 um thick (also `SensorThick = 0.285*mm` of
+  `Geometry/TrackerCommonData/data/PhaseI/pixbarladder.xml`); the 592 PXB crossings of the full thickness have a median
+  of 84.2 electrons per um of path, so a crossing at right angles frees 84 x 285 = 24 000 electrons (the script: 23 993):
+  24 000 / 1600 = 15 times the threshold, 24 000 / 175 = 137 ("140") times the noise; 24 000 / 2.5 = 9600 electrons per
+  pixel give ADC 78 on the response; the median pixel digi has ADC 69, 170 of 4800 are at 255, the response reaches 255
+  at 35 592 ("35 600") electrons. The Lorentz drift: tan(theta_L) per tesla 0.0358 (layer 1) and 0.0709 (layers 3, 4)
+  (section 4.9) x 3.8 T x 285 um = 39 and 77 um.
+- Section 1, the strips ("The strips"): sensitive thickness 290 um (TIB, TID) and 470 um (TOB, TEC); TIB median 93.5
+  electrons per um: 93.5 x 290 = 27 115 ("27 000") electrons = 110 ADC counts at 247 electrons per count; linked strip
+  digis 19 418, median ADC 64, 990 at 254 or 255; unlinked 12 184, median 18, maximum 85; 6473 clusters of 3.0 strips;
+  19 418 / 8370 = 2.3 linked strip digis per hit. The noise estimate of the box: a Gaussian fluctuation passes 2 sigma
+  with probability 0.0228; a strip and one of its two neighbours both above 2 sigma: about 2 x 0.0228^2 = 0.001 per strip.
+- Section 2 (figure 11.3, right): the pulse is 0.121 at +25 ns (a hit of bunch crossing -1, `Adjuster.cc` shifts its
+  time by -25 ns and `SiLinearChargeDivider::TimeResponse` reads the shape at t0 + (r/c - tof)), 0.065 at -25 ns (bunch
+  crossing +1), 0.302 at +20 ns and 0.004 at -30 ns; above 0.01 from 28.4 ns before to 30.5 ns after the peak (the strip
+  window of figure 11.2: hit times -30.5 to +28.4 ns).
+- Section 3, the ECAL ("The ECAL and the preshower"): the frame of the worked example, EB (-82, 239), 3.719 GeV in time,
+  samples 204 201 200 200 250 265 253 241 231 219 at gain 12 (gain id 1 in every sample of every frame); pedestal
+  (204 + 201 + 200) / 3 = 201.7, amplitude 63.3. The digitiser's full scale (`EcalCoder.cc`, line 23: `m_maxEneEB(1668.3)`,
+  "4095(MAXADC)*12(gain 2)*0.035(GeVtoADC)*0.97"; line 24: EE 2859.9) gives 1668.3 / (4095 x 12) = 0.03395 GeV per count at
+  gain 12 (EE: 0.0582), 1 / 0.03395 = 29.5 counts per GeV, 3.719 / 0.03395 = 110 counts; gain 12 up to (4095 - 200) x
+  0.03395 = 132 ("some 130") GeV, before the intercalibration and with a gain ratio of 12 (the actual ratios are the
+  payload `EcalGainRatios_mc`). Observed 17.0 counts per GeV for this crystal, median 18.4 over 13 crystals, 18.4 / 29.5 =
+  0.62 ("about 0.6"). EB: 156 frames = 100 in the 4 towers read in full + 56 zero-suppressed; crystals with an in-time
+  deposit 5218 (67.08 GeV); above 1 GeV 6 of 6 written, above 0.3325 GeV 19 of 30, above 0.1 GeV 24 of 113; 70 frames
+  without an in-time deposit. EE: 384 frames, 355 in the 16 supercrystals read in full; above 1 GeV 34 crystals, 19
+  written (|eta| 1.55-1.66, the b jet) and 15 not (|eta| 2.20-2.88, up to 5.81 GeV). The laser-monitoring ratios quoted
+  for 2 < |eta| < 2.5 (0.22) and 2.5 < |eta| < 3 (0.013) are the 2025 `p2` of section 4.9.
+- Section 4, the HCAL ("The HCAL"): the frame of figure 11.4 (middle) is HE (-18, 50), depth 3: codes 7 11 8 7 5 118 93
+  51 35 34, TDC 63 23 63 63 63 6 62 62 62 62 (TDC code x 0.5 ns: 23 -> 11.5 ns, 6 -> 3 ns; 62 and 63 are the special codes
+  of `HcalTDCParameters.h`); the HF frame (figure 11.4, right) is (-34, 11), depth 1: 2 122 20; the median kept HB/HE
+  frame is HE (-16, 31), depth 4: 4 4 5 7 6 15 12 12 15 12. 4459 HB/HE frames kept for 173 + 648 = 821 HB and HE cells
+  with a hit (`simHits_signal_10_SIM.log`): at least 4459 - 821 = 3638 ("at least 3600") frames have no hit; library
+  event 72: 4310 frames for 21 + 101 = 122 cells.
+- Section 5, the muon chambers ("The muon chambers"): 12 DT digis between 564.062 and 921.875 ns, minus the offset of
+  500 ns (`muonDTDigis_cfi.py`, `pset.offset = 500`): 64 to 422 ns; 422 / 25 = 17 crossings (last paragraph of the
+  chapter). 1888 CSC strip digis in 13 chambers, 96 to 256 strips each (multiples of 16: 6 to 16 boards); the chambers
+  (endcap 2 = negative z) ME1/1 chamber 20, ME2/1 chamber 10, ME3/1 and ME4/1 chamber 11 are the four chambers of the
+  trigger muon of chapter 12 (its table of CSC stubs); ring 4 of station 1 is ME1/1a, so the largest pulse (endcap 1,
+  ME1/4 chamber 8, 1016 to 2232 counts) is in ME1/1. Strip pulse heights (largest minus smallest of the 8 samples):
+  median 5. Wire time bins 6 to 12, 57 of 91 in bin 8; RPC bunch crossings -3 to +4; GEM -1 to +1.
+
+Numbers of the chapter derived from the tables above (sums and ratios):
+
+| quantity | value | from |
+|---|---|---|
+| strip digis of the signal | 36 402 - 4800 = 31 602 | 4.1 |
+| pixel / strip PSimHits of the bunch crossing | 50 953 + 36 700 = 87 653 / 71 941 + 37 897 + 69 140 + 181 684 = 360 662 | 4.4 |
+| pixel / strip digis per hit, bunch crossing | 77 980 / 87 653 = 0.89 / 436 901 / 360 662 = 1.21 | 4.1, 4.4 |
+| mixed pixels: signal / in-time / early | 2824 + 1779 = 4603 / 47 941 + 23 634 = 71 575 / 1336 + 466 = 1802 | 4.1 |
+| mixed strips: signal / in-time / early / late / noise | 19 162 / 279 143 / 121 942 / 7029 / 9625 | 4.1 |
+| ECAL crystals | 61 200 + 14 648 = 75 848 | 4.5 |
+| pixel window for a hit of bunch crossing -1 | tof - r/c = delay - 25 ns within -12.5..+12.5 ns: delay 12.5 to 37.5 ns | `TofLowerCut`, `TofUpperCut` |
+
+### 4.11 The payloads and release files of the worked examples
+
+The payloads, from `conddb list 150X_mcRun3_2025_realistic_v1` and `conddb dump <tag>` (after `cmsenv`):
+
+| record | tag | what the chapter uses |
+|---|---|---|
+| `SiStripThresholdRcd` | `SiStripThreshold_Ideal_31X_v2` | 15 148 modules, each one range from strip 0 with `FirstStrip-and-Hth = 25` and `lowTh = 10`, i.e. high threshold 25 / 5 = 5.0 and low threshold 10 / 5 = 2.0 times the strip noise (`CondFormats/SiStripObjects/interface/SiStripThreshold.h`, lines 60-61: `getHth() = (... & HighThStripMask_) / 5.0`, `getLth() = lowTh / 5.0`); used by FED algorithm 4 (`RecoLocalTracker/SiStripZeroSuppression/src/SiStripFedZeroSuppression.cc`, lines 428-445) |
+| `ESThresholdsRcd` | `ESThresholds_LG_V03_mc` | `ts2 = 6`, `zs = 0`: the preshower threshold of 6 ADC counts on the second sample |
+| `EcalSimPulseShapeRcd` | `EcalSimPulseShapePhaseI` | `barrel-shape`: 500 values, 1 ns apart (`time-interval = 1`), maximum 1.0 at index 135; above 0.01 from 50 ns before the peak; at the sample times (peak + (k - 6) x 25 ns, k = 1..10): 0, 0, 0, 0.015, 0.774, 1, 0.882, 0.668, 0.470, 0.316 (the line of figure 11.4, left, scaled to 63.3 counts on 201.7) |
+
+The release files (all under `$CMSSW_RELEASE_BASE/src`):
+
+| statement of the chapter | file, line |
+|---|---|
+| the pileup hits are shifted by 25 ns per bunch crossing | `SimGeneral/MixingModule/plugins/Adjuster.cc`, lines 30 and 44 (`timeOffset = bcr * bunchSpace`, `setTof(timeOfFlight() + timeOffset)`) |
+| the strip time window and the APV pulse | `SimTracker/SiStripDigitizer/plugins/SiStripDigitizerAlgorithm.cc`, lines 192-194 (`fabs(tof - cosmicShift - r/30) < tofCut`); `SiLinearChargeDivider.cc`, lines 178-185 (`TimeResponse`); the pulse file `SimTracker/SiStripDigitizer/data/APVShapeDeco_320.txt` |
+| 3.61 eV per pair, diffusion 3.7 um per 300 um | `SimTracker/SiPixelDigitizer/plugins/SiPixelDigitizerAlgorithm.cc`, lines 202-204 (`GeVperElectron(3.61E-09)`, `Sigma0(0.00037)`, `Dist300(0.0300)`) |
+| the pixel ADC response | the same file, from line 2193 (`missCalibrate`: `(signal - ElectronsPerVcal_Offset) / ElectronsPerVcal`, layer 1 with the `_L1` values, `p3 + p2 * tanh(p0 * signal - p1)`) and lines 1712-1719 (used because `MissCalibrate = True`), capped at `AdcFullScale = 255` |
+| pixel sensor and readout chip | `Geometry/TrackerCommonData/data/PhaseI/pixbarladder.xml`, line 13 (`SensorThick = 0.285*mm`); `trackerStructureTopology.xml`, `PixelROCRows = 80`, `PixelROCCols = 52`; the pitch of 100 x 150 um is the Phase-1 design value, not read from a file |
+| strip cross-talk | `thresholds_11_DIGI.txt`, `CouplingConstantRunIIDecIB1 [0.8361, 0.0703, 0.0117]` (`CouplingConstantsRunIIDecB = True`) |
+| ECAL digitiser full scale | `SimCalorimetry/EcalSimAlgos/src/EcalCoder.cc`, lines 23-24 (`m_maxEneEB(1668.3)`, `m_maxEneEE(2859.9)`), line 109 (`LSB[igain] = Emax / (MAXADC * gains[igain])`), line 165 (divided by the intercalibration `icalconst`) |
+| ECAL selective-readout unit | `SimCalorimetry/EcalSelectiveReadoutAlgos/src/EcalSelectiveReadoutSuppressor.cc`, lines 83-86 (`ebDccAdcToGeV`, `eeDccAdcToGeV` of the `EcalSRSettings` payload): 0.3325 GeV = 9.5 counts, i.e. 35 MeV per count (the name of the payload, section 4.9) |
+| HCAL photoelectrons per GeV | `SimCalorimetry/HcalSimAlgos/src/HcalSimParameters.cc`, lines 64-73 (section 4.3) |
+| QIE11 TDC | `SimCalorimetry/HcalSimAlgos/interface/HcalTDCParameters.h` (6 bits, 50 bins per 25 ns, `alreadyTransitionCode = 62`, `noTransitionCode = 63`); `src/HcalTDC.cc`, lines 45-54 |
+| HCAL zero suppression | `SimCalorimetry/HcalZeroSuppressionProducers/src/HcalZSAlgoRealistic.cc` (section 4.3) |
+| DT digitiser | `SimMuon/DTDigitizer/python/muonDTDigis_cfi.py`: `IdealModelConstantDriftVelocity = 0.0055` cm/ns (55 um/ns, the ideal model; `IdealModel = False`, so only an order of magnitude), `pset.offset = 500`, `Smearing = 2.4`, `deadTime = 150`, "phase 1 units (25/32 ns)" |
+| CSC strips | `SimMuon/CSCDigitizer/src/CSCStripElectronicsSim.cc`: line 42 (`sca_time_bin_size(50.)`), lines 240-280 (`channelsToRead`: the whole CFEB of 16 strips, and the neighbouring one within 3 strips of an edge); `muonCSCDigis_cfi.py`: `nScaBins = 8`, `scaPeakBin = 5`, `stripConditions = 'Database'` |
+| the time windows of figure 11.2 | pixels `TofLowerCut / TofUpperCut = -12.5 / 12.5`; strips `TOFCutForDeconvolution = 50` and the APV pulse; ECAL `binOfMaximum = 6` of 10 samples; HB/HE `readoutFrameSize = 10`, `binOfMaximum = 6`; HF 3 and 2; GEM `minBunch = -5`, `maxBunch = 3`; CSC `signalStartTime = -250`, `signalStopTime = 500`; DT: the 12 digis of the event (section 4.10) |

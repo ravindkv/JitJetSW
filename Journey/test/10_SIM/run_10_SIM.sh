@@ -173,3 +173,7 @@ fi
 python3 "$COMMON/simLedger.py" "$OUT" "$CHAPTER" "$TEST/09_G4/out/simAnalyzer_signal_09_G4.log" > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" ||
   { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
 echo "  Ledger: ledger_${CHAPTER}.txt"
+# the FWLite numbers the analyzers do not print (decays, conversions, nuclear interactions, the b-system budget, the
+# followed photon, the vertices of the mixing), read from the SIM files of chapters 09 and 10; quoted in the chapter
+python3 "$CHDIR/simExtras_${CHAPTER}.py" > "$OUT/extras_${CHAPTER}.txt" 2> "$OUT/extras_${CHAPTER}.log" &&
+  echo "  FWLite extras: extras_${CHAPTER}.txt" || echo "  FWLite extras not made (see extras_${CHAPTER}.log)"

@@ -10,9 +10,11 @@ Rule A: Every chapter XYZ has
     (A4) doc/chapter/chapter_XYZ.md  the technical companion, not compiled into the .tex
 
 Rule B: The doc/chapter/chapter_XYZ.tex has exactly these sections (B1-B5, and (B6) only when it applies)
-    (B1) What this chapter is about in 1-2 paragraphs 
+    (B1) What this chapter is about in 1-2 paragraphs (in a detector chapter, Rule J, and a checkpoint chapter, Rule G,
+         also the diagram of the chain and the table "at a glance")
     (B2) connection to the previous chapter in 1-2 paragraphs
-    (B3) the numbers supporting/explaining the physics of the chapter.
+    (B3) the numbers supporting/explaining the physics of the chapter (in a detector chapter, Rule J, one subsection
+         per ingredient of the stage).
     (B4) ledger table summerising  how much energy was added/removed from the event and the eta-phi display plot
     (B5) open problems for the Phase-2 LHC, after a DETAILED digging inside CMSSW (e.g. what cuts/thresholds/calibrations have not been updated since Run-2 or Run-3 
     (B6) OPTIONAL hand-over section "Made here for the next stage: ...", placed between (B3) and (B4), in 2-3 pages: when a stage makes
@@ -103,6 +105,41 @@ Rule I: The CMS chapters use the settings of the release year, 2025
              GRun), complete (898 paths), since its seeds match the 2025 L1 menu. The path of the book, L1_SingleJet90 ->
              HLT_PFJet110, accepts the event with either year; each chapter has a "What the year changed" paragraph
 
+Rule J: The detector chapters (09_G4, 10_SIM, 11_DIGI) teach how CMS is simulated, ingredient by ingredient
+    These three stages are where the event meets the detector: the hand-over to Geant4, the physics of the particles in
+    the material, the electronics. Every later stage is built on them, and a student learns there what a SimHit and a
+    digi are, so they are written for learning in the manner of a checkpoint chapter (Rule G), while keeping the
+    sections of Rule B (B1-B5, and B6 in 11_DIGI):
+    (J1) (B1) has, as in a checkpoint chapter, a TikZ diagram of the chain of the stage (the CMSSW module or class under
+         each box, the number of the subsection that explains it) and a table "at a glance": one row per ingredient,
+         what it does, its number for our event; and a paragraph saying how the chapter is organised
+    (J2) (B3) is broken into one \subsection per ingredient of the stage (numbered, e.g. 10.3.3), 1-2 pages each, with
+         the four parts of a step of Rule G (G2):
+           What it does        the physics or the electronics in plain words; every Geant4/CMSSW word explained
+                               the first time it is used
+           The parameters      the value and where it is set: the python (_cfi.py), the geometry XML, the global-tag
+                               payload
+           The numbers of the event
+           a figure            an analyzer page of test/XYZ/out/, or a TikZ drawing made from numbers of out/ or of
+                               the release (a schematic is labelled as such and carries no invented number)
+         The ingredients:
+           09_G4    the detector given to Geant4, the hand-over cuts, the decays already made by the generator, the
+                    straight lines to the calorimeters, the hits without physics, the pileup collisions
+           10_SIM   the magnetic field, the decays in flight, the electromagnetic physics, the hadronic physics, the
+                    signal station by station, the pileup library and one collision, the mixing, where the pileup goes
+           11_DIGI  the mixing and the time windows of the digitisers, the pixels, the strips, the ECAL and the
+                    preshower, the HCAL, the muon chambers, the three samples side by side, what the year changed
+    (J3) every key idea gets a plainwords box (the hand-over, the production cuts, the radiation length and the
+         electromagnetic shower, the hadronic shower, the HF shower library, the Lorentz angle, the APV deconvolution,
+         the selective readout, ...); a worked example, a number of our event computed step by step from its inputs, is
+         preferred to a bare statement
+    (J4) the numbers the analyzers do not print are read from the ROOT files of out/ with FWLite by a script of the
+         chapter (test/09_G4/g4Extras_09_G4.py -> out/extras_09_G4.txt, test/10_SIM/simExtras_10_SIM.py ->
+         out/extras_10_SIM.txt, test/11_DIGI/digiExamples_11_DIGI.py -> out/examples_11_DIGI.txt), run at the end of
+         run_XYZ.sh; no cmsRun job is rerun for them
+    (J5) (B2), (B4), (B5) and the companion (C1)-(C4) are unchanged in form; (C4) lists every number the subsections
+         quote, with the file, the FWLite script, the conddb payload or the release file it comes from
+
 List of chapters:
     01: ME
     02: PS
@@ -112,15 +149,19 @@ List of chapters:
     06: Decay
     07: GenJet
     08: PU (2025 settings, Rule I)
-    09: G4 (2025 settings, Rule I)
-    10: SIM (2025 settings, Rule I)
-    11: DIGI (the last chapter with signal and pileup apart, Rule H; with the hand-over section (B6) on the TriggerPrimitiveDigis;
-        2025 settings, Rule I)
+    09: G4 (detector chapter, Rule J: six subsections; 2025 settings, Rule I)
+    10: SIM (detector chapter, Rule J: eight subsections; 2025 settings, Rule I)
+    11: DIGI (detector chapter, Rule J: eight subsections; the last chapter with signal and pileup apart, Rule H; with the
+        hand-over section (B6) on the TriggerPrimitiveDigis; 2025 settings, Rule I)
     12: L1T (checkpoint, Rule G: the Level-1 trigger of 2025, six steps; the mixed event only, Rule H; 2025 settings, Rule I)
     13: HLT (checkpoint, Rule G: the High Level Trigger of the 2025 menu of the release, HLT:@relval2025, five steps; the mixed
         event only, Rule H; 2025 settings, Rule I)
 
 Length of each chapter:
-    5 pdf pages +-2
+    5 pdf pages +-2 (01_ME .. 08_PU)
     a chapter with a hand-over section (B6): 2-3 pdf pages more
+    detector chapters (Rule J), 1-2 pages per subsection:
+        09_G4    10-13 pdf pages
+        10_SIM   14-17 pdf pages
+        11_DIGI  16-19 pdf pages, the hand-over section (B6) included
     checkpoint chapters (Rule G): 20-25 pdf pages (2-3 pages per step)

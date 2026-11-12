@@ -169,6 +169,7 @@ pdftoppm -cropbox -r 110 -png simAnalyzer_signal_09_G4.pdf simAnalyzer_signal_09
 pdftoppm -cropbox -r 110 -png simAnalyzer_pileup_09_G4.pdf simAnalyzer_pileup_09_G4_page
 python3 ../../common/g4Ledger.py step2_G4_signal_09_G4.root --events 1:1:1 --label "(9a) signal"
 python3 ../../common/g4Ledger.py step2_G4_pileup_09_G4.root --events 1:1:72-1:1:139 --label "(9b) the 68 in-time pileup collisions"
+python3 ../g4Extras_09_G4.py step2_G4_signal_09_G4.root step2_G4_pileup_09_G4.root 1:1:72 > extras_09_G4.txt 2> extras_09_G4.log
 ```
 
 Options: `simStage=1` highlights "1 transport" in the right panel of every page; `genStages=5` draws the five
@@ -187,6 +188,7 @@ What each run produces in `out/`:
 | `simAnalyzer_signal_09_G4.root` | `TFileService` histograms per page (eta-phi, multiplicities, kind / process / subdetector, b and bbar sums) |
 | `simAnalyzer_pileup_09_G4.pdf/.png/.log/.root` | the same ten pages for library event 72 (`eventsToProcess=1:1:72`, the first collision of bunch crossing 0) |
 | `ledger_09_G4.txt` | the ledger of `common/g4Ledger.py`: one line per event (status 1 particles with their energy and pT, the primaries, and the dropped particles by reason with their energy), the totals and the fractions handed to Geant4, for the signal and for library events 72 to 139 |
+| `extras_09_G4.txt` | the extra numbers of `test/09_G4/g4Extras_09_G4.py` (FWLite, a few seconds): where the primaries cross into a calorimeter volume, by surface (signal, its b and bbar systems, library event 72); the eta cut as a line for the signal particles near abs(eta) = 5.5; the HF shower-library photoelectrons per GeV; the tracker crossings per primary by abs(eta) (section 4.8) |
 | `step2_G4_signal_09_G4.log`, `step2_G4_pileup_09_G4.log` | the `cmsRun` logs: the Geant4 banner (`geant4-11-02-patch-02 [MT] (21-June-2024)`) and the event records |
 
 `g4Ledger.py` reads `generatorSmeared` and the `SimTrack`s with FWLite: a status 1 particle whose barcode is the
@@ -285,7 +287,7 @@ Stable particles (status 1) and primaries by region and by kind, n / E [GeV] / p
   neutral rule) and a pi+ (E 84.6 GeV, pT 0.692, eta -5.50; the geometric eta cut from a vertex at z = +3.1 cm).
 - Generator decay vertices among the 29 SimVertices (all with `noParent()`, `processType() = 0`; distance from the
   primary vertex, position): B- (pdg -521, E 235.9, pT 94.3, eta -1.57) at 0.78 cm, (r, z) = (0.32, 2.39) cm,
-  daughters anti-nu_e (pT 37.5), e- (5.0), D*0bar (51.9, status 2); B+ (521, E 2388.2, pT 112.6, eta -3.75) at 11.73 cm,
+  daughters anti-nu_e (pT 37.5), e- (5.0), D_0*(2300)0 (pdg 10421, 51.9, status 2; it decays to a D0 of 84.7 GeV); B+ (521, E 2388.2, pT 112.6, eta -3.75) at 11.73 cm,
   (0.55, -8.60), daughters D*0bar (48.1), pi+ (30.6), pi0 (5.5), K0 (15.7), K*0bar (12.8); D0bar (-421, E 911.9,
   pT 42.4, eta -3.76) at 25.80 cm, (1.21, -22.66), daughters K0bar (12.9), pi- (4.3), pi+ (7.5), pi0 (9.1), pi0 (8.7).
 - Boundary: 557 primaries have `crossedBoundary()`; their `trackerSurfaceMomentum()` equals their production
@@ -440,3 +442,156 @@ TOB 7 um, TEC 0.33 mm, 7484 of 7552 TEC modules moving by more than 0.1 mm), fou
 6.8 mm, one TIB module). The muon and calorimeter alignment records are the same in both tags. The pages of the
 chapter therefore show the same hits shifted by these amounts, which no plot resolves; the log prints no tracker
 position and is identical.
+
+### 4.8 The numbers added for the teaching version of the chapter (12 November 2026)
+
+The chapter was rewritten in parts A to F (one per ingredient of the SIM step); the numbers it added are listed here.
+
+**`extras_09_G4.txt`** (`python3 test/09_G4/g4Extras_09_G4.py ...`, section 3; quoted in parts B, D, E, F, table
+"Where the primaries cross into a calorimeter volume"):
+
+```
+== g4Extras chapter 09_G4: step2_G4_signal_09_G4.root, step2_G4_pileup_09_G4.root
+Generator cuts: Z_lmax = 2.9 cm * sinh(5.5) = 354.8 cm; Z_hector = 2.9 cm * sinh(8.2) = 5279.4 cm = 52.8 m
+signal primary vertex (0.028, -0.017, 3.11) cm
+corner of the tracker volume (r, z) = (123.3, -293.2) cm seen from the vertex: eta = -1.611
+
+-- (1) the tracker/calorimeter boundary
+signal 1:1:1: 571 primaries, 557 reach the boundary
+  barrel cylinder r = 123.3 cm      172  |eta| 0.01-1.61  r 123.2-123.3 cm  |z| 0.4-293.2 cm
+  endcap disk |z| = 293.2 cm        228  |eta| 1.60-3.23  r 22.9-121.6 cm  |z| 293.2-293.2 cm
+  HF front face |z| = 1114.9 cm      36  |eta| 3.26-5.16  r 12.8-85.2 cm  |z| 1114.9-1114.9 cm
+  nose ring |z| = 355.1 cm           98  |eta| 3.50-4.51  r 7.8-21.3 cm  |z| 355.1-355.1 cm
+  inner wall along the beam pipe     23  |eta| 4.51-5.32  r 7.8-12.5 cm  |z| 356.1-1277.4 cm
+  not reaching                       14
+  b system (B-): 9 stable; barrel cylinder r = 123.3 cm 7, endcap disk |z| = 293.2 cm 1, no SimTrack (pdg -12) 1; r 114.2-123.3 cm, z -293.2 to -240.2 cm
+  bbar system (B*+): 16 stable; nose ring |z| = 355.1 cm 16; r 15.4-20.3 cm, z -355.1 to -355.1 cm
+
+-- (2) the eta cut as a line: stable particles of the signal with 5.3 < |eta| < 5.7
+      eta    pdg  E[GeV]     pT   vtx z   r(nominal)    r(vertex) primary
+  -5.6085     22    39.4  0.289    3.11        2.602        2.612 False
+  -5.5415   -211    98.5  0.773    3.11        2.782        2.799 False
+  -5.5240     22    12.9  0.103    3.11        2.831        2.887 False
+  -5.5002    211    84.6  0.692    3.11        2.899        2.940 True
+  -5.4995   -211    52.8  0.432    3.11        2.901        2.956 True
+  -5.3986   -211    17.1  0.155    3.11        3.209        3.260 True
+  -5.3804   -211    32.4  0.299    3.11        3.268        3.329 True
+  -5.3688     22     5.3  0.050    3.11        3.307        3.365 True
+  -5.3245     22    51.9  0.505    3.11        3.456        3.507 True
+  -5.3190    211    22.0  0.216    3.11        3.475        3.501 True
+  +5.3001   2112    64.5  0.644    3.11        3.542        3.521 True
+  +5.3406     22    18.6  0.178    3.12        3.401        3.374 True
+  +5.3481    130    92.9  0.884    3.11        3.376        3.342 True
+  +5.4325    130    36.0  0.315    3.11        3.103        3.090 True
+  +5.4445     22    28.6  0.247    3.11        3.065        3.026 True
+  +5.4544     22    32.9  0.281    3.11        3.035        3.016 True
+  +5.4617  -3112    61.6  0.523    3.11        3.013        3.018 True
+  +5.4745     22    89.3  0.749    3.11        2.975        2.973 True
+  +5.4824    310    42.7  0.355    3.11        2.951        2.903 True
+  +5.5200    211    20.4  0.164    3.11        2.843        2.792 False
+  +5.5206     22     3.2  0.026    3.11        2.841        2.800 False
+  +5.5311     22     9.7  0.077    3.11        2.811        2.756 False
+  +5.6026     22    23.6  0.174    3.11        2.617        2.624 False
+  +5.6414    211    44.5  0.316    3.11        2.518        2.498 False
+
+-- (3) the HF shower library (all HcalHits of the transport-only run are HF library hits)
+  746 hits in 459 cells, 1511 photoelectrons, from 144 tracks with E = 4266.4 GeV: 0.354 photoelectrons per GeV
+  track  501 pdg   211 E  642.9 GeV eta -3.74:  321 photoelectrons, 0.50 per GeV
+  track  562 pdg   130 E  241.0 GeV eta -3.71:   84 photoelectrons, 0.35 per GeV
+  track  571 pdg    22 E  132.9 GeV eta -3.73:   67 photoelectrons, 0.50 per GeV
+  track  569 pdg    22 E  179.0 GeV eta -3.77:   65 photoelectrons, 0.36 per GeV
+  track  560 pdg  -211 E   95.9 GeV eta -3.80:   54 photoelectrons, 0.56 per GeV
+  track  561 pdg   211 E  164.6 GeV eta -3.78:   46 photoelectrons, 0.28 per GeV
+
+-- (4) tracker crossings (PSimHits, zero energy loss) per primary
+  6734 hits from 375 tracks; time of flight 0.21-13.95 ns
+  charged primaries 0.0 < |eta| < 1.0:  38, hits per track 18.7 (min 17, max 21)
+  charged primaries 1.0 < |eta| < 2.0:  72, hits per track 21.3 (min 14, max 32)
+  charged primaries 2.0 < |eta| < 2.5:  49, hits per track 21.0 (min 11, max 28)
+  photons |eta| < 1: 47, hits per photon 18.6
+  most hits: 32, track 358 pdg 22 pT 0.047 GeV eta -1.96
+
+-- (1b) one pileup collision
+pileup 1:1:72: 164 primaries, 155 reach the boundary
+  barrel cylinder r = 123.3 cm       54  |eta| 0.07-1.60  r 123.1-123.3 cm  |z| 8.1-293.2 cm
+  endcap disk |z| = 293.2 cm         66  |eta| 1.62-3.25  r 22.8-120.8 cm  |z| 293.2-293.2 cm
+  HF front face |z| = 1114.9 cm       9  |eta| 3.31-4.92  r 16.3-81.9 cm  |z| 1114.9-1114.9 cm
+  nose ring |z| = 355.1 cm           18  |eta| 3.63-4.48  r 8.1-18.8 cm  |z| 355.1-355.1 cm
+  inner wall along the beam pipe      8  |eta| 4.57-5.30  r 7.9-12.5 cm  |z| 380.3-1245.4 cm
+  not reaching                        9
+  HF: 153 hits in 135 cells, 192 photoelectrons
+```
+
+Notes on it: the surfaces are classified by the crossing point (`r = 123.3 cm` within 0.5 cm, `|z| = 293.2 cm`,
+`|z| = 355.15 cm`, `|z| = 1114.9 cm`, anything else is the inner wall along the beam pipe); the b system is the 9
+stable descendants of the B- (pdg -521, pT 94.3), the bbar system the 16 of the B*+ (pdg 523, pT 114.2), matched to
+`SimTrack`s by `genParticles` index + 1 = HepMC barcode. The b-system crossings one by one (the same script, printed
+during the development): pi- pT 11.0 eta -1.53 at z = -269.0 cm; pi+ 13.3, -1.54, -272.7; K0S 8.0, -1.61, -291.6;
+photon 0.3, -1.60, -289.1; photon 0.2, -1.52, -265.5; photon 17.7, -1.57, -279.1; e- 5.0, -1.43, -240.2 (all through the
+barrel cylinder); photon 1.5, -1.68 through the endcap disk at r = 114.2 cm; the anti-nu_e has no `SimTrack`. The
+"charged primaries" of section (4) are all charged `SimTrack`s, which here are all primaries (no secondaries).
+
+**Worked examples of part B** (the eta cut as a line): `sinh(5.5) = 122.34`, `2.9 cm x 122.34 = 354.8 cm`;
+`sinh(8.2) = 1820.5`, `2.9 cm x 1820.5 = 5279 cm = 52.8 m`; the pi+ at eta -5.5002: `354.8 / sinh(5.5002) = 2.899 cm`
+from the nominal point, 2.940 cm from the vertex at z = +3.11 cm (flight 354.8 + 3.1 = 357.9 cm), kept; the photon at
+-5.5240: 2.887 cm, dropped; the K0S at +5.4824: 2.951 cm nominal, 2.903 cm from the vertex, kept (all from
+`extras_09_G4.txt`, section (2)).
+
+**Worked examples of part D**: the corner of the tracker volume seen from the vertex, `asinh((293.2 + 3.11) / 123.3) =
+asinh(2.403) = 1.611`; the hole of the HF, `asinh(1280.05 / 12.495) = asinh(102.4) = 5.32` (the HF, `VCAL`, from
+`ForwdVcalZ1 = 11.1495 m` to `ForwdVcalZ2 = 12.8005 m`, `rMin = ForwdBeamR1 = 12.495 cm`, `rMax = ForwdVcalR1 = 1.595 m`;
+`Geometry/HcalCommonData/data/hcalforwardalgo.xml` line 18 and `Geometry/CMSCommonData/data/cms/2021/v3/cms.xml`
+lines 87, 100 to 102). The bbar system flies from the nose ring at z = -355.1 cm to the HF face at -1114.9 cm: 7.6 m.
+The b system at eta -1.55 is 1.61 - 1.55 = 0.06 from the corner.
+
+**Worked example of part C** (decay lengths; masses and lifetimes from the Particle Data Group: m(B+-) = 5.279 GeV,
+c tau(B+-) = 491.1 um; m(D0) = 1.865 GeV, c tau(D0) = 123.0 um; c tau(K0S) = 26.8 mm, c tau(Lambda) = 78.9 mm, quoted
+rounded as 27 and 79 mm; the 10 mm of `tau0Max`):
+
+| hadron | E [GeV] | beta gamma = p / m | mean beta gamma c tau | flight | flight / mean | P(flight > observed) |
+|---|---|---|---|---|---|---|
+| B- (b jet) | 235.9 | 44.7 | 2.19 cm | 0.78 cm (section 4.4) | 0.36 | 0.70 |
+| B+ (bbar jet, from the B*+ at the primary vertex) | 2388.2 | 452.4 | 22.22 cm | 11.73 cm | 0.53 | 0.59 |
+| D0bar (from the D*0bar of the B+, at the B+ vertex) | 911.9 | 489.0 | 6.01 cm | 25.80 - 11.73 = 14.07 cm | 2.34 | 0.10 |
+
+The D0bar at eta -3.76: pz / pT = sinh(3.76) = 21.4 ("21 times faster along the beam"). Its daughters, from
+`genParticles`: K0bar (pdg -311, pT 12.9), pi- (4.3), pi+ (7.5), pi0 (9.1), pi0 (8.7); the B+ daughters D*0bar (-423, 48.1),
+pi+ (30.6), pi0 (5.5), K0 (311, 15.7), K*0bar (-313, 12.8).
+
+**Part A, the detector** (all under `$CMSSW_RELEASE_BASE/src`):
+
+- `Geometry/CMSCommonData/data/dd4hep/cmsExtendedGeometry2024.xml`: 382 lines, 374 `<Include ref=...>` files (`grep -c`);
+  the payload of `GeometryFileRcd` / `Extended` is `141DD4hepV2_Extended2024` (section 4.7).
+- `Geometry/CMSCommonData/data/cms/2021/v3/cms.xml` lines 21 to 25, 32, 45 to 52: `TrackCalorR = 1.233 m`,
+  `CalorMuonR = 2.950 m`, `TrackBeamZ2 = 2.932 m`, `TrackBeamR3 = 7.7633 cm`, `PIXNoseRin = 215 mm`, `PIXNoseLength =
+  619.5 mm` (293.2 + 61.95 = 355.15 cm), `CalorBeamZ2 = 5.541 m`, `CalorBeamR2 = 8.93 cm`; logical parts `OCMS` (line 151)
+  and `CMSE` (line 159). `Geometry/CMSCommonData/data/caloBase/2017/v1/caloBase.xml`: the `CALO` polycone built from them.
+- `Geometry/HcalSimData/data/CaloUtil/2021/v1/CaloUtil.xml`: `SensitiveDetector = CaloTrkProcessing`, `Calorimeter` =
+  `CALO`, `VCAL`, `MBAT`, `MBBT`, ..., `CAST`, `ZDC`; `Inside` = `BEAM`, `Tracker`, `MUON`, `BEAM2`, `MB`, ...
+- Regions and production cuts (`CMSCutsRegion`, `ProdCutsForGamma/Electrons/Positrons`): `Geometry/TrackerSimData/data/
+  trackerProdCutsBEAM.xml`: `BeamPipe` (the `BeamTube1` volume) 0.01 mm, `BeamPipeOutside` 1 mm;
+  `Geometry/TrackerSimData/data/PhaseI/trackerProdCuts.xml`: `TrackerDeadRegion` (`//Tracker`) 1 mm, `TrackerSensRegion`
+  (the active strip volumes `TIBActiveRphi0`, ...) 0.1 mm, `TrackerPixelDeadRegion` 1 mm; `Geometry/EcalSimData/data/
+  EcalProdCuts.xml`: `EcalRegion` (`//ECAL`) 1 mm, `APDRegion` (`EAPD.*`, `EATJ.*`) 0.005 mm; `ESProdCuts.xml`:
+  `PreshowerRegion` 1 mm, `PreshowerSensRegion` (`SFSX`, `SFSY`) 0.1 mm; `Geometry/HcalSimData/data/HcalProdCuts/2021/v2/
+  HcalProdCuts.xml`: `HcalRegion` (`CALO`, `MBAT`, `MBBT.*`, `VCAL`) 1 mm; `Geometry/MuonSimData/data/muonProdCuts/2021/v3/
+  muonProdCuts.xml`: `Muon` (`//MUON`) 100 mm for photons, 10 mm for e+- and protons (and the sub-regions `MuonIron`,
+  `MuonChamber`, `MuonSensitive_DT-CSC`, `MuonSensitive_RPC`). `g4SimHits_cfi.py` lines 190 to 192: `CutsPerRegion = True`,
+  `CutsOnProton = True`, `DefaultCutValue = 1.0` ("cuts in cm").
+- `g4SimHits_cfi.py` lines 695 to 698 (`run3_common`): `OnlySDs` with 15 entries, `TrackHits` with 25 collections
+  (`BCM1FHits`, `BHMHits`, `BSCHits`, `CTPPSPixelHits`, `CTPPSTimingHits`, `MuonCSCHits`, `MuonDTHits`, `MuonGEMHits`,
+  `MuonME0Hits`, `MuonRPCHits`, `PLTHits`, `TotemHitsRP`, `TotemHitsT1` and the 12 tracker `LowTof`/`HighTof`),
+  `CaloHits` with 7 (`CaloHitsTk`, `EcalHitsEB`, `EcalHitsEE`, `EcalHitsES`, `HcalHits`, `TotemHitsT2Scint`, `ZDCHITS`).
+- In `step2_G4_signal_09_G4.root` (`edmDumpEventContent`, then FWLite): 36 products of process `SIM`, of which 32 hit
+  collections; filled for the signal: the six tracker `LowTof` collections (908, 829, 960, 679, 860, 2498) and `HcalHits`
+  (746); `BSCHits`, `MuonME0Hits` and `TotemHitsT1` are declared but not produced; `SimTrack` 571, `SimVertex` 29.
+- `SimG4CMS/Calo/src/HFShowerLibrary.cc`, `interpolate()` (lines 575 to 640): one stored shower from each of the two
+  library energies around the particle's momentum, the photons of the lower one kept with probability 1 - w and of the
+  upper one with w; above the highest energy `extrapolate()`; separate electromagnetic and hadronic showers (`isEM`).
+
+**Part E, the hits per track**: a straight track at abs(eta) < 1 crosses 4 PXB layers, 4 TIB layers and 6 TOB layers;
+TIB layers 1 and 2 and TOB layers 1 and 2 are double-sided (an r-phi and a stereo sensor, each its own `DetId`), hence
+4 + (4 + 2) + (6 + 2) = 18 sensors, against 18.7 (17 to 21) measured for the 38 charged primaries with abs(eta) < 1
+(`extras_09_G4.txt`, section (4)). HF photoelectrons per GeV: 1511 / 4266.4 = 0.354; pi+ 321 / 642.9 = 0.50,
+K0L 84 / 241.0 = 0.35, pi+ 46 / 164.6 = 0.28.
+

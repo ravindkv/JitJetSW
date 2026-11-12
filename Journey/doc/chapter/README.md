@@ -37,7 +37,7 @@ and say in the .tex (B2 or B3) what the 2025 conditions changed, with the eviden
 150X_mcRun3_2024_realistic_v2 150X_mcRun3_2025_realistic_v1`, the compared files) in C4 of the .md. The pileup
 (PU = 60, bx -1..1, SKIP = 71, NPU = 68), the number of events and the seeds do not change with the year.
 
-## The .tex chapter (Rule B): exactly five sections, 5 +- 2 pages
+## The .tex chapter (Rule B): exactly five sections, 5 +- 2 pages (detector chapters: Rule J below)
 
 ```latex
 \chapter{XX -- Name: one line that says what happens to the event here}
@@ -82,6 +82,38 @@ Chapter 11 is the model: the calorimeter `TriggerPrimitiveDigis` (`simEcalTrigge
 (`plugins/TrigPrimAnalyzer.cc`, `test/common/trigPrimAnalyzer_cfg.py`, `trigPrimLedger.py` ->
 `out/trigprim_11_DIGI.txt`). The section title must start with "Made here for the next stage"; `checkChapter.sh`
 then accepts six sections and 2-3 more pages. The later chapter recalls the result in a few lines and refers back.
+
+## A detector chapter (Rule J): 09_G4, 10_SIM, 11_DIGI, 10-19 pages
+
+The three stages where the event meets the detector (the hand-over to Geant4, the physics in the material, the
+electronics) are written for learning, like a checkpoint chapter, but keep the sections of Rule B (and B6 in 11_DIGI);
+B3 is split into numbered subsections (`secnumdepth` is 2 in `doc/JitJetSW.tex`):
+
+```latex
+\section{What this chapter is about}          % B1: the stage in words, a TikZ chain (module under each box, the number of
+                                               %     the subsection that explains it), a table "at a glance", the plan
+\section{From the previous chapter}            % B2
+\section{The numbers of the event}             % B3
+\label{sec:XX_numbers}
+\subsection{The magnetic field}                % one per ingredient, 1-2 pages each, label sec:XX_<ingredient>
+\label{sec:XX_field}
+...
+\section{Ledger and display}                   % B4
+\section{Open problems for Phase-2}            % B5
+```
+
+- Every subsection has the four parts of a step: **What it does.** (the physics or the electronics in plain words,
+  every Geant4/CMSSW word explained the first time), **The parameters.** (the value and the `_cfi.py`, geometry XML or
+  global-tag payload that sets it), **The numbers of the event.**, and a figure: an analyzer page, or a TikZ drawing
+  made from numbers of `out/` or of the release (a schematic is labelled as such).
+- One `plainwords` box per key idea (radiation length, hadronic shower, Lorentz angle, APV deconvolution, selective
+  readout, ...), and a worked example where a number of the event can be computed step by step.
+- The numbers the analyzers do not print are read with FWLite by the chapter's own script, run at the end of
+  `run_<XX_YYY>.sh`: `test/09_G4/g4Extras_09_G4.py` (`out/extras_09_G4.txt`), `test/10_SIM/simExtras_10_SIM.py`
+  (`out/extras_10_SIM.txt`), `test/11_DIGI/digiExamples_11_DIGI.py` (`out/examples_11_DIGI.txt`); no cmsRun job is
+  rerun for them. The companion (C4) lists them with the script, the `conddb` payload or the release file.
+- Pages: 09_G4 10-13, 10_SIM 14-17, 11_DIGI 16-19 with its hand-over section; `checkChapter.sh` reports the
+  subsections and the range.
 
 ## A checkpoint chapter (Rule G): 12_L1T, 13_HLT, 20-25 pages
 

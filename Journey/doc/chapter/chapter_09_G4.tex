@@ -1,6 +1,7 @@
 % chapter_09_G4.tex -- chapter 09 of the JitJet book: the hand-over of the generator final state to Geant4.
-% Every number comes from test/09_G4/out/ (ledger_09_G4.txt, simAnalyzer_signal_09_G4.log, simAnalyzer_pileup_09_G4.log,
-% step2_G4_signal_09_G4.log, the PNG pages) and from the FWLite extras listed in doc/chapter/chapter_09_G4.md, section 4.
+% Every number comes from test/09_G4/out/ (ledger_09_G4.txt, extras_09_G4.txt, simAnalyzer_signal_09_G4.log,
+% simAnalyzer_pileup_09_G4.log, step2_G4_signal_09_G4.log, the PNG pages), from the FWLite extras and the release files
+% listed in doc/chapter/chapter_09_G4.md, section 4.
 
 \chapter{09 -- G4: the 634 stable particles are handed to Geant4, 571 are accepted}
 \label{ch:09_G4}
@@ -8,20 +9,80 @@
 \section{What this chapter is about}
 
 Everything up to here was Pythia8: a list of particles with four-momenta and production vertices, but no
-detector. From this chapter on the list is given to Geant4, the toolkit that transports particles through the
-CMS geometry, step by step, through every piece of material, and lets the sensitive volumes record what crosses
-them. In CMSSW this is the \code{SIM} step (\code{cmsDriver.py -s SIM}), one module, \code{g4SimHits}
-(\code{OscarMTProducer}, configured by \path{SimG4Core/Application/python/g4SimHits_cfi.py}). Its first job is
-the \emph{hand-over}: it reads the HepMC record \code{generatorSmeared}, decides which of the stable particles
-are worth simulating, turns them into Geant4 primaries and only then starts tracking them. This chapter is about
-that decision alone. To see it without anything else in the way, the script runs Geant4 with its physics reduced
-to the transportation: no magnetic field, no decays in flight, no electromagnetic and no hadronic processes
-(the physics list \code{JourneyTransportPhysics} of \path{JitJetSW/Journey/plugins/JourneyTransportPhysics.cc},
-which constructs every Geant4 particle and registers no process). Every accepted particle then flies in a
-straight line, loses no energy, and the file shows exactly which particles Geant4 accepted, which it dropped and
-where each one would go if nothing happened to it. The same is done for the 250 library collisions of
-chapter~\ref{ch:08_PU}, so that the ledger can be closed for the signal and for its 68 in-time pileup
-collisions. The full physics is switched on, piece by piece, in chapter~\ref{ch:10_SIM}.
+detector. From this chapter on the list is given to Geant4 (``GEometry ANd Tracking''), the toolkit with which
+the LHC experiments simulate how particles cross matter. Geant4 needs three things. A \emph{geometry}: the
+detector as a tree of volumes, each with a shape and a material. A \emph{physics list}: the processes a particle
+can undergo in a material (a decay, an ionisation, a photon conversion, a nuclear interaction), with their cross
+sections. And \emph{user actions}, through which the experiment says which particles to track, when to stop them
+and what to record. Geant4 then moves every particle through the geometry step by step, and the volumes declared
+\emph{sensitive} write down what crosses them. In CMSSW this is the \code{SIM} step (\code{cmsDriver.py -s SIM}),
+one module, \code{g4SimHits} (\code{OscarMTProducer}, configured by
+\path{SimG4Core/Application/python/g4SimHits_cfi.py}).
+
+Its first job is the \emph{hand-over}: it reads the HepMC record \code{generatorSmeared}, decides which of the
+stable particles are worth simulating, turns them into Geant4 \emph{primaries} and only then starts tracking
+them. This chapter is about that decision alone. To see it without anything else in the way, the script runs
+Geant4 with its physics reduced to the transportation: no magnetic field, no decays in flight, no electromagnetic
+and no hadronic processes (the physics list \code{JourneyTransportPhysics} of
+\path{JitJetSW/Journey/plugins/JourneyTransportPhysics.cc}, which constructs every Geant4 particle and registers no
+process). Every accepted particle then flies in a straight line, loses no energy, and the file shows exactly which
+particles Geant4 accepted, which it dropped and where each one would go if nothing happened to it: every number of
+this chapter is a statement about the cuts and the geometry, and every difference to chapter~\ref{ch:10_SIM} will
+be a statement about the physics (the run is also fast, about a minute for the 250 library collisions). The same is done
+for the 250 library collisions of chapter~\ref{ch:08_PU}, so that the ledger can be closed for the signal and for
+its 68 in-time pileup collisions. The full physics is switched on, piece by piece, in chapter~\ref{ch:10_SIM}.
+Figure~\ref{fig:09_chain} is the chain the particles go through, and table~\ref{tab:09_glance} what each link of
+it does to our event.
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[x=0.93cm, font=\footnotesize, >={Stealth[length=2mm]},
+  box/.style={draw, rounded corners=2pt, minimum height=10mm, text width=3.25cm, align=center, inner sep=2.5pt},
+  gen/.style={box, fill=yellow!18}, hand/.style={box, fill=orange!15}, g4/.style={box, fill=blue!10},
+  prod/.style={box, fill=green!12}, geo/.style={box, fill=black!6, text width=6.2cm}]
+\node[gen] (hep) at (0,1.5) {the generator event\\{\tiny\ttfamily generatorSmeared (HepMC)}};
+\node[hand] (cut) at (4.25,1.5) {the hand-over cuts\\{\tiny\ttfamily Generator.cc}};
+\node[hand] (pri) at (8.5,1.5) {Geant4 primaries\\{\tiny\ttfamily G4PrimaryParticle}};
+\node[hand] (stk) at (12.75,1.5) {neutrinos killed\\{\tiny\ttfamily StackingAction}};
+\node[g4] (trk) at (12.75,-0.5) {tracking: transportation only\\{\tiny\ttfamily JourneyTransportPhysics}};
+\node[g4] (sd) at (8.5,-0.5) {sensitive detectors\\{\tiny\ttfamily TrackerSD, CaloSD, HF library, CaloTrkProcessing}};
+\node[prod] (out) at (4.25,-0.5) {the SIM products\\{\tiny\ttfamily SimTrack, SimVertex, PSimHit, PCaloHit}};
+\node[geo] (det) at (10.6,-2.35) {the detector: volumes, materials, regions, sensitive volumes\\{\tiny\ttfamily GeometryFileRcd: 141DD4hepV2\_Extended2024}};
+\draw[->] (hep) -- (cut); \draw[->] (cut) -- (pri); \draw[->] (pri) -- (stk); \draw[->] (stk) -- (trk);
+\draw[->] (trk) -- (sd); \draw[->] (sd) -- (out);
+\draw[->] (det.north-|trk) -- (trk.south); \draw[->] (det.north-|sd) -- (sd.south);
+\draw[->, dashed] (out.west) -- ++(-1.35,0) node[left, align=center, font=\scriptsize] {chapter\\10};
+\node[font=\scriptsize, text=black!60] at (4.25,2.3) {\ref*{sec:09_cuts}, \ref*{sec:09_decays}};
+\node[font=\scriptsize, text=black!60] at (12.75,2.3) {\ref*{sec:09_cuts}};
+\node[font=\scriptsize, text=black!60, anchor=west] at (12.85,-1.35) {\ref*{sec:09_boundary}};
+\node[font=\scriptsize, text=black!60] at (8.5,0.3) {\ref*{sec:09_hits}};
+\node[font=\scriptsize, text=black!60, anchor=east] at (det.west) {\ref*{sec:09_detector}};
+\end{tikzpicture}
+\caption{The \code{SIM} step of this chapter: from the generator record to the simulation products. Orange: the
+hand-over, which decides what Geant4 simulates; blue: the tracking and the recording, here with the physics reduced
+to the transportation; grey: the detector, read from the global tag. The grey numbers are the subsections of
+section~\ref{sec:09_numbers} that explain each box.}
+\label{fig:09_chain}
+\end{figure}
+
+\begin{table}[!htb]
+\centering\small\setlength{\tabcolsep}{4pt}
+\caption{The chapter at a glance: one subsection of section~\ref{sec:09_numbers} per ingredient of figure~\ref{fig:09_chain}, what it does and what
+it gives for our event.}
+\label{tab:09_glance}
+\begin{tabular}{@{}c>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{6.4cm}>{\raggedright\arraybackslash}p{5.0cm}@{}}
+\toprule
+section & what & what it does & in our event \\
+\midrule
+\ref{sec:09_detector} & the detector & the 2024 geometry of the global tag: volumes, materials, sensitive volumes, regions with production cuts & 15 kinds of sensitive detector, 32 hit collections \\
+\ref{sec:09_cuts} & the hand-over cuts & keeps a stable particle with $p>40\MeV$ whose straight line leaves a $2.9\cm$ cylinder before $|z|=354.8\cm$; kills the neutrinos & 634 stable particles, 571 primaries, 63 dropped \\
+\ref{sec:09_decays} & the decays Pythia made & keeps the generator decays inside the beam pipe; the daughters start where the parent decayed & 29 \code{SimVertex}s, the farthest $25.8\cm$ from the collision \\
+\ref{sec:09_boundary} & straight lines & every primary flies straight to the boundary between the tracker and the calorimeters & 557 of the 571 reach it \\
+\ref{sec:09_hits} & hits without physics & the sensitive detectors mark each crossing; the HF shower library answers by itself & 6734 tracker hits, 1511 HF photoelectrons \\
+\ref{sec:09_pileup} & the pileup & the same for the 68 in-time collisions of our bunch crossing & $12\,993$ stable, $10\,388$ primaries \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{plainwords}[The hand-over]
 Geant4 does not read \code{genParticles}; it reads the HepMC event and builds a \code{G4PrimaryParticle} for
@@ -34,6 +95,9 @@ undecayed parent instead. Neutrinos pass these cuts and are killed by the \code{
 and the simulation is kept, particle by particle. The dropped ones leave no trace in the simulation at all.
 \end{plainwords}
 
+Section~\ref{sec:09_numbers} follows figure~\ref{fig:09_chain} in six subsections, one per ingredient; each
+says what the ingredient does, where its parameters are set, and what it gives for our event.
+
 \section{From the previous chapter}
 
 Two inputs enter (Rule E): the signal, \path{test/07_GenJet/out/step2_GENJET_07_GenJet.root}, the full
@@ -45,15 +109,17 @@ of which library events 72 to 139 are the 68 in-time collisions of our bunch cro
 Poisson with mean 60, library events 1--71 going to bunch crossing $-1$), $12\,993$ stable particles with
 $924.8\TeV$ and $5315\GeV$ of \pt{}.\footnote{All numbers of this chapter are in
 \path{test/09_G4/out/ledger_09_G4.txt} (the output of \code{common/g4Ledger.py}),
-\path{simAnalyzer_signal_09_G4.log} and \path{simAnalyzer_pileup_09_G4.log}; the few extra ones (the dropped
-particles by kind, the displaced vertices, the hits by time of flight) were read from the SIM files with FWLite and
-are listed in the companion, section~4.} Nothing in the generator record changes: the \code{SIM} process copies
+\path{extras_09_G4.txt} (the output of \path{test/09_G4/g4Extras_09_G4.py}), \path{simAnalyzer_signal_09_G4.log}
+and \path{simAnalyzer_pileup_09_G4.log}; the few extra ones (the dropped particles by kind, the displaced vertices)
+were read from the SIM files with FWLite, and the dimensions of the detector from the XML of the release; the
+companion lists them all in section~4.} Nothing in the generator record changes: the \code{SIM} process copies
 \code{genParticles}, \code{generatorSmeared} and the jets unchanged and adds its own products under the
 process name \code{SIM}: \code{SimTrack}s and \code{SimVertex}s, the \code{PSimHit} collections of the tracker
 and muon system (one per subdetector and time-of-flight window, e.g.\ \code{TrackerHitsTIBLowTof}) and the
 \code{PCaloHit} collections of the calorimeters (\code{EcalHitsEB}, \code{EcalHitsEE}, \code{EcalHitsES},
 \code{HcalHits}). The smeared primary vertex of the signal, drawn in chapter~\ref{ch:06_Decay}, is where all
-primaries start: $(0.028, -0.017, 3.11)\cm$ for the signal, $(0.029, -0.017, -0.48)\cm$ for library event~72.
+primaries start: $(0.028, -0.017, 3.11)\cm$ for the signal, $(0.029, -0.017, -0.48)\cm$ for library event~72. The
+$3.11\cm$ of the signal will matter for the $\eta$ cut (section~\ref{sec:09_cuts}).
 
 The \code{SIM} job runs with the 2025 settings of the release (global tag \code{auto:phase1\_2025\_realistic},
 era \code{Run3\_2025}; the signal was generated with those of 2024, which at generator level are the same,
@@ -70,25 +136,146 @@ decay products of the $B^-$ ($\pt=94.3\GeV$, $\eta=-1.57$, among them the $95.5\
 16 of the $B^{*+}$ ($\pt=114.2\GeV$, $\eta=-3.75$, no neutrino).
 
 \section{The numbers of the event}
+\label{sec:09_numbers}
 
-\textbf{The cuts and what they remove.} Table~\ref{tab:09_cuts} lists the four reasons for which a stable particle
-gets no \code{SimTrack}, with the parameter that implements it and its effect on the signal and on the 68 pileup
-collisions. The $\eta$ cut is not applied to the momentum but to the straight line from the production vertex:
-the particle is dropped if that line is still inside the $2.9\cm$ cylinder when it reaches
-$|z| = 2.9\cm\times\sinh 5.5 = 355\cm$ (\path{SimG4Core/Generators/src/Generator.cc}). For a vertex at
-$z = 3\cm$ this moves the border by a few hundredths in $\eta$, which is why one $\pi^+$ at $\eta=-5.50$ is kept
-in the signal and eight particles at $\abseta = 5.48$--$5.50$ with vertices displaced by $1$--$6\cm$ in $z$ are
-dropped in the pileup (the ``other'' column of the ledger). A second rule keeps neutral particles that are even
-more forward: a neutron, antineutron or photon whose line is still inside the cylinder at
-$|z| = 2.9\cm\times\sinh 8.2 = 52.8$\,m (\code{EtaCutForHector = 8.2}) is handed to Geant4 for the Zero Degree
-Calorimeter; the $151\GeV$ neutron at $\eta = 9.72$ of the signal and 168 particles with $134.2\TeV$ of the 68
-pileup collisions enter this way, and are later stopped in the dead regions of the beam line
-(\code{DeadRegions = QuadRegion, InterimRegion}). The $40\MeV$ cut removes six photons from $\pi^0$ decays
-($27$--$38\MeV$), $0.2\GeV$ in all. The one neutrino is the $\bar\nu_e$ of the semileptonic $B^-$ decay with
-$95.5\GeV$ and $37.5\GeV$ of \pt{}: the $b$ system enters Geant4 with 8 of its 9 particles and $56.8$ of its
-$94.3\GeV$ of \pt{}, while the $\bar b$ system enters complete, 16 of 16, $114.2\GeV$. The net $b+\bar b$ \pt{},
-$20.3\GeV$ at hadron level, is $57.5\GeV$ among the primaries: a detector cannot see the neutrino, and the
-imbalance it will measure for this event is decided here.
+\subsection{The detector that Geant4 is given}
+\label{sec:09_detector}
+
+\textbf{What it does.} Geant4 cannot move a particle without a world to move it in. The world of the \code{SIM}
+step is read from the global tag: the record \code{GeometryFileRcd}, label \code{Extended}, holds
+\code{141DD4hepV2\_Extended2024}, the description of the 2024 detector in the DD4hep format, the same description
+that the release carries as XML in \path{Geometry/CMSCommonData/data/dd4hep/cmsExtendedGeometry2024.xml} (a list of
+374 included files, a few per subdetector). Each \emph{volume} has a shape, a material and a place inside a
+\emph{mother} volume, so the detector is a tree. Its trunk is a chain of air-filled envelopes (\code{World}, \code{OCMS},
+\code{CMSE}); inside them five mothers matter for this book (figure~\ref{fig:09_rz}): \code{BEAM}, the beam pipe;
+\code{Tracker}, the silicon detectors and their supports, a cylinder of radius $123.3\cm$ and half-length
+$293.2\cm$, with a thin ``nose'' around the beam pipe that continues to $|z|=355.1\cm$; \code{CALO}, the
+electromagnetic and hadronic calorimeters of the barrel and the endcaps, out to $r=295\cm$; \code{MUON}, the
+solenoid, the iron yoke and the muon chambers beyond; and, $11.15$\,m from the collision point on either side,
+\code{VCAL}, the forward calorimeter HF, a tube from $r=12.5$ to $159.5\cm$.
+
+Beyond shape and material, the XML attaches labels to volumes (blocks called \code{SpecPar}), and these turn a
+geometry into a detector simulation. \emph{Sensitive detectors}: a volume labelled with the sensitive detector
+\code{TkAccumulatingSensitiveDetector} and the read-out name \code{TrackerHitsPixelBarrel} records every step
+taken inside it into that collection (the files \code{trackersens.xml}, \code{ecalsens.xml},
+\code{hf.xml}, \code{muonSens.xml}). \emph{Regions}: groups of volumes with their own production cuts (the box
+below). And the \emph{boundary}: the calorimeter mothers carry \code{CaloTrkProcessing}
+(\path{Geometry/HcalSimData/data/CaloUtil/2021/v1/CaloUtil.xml}), which notices when a track steps into
+\code{CALO}, \code{VCAL} or another calorimeter volume from one of the volumes listed as ``inside'' (\code{BEAM},
+\code{Tracker}, \code{MUON}, \ldots) and stores where (section~\ref{sec:09_boundary}).
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[x=0.0104cm, y=0.0135cm, font=\scriptsize, >={Stealth[length=1.6mm]}]
+\fill[green!12] (0,123.3) -- (293.2,123.3) -- (293.2,21.5) -- (355.15,21.5) -- (355.15,7.76) -- (554.1,8.93)
+  -- (554.1,295) -- (0,295) -- cycle;
+\fill[blue!10] (0,0) rectangle (293.2,123.3); \fill[blue!10] (293.2,2.9) rectangle (355.15,21.5);
+\fill[red!12] (1114.95,12.495) rectangle (1280.05,159.5);
+\fill[orange!10] (0,295) rectangle (554.1,330);
+\fill[black!25] (0,0) rectangle (1300,2.9);
+\draw[black!50] (0,123.3) -- (293.2,123.3) -- (293.2,21.5) -- (355.15,21.5) -- (355.15,7.76) -- (554.1,8.93)
+  -- (554.1,295) -- (0,295);
+\draw[black!50] (1114.95,12.495) rectangle (1280.05,159.5);
+\node at (140,62) {\code{Tracker}};
+\node at (300,210) {\code{CALO}: ECAL + HCAL};
+\node at (300,312) {\code{MUON} beyond $r=295\cm$};
+\node[align=center] at (1197,95) {HF\\(\code{VCAL})};
+\node[anchor=north, text=black!60] at (820,-6) {beam pipe, $r<2.9\cm$};
+% the lines from the signal vertex (z = +3.11 cm, drawn at x = -3.11)
+\fill (-3.11,0) circle (1.2pt);
+\draw[red!75!black, thick] (-3.11,0) -- (662.7,295);
+\node[red!75!black, anchor=west] at (705.8,308) {$b$ system, $\eta=-1.55$};
+\draw[blue!70!black, thick] (-3.11,0) -- (1280.05,60.57);
+\node[blue!70!black, anchor=south] at (790,42) {$\bar b$ system, $\eta=-3.75$};
+\draw[black!60, dashed] (-3.11,0) -- (705.8,295);
+\node[black!60, anchor=west] at (705.8,280) {corner: $|\eta|=1.61$};
+\draw[black!60, dotted, thick] (0,0) -- (1280.05,10.46);
+\node[text=black!70, anchor=south] at (920,10) {$|\eta|=5.5$};
+\fill[red!75!black] (275.2,123.3) circle (1.6pt); \fill[blue!70!black] (355.15,16.9) circle (1.6pt);
+\fill[blue!70!black] (1114.95,52.8) circle (1.6pt);
+% axes
+\draw[->] (0,0) -- (1330,0) node[right] {$-z$ [cm]};
+\draw[->] (0,0) -- (0,345) node[left] {$r$ [cm]};
+\foreach \z in {293.2, 355.15, 554.1, 1114.95, 1280.05} \draw (\z,0) -- (\z,-8);
+\node[below] at (275,-6) {293}; \node[below] at (375,-6) {355}; \node[below] at (554.1,-6) {554};
+\node[below] at (1100,-6) {1115}; \node[below] at (1295,-6) {1280};
+\foreach \r in {123.3, 295} \draw (0,\r) -- (-8,\r) node[left] {\r};
+\end{tikzpicture}
+\caption{The detector of the \code{SIM} step in the $r$--$z$ plane, for $z<0$, where both jets of the event go
+(\code{cms.xml} and \code{hcalforwardalgo.xml} of the release;
+the $r$ and $z$ scales differ, the muon system beyond $|z|=554\cm$ is not drawn). Blue: the \code{Tracker} volume
+with its nose along the beam pipe; green: \code{CALO}; red: the HF. Lines: the straight flights from the signal
+vertex at $z=+3.11\cm$ of the $b$ system (red), of the $\bar b$ system (blue), to the corner of the tracker volume
+(dashed), and the line $|\eta|=5.5$ from the centre (dotted); the dots are where the systems cross into a
+calorimeter volume (section~\ref{sec:09_boundary}).}
+\label{fig:09_rz}
+\end{figure}
+
+\begin{plainwords}[A production cut is a range, not an energy]
+Geant4 does not create every secondary particle a process could make: a photon, electron or positron that would
+travel less than the \emph{production cut} of its region before stopping is not created, and its energy is
+deposited on the spot. The cut is given as a distance and converted, material by material, into an energy, so
+the same $1\mm$ is a larger energy in the dense crystals of the ECAL than in air. Small cuts where the detail
+matters (the silicon, which must see the delta electrons that widen a cluster), large ones where it does not
+(the iron of the muon system, where only the muons count): the cuts trade precision for time.
+\end{plainwords}
+
+\textbf{The parameters.} Which of the labelled sensitive detectors are switched on is decided in python, by
+\code{OnlySDs} of \code{g4SimHits\_cfi.py}: for Run~3 (modifier \code{run3\_common}) 15 kinds, writing 25
+\code{PSimHit} collections (the six tracker subdetectors, each in a \code{LowTof} and a \code{HighTof} collection,
+the five muon technologies, the luminosity and forward detectors) and 7 \code{PCaloHit} collections (ECAL barrel,
+endcap and preshower, HCAL, ZDC and two more). The regions and their production cuts are in the XML
+(table~\ref{tab:09_prodcuts}); outside any region the cut is \code{DefaultCutValue = 1.0}\,cm
+(\code{g4SimHits\_cfi.py}). The dimensions of figure~\ref{fig:09_rz} are constants of
+\path{Geometry/CMSCommonData/data/cms/2021/v3/cms.xml}:
+\code{TrackCalorR = 1.233\,m}, \code{TrackBeamZ2 = 2.932\,m}, \code{PIXNoseLength = 619.5\,mm},
+\code{CalorMuonR = 2.950\,m}, and of \path{Geometry/HcalCommonData/data/hcalforwardalgo.xml}: the HF from $|z|=11.1495$ to $12.8005$\,m.
+
+\begin{table}[!htb]
+\centering\small
+\caption{The regions of the 2024 geometry and their production cuts for photons, electrons and positrons
+(\code{CMSCutsRegion} and \code{ProdCutsFor*} in the \code{*ProdCuts.xml} files included by
+\code{cmsExtendedGeometry2024.xml}).}
+\label{tab:09_prodcuts}
+\setlength{\tabcolsep}{8pt}\begin{tabular}{@{}lll@{}}
+\toprule
+region & volumes & cut \\
+\midrule
+\code{BeamPipe} & the beryllium tube at the centre & $0.01\mm$ \\
+\code{TrackerSensRegion} & the active silicon of the strip modules & $0.1\mm$ \\
+\code{Tracker(Pixel)DeadRegion} & supports, cables, cooling & $1\mm$ \\
+\code{EcalRegion} & the crystals and their housing & $1\mm$ \\
+\code{APDRegion} & the photodiodes of the barrel ECAL & $0.005\mm$ \\
+\code{PreshowerSensRegion} & the silicon of the preshower & $0.1\mm$ \\
+\code{HcalRegion} & \code{CALO}, \code{VCAL} & $1\mm$ \\
+\code{Muon} & \code{MUON} & $100\mm$ ($\gamma$), $10\mm$ ($e^\pm$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The numbers of the event.} In this chapter the regions do nothing: with no process registered no
+secondary can be created, whatever its range, and page~8 of the analyzer is empty
+(figure~\ref{fig:09_boundary}, right). Of the 32 hit collections the job writes, 7 are filled for the signal: the
+six \code{LowTof} tracker collections, by crossings without energy loss, and \code{HcalHits}, by the HF shower
+library (section~\ref{sec:09_hits}). The geometry acts through its boundaries alone, and these decide where each
+primary is recorded (section~\ref{sec:09_boundary}).
+
+\subsection{The hand-over cuts}
+\label{sec:09_cuts}
+
+\textbf{What it does.} The class \code{Generator} (\path{SimG4Core/Generators/src/Generator.cc}) loops over the
+vertices of the HepMC event and, for every particle, decides whether Geant4 gets it. A stable particle (status 1)
+is tested in a fixed order: if it is a neutron, antineutron or photon so forward that it would stay in the beam
+pipe for 52.8\,m, it is kept (the ``very-forward'' rule); otherwise it must have a momentum between $40\MeV$ and
+$99\,999\GeV$, and its straight line must leave the beam-pipe cylinder in time (the $\eta$ cut, box below). A
+particle that passes becomes a \code{G4PrimaryParticle} attached to a \code{G4PrimaryVertex} at its production
+point, with \code{setGenId} set to its HepMC barcode. Particles that the generator already decayed (status 2) are
+treated in section~\ref{sec:09_decays}. The \code{StackingAction}, which sees every track before Geant4 starts it,
+then kills the neutrinos.
+
+\textbf{The parameters.} Table~\ref{tab:09_cuts} lists the four reasons for which a stable particle gets no
+\code{SimTrack}, with the parameter that implements it and its effect on the signal and on the 68 pileup
+collisions.
 
 \begin{table}[htb]
 \centering\small\setlength{\tabcolsep}{4pt}
@@ -110,38 +297,193 @@ kept beyond 5.5 & forward $n$, $\bar n$, $\gamma$ inside $r<2.9\cm$ at $|z|=52.8
 \end{tabular}
 \end{table}
 
-\textbf{The vertices.} The file holds 29 \code{SimVertex}s for the signal although nothing decayed in Geant4:
-the smeared primary vertex and 28 generator vertices, because Pythia8 decays every hadron with
-$c\tau < 10\mm$ (\code{ParticleDecays:tau0Max = 10} in
-\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py}; $K^0_S$, $\Lambda$, charged pions and
-kaons are left to Geant4) and the \code{Generator} keeps these decays as long as the decay vertex lies inside the
-$2.9\cm$ cylinder. The farthest ones belong to the $\bar b$ jet: the $B^+$ of $2388\GeV$ ($\pt=112.6$,
-$\eta=-3.75$) flew $11.7\cm$ to $(r, z) = (0.55, -8.60)\cm$ before decaying, and its $\bar D^0$ of $912\GeV$
-another $14\cm$, to $(1.21, -22.66)\cm$, $25.8\cm$ from the primary vertex, still inside the beam pipe. The
-$B^-$ of the $b$ jet, $236\GeV$, decayed $0.78\cm$ away. The primaries of these decays start from those points.
+\begin{plainwords}[The $\eta$ cut is a line, not an angle]
+The cut does not test $\abseta<5.5$. It follows the straight line of the particle from its production vertex to
+$|z| = 2.9\cm\times\sinh5.5 = 2.9\times122.3 = 354.8\cm$ and drops the particle if the line is then still inside
+the $2.9\cm$ cylinder (\code{RDecLenCut}). From the nominal collision point this is the same as $\abseta>5.5$,
+since a line of pseudorapidity $\eta$ is at $r=|z|/\sinh|\eta|$. Our vertex is at $z=+3.11\cm$. The $\pi^+$ of
+$84.6\GeV$ at $\eta=-5.5002$ flies towards negative $z$: from the nominal point it would arrive at
+$r=354.8/\sinh5.5002=2.899\cm$, $10\um$ inside, and be dropped; from our vertex it flies $357.9\cm$ and arrives at
+$2.940\cm$: kept. The photon of $12.9\GeV$ at $\eta=-5.5240$ arrives at $2.887\cm$: dropped. Towards positive $z$
+the vertex shortens the flight: the $K^0_S$ at $\eta=+5.4824$ arrives at $2.903\cm$ instead of $2.951\cm$, kept by
+$30\um$. The very-forward rule uses the same construction with $\eta=8.2$: $2.9\cm\times\sinh8.2 = 2.9\times1820 =
+5279\cm$, the 52.8\,m of the table.
+\end{plainwords}
 
-\textbf{At the tracker/calorimeter boundary.} 557 of the 571 primaries cross the boundary between the
-\code{Tracker} and the \code{CALO} volumes, the point that \code{CaloTrkProcessing} stores in the
-\code{SimTrack} as the tracker-surface position, with exactly their production momentum: no field, no material
-effect. The 14 that never get there are 13 particles at $5.34<\abseta<5.50$, accepted by the $\eta$ cut but
-passing beside the calorimeter envelope, and the forward neutron. The usable acceptance of the simulation
-therefore ends near $\abseta\approx5.3$, not at the $5.5$ of the cut; the 16 signal particles with
-$5.2<\abseta<5.5$ ($836\GeV$) are accepted and only three of them reach a calorimeter volume.
+\textbf{The numbers of the event.} The $\eta$ cut is where almost all the energy goes: 56 particles with
+$6581\GeV$ of the signal, at $5.52<\abseta<8.04$, and in the pileup eight particles at $\abseta = 5.48$--$5.50$
+with vertices displaced by $1$--$6\cm$ in $z$ are dropped although their momentum points just inside $5.5$ (the
+``other'' column of the ledger, the box above at work). The very-forward rule
+(\code{EtaCutForHector = 8.2}) hands the $151\GeV$ neutron at $\eta = 9.72$ of the signal and 168 particles with
+$134.2\TeV$ of the 68 pileup collisions to Geant4 for the Zero Degree Calorimeter; they are later stopped in the
+dead regions of the beam line (\code{DeadRegions = QuadRegion, InterimRegion}). The $40\MeV$ cut removes six
+photons from $\pi^0$ decays ($27$--$38\MeV$), $0.2\GeV$ in all. The one neutrino is the $\bar\nu_e$ of the
+semileptonic $B^-$ decay with $95.5\GeV$ and $37.5\GeV$ of \pt{}: the $b$ system enters Geant4 with 8 of its 9
+particles and $56.8$ of its $94.3\GeV$ of \pt{}, while the $\bar b$ system enters complete, 16 of 16,
+$114.2\GeV$. The net $b+\bar b$ \pt{}, $20.3\GeV$ at hadron level, is $57.5\GeV$ among the primaries: a detector
+cannot see the neutrino, and the imbalance it will measure for this event is decided here.
 
-\textbf{The hits.} With \code{TrackerSD.ZeroEnergyLoss = True} the tracker records every crossing of a sensor
-as a \code{PSimHit} even when the energy loss is zero: 6734 hits (PXB 908, PXF 829, TIB 960, TID 679, TOB 860,
-TEC 2498), all in the \code{LowTof} collections (time of flight $0.2$ to $14.0\ns$ against the $3\times12.06 =
-36.2\ns$ split of \code{ElectronicSigmaInNanoSeconds}), from 375 primaries, 193 charged and 182 neutral: a
-photon ``hits'' a sensor here because it crosses it, which is the geometry of the tracker and not its response.
-The $b$ system leaves 179 of them; the $\bar b$ system, at $\eta=-3.75$, none. Of the calorimeters only the HF
-responds: 746 \code{PCaloHit}s in 459 cells, 1511 units in all, 760 in 39 cells for the $\bar b$ system. The HF
-response in CMS is not a Geant4 energy deposit but a parametrised shower library
-(\code{HFShower.UseShowerLibrary = True}, file \code{HFShowerLibrary\_run3\_v7.root} under the \code{run3\_HFSL}
-modifier of \path{Geometry/HcalSimData/python/HFParameters_cff.py}): the first step of a particle in the HF
-calls the library, which returns the photoelectrons of a stored shower of that energy, each booked as a hit of
-$1\GeV$ (\path{SimG4CMS/Calo/src/HCalSD.cc}, \code{getFromHFLibrary}), and kills the track. The 1511 units are
-photoelectrons, and they appear with no physics switched on because the library is called by the sensitive
-detector, not by a physics process. Figure~\ref{fig:09_hits} shows both pages.
+\subsection{The decays that Pythia already made}
+\label{sec:09_decays}
+
+\textbf{What it does.} Pythia8 decays every unstable hadron whose mean decay length $c\tau$ is below $10\mm$ and
+leaves the others to the detector simulation; the $B$ and $D$ mesons of our event ($c\tau$ of $0.5$ and
+$0.12\mm$) are decayed by the generator, the $K^0_S$ ($27\mm$), the $\Lambda$ ($79\mm$), the charged pions and
+kaons (metres) are not. A decayed hadron stays in the record with status 2 and a decay vertex. The
+\code{Generator} then asks where that vertex is. Inside the $2.9\cm$ cylinder around the beam, the decay
+happened in the vacuum of the beam pipe and is kept as Pythia made it: Geant4 gets the daughters as primaries,
+starting at the decay point, which is stored as a \code{SimVertex} without a parent track. Outside the cylinder the
+parent itself is given to Geant4, with Pythia's decay attached as a ``predefined decay channel'', so that it decays
+where the generator decided but inside the material, after having crossed it.
+
+\textbf{The parameters.} \code{ParticleDecays:limitTau0 = on}, \code{ParticleDecays:tau0Max = 10} (in mm,
+\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py}); \code{RDecLenCut = 2.9} (cm) in the
+\code{Generator} parameter set; its partner \code{LDecLenCut = 30.0}, a length in $z$, is read and never used
+(section~5).
+
+\textbf{The numbers of the event.} The file holds 29 \code{SimVertex}s for the signal although nothing decayed in
+Geant4: the smeared primary vertex and 28 generator decay vertices, all inside the cylinder, so every daughter of
+the event starts as a primary. Table~\ref{tab:09_decays} follows the three weak decays of the two $b$ systems. The
+distance a particle flies before it decays is a random number, exponential with mean $\beta\gamma c\tau$, and the
+three in the table illustrate it: the $B^+$ flew half of its mean, the $\bar D^0$ more than twice its own, which
+happens one time in ten. The $\bar D^0$ of the $\bar b$ jet decayed $25.8\cm$ from the collision, still inside the
+beam pipe at $r = 1.2\cm$, because a particle at $\eta=-3.76$ moves $21$ times faster along the beam than away from
+it. The primaries of these decays start from those points (figure~\ref{fig:09_rz}).
+
+\begin{table}[!htb]
+\centering\small\setlength{\tabcolsep}{4pt}
+\caption{The three weak decays of the $b$ and $\bar b$ systems, kept from the generator (FWLite extras of the
+companion; $m$ and $c\tau$ from the Particle Data Group: $B^\pm$ $5.279\GeV$, $491\um$; $D^0$ $1.865\GeV$,
+$123\um$). The flight is measured from the point where the hadron was made.}
+\label{tab:09_decays}
+\begin{tabular}{@{}l rrr r r rr l@{}}
+\toprule
+hadron & $E$ & \pt{} & $\eta$ & $\beta\gamma$ & mean $\beta\gamma c\tau$ & flight & decay $(r,z)$ & daughters \\
+ & [GeV] & [GeV] & & & [cm] & [cm] & [cm] & \\
+\midrule
+$B^-$ ($b$ jet) & 235.9 & 94.3 & $-1.57$ & 44.7 & 2.2 & 0.78 & $(0.32, 2.39)$ & $\bar\nu_e$, $e^-$, $D_0^*(2300)^0$ \\
+$B^+$ ($\bar b$ jet) & 2388.2 & 112.6 & $-3.75$ & 452 & 22.2 & 11.7 & $(0.55, -8.60)$ & $\bar D^{*0}$, $\pi^+$, $\pi^0$, $K^0$, $\bar K^{*0}$ \\
+$\bar D^0$ (from the $B^+$) & 911.9 & 42.4 & $-3.76$ & 489 & 6.0 & 14.1 & $(1.21, -22.66)$ & $\bar K^0$, $\pi^-$, $\pi^+$, $\pi^0$, $\pi^0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Straight lines to the calorimeters}
+\label{sec:09_boundary}
+
+\textbf{What it does.} With no process registered, the only thing Geant4 does to a particle is the
+\emph{transportation}: it moves it in a straight line to the next boundary between two volumes, then to the next,
+until the particle leaves the world or reaches the time limit of the \code{SteppingAction}
+(\code{MaxTrackTime = 500}\,ns). The step that takes a track from an ``inside'' volume into a calorimeter
+volume is seen by \code{CaloTrkProcessing}, which writes the point and the momentum into the \code{SimTrack} (\code{trackerSurfacePosition()}, \code{trackerSurfaceMomentum()}, \code{crossedBoundary()}).
+This is the moment at which the truth of a particle passes from the tracker to the calorimeters: in the next
+chapters a shower in the ECAL is credited to the track that crossed here, not to the electrons it is made of.
+
+\textbf{The parameters.} The surfaces are those of figure~\ref{fig:09_rz}. Two numbers follow from them by
+geometry. Seen from our vertex at $z=+3.11\cm$, the corner of the tracker volume, $(r,z)=(123.3,-293.2)\cm$, is at
+$\eta=-\sinh^{-1}(296.3/123.3) = -1.61$: on the negative side a particle leaves the tracker through the barrel
+cylinder if $\abseta<1.61$, through the endcap disk if it is beyond. And the hole of the HF closes the acceptance:
+a line from the centre reaches the inner radius of the HF, $12.5\cm$, at its back face, $|z|=1280\cm$, if
+$\sinh\abseta = 1280/12.5 = 102.4$, that is $\abseta = 5.32$. A particle beyond that passes through the hole of
+every calorimeter.
+
+\textbf{The numbers of the event.} 557 of the 571 primaries cross into a calorimeter volume, with exactly their
+production momentum: no field, no material effect. Table~\ref{tab:09_boundary} says through which surface. The $b$
+system, at $\eta=-1.55$, is $0.06$ from the corner: 7 of its 8 primaries leave the tracker through the barrel
+cylinder between $z=-240$ and $-292\cm$, and one photon of $1.5\GeV$ at $\eta=-1.68$ through the endcap disk at
+$r=114\cm$. The $b$ jet that the calorimeters and the trigger of chapters~\ref{ch:11_DIGI} and~\ref{ch:12_L1T} find on
+the barrel--endcap boundary sits there already in the geometry of the tracker. The $\bar b$ system crosses, all 16, through the ring at the end of the nose,
+$z=-355.1\cm$, at $r=15.4$--$20.3\cm$, and flies another $7.6$\,m to the front face of the HF. The 14 primaries
+that never cross are 13 particles at $5.34<\abseta<5.50$, accepted by the $\eta$ cut but beyond the $5.32$ of the
+HF hole, and the forward neutron. The usable acceptance of the simulation therefore ends at $\abseta\approx5.3$,
+not at the $5.5$ of the cut; the 16 signal particles with $5.2<\abseta<5.5$ ($836\GeV$) are all accepted and only
+three of them reach a calorimeter volume.
+
+\begin{table}[!htb]
+\centering\small
+\caption{Where the primaries cross into a calorimeter volume (\code{extras\_09\_G4.txt}, from
+\code{SimTrack::trackerSurfacePosition}), for the signal and for library event 72; the $\abseta$ range is that of
+the signal primaries through the surface.}
+\label{tab:09_boundary}
+\begin{tabular}{@{}lll rr@{}}
+\toprule
+surface & where & $\abseta$ (signal) & signal & event 72 \\
+\midrule
+barrel cylinder & $r=123.3\cm$, $|z|<293.2\cm$ & 0.01--1.61 & 172 & 54 \\
+endcap disk & $|z|=293.2\cm$, $r=23$--$122\cm$ & 1.60--3.23 & 228 & 66 \\
+end of the nose & $|z|=355.1\cm$, $r=7.8$--$21.3\cm$ & 3.50--4.51 & 98 & 18 \\
+front face of the HF & $|z|=1114.9\cm$, $r=13$--$85\cm$ & 3.26--5.16 & 36 & 9 \\
+inner walls along the beam pipe & $r=7.8$--$12.5\cm$, $|z|=356$--$1277\cm$ & 4.51--5.32 & 23 & 8 \\
+\midrule
+no crossing & & 5.34--5.50, 9.72 & 14 & 9 \\
+all primaries & & & 571 & 164 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htb]
+\centering
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{09_G4/out/simAnalyzer_signal_09_G4_page-07.png}
+\caption{the 557 primaries at the boundary, marker at the crossing point: page~6 again.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{09_G4/out/simAnalyzer_signal_09_G4_page-08.png}
+\caption{the secondaries created by Geant4: none, only the primaries as grey dots.}
+\end{subfigure}
+\caption{The signal through the transport-only Geant4, pages 7 and 8 of \code{simAnalyzer\_signal\_09\_G4.pdf}
+(\code{\_page-07.png}, \code{\_page-08.png}). Without field and physics every primary arrives where it was
+aimed and creates nothing: the two pages that will change most in chapter~\ref{ch:10_SIM}.}
+\label{fig:09_boundary}
+\end{figure}
+
+\subsection{Hits without physics}
+\label{sec:09_hits}
+
+\textbf{What it does.} A sensitive detector is the code that a sensitive volume calls at every step taken inside
+it. The tracker one (\code{TkAccumulatingSensitiveDetector}) makes one \code{PSimHit} per crossing of a silicon
+sensor: entry and exit point in the frame of the sensor, energy loss, time of flight, the track that made it.
+Normally a crossing with no energy loss is not recorded; here \code{TrackerSD.ZeroEnergyLoss = True} records it
+anyway, so that the transport-only run shows which sensors each straight line crosses. The hits are split by their
+time of flight into a \code{LowTof} and a \code{HighTof} collection, the in-time and the late ones, at three times
+the shaping time of the strip electronics. The calorimeter one (\code{CaloSD} and its daughters \code{ECalSD},
+\code{HCalSD}) adds the energy deposited in a cell by a track into one \code{PCaloHit} per cell, track and time
+slice; with no physics nothing is deposited, except in the HF (box below).
+
+\begin{plainwords}[The HF shower library]
+The HF is steel with quartz fibres in it, and it sees the Cherenkov light that the charged particles of a shower
+make in the fibres: far too many photons to follow one by one in every event. CMS simulated such showers once,
+electromagnetic and hadronic ones at a set of energies, and stored the light captured in the fibres (the file
+\code{HFShowerLibrary\_run3\_v7.root}). When a photon, electron or hadron (not a muon) takes its first step in
+the HF, \code{HCalSD} (\code{getFromHFLibrary}) takes one stored shower from each of the two library energies
+around the particle's energy, keeps their photons in proportion, turns them to the particle's direction and
+position, applies the attenuation along the fibre, books each surviving photon as a photoelectron, a hit of
+``$1\GeV$'' in its cell, and kills the particle. The library is called by the sensitive detector, not by a
+physics process, which is why the HF answers even here.
+\end{plainwords}
+
+\textbf{The parameters.} \code{TrackerSD}: \code{ZeroEnergyLoss = False} by default (\code{True} by the customise
+line of this chapter), \code{ElectronicSigmaInNanoSeconds = 12.06}, hence the \code{LowTof}/\code{HighTof} split at
+$3\times12.06 = 36.2\ns$, \code{EnergyThresholdForPersistencyInGeV = 0.2}. \code{CaloSD}: \code{EminHits = 15} and
+$10\MeV$ for EB and EE, \code{TmaxHits = 500}\,ns. \code{HFShower}: \code{UseShowerLibrary = True}, the library
+file set by the modifier \code{run3\_HFSL} of \path{Geometry/HcalSimData/python/HFParameters_cff.py}.
+
+\textbf{The numbers of the event.} The tracker records 6734 \code{PSimHit}s (PXB 908, PXF 829, TIB 960, TID
+679, TOB 860, TEC 2498), all in the \code{LowTof} collections (time of flight $0.2$ to $14.0\ns$), from 375
+primaries, 193 charged and 182 neutral: a photon ``hits'' a sensor here because it crosses it. The count is pure
+geometry. A straight track at $\abseta<1$ crosses the 4 pixel layers, the 4 layers of the inner barrel (TIB) and the 6 of the outer
+barrel (TOB); the first two layers of TIB and of TOB carry two sensors back to back, one with its strips at a
+small stereo angle, so the track crosses $4+6+8=18$ sensors. The 38 charged primaries with $\abseta<1$ have $18.7$
+hits on average (17 to 21: neighbouring modules overlap a little so as to leave no gap), the 47 photons $18.6$.
+Between $\abseta=1$ and 2, where a track crosses barrel layers and then endcap disks, the average is $21.3$ and
+the most, 32, belongs to a photon at $\eta=-1.96$. The $b$ system leaves 179 hits; the $\bar b$ system, at
+$\eta=-3.75$, none.
+
+Of the calorimeters only the HF responds: 746 \code{PCaloHit}s in 459 cells, 1511 photoelectrons, from 144
+primaries that carried $4266\GeV$ into it, $0.35$ photoelectrons per GeV. A shower is not an average: the
+$\pi^+$ of $643\GeV$ of the $\bar b$ system gives 321 photoelectrons ($0.50$ per GeV), a $K^0_L$ of $241\GeV$ next
+to it 84 ($0.35$), a $\pi^+$ of $165\GeV$ 46 ($0.28$). The $\bar b$ system puts 760 photoelectrons into 39 cells.
+Figure~\ref{fig:09_hits} shows both pages.
 
 \begin{figure}[htb]
 \centering
@@ -160,23 +502,41 @@ of secondaries.}
 \label{fig:09_hits}
 \end{figure}
 
-\begin{plainwords}[Why transport only]
-The standard \code{SIM} step does everything at once: the hand-over, the bending in the $3.8$\,T field, decays
-in flight, electromagnetic showers, hadronic showers. Its output mixes the acceptance of the hand-over with the
-response of the detector and one cannot tell from the hits which particles were dropped at the door. With the
-transportation alone, a particle is either a \code{SimTrack} that flies straight to the calorimeter boundary with
-its momentum unchanged and marks every sensor on its way, or it is nothing. Every number of this chapter is
-therefore a statement about the cuts, and every difference to chapter~\ref{ch:10_SIM} will be a statement about
-the physics. The run is also fast: the 250 library collisions take about a minute (\code{run\_09\_G4.log}).
-\end{plainwords}
 
-\textbf{One pileup collision.} Library event~72, drawn in the companion PDF, has 192 stable particles of which
-164 become primaries; 27 are beyond $\abseta=5.5$ with $9041$ of its $13\,600\GeV$ (three of them beyond
-$8.2$, among them a $\Lambda$ of $3414\GeV$ at $\eta=9.85$), one photon is below $40\MeV$, and four forward
-neutrals with $3749\GeV$ are kept by the ZDC rule. 155 of the 164 reach the calorimeter boundary; the collision
-leaves 1965 tracker hits and 153 HF hits in 135 cells. Over the 68 collisions the number of primaries runs from 0
-(library event 124, a diffractive collision with 6 stable particles, all beyond $\abseta=5.5$) to 470 (event 94,
-547 stable particles), 153 on average.
+\subsection{The pileup collisions}
+\label{sec:09_pileup}
+
+\textbf{What it does.} The library of chapter~\ref{ch:08_PU} goes through the same transport-only Geant4, all 250
+collisions, each from its own smeared vertex. Nothing is mixed yet: each collision is an event of its own, and
+the ledger sums the 68 that the mixing of chapter~\ref{ch:10_SIM} will put into our bunch crossing.
+
+\textbf{The parameters.} Those of the signal, with the Geant4 seed of the library, \code{PUSEED}$+2 = 20243$
+(only the HF shower library draws random numbers in this run).
+
+\textbf{The numbers of the event.} Library event~72, the first in-time collision (figure~\ref{fig:09_pileup}), has
+192 stable particles of which 164 become primaries; 27 are beyond $\abseta=5.5$ with $9041$ of its $13\,600\GeV$
+(three of them beyond $8.2$, among them a $\Lambda$ of $3414\GeV$ at $\eta=9.85$), one photon is below $40\MeV$,
+and four forward neutrals with $3749\GeV$ are kept by the very-forward rule. 155 of the 164 reach the
+calorimeter boundary (table~\ref{tab:09_boundary}: 54 through the barrel cylinder, 66 through the endcap disk);
+the collision leaves 1965 tracker hits and 153 HF hits with 192 photoelectrons in 135 cells. Over the 68
+collisions the number of primaries runs from 0 (library event 124, a diffractive collision with 6 stable
+particles, all beyond $\abseta=5.5$) to 470 (event 94, 547 stable particles), 153 on average.
+
+\begin{figure}[!htb]
+\centering
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{09_G4/out/simAnalyzer_pileup_09_G4_page-06.png}
+\caption{the 164 primaries and the 28 stable particles without a \code{SimTrack} (grey crosses).}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.495\textwidth}
+\includegraphics[width=\textwidth]{09_G4/out/simAnalyzer_pileup_09_G4_page-09.png}
+\caption{its 1965 tracker \code{PSimHit}s by subdetector, zero energy loss.}
+\end{subfigure}
+\caption{One pileup collision through the transport-only Geant4: library event~72, pages 6 and 9 of
+\code{simAnalyzer\_pileup\_09\_G4.pdf} (\code{\_page-06.png}, \code{\_page-09.png}). No jet, no $b$ system: an even
+spray of soft particles.}
+\label{fig:09_pileup}
+\end{figure}
 
 \section{Ledger and display}
 
@@ -243,13 +603,12 @@ crosses. The crosses are where the ledger says: a column at each border of the p
 particles sit beyond the $|\eta|=6$ edge of the display and are drawn on it), six faint ones scattered over the
 centre (the photons below $40\MeV$) and one at the $b$ system (the neutrino). Compared with page~5 of the
 same PDF, the stage-5 display of chapter~\ref{ch:06_Decay}, nothing has moved: the hand-over is a selection,
-not a transformation, and page~7 (the primaries at the calorimeter boundary) is the same picture again, because
-without a field and without material a straight line arrives where it was aimed.
+not a transformation, and page~7 (figure~\ref{fig:09_boundary}) is the same picture again.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.8\textwidth]{09_G4/out/simAnalyzer_signal_09_G4_page-06.png}
-\caption{The signal handed to Geant4 (\code{simAnalyzer\_signal\_09\_G4\_page-6.png}): the 571 primaries
+\includegraphics[width=0.7\textwidth]{09_G4/out/simAnalyzer_signal_09_G4_page-06.png}
+\caption{The signal handed to Geant4 (\code{simAnalyzer\_signal\_09\_G4\_page-06.png}): the 571 primaries
 (\code{SimTrack}s with a generator link) by kind, the $b$ and $\bar b$ systems in red and blue with their
 vector sum (star), and the 63 stable particles without a \code{SimTrack} as grey crosses (56 beyond
 $\abseta=5.5$, 6 below $40\MeV$, 1 neutrino). The right panel marks the SIM stage of this sample: transport
@@ -262,8 +621,8 @@ A minimum-bias collision carries $13.6\TeV$, the same as the signal, but almost 
 pipe: in the 68 collisions $840\TeV$ of $925$ are beyond $\abseta=5.5$, where there is no detector, and the
 hand-over drops $706\TeV$ of them before Geant4 does a single step. What enters is small per collision, 153
 particles and $66\GeV$ of \pt{}, but there are 68 of them: $4486\GeV$ of \pt{} against the $472$ of the
-signal. In the tracker region alone the pileup primaries carry $2174\GeV$ of \pt{} to the signal's $241$. The
-detector simulation of the next chapters starts from these $10\,959$ primaries. In the tracker region the 68
+signal. In the tracker region alone the pileup primaries carry $2174\GeV$ of \pt{} to the signal's $241$. In the
+tracker region the 68
 collisions lay down $2174/(5\times2\pi) = 69\GeV$ of \pt{} per unit of $\eta$--$\phi$ area; at the HL-LHC, with
 200 collisions, the same hand-over would deliver about $200\GeV$.
 \end{plainwords}
@@ -282,8 +641,8 @@ detector list of \code{phase2\_common} in the same file (\code{OnlySDs}) adds th
 (\code{MtdSensitiveDetector}), the HFNose and keeps the ZDC, the BCM1F and the PLT; the Phase-2 Level-1 regions of
 \path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py} put the HGCal at $1.5<\abseta<3.0$ and the HF at
 $3.0<\abseta<5.5$. In this event the particles with $5.2<\abseta<5.5$ (16, $836\GeV$) are accepted and 13 of
-them never enter a calorimeter volume; whether the Phase-2 geometry closes that gap could not be established
-from the python configuration. The very-forward rule that keeps neutrons and photons aimed at the ZDC
+them never enter a calorimeter volume (the hole of the HF, section~\ref{sec:09_boundary}); whether the
+Phase-2 geometry closes that gap could not be established from the python. The very-forward rule that keeps neutrons and photons aimed at the ZDC
 (\code{EtaCutForHector = 8.2}, 168 primaries with $134\TeV$ in our 68 collisions) runs at the HL-LHC as it does
 now, with \code{SteppingAction.CMStoZDCtransport = False}, so these particles are simulated up to the beam-line
 dead regions and then killed: CPU spent on tracks that produce nothing.

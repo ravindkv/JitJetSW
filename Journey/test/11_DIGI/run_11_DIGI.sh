@@ -22,6 +22,7 @@
 #   trigprim_11_DIGI.txt                                the trigger primitives of the three samples side by side (common/trigPrimLedger.py)
 #   thresholds_11_DIGI.txt                              the thresholds and settings of every digitiser (common/digiThresholds.py)
 #   ledger_11_DIGI.txt                                  the ledger of the three samples (common/digiLedger.py)
+#   examples_11_DIGI.txt                                the worked examples of the chapter (11_DIGI/digiExamples_11_DIGI.py, FWLite)
 # Variables: PU=60 BUNCHES=-1,1 SKIP=71 (jitjet_common.sh) CASES="signal pileup mixed" REUSE=1 (keep existing DIGI files)
 set -euo pipefail
 CHAPTER=11_DIGI
@@ -90,4 +91,10 @@ python3 "$COMMON/trigPrimLedger.py" "$OUT" "$CHAPTER" > "$OUT/trigprim_${CHAPTER
 python3 "$COMMON/digiThresholds.py" "$CHDIR/step3_DIGI_mixed_${CHAPTER}_cfg.py" > "$OUT/thresholds_${CHAPTER}.txt" 2> "$OUT/thresholds_${CHAPTER}.log" ||
   { tail -20 "$OUT/thresholds_${CHAPTER}.log" >&2; exit 1; }
 python3 "$COMMON/digiLedger.py" "$OUT" "$CHAPTER" > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" || { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
-echo "  Thresholds: thresholds_${CHAPTER}.txt; ledger: ledger_${CHAPTER}.txt; trigger primitives: trigprim_${CHAPTER}.txt"
+# the worked examples of the chapter (one data frame or one channel followed by hand, the silicon charges, the APV pulse):
+# FWLite on the three DIGI files, no cmsRun
+if [[ " $CASES " == *" signal "* && " $CASES " == *" mixed "* ]]; then
+  python3 "$CHDIR/digiExamples_${CHAPTER}.py" "$OUT" > "$OUT/examples_${CHAPTER}.txt" 2> "$OUT/examples_${CHAPTER}.log" ||
+    { tail -20 "$OUT/examples_${CHAPTER}.log" >&2; exit 1; }
+fi
+echo "  Thresholds: thresholds_${CHAPTER}.txt; ledger: ledger_${CHAPTER}.txt; trigger primitives: trigprim_${CHAPTER}.txt; examples: examples_${CHAPTER}.txt"

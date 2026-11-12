@@ -15,6 +15,7 @@
 #   simAnalyzer_signal_09_G4.pdf, .root, .log         (9a) 5 generator pages + primaries, boundary, secondaries (none), hits + PNG
 #   simAnalyzer_pileup_09_G4.pdf, .root, .log         (9b) the same pages for library event SKIP+1
 #   ledger_09_G4.txt                                  (9a), (9b: the NPU in-time collisions) and the sum (common/g4Ledger.py)
+#   extras_09_G4.txt                                  boundary surfaces, eta-cut lines, HF photoelectrons, hits per track (g4Extras_09_G4.py)
 # Variables: NPU=68 SKIP=71 (jitjet_common.sh, as in chapter 08), PUSEED=20241 (g4SimHits seed of the library = PUSEED + 2).
 set -euo pipefail
 CHAPTER=09_G4
@@ -66,3 +67,7 @@ draw pileup "1:1:$((SKIP + 1))" "chapter $CHAPTER (9b): one pileup collision han
 } > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" || { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
 grep -E '^== |^total' "$OUT/ledger_${CHAPTER}.txt"
 echo "  Ledger: ledger_${CHAPTER}.txt"
+# the extra numbers of the chapter (boundary surfaces, the eta cut as a line, HF photoelectrons per GeV, hits per track)
+python3 "$CHDIR/g4Extras_${CHAPTER}.py" "$OUT/step2_G4_signal_${CHAPTER}.root" "$OUT/step2_G4_pileup_${CHAPTER}.root" "1:1:$((SKIP + 1))" \
+  > "$OUT/extras_${CHAPTER}.txt" 2> "$OUT/extras_${CHAPTER}.log" || { tail -20 "$OUT/extras_${CHAPTER}.log" >&2; exit 1; }
+echo "  Extras: extras_${CHAPTER}.txt"

@@ -255,6 +255,9 @@ cmsRun ../../common/simHitAnalyzer_cfg.py inputFiles=file:$J/test/10_SIM/out/ste
 grep -E "^SimHitAnalyzer|^  pileup mixed|^    pileup event|^  station|^    hits by|^    primaries with hits" step3_MIX_10_SIM.log > simHits_mixed_10_SIM.log
 # the ledger
 python3 ../../common/simLedger.py $J/test/10_SIM/out 10_SIM $J/test/09_G4/out/simAnalyzer_signal_09_G4.log > ledger_10_SIM.txt
+# the FWLite extras (no cmsRun; about 15 s): decays, conversions, nuclear interactions, the b-system budget, the
+# followed photon in two runs, the vertices of the mixing; the last step of run_10_SIM.sh
+cd $J/test && python3 10_SIM/simExtras_10_SIM.py > 10_SIM/out/extras_10_SIM.txt 2> 10_SIM/out/extras_10_SIM.log
 ```
 
 `simAnalyzer_cfg.py` (chapter 09, section 3, for the options): `simStage=N` highlights the stage in the right panel of every
@@ -278,6 +281,7 @@ What each run produces in `out/`:
 | `step3_MIX_10_SIM.log` | the full mixing job log (the analyzer lines above, the detector element extents); the job was run with the drawing, and the playback file came from the same configuration run again without it, so this log does not mention the output module |
 | `step3_MIX_10_SIM.root` | the signal event with the `CrossingFramePlaybackInfoNew` (section 2), the input of (11a+11b) |
 | `ledger_10_SIM.txt` | the ledger of `common/simLedger.py`: table 1, the stages from the SimAnalyzer logs (with the transport-only run of chapter 09 as first line); table 2, the three samples station by station from the SimHitAnalyzer logs |
+| `extras_10_SIM.txt` | the output of `test/10_SIM/simExtras_10_SIM.py` (FWLite on `test/09_G4/out/step2_G4_signal_09_G4.root`, the four `step2_SIM_<stage>_10_SIM.root`, `step2_SIM_pileup_10_SIM.root` and `simHits_mixed_10_SIM.log`): (1) the field, (2) the decays in flight, (3) conversions and bremsstrahlung, (4) nuclear interactions, (5) the b and bbar systems in the calorimeters, (6) the followed photon in two runs, (7) the vertices of the 193 mixed collisions, (8) the library collisions at z = +-203 m; section 4.8 |
 | `step2_SIM_<stage>_10_SIM.log`, `step2_SIM_pileup_10_SIM.log` | the `cmsRun` logs of the SIM steps: the Geant4 banner and the event records |
 
 `simLedger.py` parses `nReaching`, `nSecondaries`, `decay/EM/hadronic`, `nHits`, `sumELoss`, `nCells`, the `E by subdetector`
@@ -537,3 +541,159 @@ tag, `TrackerAlignment_Run3MC_2023_rereco_v1` in 2024 and `TrackerAlignment_Run3
 positions differ by 10 um in the median, 0.33 mm in the TEC, at most 6.8 mm for one TIB module (chapter 09 companion,
 section 4.7). No number of the chapter depends on it.
 
+### 4.8 FWLite extras: `extras_10_SIM.txt`
+
+Made by `test/10_SIM/simExtras_10_SIM.py` (section 3), from the files of chapters 09 and 10; nothing is rerun. A hit or
+a cell is attributed to a primary through the `SimTrack` / `SimVertex` parents, as the analyzers do; the b and bbar
+systems are the status-1 descendants of the B- [829] and the B*+ [968] of `genParticles`, matched to the primaries by the
+barcodes of `genParticles` (`std::vector<int>`). The creator process of a vertex is `SimVertex::processType()` mapped as
+in `plugins/SimAnalyzer.cc` (`procOf`). The regions of a vertex: beam pipe r < 2.2 cm; pixel volume r < 20 cm, |z| < 55 cm;
+strip volume r < 110 cm, |z| < 280 cm (the tracker volume of the conversion and interaction fractions); calorimeters
+r > 129 cm or |z| > 317.5 cm (the EB and EE faces of `simHits_signal_10_SIM.log`); preshower 303.5 < |z| < 317.5 cm;
+the rest "between the tracker and the calorimeters". The HCAL hits are in the test numbering of the simulation
+(`DataFormats/HcalDetId/src/HcalTestNumbering.cc`: subdetector = bits 28-31; 1 HB, 2 HE, 3 HO, 4 HF); the check line
+reproduces the HB, HE and HF sums of the SimAnalyzer.
+
+```
+== simExtras 10_SIM: FWLite on the SIM files of chapters 09 and 10 (event 1)
+  transport (09)  09_G4/out/step2_G4_signal_09_G4.root: 571 SimTracks, 29 SimVertices, 571 primaries
+  B               10_SIM/out/step2_SIM_B_10_SIM.root: 571 SimTracks, 29 SimVertices, 571 primaries
+  B_Decay         10_SIM/out/step2_SIM_B_Decay_10_SIM.root: 637 SimTracks, 70 SimVertices, 571 primaries
+  B_Decay_EM      10_SIM/out/step2_SIM_B_Decay_EM_10_SIM.root: 1304 SimTracks, 474 SimVertices, 571 primaries
+  signal          10_SIM/out/step2_SIM_signal_10_SIM.root: 1926 SimTracks, 768 SimVertices, 571 primaries
+
+-- (1) the field (stage B against the transport-only run of chapter 09)
+  primaries reaching the boundary: transport 557, B 552; reaching without field but not with it: 5
+    pi+-   charge -1  pT = 0.031 GeV  eta = +2.55
+    pi+-   charge +1  pT = 0.034 GeV  eta = +3.75
+    pi+-   charge +1  pT = 0.039 GeV  eta = +4.20
+    pi+-   charge +1  pT = 0.216 GeV  eta = -5.32
+    pi+-   charge -1  pT = 0.453 GeV  eta = -1.01
+  charged primaries: 277; with pT < 0.735 GeV and |eta| < 1.479 (would curl inside r = 1.29 m): 54, of which reaching: 53
+  charged primaries with |eta| < 2.5: 159; pT < 0.735 GeV: 114; median pT 0.48 GeV
+  tracker hits of the charged, pT < 0.735  primaries: transport  2480, B  2756
+  tracker hits of the charged, pT >= 0.735 primaries: transport   971, B   980
+  tracker hits of the neutral              primaries: transport  3283, B  3283
+  pi+ followed: pT = 13.31 GeV, eta = -1.545, phi at the vertex -2.0811, boundary point r = 123.3 cm z = -272.8 cm phi -2.1328: dphi = -0.0518 rad (-6.38 cm at that r)
+
+-- (2) the decays in flight (stage B_Decay)
+  41 decay vertices with a stored daughter, 66 daughters
+    pi+-     -> mu                        12
+    K0S      -> pi+- pi+-                  7
+    111      -> gamma gamma                6
+    K0S      -> 111 111                    3
+    Lambdabar -> pbar pi+-                  3
+    Lambda   -> p pi+-                     3
+    K+-      -> mu                         3
+    Sigma-bar -> nbar pi+-                  2
+    Lambdabar -> 111 nbar                   1
+    111      -> gamma                      1
+    decay vertex strip volume (20 < r < 110 cm)    18
+    decay vertex pixel volume (r < 20 cm)          12
+    decay vertex beam pipe (r < 2.2 cm)            10
+    decay vertex in the calorimeters (r > 129 cm or |z| > 317 cm)   1
+  b system: K0S of pT 7.96 GeV (E 20.63) decayed at r = 80.2 cm, z = -188.5 cm into pi+- pi+-
+
+-- (3) the electromagnetic physics (stage B_Decay_EM)
+  conversion: 230 vertices, 430 stored secondaries; strip volume (20 < r < 110 cm) 121, in the calorimeters (r > 129 cm or |z| > 317 cm) 47, between the tracker and the calorimeters 41, pixel volume (r < 20 cm) 16, in the preshower (303.5 < |z| < 317.5 cm) 4, beam pipe (r < 2.2 cm) 1
+    of which conversions of a primary photon: 187
+  bremsstrahlung: 153 vertices, 213 stored secondaries; strip volume (20 < r < 110 cm) 109, between the tracker and the calorimeters 38, pixel volume (r < 20 cm) 3, in the calorimeters (r > 129 cm or |z| > 317 cm) 2, in the preshower (303.5 < |z| < 317.5 cm) 1
+  primary photons with E > 1 GeV, 0.0 <= |eta| < 1.0: 3, converted inside the tracker volume: 2 (67 %)
+  primary photons with E > 1 GeV, 1.0 <= |eta| < 2.5: 26, converted inside the tracker volume: 16 (62 %)
+  primary photons with E > 1 GeV, 0.0 <= |eta| < 2.5: 29, converted inside the tracker volume: 18 (62 %)
+  followed gamma: pT = 17.73 GeV, eta = -1.566, E = 44.27 GeV; converts at r = 112.3 cm, z = -253.9 cm (between the tracker and the calorimeters)
+  followed e: pT = 4.95 GeV, eta = -1.431, E = 10.95 GeV
+
+-- (3) the electromagnetic physics (stage signal)
+  conversion: 268 vertices, 488 stored secondaries; strip volume (20 < r < 110 cm) 134, in the calorimeters (r > 129 cm or |z| > 317 cm) 51, between the tracker and the calorimeters 47, pixel volume (r < 20 cm) 27, in the preshower (303.5 < |z| < 317.5 cm) 7, beam pipe (r < 2.2 cm) 2
+    of which conversions of a primary photon: 186
+  bremsstrahlung: 189 vertices, 275 stored secondaries; strip volume (20 < r < 110 cm) 136, between the tracker and the calorimeters 44, pixel volume (r < 20 cm) 7, in the calorimeters (r > 129 cm or |z| > 317 cm) 2
+  primary photons with E > 1 GeV, 0.0 <= |eta| < 1.0: 3, converted inside the tracker volume: 0 (0 %)
+  primary photons with E > 1 GeV, 1.0 <= |eta| < 2.5: 26, converted inside the tracker volume: 15 (58 %)
+  primary photons with E > 1 GeV, 0.0 <= |eta| < 2.5: 29, converted inside the tracker volume: 15 (52 %)
+  followed gamma: pT = 17.73 GeV, eta = -1.566, E = 44.27 GeV; converts at r = 3.0 cm, z = -3.7 cm (pixel volume (r < 20 cm))
+  followed e: pT = 4.95 GeV, eta = -1.431, E = 10.95 GeV
+
+-- (4) the hadronic physics (stage signal)
+  hadronic vertices with a stored secondary: 142, 386 secondaries; strip volume (20 < r < 110 cm) 85, between the tracker and the calorimeters 26, pixel volume (r < 20 cm) 13, in the calorimeters (r > 129 cm or |z| > 317 cm) 9, in the preshower (303.5 < |z| < 317.5 cm) 5, beam pipe (r < 2.2 cm) 4
+  their secondaries by kind: pi+- 178, 111 62, n 60, p 58, K+- 6, K0S 5, K0L 4, 221 4
+  parents: pi+- 102, p 10, n 10, K+- 8, K0L 4, nbar 4
+  primary charged pi/K/p with pT > 0.5 GeV, 0.0 <= |eta| < 1.0: 14, with a nuclear interaction inside the tracker volume: 3 (21 %)
+  primary charged pi/K/p with pT > 0.5 GeV, 1.0 <= |eta| < 2.5: 59, with a nuclear interaction inside the tracker volume: 16 (27 %)
+  primary charged pi/K/p with pT > 0.5 GeV, 0.0 <= |eta| < 2.5: 73, with a nuclear interaction inside the tracker volume: 19 (26 %)
+  followed K0S of the bbar jet: pT = 15.65 GeV, E = 338.5 GeV, eta = -3.766; vertices it ends in or creates: hadron inelastic at r = 2.2 cm, z = -43.7 cm
+  followed pi+- of the bbar jet: pT = 30.61 GeV, E = 642.9 GeV, eta = -3.737; vertices it ends in or creates: none
+
+-- check: HcalHits of the signal by subdetector (test numbering): HB 0.2173, HE 1.6624, HF 1849.0000, HO 0.0000
+
+-- (5) the b system (B- decay products) and the bbar system (B*+ decay products), stage signal
+  b system: 8 primaries, E = 140.3 GeV: gamma 44.3, pi+- 32.6, pi+- 26.6, K0S 20.6, e 10.9, gamma 4.1, gamma 0.8, gamma 0.4
+    deposits: EB 6.229 (364 cells), EE 57.323 (895 cells), ES 0.024 (96 cells), HB 0.010 (17 cells), HE 0.376 (105 cells)
+  bbar system: 16 primaries, E = 2421.4 GeV: pi+- 642.9, K0S 338.5, K0S 275.5, K0L 241.0, gamma 179.0, pi+- 164.6, gamma 132.9, gamma 121.9, pi+- 95.9, gamma 58.4, gamma 51.9, gamma 45.8, gamma 33.2, gamma 18.2, gamma 16.3, gamma 5.4
+    deposits: EB 0.540 (119 cells), EE 9.353 (418 cells), ES 0.012 (52 cells), HB 0.000 (2 cells), HE 0.025 (14 cells), HF 987.000 (68 cells)
+
+-- (6) the followed photon: its own deposits in the EB/EE crystals (stage B_Decay_EM)
+  photon pT 17.73 E 44.27: 156 EB/EE cells, 42.79 GeV (97 % of E); hottest 28.57 GeV (67 %), 5 hottest 38.11 GeV (89 %), 90 % in 6 cells; cells above 1 GeV: 4; ES 0.0002 GeV; tracker hits of its descendants (stored tracks) 0
+
+-- (6) the followed photon: its own deposits in the EB/EE crystals (stage signal)
+  photon pT 17.73 E 44.27: 466 EB/EE cells, 39.45 GeV (89 % of E); hottest 7.80 GeV (20 %), 5 hottest 18.56 GeV (47 %), 90 % in 38 cells; cells above 1 GeV: 10; ES 0.0039 GeV; tracker hits of its descendants (stored tracks) 171
+
+-- (7) the 193 mixed collisions (simHits_mixed_10_SIM.log, lines "pileup event")
+  190 collisions with |z| < 1 m: mean z = 0.13 cm, rms 3.76 cm, min -9.52, max 10.08; within |z - 3.11| < 0.1 cm of the signal vertex: 2
+  outside: bx -1 pileup event 12 at z = -20300 cm (1 primary)
+  outside: bx +0 pileup event 53 at z = -20300 cm (2 primary)
+  outside: bx +1 pileup event 40 at z = 20300 cm (1 primary)
+  bx -1: 71 collisions, primaries per collision: min 1, median 69, max 537, sum 10012
+  bx +0: 68 collisions, primaries per collision: min 2, median 126, max 470, sum 10414
+  bx +1: 54 collisions, primaries per collision: min 1, median 154, max 574, sum 10634
+
+-- (8) the library collisions with a vertex at |z| = 203 m (step2_SIM_pileup_10_SIM.root, library events 12, 124, 179)
+  library event 12: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
+  library event 124: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
+  library event 124: SimTrack pdg 2212, E = 5539 GeV, primary True, vertex z = 20300 cm
+  library event 179: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = 20300 cm
+```
+
+The arithmetic of the chapter on these numbers:
+
+| quoted | from |
+|---|---|
+| looper threshold 0.735 GeV, R = 0.88 m x pT | 0.3 x 3.8 T x 1.29 m / 2; 1 / (0.3 x 3.8) = 0.877 m/GeV |
+| 114 of 159 charged primaries with \|eta\| < 2.5 below 0.735 GeV, "almost three quarters" | 114 / 159 = 72 % |
+| 276 of the 285 new crossings | 2756 - 2480 = 276; 7019 - 6734 = 285; the fast charged 980 - 971 = 9 |
+| the followed pi+: R = 11.7 m, expected 0.0528 rad, field 2 % weaker, sagitta 1.3 cm | 13.31 / (0.3 x 3.8) = 11.68 m; asin(1.233 / (2 x 11.68)) = 0.0528; 0.0518 / 0.0528 = 0.981; 1.1^2 / (8 x 11.68) = 0.0130 m |
+| K0S of the b system: beta gamma = 41, mean flight 1.1 m, 2.08 m from the vertex, 15 % | p = 20.62 GeV, m(K0S) = 0.4976 GeV (PDG), c tau = 2.684 cm (PDG): 41.4 x 2.684 = 111 cm; sqrt(80.2^2 + (188.5 + 3.11)^2) = 207.7 cm = 1.87 mean flights, exp(-1.87) = 0.15 |
+| c tau of pi+-, K+-, K0S, Lambda: 7.8 m, 3.7 m, 2.7 cm, 7.9 cm | PDG |
+| seven pi0 -> gamma gamma | 6 + 1 vertices (one with a single stored photon) |
+| 230 conversions: 1 + 16 + 121 + 41 + 4 + 47 | the location line of section (3), stage B_Decay_EM |
+| t = 0.9 to 1.2 X0 | 1 - exp(-7t/9) = 15/29 (full) and 18/29 (B_Decay_EM): t = -(9/7) ln(14/29) = 0.94, -(9/7) ln(11/29) = 1.25 |
+| 0.15 MeV per crossing (0.23 in the full simulation) | 1.16607 GeV / 7861 hits; 2.33358 GeV / 10 272 hits |
+| 0.12 MeV for a MIP in 300 um of silicon | (dE/dx)min = 1.664 MeV cm2/g x 2.329 g/cm3 (PDG) x 0.03 cm = 0.116 MeV |
+| X0 = 0.89 cm, R_M ~ 2 cm, E_c ~ 9 MeV of PbWO4; lambda_I ~ 20 cm (PbWO4), ~ 16 cm (brass) | PDG tables of material properties |
+| shower maximum 8.5 X0, 7.5 cm for 44 GeV | ln(44 000 / 9) = 8.5; 8.5 x 0.89 cm = 7.5 cm |
+| crystals 22-23 cm (about 25 X0), 2.2 cm (EB) and 2.9 cm (EE) wide | the CMS ECAL crystal dimensions (barrel 23 cm, front face 2.2 cm; endcap 22 cm, 2.86 cm) |
+| photon: 97 %, two thirds, 89 %, 90 % in 6 (B_Decay_EM); 89 %, a fifth, 47 %, 90 % in 38, 11 % lost (full) | section (6) |
+| two hadrons in three start their shower in an ECAL crystal | 1 - exp(-23 / 20.3) = 0.68 |
+| 26 % of the charged hadrons interact in the tracker, 0.3 lambda_I | 19 / 73; -ln(1 - 19/73) = 0.30 |
+| 142 nuclear-interaction vertices: 4 + 13 + 85 + 26 + 14 | the location line of section (4); 14 = 9 (calorimeters) + 5 (preshower) |
+| b system: ECAL 63.58 GeV, HCAL 0.386 GeV in 122 cells, x sampling = 72 GeV | 6.229 + 57.323 + 0.024; 0.010 + 0.376; 17 + 105; 0.010 x 125 + 0.376 x 190 = 72.7 (HB and HE sampling factors of `test/11_DIGI/out/thresholds_11_DIGI.txt`: `hb.samplingFactors` 124.5-143.5, `he.samplingFactors` 186.1-210.6) |
+| bbar system: 9.9 GeV in the ECAL (9.4 in the EE) | 0.540 + 9.353 + 0.012 = 9.905 (the SimAnalyzer: 9.90505) |
+| the followed photon and pi+ in the mixed event: 80 crystals with 42.6 GeV, 8 with 3.9 GeV | the header of `mixed/ECAL/simHits_mixed_10_SIM_ECAL_run1_event1.pdf` (`pdftotext`): `π+ 13.3 GeV (η -1.54), 3.91 GeV in 8 cells; KS 15.7 GeV (η -3.77), 4.56 GeV in 63 cells; γ 17.7 GeV (η -1.57), 42.57 GeV in 80 cells` |
+| the followed primaries of the signal: photon 270 cells with 42.0 GeV, pi+ 35 cells with 3.4 GeV, 171 tracker hits of the photon, 809 HF units in 19 cells of the HF pi+, K0S 203 hits | the headers of `signal/{TRK,ECAL,HCAL}/simHits_signal_10_SIM_<station>_run1_event1.pdf`: `π+ 13.3 GeV (η -1.54), 29 hits; KS 15.7 GeV (η -3.77), 203 hits; γ 17.7 GeV (η -1.57), 171 hits; e 5.0 GeV (η -1.43), 138 hits`; `π+ 13.3 GeV (η -1.54), 3.43 GeV in 35 cells; ...; γ 17.7 GeV (η -1.57), 42.03 GeV in 270 cells`; `π+ 30.6 GeV (η -3.74), 809 (HF units) in 19 HF cells`; the "GeV" of these labels is the pT of the primary (`plugins/SimHitAnalyzer.cc`, `highlightLine`) |
+| 98 % of the barrel crystals hit; EE 14 619 of 14 648; ES 31 654 of 137 216; HB 3624 of 9072; HF 3212 of 3456 | `simHits_mixed_10_SIM.log` (cells per subdetector) against the detector elements of `simHits_signal_10_SIM.log` (`EB=61200 EE=14648 ES=137216 HB=9072 HE=6768 HO=2160 HF=3456`); 59 897 / 61 200 = 97.9 % |
+| EE 9720 GeV, 33 times the signal | the header of `mixed/ECAL/...`: `EE 14619 cells (9.72e+03 GeV)`; 9720 / 293.66 = 33.1 |
+| PU vertices: r.m.s. 3.76 cm, -9.5 to +10.1 cm, 2 within 1 mm of z = 3.11 cm | section (7); the three collisions at z = +-203 m left out |
+| the PPS protons, `LHCTransport`, 203 m | section (8); `g4SimHits_cfi.py` line 694 `run3_common.toModify( g4SimHits, LHCTransport = True )`; `SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py` lines 10-11 `PPSRegionStart_45/56 = 203` |
+
+The release parameters quoted in the subsections (all under `$CMSSW_RELEASE_BASE/src`):
+
+| parameter | value | file (line) |
+|---|---|---|
+| `UseMagneticField` | `True` (chapter 09 and stage B of the transport list: `False` / `True` by `--customise_commands`) | `SimG4Core/Application/python/g4SimHits_cfi.py` (87) |
+| `MagneticField.ConfGlobalMFM...StepperParam`: `DeltaOneStep`, `DeltaOneStepTracker`, `DeltaChord`, `DeltaChordTracker`, `EnergyThSimple`, `DeltaChordSimple` | `0.001` mm, `1e-4` mm, `0.002` mm, `0.001` mm, `0.015` GeV, `0.1` mm | same (157-169) |
+| `Physics.G4TrackingCut` | `0.025` MeV | same (195) |
+| `Physics.EminFTFP`, `EmaxBERT`, `EmaxBERTpi` | `3.`, `6.`, `12.` GeV | same (217-221) |
+| `StackingAction.TrackNeutrino`, `SaveAllPrimaryDecayProductsAndConversions` | `False`, `True` | same (308, 316) |
+| `TrackerSD.EnergyThresholdForPersistencyInGeV` | `0.2` (compared with the kinetic energy, `SimG4CMS/Tracker/src/TkAccumulatingSensitiveDetector.cc` line 153) | same (367) |
+| `CaloSD.EminTrack`, `EminHits` | `1.0` GeV ("Minimum energy of track for saving it", `SimG4CMS/Calo/src/CaloSD.cc` lines 58, 124, 678), `(0.015, 0.010, 0.0, 0.0, 0.0)` | same (382, 385) |
+| production cuts | `TrackerDeadRegion` 1 mm, `TrackerSensRegion` 0.1 mm, `TrackerPixelDeadRegion` 1 mm, `TrackerPixelSensRegion` 0.01 mm; `EcalRegion` 1 mm, `APDRegion` 0.005 mm; `HcalRegion` 1 mm | `Geometry/TrackerSimData/data/PhaseI/trackerProdCuts.xml` (13-16, 63-66, 72-75, 86-89), `Geometry/EcalSimData/data/EcalProdCuts.xml` (6-17), `Geometry/HcalSimData/data/HcalProdCuts/2021/v2/HcalProdCuts.xml`, included by `Geometry/CMSCommonData/data/dd4hep/cmsExtendedGeometry2024.xml` (213, 373-375) |

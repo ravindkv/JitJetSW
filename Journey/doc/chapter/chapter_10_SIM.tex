@@ -1,7 +1,7 @@
 % chapter_10_SIM.tex -- chapter 10 of the JitJet book: the full Geant4 physics, stage by stage; the signal, the library
 % and the mixing at SimHit level. Every number comes from test/10_SIM/out/ (ledger_10_SIM.txt, simAnalyzer_<stage>_10_SIM.log,
-% simHits_{signal,pileup,mixed}_10_SIM.log, step3_MIX_10_SIM.log, the PNG pages) and from the FWLite extras listed in
-% doc/chapter/chapter_10_SIM.md, section 4.
+% simHits_{signal,pileup,mixed}_10_SIM.log, step3_MIX_10_SIM.log, extras_10_SIM.txt, the PNG pages and the headers of the
+% SimHitAnalyzer PDFs) and from the FWLite extras listed in doc/chapter/chapter_10_SIM.md, section 4.
 
 \chapter{10 -- SIM: the 571 primaries bend, decay, shower and leave hits; the library and the mixing}
 \label{ch:10_SIM}
@@ -10,18 +10,86 @@
 
 Chapter~\ref{ch:09_G4} ran Geant4 with nothing switched on: the 571 primaries flew straight, lost no energy and
 only marked the sensors they crossed. This chapter switches the physics on, one ingredient at a time, until the
-\code{SIM} step is the one the production runs: the $3.8$\,T solenoid field, which bends the charged particles;
-the decays in flight (\code{G4DecayPhysics}), which turn pions, kaons, $K^0_S$ and $\Lambda$ into their daughters
-somewhere in the detector; the electromagnetic physics (ionisation, bremsstrahlung, pair production, Compton
-scattering, multiple scattering), which gives the tracker hits an energy loss and makes photons and electrons
-shower in the ECAL; and the hadronic physics (\code{FTFP\_BERT}: elastic and inelastic nuclear interactions),
-which makes the hadrons shower in the calorimeters and be absorbed before the muon chambers. The script runs the
-signal four times on top of the transport-only file (\code{B}, \code{B\_Decay}, \code{B\_Decay\_EM} and the full
-list, called \code{signal}), and the \code{SimAnalyzer} pages of each stage show what each ingredient did to the
-same 571 particles. The second half of the chapter is the pileup at the same level: the 250 library collisions of
-chapter~\ref{ch:08_PU} go through the same full Geant4 (sample 10b, the \emph{pileup library}), and the
-\code{MixingModule} of the \code{DIGI} step, run here without its digitisers, overlays the 71, 68 and 54 collisions
-of bunch crossings $-1$, 0 and $+1$ on the signal (sample 10a+10b). This is the only place in the book where one
+\code{SIM} step is the one the production runs, and then does the same for the pileup. At the end of it the event
+is what the detector \emph{received}: every place where a particle of the event, or of one of the 193 collisions
+around it, left energy in a sensitive volume. What the detector makes of that energy, a signal of its electronics,
+is chapter~\ref{ch:11_DIGI}. The ingredients, in the order in which they are added (figure~\ref{fig:10_chain}):
+
+\begin{enumerate}
+\item \textbf{the magnetic field} of the $3.8$\,T solenoid bends the charged particles: the fast ones a little,
+the slow ones into spirals that never leave the tracker sideways;
+\item \textbf{the decays in flight} (\code{G4DecayPhysics}) turn the pions, kaons, $K^0_S$ and $\Lambda$ that the
+generator left alone into their daughters, somewhere in the detector;
+\item \textbf{the electromagnetic physics} (ionisation, multiple scattering, bremsstrahlung, pair production,
+Compton scattering) gives the tracker hits an energy loss, converts photons in the material of the tracker and makes
+photons and electrons shower in the ECAL;
+\item \textbf{the hadronic physics} (\code{FTFP\_BERT}: elastic and inelastic nuclear interactions) makes the
+hadrons interact with nuclei, shower in the calorimeters and be absorbed before the muon chambers;
+\item \textbf{the pileup library}: the 250 minimum-bias collisions of chapter~\ref{ch:08_PU} go through the same
+full Geant4;
+\item \textbf{the mixing}: the \code{MixingModule} of the \code{DIGI} step, run here without its digitisers,
+overlays the 71, 68 and 54 collisions of bunch crossings $-1$, 0 and $+1$ on the signal.
+\end{enumerate}
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[x=1cm, y=1cm, font=\footnotesize, >={Stealth[length=2mm]},
+  box/.style={draw, rounded corners=2pt, minimum height=12mm, text width=2.6cm, align=center, inner sep=2pt},
+  tr/.style={box, fill=black!5}, sig/.style={box, fill=green!12}, pu/.style={box, fill=blue!10}, mx/.style={box, fill=red!12}]
+\node[tr]  (t) at (0,0)    {transport only\\{\tiny\ttfamily chapter 9}\\{\tiny 557 at the boundary}};
+\node[sig] (b) at (3.35,0)  {+ field\\{\tiny\ttfamily stage B}\\{\tiny 7019 sensor crossings}};
+\node[sig] (d) at (6.7,0)  {+ decays\\{\tiny\ttfamily stage B\_Decay}\\{\tiny 41 decays}};
+\node[sig] (e) at (10.05,0)  {+ EM physics\\{\tiny\ttfamily stage B\_Decay\_EM}\\{\tiny 230 conversions}};
+\node[sig] (h) at (13.4,0) {+ hadronic = full\\{\tiny\ttfamily signal (10a)}\\{\tiny 1355 secondaries}};
+\node[tr]  (l0) at (0,-2.6)   {the library\\{\tiny\ttfamily chapter 9, transport}\\{\tiny 250 collisions}};
+\node[pu]  (l)  at (3.35,-2.6) {full Geant4\\{\tiny\ttfamily pileup (10b)}\\{\tiny 120\,574 SimTracks}};
+\node[mx]  (m)  at (10.05,-2.6) {MixingModule\\{\tiny\ttfamily mix, AVE\_60\_BX\_25ns}\\{\tiny bx $-1$/0/$+1$: 71/68/54}};
+\node[mx]  (c)  at (13.4,-2.6) {CrossingFrames\\{\tiny\ttfamily (10a+10b)}\\{\tiny 448\,315 tracker hits}};
+\draw[->] (t) -- (b); \draw[->] (b) -- (d); \draw[->] (d) -- (e); \draw[->] (e) -- (h);
+\draw[->] (l0) -- (l); \draw[->] (l) -- node[above, font=\tiny] {193 collisions, read in sequence} (m);
+\draw[->] (h.south) -- ++(0,-0.45) -| (m.north); \draw[->] (m) -- (c);
+\draw[->] (c.south) -- ++(0,-0.45) node[below, font=\scriptsize, text=black!60] {chapter 11: digitisation};
+\foreach \l/\x in {field/3.35, decay/6.7, em/10.05, had/13.4} \node[font=\scriptsize, text=black!60] at (\x,0.85) {\ref*{sec:10_\l}};
+\node[font=\scriptsize, text=black!60] at (3.35,-1.75) {\ref*{sec:10_library}};
+\node[font=\scriptsize, text=black!60] at (10.05,-3.75) {\ref*{sec:10_mixing}, \ref*{sec:10_pileup}};
+\node[font=\scriptsize, text=black!60, anchor=west] at (13.45,-0.95) {\ref*{sec:10_stations}};
+\end{tikzpicture}
+\caption{The chapter as a chain. Top: the signal run four times on top of the transport-only file of
+chapter~\ref{ch:09_G4}, one physics ingredient more each time (process name \code{SIMFULL}, one file per stage);
+the last stage is the full \code{SIM} step. Bottom: the 250 library collisions through the same full Geant4, and the
+\code{MixingModule}, which overlays 193 of them on the signal. The grey numbers are the subsections of
+section~\ref{sec:10_numbers}.}
+\label{fig:10_chain}
+\end{figure}
+
+\begin{table}[!htb]
+\centering\small\setlength{\tabcolsep}{4pt}
+\caption{The chapter at a glance: what each subsection of section~\ref{sec:10_numbers} adds to the event, and how
+much of it there is in our event (\code{ledger\_10\_SIM.txt}, \code{extras\_10\_SIM.txt}).}
+\label{tab:10_glance}
+\begin{tabular}{@{}c>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{5.8cm}>{\raggedright\arraybackslash}p{6.4cm}@{}}
+\toprule
+ & subsection & what it adds & in our event \\
+\midrule
+\ref{sec:10_field} & the magnetic field & the charged particles bend; the slow ones spiral & 114 of the 159 charged primaries of the tracker region cannot reach the barrel ECAL; 7019 sensor crossings instead of 6734 \\
+\ref{sec:10_decay} & decays in flight & $\pi^\pm$, $K^\pm$, $K^0_S$, $\Lambda$ decay where they happen to & 41 decays, 66 daughters; the $K^0_S$ of the $b$ jet decays 2\,m from the vertex \\
+\ref{sec:10_em} & electromagnetic physics & energy loss, conversions, bremsstrahlung, electromagnetic showers & 230 conversions; a $44\GeV$ photon puts two thirds of its shower in one crystal \\
+\ref{sec:10_had} & hadronic physics & nuclear interactions, hadronic showers, invisible energy & 385 inelastic interactions; a quarter of the charged hadrons interact in the tracker \\
+\ref{sec:10_stations} & the signal station by station & the hits of the full simulation per detector & $10\,272$ tracker hits, $12\,804$ ECAL and 1353 HCAL cells, no muon hit \\
+\ref{sec:10_library} & the pileup library & 250 minimum-bias collisions, full physics & library event 72: 2097 tracker hits, $53\GeV$ in the ECAL \\
+\ref{sec:10_mixing} & the mixing & 193 collisions in three bunch crossings, shifted in time & $31\,060$ pileup primaries; their vertices spread over $\pm10\cm$ \\
+\ref{sec:10_pileup} & where the pileup goes & the hits of the mixture per detector & the signal is 2.3\,\% of the tracker hits; 98\,\% of the barrel crystals are hit \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Subsections 1 to 4 follow the signal through the four stages. The script runs it four times on top of the
+transport-only file (\code{B}, \code{B\_Decay}, \code{B\_Decay\_EM} and the full list, called \code{signal}), and the
+\code{SimAnalyzer} pages of each stage show what each ingredient did to the same 571 particles. Each of these
+subsections has the same four parts: \emph{what it does} (the physics in plain words), \emph{the parameters} (where
+the release sets them), \emph{the numbers of the event}, and a picture. Subsection~5 looks at the full simulation
+detector by detector, with the \code{SimHitAnalyzer}. Subsections 6 to 8 are the pileup at the same level: the
+library (sample 10b), the mixing, and the mixed event (sample 10a+10b). This is the only place in the book where one
 can still see which hit came from which collision; chapter~\ref{ch:11_DIGI} digitises exactly this mixture.
 
 \begin{plainwords}[What Geant4 does with a particle]
@@ -38,6 +106,18 @@ Nothing is digitised here: a \code{PCaloHit} is a deposited energy in GeV (in th
 of the shower library), not yet a signal of the electronics.
 \end{plainwords}
 
+\begin{plainwords}[Which particles are kept: production cuts and persistency]
+Two thresholds keep the simulation finite. A \emph{production cut} decides whether a soft secondary is created
+at all: an electron or a photon is created only above an energy that Geant4 derives, material by material, from a
+range cut, 1\,mm in the ECAL and in the dead material of the tracker, $0.1$\,mm in the strip sensors, $10\,\mu$m
+in the pixel sensors, $5\,\mu$m in the photodiodes of the ECAL (the \code{ProdCuts.xml} files of \path{Geometry/*SimData}); below it, the energy is
+deposited along the step. A \emph{persistency} rule decides which of the tracked particles are written out: all primaries, the decay
+products and conversions of a primary (\code{SaveAllPrimaryDecayProductsAndConversions = True}), a particle that leaves
+a tracker hit with more than $0.2\GeV$ (\code{TrackerSD.EnergyThresholdForPersistencyInGeV}) and one that enters a
+calorimeter with more than $1\GeV$ (\code{CaloSD.EminTrack}), so that the hits can name it. Everything else is tracked
+and forgotten: the thousands of particles of a shower are only in the energy of the hits.
+\end{plainwords}
+
 \section{From the previous chapter}
 
 Two files enter (Rule E), both with the process name \code{SIM} of the transport-only Geant4 of
@@ -47,10 +127,11 @@ stable particles with $6923\GeV$ and $471.7\GeV$ of \pt{}, 557 of them reaching 
 \path{step2_G4_pileup_09_G4.root}, the 250 collisions, of which library events 72 to 139 are the 68 in-time
 collisions with $10\,388$ primaries.\footnote{The numbers of this chapter are in
 \path{test/10_SIM/out/ledger_10_SIM.txt} (the output of \code{common/simLedger.py}), in the five
-\path{simAnalyzer_<stage>_10_SIM.log} and in \path{simHits_signal_10_SIM.log}, \path{simHits_pileup_10_SIM.log},
-\path{simHits_mixed_10_SIM.log} (the latter extracted from the mixing job log \path{step3_MIX_10_SIM.log}); the
-few extra ones (time-of-flight windows, the library totals, the generator status of the pileup primaries) were read
-with FWLite and are listed in the companion, section~4.} Every stage reads the signal file again and runs the
+\path{simAnalyzer_<stage>_10_SIM.log}, in \path{simHits_signal_10_SIM.log}, \path{simHits_pileup_10_SIM.log},
+\path{simHits_mixed_10_SIM.log} (the latter extracted from the mixing job log \path{step3_MIX_10_SIM.log}) and in
+\path{extras_10_SIM.txt} (the FWLite script \path{test/10_SIM/simExtras_10_SIM.py}); the few other ones (time-of-flight
+windows, the library totals, the generator status of the pileup primaries) were read with FWLite and are listed in the
+companion, section~4.} Every stage reads the signal file again and runs the
 \code{SIM} step on it under a new process name, \code{SIMFULL}, with the output command \code{drop *\_*\_*\_SIM}:
 the transport-only products are not copied, so each file holds the generator record of
 chapters~\ref{ch:06_Decay}--\ref{ch:07_GenJet} and one set of simulation products, those of its own physics. The
@@ -73,24 +154,14 @@ of its module, with the reconstruction geometry, which applies the tracker align
 2024 in the median, the TEC $0.3$\,mm: invisible in the displays, and no number of the chapter changes.
 
 \section{The numbers of the event}
+\label{sec:10_numbers}
 
-\textbf{The stages.} Table~\ref{tab:10_stages} is the ledger of the physics, ingredient by ingredient. The
-\emph{field} alone changes little: 552 instead of 557 primaries reach the boundary, because a charged particle with
-$\pt < 0.3 \times 3.8 \times 1.29 / 2 = 0.74\GeV$ curls up inside the tracker ($r = 1.29$\,m is the EB front
-face), and the loopers cross more sensors, 7019 crossings instead of 6734; the $b$ system arrives with $56.6$
-instead of $56.8\GeV$, the vector sum of eight tracks that no longer point where they were aimed. The \emph{decays}
-add 66 secondaries in 41 vertices: pions and kaons decaying to a muon and a neutrino, $K^0_S\to\pi\pi$,
-$\Lambda\to p\pi$, which Pythia8 had left to Geant4 (\code{tau0Max = 10} mm, chapter~\ref{ch:09_G4}); 507
-primaries now cross the boundary and the $b$ system loses one of its eight on the way, $48.7\GeV$. The
-\emph{electromagnetic physics} is the first ingredient that changes the picture: 666 secondaries, 430 of them
-photon conversions and 213 bremsstrahlung photons in the material of the tracker, 20 delta rays, 3 Compton
-electrons; the 7339 tracker hits now carry $1.17\GeV$ of energy loss; the calorimeters fill with 8467 cells,
-$46.8\GeV$ in the EB and $190.5\GeV$ in the EE, because photons and electrons shower and stop; and 378 primaries
-reach the boundary, since a converted photon is not a primary any more. Two things are odd in this stage, and both
-are the missing hadronic physics: 522 muon-chamber hits (DT 7, CSC 448, RPC 30, GEM 37) from charged hadrons that
-crossed the calorimeters as minimum-ionising particles, and the HB with $0.15\GeV$, their ionisation in 52
-scintillator tiles on the way out. The $b$ system deposits $77.9\GeV$ in the ECAL, more than in the full
-simulation: its photons shower completely and its charged hadrons ionise all the way through.
+Table~\ref{tab:10_stages} is the ledger of the physics, ingredient by ingredient; subsections~1 to 4 read it line by
+line. Two columns run through all of it: the number of primaries that reach the tracker/calorimeter boundary
+(\code{CaloTrkProcessing} stores the crossing point and momentum in the \code{SimTrack}; a primary that decays,
+converts or interacts before does not count), which falls from 557 to 310, and the $b$ system at that boundary, whose
+\pt{} falls from $56.8$ to $24.4\GeV$. Neither number means that energy is lost: it means that more and more of the
+energy reaches the calorimeters carried by secondaries.
 
 \begin{table}[htb]
 \centering\scriptsize\setlength{\tabcolsep}{2.2pt}
@@ -115,20 +186,271 @@ transport (09)        & 557 & 0    & 0/0/0         & 6734   & 0   & 0    & 459  
 \end{tabular}
 \end{table}
 
-The \emph{hadronic physics} completes the list: 385 inelastic and one elastic nuclear interaction, and 196 decays
-instead of 67, because the $\pi^0$ produced in those interactions decay at once into photons, which then convert
-(773 electromagnetic secondaries); the 1355 secondaries sit in 768 \code{SimVertex}s. The muon chambers are empty
-again, the hadrons being absorbed in the calorimeters, and the HB and HE hold $0.22$ and $1.66\GeV$ of visible
-energy (the scintillator sees a few per cent of a hadronic shower). The tracker has 2933 hits more than the EM
-stage, $10\,272$, with 2232 of them from tracks not stored as \code{SimTrack}s: the soft products of the nuclear
-interactions in the pixel and strip material, below the $0.2\GeV$ of \code{EnergyThresholdForPersistencyInGeV}.
-Only 310 primaries reach the boundary intact; the $b$ system arrives with 3 of its 8 particles and $24.4\GeV$, and
-deposits $63.6\GeV$ in the ECAL (less than with EM physics alone: its charged hadrons now interact, and much of
-their energy goes into neutrons and nuclear fragments that leave no visible signal) and $0.39\GeV$ of visible
-energy in the HCAL. The $\bar b$ system, at $\eta=-3.75$, arrives with 13 of 16 and $97.4\GeV$, puts $9.9\GeV$
-into the EE on its way and 987 photoelectrons into 671 HF cells (figure~\ref{fig:10_stage}).
+\subsection{The magnetic field}
+\label{sec:10_field}
 
-\begin{figure}[htb]
+\textbf{What it does.} A particle of charge $\pm1$ and transverse momentum \pt{} in a field $B$ along the beam
+moves on a helix whose projection on the transverse plane is a circle of radius
+\[ R\,[\mathrm{m}] = \frac{\pt\,[\mathrm{GeV}]}{0.3\,B\,[\mathrm{T}]} = 0.88\,\mathrm{m}\times\pt\,[\mathrm{GeV}]
+\quad\text{at } B=3.8\,\mathrm{T}, \]
+while its momentum along the beam is untouched. A track that starts on the beam axis can get no further from it
+than the diameter $2R$, so it reaches the front face of the barrel ECAL, at $r=1.29$\,m, only if
+$\pt > 0.3\times3.8\times1.29/2 = 0.735\GeV$. Below that it is a \emph{looper}: it circles around the beam while
+drifting along it, and leaves the tracker through one of its ends, not through its side. A fast track is only
+deflected: at radius $r$ its azimuth has turned by $\sin\Delta\phi = r/2R$, and over the $1.1$\,m of the tracker its
+path departs from a straight line by the \emph{sagitta} $s = L^2/8R$. This small curvature, measured by the tracker
+to a few tens of micrometres, is how the reconstruction will measure the momentum of a charged particle.
+
+\textbf{The parameters.} The transport-only run of chapter~\ref{ch:09_G4} had \code{UseMagneticField = False};
+stage \code{B} switches it on and keeps everything else of that run, the transport-only physics list and
+\code{TrackerSD.ZeroEnergyLoss = True}. The field is the map \code{MFGeometry\_160812} at $3.8$\,T of the global tag
+(chapter~\ref{ch:09_G4}). Geant4 cannot follow a curved path exactly; it replaces it by chords and checks the error
+against the parameters of \code{MagneticField.ConfGlobalMFM} in \path{SimG4Core/Application/python/g4SimHits_cfi.py}:
+a chord may miss the true path by $2\,\mu$m (\code{DeltaChord = 0.002} mm; $1\,\mu$m in the tracker), a step ends
+within $1\,\mu$m of where it should (\code{DeltaOneStep = 0.001} mm; $0.1\,\mu$m in the tracker), and particles
+below $15\MeV$ (\code{EnergyThSimple = 0.015} GeV) are moved with coarser tolerances ($0.1$\,mm).
+
+\textbf{The numbers of the event.} Most charged particles of a $pp$ event are slow. Of the 277 charged primaries of
+the signal, 159 are in the tracker region, $\abseta<2.5$, and 114 of those have $\pt<0.735\GeV$, the median being
+$0.48\GeV$ (\code{extras\_10\_SIM.txt}, section 1): almost three quarters of the charged particles that the tracker sees can
+never reach the barrel calorimeter. In the barrel, $\abseta<1.48$, there are 54 of them, and 53 still reach the
+tracker/calorimeter boundary, at the end of the tracker, after spiralling along the beam; that is why the column
+``boundary'' of table~\ref{tab:10_stages} hardly moves, 552 instead of 557. The five that are lost are four very
+soft pions, $0.03$ to $0.2\GeV$ at $2.5<\abseta<5.3$, which spiral along the beam line and never cross the boundary,
+and one $\pi^-$ of $0.45\GeV$ at $\eta=-1.01$. The loopers make themselves seen in the tracker: they cross the same layers several times,
+and the sensor crossings grow from 6734 to 7019, 276 of the 285 new ones from the charged primaries below
+$0.735\GeV$ (2756 crossings instead of 2480); the neutral primaries make exactly the 3283 crossings they made without
+field.
+
+\emph{A worked example: the followed $\pi^+$.} The leading charged hadron of the $b$ jet, the $\pi^+$ that the
+\code{SimHitAnalyzer} follows, has $\pt=13.31\GeV$ at $\eta=-1.545$: $R=13.31/(0.3\times3.8)=11.7$\,m. It crosses the
+boundary at $r=123.3\cm$, $z=-272.8\cm$, with its azimuth turned by $0.0518$\,rad, $6.4\cm$ along the circle,
+against $\arcsin(1.233/(2\times11.7))=0.0528$\,rad for a uniform $3.8$\,T: averaged over its path, the field of
+the map is 2\,\% weaker than at the centre. Over $1.1$\,m its sagitta is $1.1^2/(8\times11.7)=1.3\cm$. The $b$
+system as a whole arrives with $56.6$ instead of $56.8\GeV$ of \pt{}: the vector sum of eight tracks that no longer
+point exactly where they were aimed (figure~\ref{fig:10_field}).
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.48\textwidth,trim=0 0 168 0,clip]{10_SIM/out/simAnalyzer_B_10_SIM_page-2.png}\hfill
+\includegraphics[width=0.48\textwidth,trim=0 0 168 0,clip]{10_SIM/out/simAnalyzer_B_10_SIM_page-4.png}
+\caption{Stage \code{B}, the field alone (\code{simAnalyzer\_B\_10\_SIM\_page-2.png}, \code{\_page-4.png}, the
+legend panel cropped). Left: the 552 primaries at the tracker/calorimeter boundary, the grey line of each going back
+to its direction at the vertex; open markers, the 19 that do not get there. The $b$ system (red) is at
+$(\eta,\phi)=(-1.56,-2.06)$, the $\bar b$ system (blue) at $(-3.75,1.01)$. Right: the 7019 sensor crossings, by
+subdetector; the short vertical strings are loopers, crossing the same layer again and again at nearly the same
+$\eta$.}
+\label{fig:10_field}
+\end{figure}
+
+\subsection{Decays in flight}
+\label{sec:10_decay}
+
+\textbf{What it does.} Pythia8 decayed every hadron with $c\tau<10\mm$ (chapter~\ref{ch:09_G4}); the long-lived
+ones are left to Geant4, which decays them where they happen to decay. A particle of mass $m$, momentum $p$ and
+proper lifetime $\tau$ flies on average $\beta\gamma c\tau = (p/m)\,c\tau$ before it decays, and the actual
+distance is drawn from an exponential with that mean. The proper decay lengths make the classes: $c\tau=7.8$\,m for
+a $\pi^\pm$ and $3.7$\,m for a $K^\pm$ (most of them leave the tracker before decaying), $2.7\cm$ for a $K^0_S$ and
+$7.9\cm$ for a $\Lambda$ (at a few GeV they decay inside the tracker, a \emph{displaced vertex} of two tracks). The
+daughters are drawn from the decay tables of Geant4; a neutrino daughter is created and killed at once
+(\code{TrackNeutrino = False}).
+
+\textbf{The parameters.} Stage \code{B\_Decay} takes the production list, \code{FTFP\_BERT\_EMM}, with its
+electromagnetic and hadronic constructors switched off (\code{Physics.EMPhysics = False}, \code{HadPhysics =
+False}), so that \code{G4DecayPhysics} is the only process besides the transport; the tracker still records crossings
+with zero energy loss.
+
+\textbf{The numbers of the event.} 41 decays leave 66 daughters stored as \code{SimTrack}s (the file
+\code{extras\_10\_SIM.txt},
+section 2). Twelve pions and three kaons decay to a muon (and an unstored neutrino); ten $K^0_S$ decay, seven to two charged
+pions, three to two neutral ones whose $\pi^0$ decay at once to photons (seven $\pi^0\to\gamma\gamma$); seven $\Lambda$ or $\bar\Lambda$ and two
+$\bar\Sigma$ decay to a nucleon and a pion. The decay points are spread through the tracker: 10 in the beam pipe, 12
+in the pixel volume, 18 among the strips, one in the calorimeters. Every decayed primary stops counting as a primary at the boundary,
+which falls from 552 to 507.
+
+\emph{A worked example: the $K^0_S$ of the $b$ jet.} One of the eight primaries of the $b$ system is a $K^0_S$ of
+$E=20.6\GeV$ ($\pt=7.96\GeV$). With $m=0.498\GeV$, $\beta\gamma=41$ and its mean flight is $41\times2.68\cm=1.1$\,m.
+It decayed at $r=80.2\cm$, $z=-188.5\cm$, $2.08$\,m from the vertex, almost two mean flights (a 15\,\% chance),
+among the endcap disks of the tracker, into $\pi^+\pi^-$ (figure~\ref{fig:10_decay}, the two red markers). The $b$
+system reaches the boundary with 7 of its 8 primaries and $48.7\GeV$ instead of $56.6$: the two pions carry the rest,
+but as secondaries.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.54\textwidth,trim=0 0 168 0,clip]{10_SIM/out/simAnalyzer_B_Decay_10_SIM_page-3.png}
+\caption{Stage \code{B\_Decay} (\code{simAnalyzer\_B\_Decay\_10\_SIM\_page-3.png}, legend cropped): the 66 secondaries,
+all decay products, at the direction of their production; marker size grows with \pt{}. Red: the two pions of the
+$K^0_S$ of the $b$ system, $7.96\GeV$ of \pt{} together. The grey dots are the primaries.}
+\label{fig:10_decay}
+\end{figure}
+
+\subsection{Electromagnetic physics}
+\label{sec:10_em}
+
+\textbf{What it does.} Five processes act on charged particles and photons. \emph{Ionisation}: a charged particle
+loses energy to the electrons of the material, continuously, and now and then knocks one out with enough energy to
+be a particle of its own (a $\delta$ ray). \emph{Multiple scattering}: many small deflections by the nuclei, which
+blur the direction. \emph{Bremsstrahlung}: an electron radiates a photon in the field of a nucleus. \emph{Pair
+production}: a photon converts into an $e^+e^-$ pair, also in the field of a nucleus. \emph{Compton scattering} of a
+photon on an electron, and at the lowest energies the photoelectric effect. The first two give the tracker hits their
+energy loss and the tracks their wiggles; the last three, in dense material, build the electromagnetic shower.
+
+\begin{plainwords}[Radiation length, shower, Moli\`ere radius]
+The \emph{radiation length} $X_0$ of a material is the distance over which an electron keeps $1/e$ of its energy to
+bremsstrahlung; a high-energy photon converts after $\frac97X_0$ on average, so that a slab of $t$ radiation lengths
+converts a fraction $1-e^{-7t/9}$ of the photons. A photon or electron of energy $E$ entering a dense material starts
+a cascade: every $X_0$ or so the number of particles doubles and their energy halves, until the energy per
+particle reaches the \emph{critical energy} $E_c$, where ionisation wins and the shower dies out. The maximum is
+at a depth of about $\ln(E/E_c)\,X_0$, and the shower is narrow: 90\,\% of its energy is inside a cylinder of one
+\emph{Moli\`ere radius} $R_M$. For the lead tungstate of the ECAL, $X_0=0.89\cm$, $R_M\approx2\cm$, $E_c\approx9\MeV$:
+a crystal, 22 to $23\cm$ long (about $25X_0$) and $2.2\cm$ wide in the barrel ($2.9\cm$ in the endcap), contains a
+shower in depth and catches most of it across in itself and its neighbours. For a $44\GeV$ photon the maximum is
+$\ln(44\,000/9)\approx8.5$ radiation lengths, $7.5\cm$, deep.
+\end{plainwords}
+
+\textbf{The parameters.} Stage \code{B\_Decay\_EM} adds \code{EMPhysics = True} to the previous stage and lets the
+tracker record the energy loss (\code{ZeroEnergyLoss} back to its default, \code{False}); the constructor is the CMS
+one, \code{CMSEmStandardPhysics} of \code{FTFP\_BERT\_EMM} (chapter~\ref{ch:09_G4}). The production cuts of the box
+above apply from here on; particles are tracked down to \code{G4TrackingCut = 0.025}\,MeV, and the ECAL keeps a
+\code{PCaloHit} only above $15\MeV$ in the barrel and $10\MeV$ in the endcap (\code{CaloSD.EminHits}).
+
+\textbf{The numbers of the event.} The stage creates 666 secondaries (\code{extras\_10\_SIM.txt}, section 3): 430
+electrons and positrons of 230 conversions, 213 bremsstrahlung photons, 20 $\delta$ rays and 3 Compton electrons. The
+conversions are where the material is: one in the beam pipe, 16 in the pixel volume, 121 among the strips, 41
+between the tracker and the calorimeters, 4 in the preshower, and 47 in the calorimeters themselves, where the photons
+that crossed the tracker begin their showers (the conversion of a primary photon is stored wherever it happens; 187
+of the 230 are of a primary photon). Of the 29 primary photons of more than $1\GeV$ in $\abseta<2.5$, 18 converted
+inside the tracker in this stage and 15 in the full simulation, the point of a conversion being a random draw: with
+$1-e^{-7t/9}=15/29$ to $18/29$, the photons of this event crossed on average $t\approx0.9$ to $1.2\,X_0$ of tracker
+material, a rough estimate from 29 photons, 26 of them at $1<\abseta<2.5$. The tracker and muon hits now carry an
+energy loss, $1.17\GeV$ in all, $0.15\MeV$ per crossing on average ($0.23\MeV$ in the full simulation; a
+minimum-ionising particle loses $0.12\MeV$ in $300\,\mu$m of silicon, slow particles and $\delta$ rays more). The calorimeters fill: 8467 cells, $46.8\GeV$ in the EB and $190.5\GeV$ in the EE. Two things are odd in
+this stage, and both are the missing hadronic physics: 522 muon-chamber hits (DT 7, CSC 448, RPC 30, GEM 37) from
+charged hadrons that crossed the calorimeters like heavy muons, ionising all the way, and $0.15\GeV$ in the HB, their
+ionisation in 52 HB cells on the way out. The $b$ system deposits $77.9\GeV$ in the ECAL, more than it will
+in the full simulation.
+
+\emph{A worked example: one photon, two showers.} The photon of highest \pt{} that the \code{SimHitAnalyzer}
+follows belongs to the $b$ jet: $E=44.27\GeV$, $\pt=17.73\GeV$, $\eta=-1.566$, aimed at the endcap ECAL.
+Table~\ref{tab:10_photon} compares where its energy went in this stage and in the full simulation; the physics of a
+photon is the same in both, only the random numbers differ. Here it crossed the whole tracker unconverted and
+converted at $r=112\cm$, $z=-254\cm$, just behind it, in front of the endcap: a textbook shower, 97\,\% of its energy in the
+crystals, two thirds in one crystal, 90\,\% in six. In the full simulation it converted at $r=3.0\cm$, in the first
+pixel layer. The electron and the positron then crossed $1$\,m of tracker in the field: they were bent apart in
+$\phi$, radiated bremsstrahlung photons in the material, and left 171 tracker hits on the way. What reached the ECAL
+was a spray: 466 crystals, the hottest with a fifth of the energy, 90\,\% in 38 crystals, and 11\,\% that never
+reached a crystal. Same photon, same calorimeter: the tracker material in front decided the shape, and the
+reconstruction will have to collect the energy along $\phi$, where the field spread it.
+
+\begin{table}[!htb]
+\centering\small
+\caption{The followed photon of the $b$ jet ($E=44.27\GeV$, $\eta=-1.566$), its own deposits in the barrel and endcap
+crystals in two runs (\code{extras\_10\_SIM.txt}, section 6). In brackets: the fraction of its energy (third line),
+of its deposits (below).}
+\label{tab:10_photon}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & stage \code{B\_Decay\_EM} & full simulation (\code{signal}) \\
+\midrule
+converts at & $r=112\cm$, $z=-254\cm$ & $r=3.0\cm$, $z=-3.7\cm$ \\
+tracker hits of its descendants & 0 & 171 \\
+crystals with energy, energy in them & 156, $42.79\GeV$ (97\,\%) & 466, $39.45\GeV$ (89\,\%) \\
+the hottest crystal & $28.57\GeV$ (67\,\%) & $7.80\GeV$ (20\,\%) \\
+the five hottest & $38.11\GeV$ (89\,\%) & $18.56\GeV$ (47\,\%) \\
+90\,\% of its deposits in & 6 crystals & 38 crystals \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.48\textwidth,trim=0 0 168 0,clip]{10_SIM/out/simAnalyzer_B_Decay_EM_10_SIM_page-3.png}\hfill
+\includegraphics[width=0.48\textwidth,trim=0 0 168 0,clip]{10_SIM/out/simAnalyzer_B_Decay_EM_10_SIM_page-5.png}
+\caption{Stage \code{B\_Decay\_EM} (\code{simAnalyzer\_B\_Decay\_EM\_10\_SIM\_page-3.png}, \code{\_page-5.png}, legends
+cropped). Left: the 733 secondaries by creator process, green squares the conversions, orange triangles the
+bremsstrahlung photons, purple the decays; red, the 49 of the $b$ system. Right: the 8467 calorimeter cells, size
+growing with the energy; the $b$ system (red, $77.9\GeV$) is a dense block of EE crystals at $(-1.6,-2.1)$, the
+$\bar b$ system (blue) a block of HF cells at $\eta=-3.75$. The EB and EE are full of small isolated deposits: the
+photons of the event, each a small shower.}
+\label{fig:10_em}
+\end{figure}
+
+\subsection{Hadronic physics}
+\label{sec:10_had}
+
+\textbf{What it does.} A hadron also feels the nuclei through the strong force. In an \emph{elastic} collision it
+is only deflected. In an \emph{inelastic} one the nucleus breaks up: new pions, protons, neutrons and nuclear
+fragments come out, each of which can interact again, a \emph{hadronic shower}. It differs from an electromagnetic
+one in three ways. It is longer and wider. A part of it is electromagnetic: the $\pi^0$ produced in the interactions
+decay at once into two photons, which shower like any photon, and how large that part is fluctuates from one shower
+to the next. And a part of the energy is \emph{invisible}: it goes into breaking nuclei (binding energy), into slow
+neutrons and into neutrinos, and no sensitive volume ever sees it. A calorimeter therefore answers less to a hadron
+than to an electron of the same energy.
+
+\begin{plainwords}[Interaction length and sampling]
+The \emph{nuclear interaction length} $\lambda_I$ is the mean free path of a hadron before an inelastic
+interaction: about $20\cm$ in lead tungstate and $16\cm$ in brass, twenty times the radiation length. An ECAL crystal
+is about one $\lambda_I$ deep: two hadrons in three start their shower already in the ECAL, and the rest of the
+shower develops in the HCAL behind it. The HB and HE are \emph{sampling} calorimeters: brass absorber plates with
+thin plastic scintillator tiles in between, and only the scintillator is sensitive. A \code{PCaloHit} of the HCAL is
+the energy deposited in the scintillator, after the Birks law that describes how the light of a scintillator
+saturates for densely ionising particles (\code{HCalSD.UseBirkLaw}), a few per cent of the energy of the shower. The
+digitisation of chapter~\ref{ch:11_DIGI} multiplies it back by a \emph{sampling factor}, about 125 in the HB and 186
+to 211 in the HE.
+\end{plainwords}
+
+\textbf{The parameters.} The stage \code{signal} adds \code{HadPhysics = True}: the full list \code{FTFP\_BERT\_EMM}
+of the production. Its hadronic part is two models joined in energy: the Bertini intranuclear cascade (\code{BERT})
+for slow hadrons, the Fritiof string model followed by a precompound nuclear de-excitation (\code{FTFP}) for fast ones;
+between \code{EminFTFP = 3} and \code{EmaxBERT = 6}\,GeV (12 for pions, \code{EmaxBERTpi}) the two are mixed
+(\path{g4SimHits_cfi.py}, \path{SimG4Core/PhysicsLists/plugins/FTFPCMS_BERT_EMM.cc}).
+
+\textbf{The numbers of the event.} 385 inelastic and one elastic nuclear interaction; the 1355 secondaries sit in 768
+\code{SimVertex}s. The decays rise from 67 to 196: the interactions make new unstable particles, the $\pi^0$ among
+them, whose photons shower and convert (773 electromagnetic secondaries). The stored hadronic secondaries are those of interactions in or near
+the tracker (\code{extras\_10\_SIM.txt}, section 4): 142 interaction vertices, 4 in the beam pipe, 13 in the pixel
+volume, 85 among the strips, 26 between the tracker and the calorimeters, 14 in the preshower and the calorimeters,
+producing 178 charged pions, 62 $\pi^0$, 60 neutrons and 58 protons, from 102 charged pions,
+10 protons, 10 neutrons and a few kaons. A quarter of the charged hadrons interact before the calorimeter: of the 73
+primary charged pions, kaons and protons with $\pt>0.5\GeV$ in $\abseta<2.5$, 19 (26\,\%) have a nuclear interaction
+inside the tracker, as if the tracker were $0.3\,\lambda_I$ thick for them. The interactions in the calorimeters are
+there too, but only in the energy of the cells (box ``Which particles are kept''). The tracker has 2933 hits more than in the EM stage, $10\,272$, 2232 of them from tracks not stored as
+\code{SimTrack}s: the soft products of the nuclear interactions in the pixel and strip material. The muon chambers
+are empty again, the hadrons being absorbed in the calorimeters; the HB and HE hold $0.22$ and $1.66\GeV$ of visible
+energy. Only 310 primaries reach the boundary intact (figure~\ref{fig:10_stage}).
+
+\emph{A worked example: where the energy of the $b$ jet goes.} Table~\ref{tab:10_bbudget} follows the eight
+primaries of the $b$ system, $140.3\GeV$ of energy, into the calorimeters. The ECAL holds $63.6\GeV$, less than with
+EM physics alone ($77.9\GeV$): the two charged pions of $32.6$ and $26.6\GeV$ now interact instead of crossing it like
+muons, and much of their energy goes into the HCAL, into neutrons and nuclear fragments. The HCAL holds $0.386\GeV$ of
+visible energy in 122 cells, nearly all in the HE. Multiplied by the sampling factors of chapter~\ref{ch:11_DIGI},
+about 125 and 190, that is some $72\GeV$: the two calorimeters together give back roughly the $140\GeV$ of the jet,
+half in each, the closeness of the sum being partly luck, since a sampling factor is an average over showers. The
+$\bar b$ jet, $2421\GeV$ in 16 primaries at $\eta=-3.75$, puts $9.9\GeV$ into the ECAL on its way ($9.4\GeV$ in
+the edge of the EE) and 987 photoelectrons into the HF.
+
+\begin{table}[!htb]
+\centering\small
+\caption{The $b$ system in the full simulation: its primaries and their calorimeter deposits
+(\code{extras\_10\_SIM.txt}, section 5; the hits are attributed to the primary through the \code{SimTrack} and
+\code{SimVertex} parents, as the analyzers do). The antineutrino, $95.5\GeV$, was not handed over
+(chapter~\ref{ch:09_G4}).}
+\label{tab:10_bbudget}
+\begin{tabular}{@{}ll@{}}
+\toprule
+the 8 primaries, energy in GeV & $\gamma$ 44.3, $\pi^\pm$ 32.6, $\pi^\pm$ 26.6, $K^0_S$ 20.6, $e^-$ 10.9, $\gamma$ 4.1, 0.8, 0.4 \\
+handed to Geant4 & $140.3\GeV$ \\
+reaching the boundary as primaries & 3 of 8, $\pt=24.4\GeV$ \\
+\midrule
+ECAL: EB, EE, ES & $6.23\GeV$ (364 crystals), $57.32\GeV$ (895), $0.02\GeV$ (96 strips) \\
+ECAL, total & $63.58\GeV$ \\
+HCAL visible: HB, HE & $0.010\GeV$ (17 cells), $0.376\GeV$ (105 cells) \\
+HCAL $\times$ sampling factor (chapter~\ref{ch:11_DIGI}) & $\approx 0.010\times125+0.376\times190\approx72\GeV$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htb]
 \centering
 \begin{subfigure}[t]{0.495\textwidth}
 \includegraphics[width=\textwidth]{10_SIM/out/simAnalyzer_signal_10_SIM_page-08.png}
@@ -147,33 +469,79 @@ ECAL cells; the $\bar b$ jet at $\eta=-3.75$ is a block of HF cells.}
 \label{fig:10_stage}
 \end{figure}
 
-\textbf{The signal station by station} (\code{simHits\_signal\_10\_SIM.log}). The tracker has $10\,272$
-\code{PSimHit}s (PXB 929, PXF 973, TIB 1182, TID 975, TOB 1022, TEC 5191; the TEC holds half, both jets being in
-the endcaps) from 293 of the 571 primaries: 4999 descend from charged hadrons, 890 from neutral hadrons (their
-decay and interaction products), 2013 from photons (the conversion pairs), 138 from the one electron, 2232 from
-tracks without a stored ancestor; $10\,063$ are in the \code{LowTof} collections and 209 in \code{HighTof}
-($36$--$499\ns$: loopers and slow secondaries). The ECAL has $24\,262$ hits in $12\,804$ cells (EB 5521, EE 6214,
-ES 1069) from 366 primaries: $162\GeV$ in 5287 cells dominated by photons, $144\GeV$ in 5343 by charged hadrons,
-$47.4\GeV$ by neutral hadrons, $7.1\GeV$ by electrons. The HCAL has 2531 hits in 1353 cells (HB 173, HE 648, HO 1,
-HF 531) from 266 primaries; the muon chambers have nothing. In all, 512 of the 571 primaries left a hit; the 59
-that did not are neutral particles that neither converted nor interacted in a sensitive volume, and forward ones
-that passed beside the calorimeters.
+\FloatBarrier
+\subsection{The signal station by station}
+\label{sec:10_stations}
 
-\textbf{One pileup collision.} The library (sample 10b) is the 250 collisions through the same Geant4 with its own
-seed (\code{PUSEED}$+2 = 20243$): $38\,862$ primaries become $120\,574$ \code{SimTrack}s with $548\,028$ tracker
-hits, $394\,627$ EB hits ($3149\GeV$), $691\,000$ EE hits ($11\,616\GeV$) and $119\,964$ HCAL hits, 60\,MB in
-all; the 250 collisions took 7 to 12 minutes, $1.8$ to $2.8$\,s each, the signal event alone 8 to 12\,s,
-depending on the load of the shared machine. Library event 72, the first
-in-time collision, has 164 primaries and 534 \code{SimTrack}s, 2097 tracker hits, 4742
-ECAL hits in 3388 cells (EB 1217 cells with $9.45\GeV$, EE 1948 with $43.5\GeV$, ES 223), 392 HCAL hits in 262
-cells (HB 21, HE 122, HF 119 with 173 photoelectrons) and 11 CSC hits in station 1 from a track without stored
-ancestor; 142 of its 164 primaries left a hit. The collision is a fifth of the signal in tracker hits and a seventh
-in ECAL energy ($53$ against $362\GeV$).
+\textbf{What it shows.} The \code{SimHitAnalyzer} takes the full simulation detector by detector (``stations'':
+tracker, ECAL, HCAL, muon system) and draws every hit at its place in the detector, in $r$--$z$, in $x$--$y$ and in
+$\eta$--$\phi$, coloured by the kind of the primary it descends from. For the leading primary of every kind it joins
+the hits in time order and labels them, so that one particle can be followed through the layers
+(figure~\ref{fig:10_stations}): the $\pi^+$ of $13.3\GeV$ of \pt{} of the $b$ jet, the photon of
+subsection~\ref{sec:10_em}, the one electron of the event ($\pt=5.0\GeV$, $E=10.95\GeV$), and in the forward
+direction a $K^0_S$ of $15.7\GeV$ and a $\pi^+$ of $30.6\GeV$ of the $\bar b$ jet. The $K^0_S$ ($E=338.5\GeV$,
+$\eta=-3.77$) flies outside the acceptance of the tracker, but it hits a nucleus of the wall of the beam pipe at
+$r=2.2\cm$, $z=-43.7\cm$ (\code{extras\_10\_SIM.txt}, section 4), and the products of that interaction spray 203
+hits into the tracker endcap.
+
+\textbf{The numbers of the event} (\code{simHits\_signal\_10\_SIM.log}). The \emph{tracker} has $10\,272$
+\code{PSimHit}s (PXB 929, PXF 973, TIB 1182, TID 975, TOB 1022, TEC 5191) from 293 of the 571 primaries. The TEC holds
+half of them, both jets being in the endcap directions, and the barrel layers count fewer hits the further out they
+are (PXB 397, 221, 179, 132 from layer 1 to 4; TOB 427 to 77): a barrel layer of the same length covers a smaller
+range of $\eta$ the larger its radius. By kind, 4999 hits descend from charged hadrons, 890 from neutral hadrons,
+2013 from photons (the conversion pairs; 171 from the followed photon alone), 138 from the one electron, 2232 from
+tracks without a stored ancestor. $10\,063$ are in the \code{LowTof} collections and
+209 in \code{HighTof} ($36$--$499\ns$ after the collision: loopers and slow secondaries). The \emph{ECAL} has $24\,262$
+hits in $12\,804$ cells (EB 5521, EE 6214, ES 1069) from 366 primaries: $162\GeV$ in 5287 cells dominated by photons,
+$144\GeV$ in 5343 by charged hadrons, $47.4\GeV$ by neutral hadrons, $7.1\GeV$ by electrons; the followed photon
+dominates 270 cells with $42.0\GeV$ and the followed $\pi^+$ 35 cells with $3.4\GeV$, a hadron that crossed the
+crystals without showering. Of the 7273 EB hits, 1862 ($3.3\GeV$ of the 68) come later than $25\ns$, the slow tail of
+the hadronic showers. The \emph{HCAL} has 2531 hits in 1353 cells (HB 173, HE 648, HO 1, HF 531) from 266 primaries;
+the HF $\pi^+$ of the $\bar b$ jet alone puts 809 of the 1849 photoelectrons into 19 HF cells. The \emph{muon
+chambers} have nothing: no particle of the signal reached them. In all, 512 of the 571 primaries left a hit; the 59
+others are neutrals that neither converted nor interacted, and forward particles beside the calorimeters.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/signal/TRK/simHits_signal_10_SIM_TRK_rz_run1_event1.png}\hfill
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/signal/TRK/simHits_signal_10_SIM_TRK_xy_run1_event1.png}\\[3pt]
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/signal/ECAL/simHits_signal_10_SIM_ECAL_rz_run1_event1.png}\hfill
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/signal/HCAL/simHits_signal_10_SIM_HCAL_rz_run1_event1.png}
+\caption{(10a) The signal station by station, legends cropped. Top: the tracker in $r$--$z$ and, for its barrel, in $x$--$y$; bottom: the ECAL and the HCAL in
+$r$--$z$. Black: hits of charged hadrons, purple: neutral hadrons, green: photons, orange: electrons, grey: no stored
+ancestor; grey dots and frames: the detector elements. The followed primaries are joined in time order and labelled:
+the conversion pair of the photon (green) and the electron (orange) cross the whole tracker towards the endcap at
+$z\approx-300\cm$; the products of the nuclear interaction of the $K^0_S$ in the beam pipe (purple) fan out into the TID and TEC; in the HCAL the $b$ jet reaches the HE
+around $z=-400\cm$ and the $\bar b$ jet the HF at $z=-1115\cm$.
+Files: \code{signal/<station>/}\allowbreak\code{simHits\_signal\_10\_SIM\_<station>\_<view>\_run1\_event1.png}.}
+\label{fig:10_stations}
+\end{figure}
+
+\subsection{The pileup library and one collision}
+\label{sec:10_library}
+
+\textbf{What it is.} The library (sample 10b) is the 250 minimum-bias collisions of chapter~\ref{ch:08_PU}, handed
+over in chapter~\ref{ch:09_G4}, through the same full Geant4 with its own random seed (\code{PUSEED}$+2 = 20243$). It
+is simulated once, independently of the signal, and any number of signal events could take their pileup from it.
+
+\textbf{The numbers of the event.} The 250 collisions give $38\,862$ primaries, which become $120\,574$
+\code{SimTrack}s with $548\,028$ tracker hits, $394\,627$ EB hits ($3149\GeV$), $691\,000$ EE hits ($11\,616\GeV$) and
+$119\,964$ HCAL hits, 60\,MB in all; they took 7 to 12 minutes, $1.8$ to $2.8$\,s each, the signal event alone 8 to
+12\,s, depending on the load of the shared machine. Library event 72, the first in-time collision, has 164 primaries
+and 534 \code{SimTrack}s, 2097 tracker hits, 4742 ECAL hits in 3388 cells (EB 1217 cells with $9.45\GeV$, EE 1948
+with $43.5\GeV$, ES 223), 392 HCAL hits in 262 cells (HB 21, HE 122, HF 119 with 173 photoelectrons) and 11 CSC hits
+in station 1 from a track without stored ancestor; 142 of its 164 primaries left a hit. The collision is a fifth of
+the signal in tracker hits and a seventh in ECAL energy ($53$ against $362\GeV$), and its ECAL energy is mostly
+charged hadrons ($29.4\GeV$) and photons ($15.7\GeV$) of a few GeV each, spread over the whole detector. Three
+diffractive collisions (library events 12, 124, 179) give Geant4 nothing but protons of $6800\GeV$ (one of
+$5539\GeV$) at $z=\pm203$\,m: the beam-line transport of the generator step (\code{LHCTransport}, read since
+\code{run3\_common} sets \code{g4SimHits.LHCTransport = True}) delivers them to the start of the forward proton
+spectrometer (\code{PPSRegionStart = 203}, \path{SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py}).
 
 \begin{plainwords}[The library, and what the production calls the premixing library]
 \code{step2\_SIM\_pileup\_10\_SIM.root} is a GEN-SIM library: minimum-bias collisions simulated once, to be overlaid
 on any number of signal events. Reading it, 193 collisions per signal event here and about 1000 in the Run-3 production scenario
-(section~5), is why the production does not mix SimHits. Its \emph{premixing library} (\code{premix\_stage1}) is made by a job that mixes a full bunch-crossing
+(section~\ref{sec:10_phase2}), is why the production does not mix SimHits. Its \emph{premixing library} (\code{premix\_stage1}) is made by a job that mixes a full bunch-crossing
 train of minimum-bias collisions from a GEN-SIM library like this one and \emph{digitises} it, storing one premixed
 event, digis and all, per future signal event (data tier \code{PREMIX}); the signal job then digitises the signal
 alone and adds one premixed event to it, channel by channel (\code{premix\_stage2}, the \code{PreMixingModule},
@@ -181,25 +549,33 @@ chapter~\ref{ch:11_DIGI}). This chapter stops one step earlier, at the SimHits o
 can the hits of the signal and of each collision still be told apart.
 \end{plainwords}
 
-\textbf{The mixture.} The \code{MixingModule} (\code{process.mix} of \code{cmsDriver.py -s DIGI}, scenario
-\code{AVE\_60\_BX\_25ns} with \code{N = 60} and \code{B = (-1, 1)}, the library read in sequence) drew 71, 68
-and 54 collisions for $\bx=-1$, 0 and $+1$, took library events 1--71, 72--139 and 140--193 in that order, stamped
-every \code{SimTrack}, \code{SimVertex} and hit with its bunch crossing, shifted its time by $25\ns\times\bx$,
-and built one \code{CrossingFrame} per collection, the signal objects first and the pileup behind them. The job
-(\path{python/mixOnly_cff.py}) removed the digitisers and put the \code{SimHitAnalyzer} on the
-\code{CrossingFrame}s, so the counts of \code{simHits\_mixed\_10\_SIM.log} are what the digitisers of
-chapter~\ref{ch:11_DIGI} will see. The 193 collisions bring $31\,060$ primaries ($10\,012$, $10\,414$, $10\,634$
-by bunch crossing) and $97\,276$ \code{SimTrack}s. In the tracker they put $438\,043$ hits next to the $10\,272$ of the signal: $139\,551$ early,
-$146\,028$ in time, $152\,464$ late, that is 1965, 2147 and 2823 per collision (the 54 late collisions happen to be
-the busiest of the library); the signal is 2.3\,\% of the tracker hits of its own bunch crossing. In the ECAL the
-193 collisions dominate $103\,808$ cells with $12\,130\GeV$ ($3950$, $3860$, $4320\GeV$ by bunch crossing,
-$57\GeV$ per in-time collision) against the $12\,804$ cells and $362\GeV$ of the signal alone; with the pileup on
-top, only 2362 cells are still dominated by the signal, holding $236\GeV$, and the other $10\,442$ cells of its
-showers now belong, by energy, to a pileup particle. The HCAL goes from 1353 to $11\,021$ cells (HB 3624, HE 4170,
-HO 15, HF 3212), 258 of them dominated by the signal. The muon chambers, empty for the signal, have 204 hits
-(DT 43, CSC 151, RPC 2, GEM 8): 51 from the early bunch crossing, 129 in time, 24 late. Of the 571 signal
-primaries, 378 still own a hit or a cell in the mixture, down from 512; in the HCAL only 92 of 266, because the
-cells of the hadronic showers are shallow and a pileup deposit easily outweighs them.
+\subsection{The mixing}
+\label{sec:10_mixing}
+
+\textbf{What it does.} The detector does not see one collision at a time. Every 25\,ns two bunches cross and about
+sixty collisions happen at once, at different points along the beam, and a detector whose signal lasts longer than
+25\,ns also still sees the collisions of the crossings before and after. The \code{MixingModule} builds that
+situation for every signal event. It draws the number of collisions of each bunch crossing, takes that many from the
+library, moves each to its bunch crossing by shifting the times of its \code{SimTrack}s, \code{SimVertex}s and hits by
+$25\ns\times\bx$, stamps every object with its bunch crossing and its collision (the \code{EncodedEventId}), and lays
+everything out in one \code{CrossingFrame} per collection, the signal objects first and the pileup behind them. Each
+collision keeps its own vertex, drawn in chapter~\ref{ch:08_PU} from the same luminous region as the signal. The
+digitisers of chapter~\ref{ch:11_DIGI} read the \code{CrossingFrame}s, not the signal collections.
+
+\textbf{The parameters.} \code{process.mix} of \code{cmsDriver.py -s DIGI} with the option
+\code{--pileup} \code{AVE\_60\_BX\_25ns,\{'N':~60,~'B':~(-1,~1)\}}: a Poisson draw of mean 60 per bunch crossing, three
+bunch crossings, 25\,ns apart, the library read in sequence (\code{input.sequential = True}), the random engine of
+the module seeded with 12345. The job (\path{python/mixOnly_cff.py}) removes the digitisers and puts the
+\code{SimHitAnalyzer} on the \code{CrossingFrame}s.
+
+\textbf{The numbers of the event.} The draw gave 71, 68 and 54 collisions for $\bx=-1$, 0 and $+1$, library events
+1--71, 72--139 and 140--193 in that order, and the script checks that the in-time ones are those that chapters
+\ref{ch:08_PU} and \ref{ch:09_G4} assumed. The 193 collisions bring $31\,060$ primaries ($10\,012$, $10\,414$,
+$10\,634$ by bunch crossing) and $97\,276$ \code{SimTrack}s. They are very unequal: from 1 primary (the PPS protons
+above) to 574, with a median of 69, 126 and 154 per collision in the three bunch crossings (\code{extras\_10\_SIM.txt},
+section 7); the 54 late collisions happen to be the busiest. Their vertices spread along the beam with an r.m.s. of
+$3.76\cm$, from $z=-9.5$ to $+10.1\cm$; two of the 190 vertices near the centre are within 1\,mm of the signal vertex
+at $z=3.11\cm$.
 
 \begin{plainwords}[Why the DIGI job of the next chapter replays this draw]
 The number of collisions per bunch crossing is a Poisson draw with mean 60 from the random engine of the module
@@ -216,6 +592,42 @@ the module \code{mix}, process \code{MIX}: which library events went into which 
 Chapter~\ref{ch:11_DIGI} reads it with \code{process.mix.playback = True} and digitises exactly these 193 collisions.
 \end{plainwords}
 
+\subsection{Where the pileup goes}
+\label{sec:10_pileup}
+
+\textbf{The numbers of the event} (\code{simHits\_mixed\_10\_SIM.log}, figure~\ref{fig:10_pileup}). In the
+\emph{tracker} the 193 collisions put $438\,043$ hits next to the $10\,272$ of the signal: $139\,551$ early,
+$146\,028$ in time, $152\,464$ late, that is 1965, 2147 and 2823 per collision; the signal is 2.3\,\% of the tracker
+hits of its own bunch crossing. The innermost pixel layer has $19\,053$ hits, of which 397 are the signal's. In the
+\emph{ECAL} they hit nearly every crystal: $59\,897$ of the $61\,200$ of the barrel and $14\,619$ of the $14\,648$
+of the endcaps have a hit, and $31\,654$ of the $137\,216$ preshower strips. The 193 collisions dominate $103\,808$
+cells with $12\,130\GeV$ ($3950$, $3860$, $4320\GeV$ by bunch crossing, $57\GeV$ per in-time collision) against the
+$12\,804$ cells and $362\GeV$ of the signal alone; the endcap crystals alone hold $9720\GeV$, 33 times the signal's
+$294$. With the pileup on top, only 2362 cells are still dominated by the signal, holding $236\GeV$; the other
+$10\,442$ cells of its showers now belong, by energy, to a pileup particle. The followed photon still dominates 80
+crystals with $42.6\GeV$ (270 alone), the followed $\pi^+$ 8 with $3.9\GeV$ (35 alone): the core of a shower
+survives, its edges are lost. The \emph{HCAL} goes from 1353 to $11\,021$ cells (HB 3624 of 9072, HE 4170, HO 15, HF
+3212 of 3456), 258 of them dominated by the signal; in the HF the drawing shows many cells dominated by the early
+collisions (figure~\ref{fig:10_pileup}, olive). The \emph{muon chambers}, empty for the signal, have 204 hits (DT 43, CSC 151, RPC 2,
+GEM 8): 51 from the early bunch crossing, 129 in time, 24 late. Of the 571 signal primaries, 378 still own a hit or a
+cell in the mixture, down from 512; in the HCAL only 92 of 266, because the cells of the hadronic showers are shallow
+and a pileup deposit easily outweighs them.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/mixed/TRK/simHits_mixed_10_SIM_TRK_xy_run1_event1.png}\hfill
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/mixed/ECAL/simHits_mixed_10_SIM_ECAL_etaphi_run1_event1.png}\\[3pt]
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/mixed/HCAL/simHits_mixed_10_SIM_HCAL_rz_run1_event1.png}\hfill
+\includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/mixed/MUON/simHits_mixed_10_SIM_MUON_rz_run1_event1.png}
+\caption{(10a+10b) The mixed event station by station, legends cropped: the tracker barrel in $x$--$y$, the ECAL in $\eta$--$\phi$, the HCAL and the muon system in $r$--$z$.
+The signal is drawn as in figure~\ref{fig:10_stations}, the pileup underneath by bunch crossing: olive $-1$, blue 0,
+red $+1$; a calorimeter cell takes the colour of the origin that deposited most of its energy. The signal survives as
+the black and green dots along the followed tracks and as the core of the $b$ jet at $(-1.6,-2.1)$ in the ECAL; the
+204 muon hits are all pileup.
+Files: \code{mixed/<station>/}\allowbreak\code{simHits\_mixed\_10\_SIM\_<station>\_<view>\_run1\_event1.png}.}
+\label{fig:10_pileup}
+\end{figure}
+
 \section{Ledger and display}
 
 Table~\ref{tab:10_ledger} is the ledger of the stage at the level of the hits, for the three samples. For the
@@ -223,7 +635,8 @@ signal the stage turns 571 primaries into 1926 \code{SimTrack}s, $10\,272$ track
 loss and $26\,793$ calorimeter hits in $14\,157$ cells: $362\GeV$ in the ECAL, $1.9\GeV$ of visible energy in the
 HB and HE, 1849 photoelectrons in the HF (the 1851
 ``GeV'' of the HCAL line are these two added). Of the
-$6923\GeV$ handed to Geant4 this is what the sensitive volumes record; the rest is nuclear binding energy, the
+$6923\GeV$ handed to Geant4 this is what the sensitive volumes record; the rest is the sampling of the HCAL (its
+visible energy is a few per cent of what it absorbs), nuclear binding energy, the
 neutrons and neutrinos of the showers, the dead material and the forward particles beyond the HF. For the mixture
 the stage adds, on top of the signal, $438\,043$ tracker hits, 204 muon-chamber hits, $103\,808$ ECAL cells with
 $12\,130\GeV$ and $10\,763$ HCAL cells; the 68 in-time collisions alone, handed over in chapter~\ref{ch:09_G4}
@@ -287,7 +700,9 @@ primary of each kind is followed through the layers and labelled.}
 \label{fig:10_display}
 \end{figure}
 
+\FloatBarrier
 \section{Open problems for Phase-2}
+\label{sec:10_phase2}
 
 The sensitive detectors, the physics list and the mixing are configured in
 \path{SimG4Core/Application/python/g4SimHits_cfi.py}, in \path{Geometry/HcalSimData/python/HFParameters_cff.py},
