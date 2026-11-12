@@ -15,13 +15,13 @@ cmsDriver output is in `out/step2_G4_signal_09_G4_cfg.driver.log` and `out/step2
 ```bash
 cd $J/test
 cmsDriver.py step2 --filein file:$J/test/07_GenJet/out/step2_GENJET_07_GenJet.root \
-  --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended --beamspot DBrealistic \
+  --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended --beamspot DBrealistic \
   -n 1 -s SIM --datatier GEN-SIM --eventcontent FEVTDEBUG --fileout file:step2_G4_signal_09_G4.root \
   --customise_commands "process.g4SimHits.UseMagneticField = cms.bool(False)\nprocess.g4SimHits.Physics.type = cms.string('SimG4Core/Physics/JourneyTransportPhysics')\nprocess.g4SimHits.Physics.G4TransportWithMSC = cms.int32(0)\nprocess.g4SimHits.Physics.G4GammaGeneralProcess = cms.bool(False)\nprocess.g4SimHits.TrackerSD.ZeroEnergyLoss = cms.bool(True)" \
   --python_filename $J/test/09_G4/step2_G4_signal_09_G4_cfg.py --no_exec
 
 cmsDriver.py step2 --filein file:$J/test/08_PU/out/step1_GEN_MinBias_08_PU.root \
-  --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended --beamspot DBrealistic \
+  --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended --beamspot DBrealistic \
   -n -1 -s SIM --datatier GEN-SIM --eventcontent FEVTDEBUG --fileout file:step2_G4_pileup_09_G4.root \
   --customise_commands "process.g4SimHits.UseMagneticField = cms.bool(False)\nprocess.g4SimHits.Physics.type = cms.string('SimG4Core/Physics/JourneyTransportPhysics')\nprocess.g4SimHits.Physics.G4TransportWithMSC = cms.int32(0)\nprocess.g4SimHits.Physics.G4GammaGeneralProcess = cms.bool(False)\nprocess.g4SimHits.TrackerSD.ZeroEnergyLoss = cms.bool(True)\nprocess.RandomNumberGeneratorService.g4SimHits.initialSeed = 20243" \
   --python_filename $J/test/09_G4/step2_G4_pileup_09_G4_cfg.py --no_exec
@@ -31,8 +31,8 @@ cmsDriver.py step2 --filein file:$J/test/08_PU/out/step1_GEN_MinBias_08_PU.root 
 |---|---|
 | `step2` | the name of the configuration (free; the `step1` was the GEN step of chapters 01 to 08) |
 | `--filein file:...` | the input: the GEN-GENJET file of chapter 07 (signal) or the 250-event library of chapter 08 (pileup). Rule E |
-| `--conditions auto:phase1_2024_realistic` | the global tag of the book (resolved to `150X_mcRun3_2024_realistic_v2` by `Configuration/AlCa/python/autoCond.py`): geometry, magnetic field map, beam spot from the database |
-| `--era Run3_2024` | the era modifiers of the 2024 detector (`Configuration/Eras/Era_Run3_2024_cff.py`); they select the sensitive detectors and hit collections of Run 3 in `g4SimHits_cfi.py` (`run3_common`) |
+| `--conditions auto:phase1_2025_realistic` | the global tag of 2025 (resolved to `150X_mcRun3_2025_realistic_v1` by `Configuration/AlCa/python/autoCond.py`, line 107; `YEAR=2025` of `jitjet_common.sh`): geometry, magnetic field map, beam spot from the database. The geometry (`GeometryFileRcd`, label `Extended`: `141DD4hepV2_Extended2024`) and the field (`MFGeometry_160812`, `MFConfig_160812_Run2_3_8T`) are the same tags as in the 2024 global tag `150X_mcRun3_2024_realistic_v2` (section 4) |
+| `--era Run3_2025` | the era modifiers of the 2025 detector (`Configuration/Eras/python/Era_Run3_2025_cff.py` = `Run3_2024` + `run3_GEM_2025`, `run3_CSC_2025`, `run3_SiPixel_2025`, `stage2L1Trigger_2025`, `ecal_cctiming`; none of the five appears in `g4SimHits_cfi.py`); through `Run3` they select the sensitive detectors and hit collections of Run 3 in `g4SimHits_cfi.py` (`run3_common`) |
 | `--geometry DB:Extended` | the simulation geometry (DDD XML) is read from the database (`GeometrySimDB_cff`), label `Extended` |
 | `--beamspot DBrealistic` | the vertex smearing of the GEN step; in a SIM-only step it only sets the matching `VtxSmeared` label, the vertices are already in the input |
 | `-n 1` / `-n -1` | one event (the signal file holds one) / all events (the 250 library collisions) |
@@ -63,9 +63,9 @@ in the `PhysicsList` constructor. The script therefore runs `cmsRun` with the bi
 ```bash
 cd $J/test/09_G4/out
 env LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | grep -v '/biglib/' | paste -sd:) \
-    cmsRun ../step2_G4_signal_09_G4_cfg.py > step2_G4_signal_09_G4.log 2>&1     # 51 s, mostly initialisation
+    cmsRun ../step2_G4_signal_09_G4_cfg.py > step2_G4_signal_09_G4.log 2>&1     # 53 s, mostly initialisation
 env LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | grep -v '/biglib/' | paste -sd:) \
-    cmsRun ../step2_G4_pileup_09_G4_cfg.py > step2_G4_pileup_09_G4.log 2>&1     # 77 s for the 250 collisions
+    cmsRun ../step2_G4_pileup_09_G4_cfg.py > step2_G4_pileup_09_G4.log 2>&1     # 88 s for the 250 collisions
 ```
 
 Or the whole chapter: `./09_G4/run_09_G4.sh` (variables: `PUSEED=20241`; `NPU=68` and `SKIP=71` are set in
@@ -75,7 +75,7 @@ signal event; `RUN=0` to only write the configurations, `ANALYZE=0` to skip the 
 
 ### Walk-through of `step2_G4_signal_09_G4_cfg.py`
 
-- `process = cms.Process('SIM', Run3_2024)`: the process name under which the new products are stored.
+- `process = cms.Process('SIM', Run3_2025)`: the process name under which the new products are stored.
 - `process.load(...)`: `Services_cff` (the random number service), `pythiapdt_cfi` (the particle table), the
   `MessageLogger`, `EventContent_cff`, `mixNoPU_cfi` (the mixing module without pileup, not run here),
   `GeometryRecoDB_cff` and `GeometrySimDB_cff` (reco and simulation geometry from the database),
@@ -85,7 +85,7 @@ signal event; `RUN=0` to only write the configurations, `ANALYZE=0` to skip the 
 - `process.maxEvents`: 1 (signal) or -1 (all library events).
 - `process.source`: `PoolSource` on the input file.
 - `process.FEVTDEBUGoutput`: the `PoolOutputModule` with `FEVTDEBUGEventContent`, data tier `GEN-SIM`.
-- `process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2024_realistic', '')`.
+- `process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2025_realistic', '')`.
 - `process.simulation_step = cms.Path(process.psim)`, the end paths, and the schedule.
 - the five (six) customise lines of section 1, then `customiseEarlyDelete` (memory).
 
@@ -157,12 +157,12 @@ page and a log with the per-page counts. The commands of the script (`run_09_G4.
 cd $J/test/09_G4/out
 cmsRun ../../common/simAnalyzer_cfg.py inputFiles=file:$J/test/09_G4/out/step2_G4_signal_09_G4.root \
   outputFile=simAnalyzer_signal_09_G4.root maxEvents=1 eventsToProcess=1:1:1 simStage=1 genStages=5 \
-  globalTag=auto:phase1_2024_realistic era=Run3_2024 geometry=DB:Extended pdfFile=simAnalyzer_signal_09_G4.pdf \
+  globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended pdfFile=simAnalyzer_signal_09_G4.pdf \
   sampleLabel="chapter 09_G4 (9a): the signal handed to Geant4|transport only: no B field, no decays|no EM, no hadronic physics|bbbar pTHat > 100 GeV, 13.6 TeV" \
   > simAnalyzer_signal_09_G4.log 2>&1
 cmsRun ../../common/simAnalyzer_cfg.py inputFiles=file:$J/test/09_G4/out/step2_G4_pileup_09_G4.root \
   outputFile=simAnalyzer_pileup_09_G4.root maxEvents=1 eventsToProcess=1:1:72 simStage=1 genStages=5 \
-  globalTag=auto:phase1_2024_realistic era=Run3_2024 geometry=DB:Extended pdfFile=simAnalyzer_pileup_09_G4.pdf \
+  globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended pdfFile=simAnalyzer_pileup_09_G4.pdf \
   sampleLabel="chapter 09_G4 (9b): one pileup collision handed to Geant4|library event 72, transport only|no B field, no decays, no EM, no hadronic physics|SoftQCD inelastic, 13.6 TeV" \
   > simAnalyzer_pileup_09_G4.log 2>&1
 pdftoppm -cropbox -r 110 -png simAnalyzer_signal_09_G4.pdf simAnalyzer_signal_09_G4_page     # the PNG pages
@@ -402,3 +402,41 @@ All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
   the XML of `Geometry/TrackerCommonData/data/PhaseII/`), whether the Phase-2 forward geometry closes the gap between
   the calorimeter envelope (about abs(eta) 5.3 in this event) and the 5.5 cut, and since when the `RusRoHGcal*`
   values are what they are (no history on cvmfs).
+
+### 4.7 The 2024 and the 2025 settings
+
+The chapter runs with `YEAR=2025` (`common/jitjet_common.sh`): `auto:phase1_2025_realistic` =
+`150X_mcRun3_2025_realistic_v1` (`autoCond.py`, line 107), era `Run3_2025`. The records a SIM job reads are the same
+tags in the 2024 and the 2025 global tags (`conddb list 150X_mcRun3_2024_realistic_v2`, `conddb list
+150X_mcRun3_2025_realistic_v1`):
+
+```
+GeometryFileRcd     Extended   141DD4hepV2_Extended2024      (and the FlatMinus/Plus, ZeroMaterial variants, also ...Extended2024...)
+MFGeometryFileRcd   160812     MFGeometry_160812
+MagFieldConfigRcd   3.8T       MFConfig_160812_Run2_3_8T
+SimBeamSpotObjectsRcd          SimBeamSpot_Realistic25ns13p6TeVEarly2024CollisionVtxSmearingParameters_v1_mc
+```
+
+The 35 records that differ (the list is in the chapter 08 companion, section 4.9) are calibrations, alignment and
+trigger tables of the digitisation, the reconstruction and the Level-1 trigger. `Era_Run3_2025_cff.py` =
+`Run3_2024` + `run3_GEM_2025`, `run3_CSC_2025`, `run3_SiPixel_2025`, `stage2L1Trigger_2025`, `ecal_cctiming`; none of
+them occurs in `SimG4Core/Application/python/g4SimHits_cfi.py` (`grep`), the `g4SimHits` configuration is the same.
+
+The rerun with the 2025 settings (12 November 2026) against the 2024 run (7 November 2026): `ledger_09_G4.txt`,
+`simAnalyzer_signal_09_G4.log`, `simAnalyzer_pileup_09_G4.log` and the two `cmsRun` logs `step2_G4_signal_09_G4.log`,
+`step2_G4_pileup_09_G4.log` are identical apart from time stamps, timings and the era / global-tag lines. The two ROOT
+files were also compared product by product with FWLite (per event and per collection: the number of `SimTrack`s,
+`SimVertex`s, `PSimHit`s and `PCaloHit`s, and the sums of their energies, times, positions and track ids): signal 31
+collections, 571 `SimTrack`s, 7480 hits; library 250 events, 7750 collections, 38 862 `SimTrack`s, 425 436 hits; 0
+differences. Every number of the chapter holds for both years. Run times of the rerun: signal 53 s, library 88 s, the
+two SimAnalyzer jobs 11 s and 7 s.
+
+One thing does move with the year, the drawing: `SimAnalyzer` places a tracker hit (stored in the local frame of its
+module) with the reconstruction geometry of `GeometryRecoDB_cff`, whose `trackerGeometryDB` has `applyAlignment =
+True`, i.e. the `TrackerAlignmentRcd` of the global tag: `TrackerAlignment_Run3MC_2023_rereco_v1` (2024 tag) and
+`TrackerAlignment_Run3MC_2025_EOY_v1` (2025 tag). From `conddb dump` of the two payloads (20 292 modules each), the
+module positions differ by 10 um in the median (90 % below 0.49 mm; medians PXB 2 um, PXF 6 um, TIB 4 um, TID 51 um,
+TOB 7 um, TEC 0.33 mm, 7484 of 7552 TEC modules moving by more than 0.1 mm), four modules by more than 1 mm (largest
+6.8 mm, one TIB module). The muon and calorimeter alignment records are the same in both tags. The pages of the
+chapter therefore show the same hits shifted by these amounts, which no plot resolves; the log prints no tracker
+position and is identical.

@@ -16,7 +16,7 @@ output is in `out/<config>.driver.log`):
 cd $J/test
 IN=$J/test/09_G4/out/step2_G4_signal_09_G4.root       # Rule E: the transport-only signal of chapter 09
 LIB=$J/test/09_G4/out/step2_G4_pileup_09_G4.root      # the transport-only library of chapter 09
-COMMON="--conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended --beamspot DBrealistic \
+COMMON="--conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended --beamspot DBrealistic \
   -s SIM --processName SIMFULL --datatier GEN-SIM --eventcontent FEVTDEBUG --outputCommands drop *_*_*_SIM"
 
 # stage B: field on, still the transport-only physics list (no decays, no EM, no hadronic physics)
@@ -47,10 +47,10 @@ cmsDriver.py step2 --filein file:$LIB $COMMON -n -1 --fileout file:step2_SIM_pil
 # (10a+10b) the mixing at SimHit level: the MixingModule of the DIGI step without digitisers, SimHitAnalyzer on the CrossingFrames
 cmsDriver.py step3 --filein file:$J/test/10_SIM/out/step2_SIM_signal_10_SIM.root \
   --pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)}" --pileup_input file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root \
-  --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended -n -1 -s DIGI:pdigi_valid --processName MIX \
+  --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended -n -1 -s DIGI:pdigi_valid --processName MIX \
   --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_MIX_10_SIM.root \
   --outputCommands "drop *_mix_*_*,keep CrossingFramePlaybackInfoNew_mix_*_*" \
-  --customise_commands "process.mix.input.sequential = cms.untracked.bool(True)\nprocess.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')\nfrom JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='$J/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -1..1|library in sequence, no digitisers|2024 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False)" \
+  --customise_commands "process.mix.input.sequential = cms.untracked.bool(True)\nprocess.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')\nfrom JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='$J/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -1..1|library in sequence, no digitisers|2025 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False)" \
   --python_filename $J/test/10_SIM/step3_MIX_10_SIM_cfg.py --no_exec
 ```
 
@@ -60,8 +60,8 @@ The arguments of the SIM steps:
 |---|---|
 | `step2` | the name of the configuration (free; `step1` was the GEN step of chapters 01 to 08) |
 | `--filein file:...` | the input (Rule E): the transport-only SIM file of chapter 09 (signal) or its 250-event library (pileup). The generator record is read from it; the SIM products of process `SIM` are read too but dropped from the output |
-| `--conditions auto:phase1_2024_realistic` | the global tag of the book (`150X_mcRun3_2024_realistic_v2` through `Configuration/AlCa/python/autoCond.py`): geometry, field map, beam spot |
-| `--era Run3_2024` | the era modifiers of the 2024 detector: `run3_common` selects the Run-3 sensitive detectors and hit collections in `g4SimHits_cfi.py`, `run3_HFSL` the HF shower library `HFShowerLibrary_run3_v7.root` |
+| `--conditions auto:phase1_2025_realistic` | the global tag of 2025 (`150X_mcRun3_2025_realistic_v1` through `Configuration/AlCa/python/autoCond.py`, line 107; `YEAR=2025` of `jitjet_common.sh`): geometry, field map, beam spot; the geometry `141DD4hepV2_Extended2024` and the field map are the same tags as in the 2024 global tag (chapter 09 companion, section 4) |
+| `--era Run3_2025` | the era modifiers of the 2025 detector (`Era_Run3_2025_cff.py`: `Run3_2024` plus five modifiers of the reconstruction and the Level-1 trigger, none used by `g4SimHits` or the `MixingModule`): through `Run3`, `run3_common` selects the Run-3 sensitive detectors and hit collections in `g4SimHits_cfi.py`, `run3_HFSL` the HF shower library `HFShowerLibrary_run3_v7.root` |
 | `--geometry DB:Extended` | the simulation geometry (DDD XML) from the database, label `Extended` |
 | `--beamspot DBrealistic` | only sets the `VtxSmeared` label in a SIM-only step; the smeared vertices are already in the input |
 | `-n 1` / `-n -1` | one event (the signal) / all events (the 250 library collisions) |
@@ -115,25 +115,28 @@ env LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | grep -v '/biglib/'
 cmsRun ../step2_SIM_B_Decay_10_SIM_cfg.py    > step2_SIM_B_Decay_10_SIM.log 2>&1
 cmsRun ../step2_SIM_B_Decay_EM_10_SIM_cfg.py > step2_SIM_B_Decay_EM_10_SIM.log 2>&1
 cmsRun ../step2_SIM_signal_10_SIM_cfg.py     > step2_SIM_signal_10_SIM.log 2>&1
-cmsRun ../step2_SIM_pileup_10_SIM_cfg.py     > step2_SIM_pileup_10_SIM.log 2>&1     # 250 events, 7.4 minutes
+cmsRun ../step2_SIM_pileup_10_SIM_cfg.py     > step2_SIM_pileup_10_SIM.log 2>&1     # 250 events, 7-12 minutes
 cmsRun ../step3_MIX_10_SIM_cfg.py            > step3_MIX_10_SIM.log 2>&1            # the mixing, writes mixed/<station>/ and step3_MIX_10_SIM.root
 ```
 
 The script runs the library in the background while the four signal stages run (`run_sim pileup ... &`, `run_pileup.log`),
-with `REUSE=1` an existing `step2_SIM_<stage>_10_SIM.root` is kept. Timing from the logs: the signal event through the
-full physics takes 8 s (`Begin processing ... 09:51:53`, `Closed file ... 09:52:01`, after 36 s of Geant4
-initialisation), the 250 library collisions 442 s (`09:49:57` to `09:57:19`), 1.8 s per collision. All logs carry the
+with `REUSE=1` an existing `step2_SIM_<stage>_10_SIM.root` is kept. Timing from the logs (wall clock on a shared lxplus-like
+node, so it depends on its load): the signal event through the full physics takes 8 s in the 2024 run of 7 November
+2026 (`Begin processing ... 09:51:53`, `Closed file ... 09:52:01`, after 36 s of Geant4 initialisation) and 12 s in
+the 2025 rerun of 12 November 2026 (`10:15:10` to `10:15:22`, after 50 s of initialisation, load average 5-7); the 250
+library collisions 442 s (`09:49:57` to `09:57:19`), 1.8 s per collision, and 695 s (`10:12:15` to `10:23:51`), 2.8 s
+per collision. All logs carry the
 banner `Geant4 version Name: geant4-11-02-patch-02 [MT] (21-June-2024)`.
 
 ### The SIM configuration, `step2_SIM_signal_10_SIM_cfg.py`
 
 | part | content |
 |---|---|
-| `process = cms.Process('SIMFULL', Run3_2024)` | the process name and the era |
+| `process = cms.Process('SIMFULL', Run3_2025)` | the process name and the era |
 | `process.load(...)` | `Services_cff`, `pythiapdt_cfi` (the particle table), `MessageLogger_cfi`, `EventContent_cff`, `mixNoPU_cfi` (the `mix` module without pileup, present in every SIM step but not in the path), `GeometryRecoDB_cff` and `GeometrySimDB_cff` (both geometries from the database), `MagneticField_cff`, `SimIdeal_cff` (`g4SimHits`, i.e. `SimG4Core/Application/python/g4SimHits_cfi.py`), `EndOfProcess_cff`, `FrontierConditions_GlobalTag_cff` |
 | `process.source` | `PoolSource` on the chapter-09 file; `process.maxEvents.input = 1` (`-1` for the library) |
 | `process.FEVTDEBUGoutput` | `PoolOutputModule`, `dataTier GEN-SIM`, `outputCommands = FEVTDEBUGEventContent.outputCommands` plus the appended `'drop *_*_*_SIM'` |
-| `process.GlobalTag` | `auto:phase1_2024_realistic` resolved by `Configuration.AlCa.GlobalTag`; `XMLFromDBSource.label = "Extended"` selects the geometry payload |
+| `process.GlobalTag` | `auto:phase1_2025_realistic` resolved by `Configuration.AlCa.GlobalTag`; `XMLFromDBSource.label = "Extended"` selects the geometry payload |
 | `process.simulation_step = cms.Path(process.psim)` | the one path: `randomEngineStateProducer` + `g4SimHits` (`OscarMTProducer`) |
 | `process.schedule` | `simulation_step, endjob_step, FEVTDEBUGoutput_step` |
 | customisation | the physics switches of section 1, then `customiseEarlyDelete` |
@@ -145,7 +148,7 @@ step2_SIM_B_10_SIM_cfg.py`); the library configuration in the input file, `maxEv
 
 | part | content |
 |---|---|
-| `process = cms.Process('MIX', Run3_2024)` | |
+| `process = cms.Process('MIX', Run3_2025)` | |
 | `process.load('SimGeneral.MixingModule.mix_POISSON_average_cfi')` | the `mix` module (`MixingModule`), with `digitizers = theDigitizers`, `input = EmbeddedRootSource(type = 'poisson', sequential = False, ...)`, `mixObjects = theMixObjects` (`mixObjects_cfi.py`: which `PSimHit`, `PCaloHit`, `SimTrack`, `SimVertex` collections are mixed) |
 | `process.load('Configuration.StandardSequences.Digi_cff')` | the digitisers and `pdigi_valid` |
 | `process.source.inputCommands` | the `drop *_genParticles_*_*`, `drop *_ak4GenJets_*_*`, ... that `cmsDriver.py` writes for a DIGI step (the GEN collections are remade from `generatorSmeared` by `pdigi_valid`; with `mixOnly` they are simply not in the output) |
@@ -235,19 +238,19 @@ for stage in B B_Decay B_Decay_EM signal; do
   gen=0; [[ $stage == signal ]] && gen=5
   cmsRun ../../common/simAnalyzer_cfg.py inputFiles=file:$J/test/10_SIM/out/step2_SIM_${stage}_10_SIM.root \
     outputFile=simAnalyzer_${stage}_10_SIM.root maxEvents=1 eventsToProcess=1:1:1 simStage=$n genStages=$gen \
-    globalTag=auto:phase1_2024_realistic era=Run3_2024 geometry=DB:Extended pdfFile=simAnalyzer_${stage}_10_SIM.pdf \
+    globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended pdfFile=simAnalyzer_${stage}_10_SIM.pdf \
     sampleLabel="chapter 10_SIM: stage $stage|$sw|bbbar pTHat > 100 GeV, 13.6 TeV" > simAnalyzer_${stage}_10_SIM.log 2>&1
   pdftoppm -cropbox -r 110 -png simAnalyzer_${stage}_10_SIM.pdf simAnalyzer_${stage}_10_SIM_page
 done
 
 # the three samples station by station (SimHitAnalyzer): TRK, ECAL, HCAL, MUON, ALL; r-z, x-y and eta-phi views
-ARGS="era=Run3_2024 globalTag=auto:phase1_2024_realistic geometry=DB:Extended highlight=1 highlightPtMin=2 savePNG=1 printHits=0 maxEvents=-1"
+ARGS="era=Run3_2025 globalTag=auto:phase1_2025_realistic geometry=DB:Extended highlight=1 highlightPtMin=2 savePNG=1 printHits=0 maxEvents=-1"
 cmsRun ../../common/simHitAnalyzer_cfg.py inputFiles=file:$J/test/10_SIM/out/step2_SIM_signal_10_SIM.root outputDir=$J/test/10_SIM/out/signal \
   prefix=simHits_signal_10_SIM eventsToProcess=1:1:1 $ARGS \
-  sampleLabel="chapter 10_SIM (10a): the signal|bbbar, pTHat > 100 GeV|full Geant4 physics, 2024 detector|no pileup" > simHits_signal_10_SIM.log 2>&1
+  sampleLabel="chapter 10_SIM (10a): the signal|bbbar, pTHat > 100 GeV|full Geant4 physics, 2025 detector|no pileup" > simHits_signal_10_SIM.log 2>&1
 cmsRun ../../common/simHitAnalyzer_cfg.py inputFiles=file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root outputDir=$J/test/10_SIM/out/pileup \
   prefix=simHits_pileup_10_SIM eventsToProcess=1:1:72 $ARGS \
-  sampleLabel="chapter 10_SIM (10b): one pileup collision|library event 72, full Geant4 physics|SoftQCD inelastic, 13.6 TeV|2024 detector, no signal" > simHits_pileup_10_SIM.log 2>&1
+  sampleLabel="chapter 10_SIM (10b): one pileup collision|library event 72, full Geant4 physics|SoftQCD inelastic, 13.6 TeV|2025 detector, no signal" > simHits_pileup_10_SIM.log 2>&1
 # the mixed sample is drawn inside the mixing job (section 2); its analyzer lines are extracted from the job log:
 grep -E "^SimHitAnalyzer|^  pileup mixed|^    pileup event|^  station|^    hits by|^    primaries with hits" step3_MIX_10_SIM.log > simHits_mixed_10_SIM.log
 # the ledger
@@ -492,7 +495,8 @@ All under `$CMSSW_RELEASE_BASE/src` (`/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cms
 | era modifiers of `g4SimHits` | `run2_common` (ZdcSD), `run2_HCAL_2017` (TestNumberingScheme), `run3_common` (OnlySDs, TrackHits, CaloHits, LHCTransport), `phase2_timing` (ECalSD time slices), `h2tb`, `dd4hep`, `phase2_common` (OnlySDs with HGCal, MTD, HFNose; LHCTransport False; MuonSD.HaveDemoChambers False), `hgcaltb`, `phase2_hgcalOnly`, `phase2_hgcalV18` (HGCSD.HitCollection 2), `fixLongLivedSleptonSim`; `phase2_hgcal` on `common_MCtruth` (SaveCaloBoundaryInformation True) | `g4SimHits_cfi.py` (77-80, 675-800) |
 | `mix` of `mix_POISSON_average_cfi` | `minBunch -5`, `maxBunch 3`, `bunchspace 450`, `input.type 'poisson'`, `sequential False`, `playback False` (overridden by `defineMixing`) | `SimGeneral/MixingModule/python/mix_POISSON_average_cfi.py` |
 | `AVE_60_BX_25ns`, `AVE_200_BX_25ns`, `_m12p3`, `_m6p6` | `{'BX':25, 'B': (-12,3), 'N': 60}`, `{'BX':25, 'B': (-3,3), 'N': 200}`, `B (-12,3)`, `B (-6,6)` | `Configuration/StandardSequences/python/Mixing.py` (162, 184-186) |
-| `2024_25ns_RunIII2024Summer24_PoissonOOTPU` | `probFunctionVariable 0..99` with its `probValue`s, on `mix_probFunction_25ns_PoissonOOTPU_cfi` (`minBunch -12`, `maxBunch 3`, `bunchspace 25`, `type 'probFunction'`) | `SimGeneral/MixingModule/python/mix_2024_25ns_RunIII2024Summer24_PoissonOOTPU_cfi.py`, `mix_probFunction_25ns_PoissonOOTPU_cfi.py` |
+| `2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23` (the 2025 profile) | `probFunctionVariable 0..99` with its `probValue`s (mean 64.34, r.m.s. 11.70, median 65, mode 66; 34.1 % of the crossings with at most 60), on `mix_probFunction_25ns_PoissonOOTPU_cfi` (`minBunch -12`, `maxBunch 3`, `bunchspace 25`, `type 'probFunction'`); header comment "A distribution for Run3 studies (2023) derived from LHC simulations", 2340 colliding bunches, hadronic cross section 80 mb, fill 750 min, levelling 540 min | `SimGeneral/MixingModule/python/Run3_2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23_cfi.py`; `Configuration/StandardSequences/python/Mixing.py` (139) |
+| `2024_25ns_RunIII2024Summer24_PoissonOOTPU` (the 2024 profile) | the same structure, mean 44.92, r.m.s. 9.53 (98.7 % of the crossings with at most 60) | `SimGeneral/MixingModule/python/mix_2024_25ns_RunIII2024Summer24_PoissonOOTPU_cfi.py`; `Mixing.py` (132) |
 | `PUDataSets` of the relvals | `'Run4'`: `'--pileup':'AVE_200_BX_25ns', '--pileup_input':'das:/RelValMinBias_14TeV/.../GEN-SIM'`; 2022-2025: `'Run3_Flat55To75_PoissonOOTPU'` | `Configuration/PyReleaseValidation/python/relval_steps.py` (4607-4619) |
 | premixing workflows | stage 1: `-s GEN,SIM,DIGI:pdigi_valid --datatier PREMIX --eventcontent PREMIX --procModifiers premix_stage1`; stage 2: `DIGI,DATAMIX --datamix PreMix --procModifiers premix_stage2` | `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py` (`UpgradeWorkflowPremix`, 2311-2400) |
 | `mixSimHits.pcrossingFrames` | `[]`, `premix_stage1`: `['MuonCSCHits','MuonDTHits','MuonRPCHits']`, `+ MuonGEMHits` (`run3_GEM`, `run2_GEM_2017`), `+ MuonME0Hits` (`phase2_muon`), removed again by `phase2_GE0` | `SimGeneral/MixingModule/python/mixObjects_cfi.py` (45-58, 234-278) |
@@ -504,3 +508,32 @@ All under `$CMSSW_RELEASE_BASE/src` (`/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cms
 | darkening switches searched | no `HBDarkening = True`, `HEDarkening = True` or `HFDarkening = True` under `Configuration/`, `SimG4Core/`, `SimG4CMS/` python except `SimG4Core/Application/test/GeometryProducer_cfg.py` and `SimG4CMS/Calo/test/python/runHFPMT_cfg.py` (both `False`) | `grep -rn` over the three packages |
 
 The Geant4 version of every log: `geant4-11-02-patch-02 [MT] (21-June-2024)`.
+
+### 4.7 The 2024 and the 2025 settings
+
+The chapter runs with `YEAR=2025` (`common/jitjet_common.sh`): `auto:phase1_2025_realistic` =
+`150X_mcRun3_2025_realistic_v1`, era `Run3_2025`, for the five SIM jobs, the mixing job and the analyzers
+(`simAnalyzer_cfg.py` defaults to them; `simHitAnalyzer_cfg.py` receives them from the script). The geometry, the
+field map and the simulated beam spot are the same tags as in 2024 (chapter 09 companion, section 4.7; chapter 08
+companion, section 4.9); the five modifiers of `Run3_2025` occur neither in `g4SimHits_cfi.py` nor in
+`SimGeneral/MixingModule/python/`.
+
+The rerun with the 2025 settings (12 November 2026, `REUSE=0`) against the 2024 run (7 November 2026):
+
+| compared | result |
+|---|---|
+| `ledger_10_SIM.txt` | identical |
+| `simAnalyzer_{B,B_Decay,B_Decay_EM,signal}_10_SIM.log` | identical apart from time stamps and the era / global-tag lines |
+| `simHits_mixed_10_SIM.log` (counts per station, per bunch crossing, per origin) | identical |
+| `simHits_signal_10_SIM.log`, `simHits_pileup_10_SIM.log` | identical except the six lines of the tracker layer ranges (`PXB: r = 2.73564 - 16.4165, \|z\| = 3.34977 - 23.4511` in 2024, `r = 2.7255 - 16.4164, \|z\| = 3.34899 - 23.4511` in 2025, ...): the hit positions are drawn with the aligned tracker geometry, see below |
+| `step2_SIM_{B,B_Decay,B_Decay_EM,signal}_10_SIM.root` (FWLite, per collection: number of `SimTrack`s, `SimVertex`s, `PSimHit`s, `PCaloHit`s and the sums of their energies, times, local positions, track ids) | 31 collections each, 0 differences (signal: 1926 `SimTrack`s, 37 182 hits) |
+| `step2_SIM_pileup_10_SIM.root` | 250 events, 7750 collections, 120 574 `SimTrack`s, 1 850 410 hits, 0 differences |
+| `step3_MIX_10_SIM.root`, `CrossingFramePlaybackInfoNew` of `mix` | identical: `sizes_` = 71 / 68 / 54 for bx -1 / 0 / +1, the same 193 library events (1-193) in the same order |
+| in-time check of the script | "in-time collisions of the mixing: library events 72-139, as assumed in chapters 08 and 09" (no `WARNING_intime_10_SIM.txt`) |
+
+The one difference is in the drawing: `SimAnalyzer` and `SimHitAnalyzer` convert the local tracker hit positions with
+`trackerGeometryDB` of `GeometryRecoDB_cff` (`applyAlignment = True`), i.e. with `TrackerAlignmentRcd` of the global
+tag, `TrackerAlignment_Run3MC_2023_rereco_v1` in 2024 and `TrackerAlignment_Run3MC_2025_EOY_v1` in 2025: module
+positions differ by 10 um in the median, 0.33 mm in the TEC, at most 6.8 mm for one TIB module (chapter 09 companion,
+section 4.7). No number of the chapter depends on it.
+

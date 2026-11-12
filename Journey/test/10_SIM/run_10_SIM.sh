@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Chapter 10, SIM: the detector simulation. The primaries of chapter 09 are now transported with the full Geant4 physics
-# (FTFP_BERT_EMM, 3.8 T field, 2024 geometry from the database): they bend, decay, shower, interact, and the sensitive
-# detectors record the SimHits. To show what each ingredient does, the signal is simulated four times on top of the
-# transport-only file of chapter 09 (process SIMFULL, the transport-only products of process SIM are dropped from the output):
+# (FTFP_BERT_EMM, 3.8 T field, the geometry of the 2025 global tag from the database, YEAR=2025 of jitjet_common.sh):
+# they bend, decay, shower, interact, and the sensitive detectors record the SimHits. To show what each ingredient does,
+# the signal is simulated four times on top of the transport-only file of chapter 09 (process SIMFULL, the transport-only
+# products of process SIM are dropped from the output):
 #   B            + magnetic field (UseMagneticField), still no decays / EM / hadronic physics (JourneyTransportPhysics)
 #   B_Decay      + decays in flight (G4DecayPhysics; FTFP_BERT_EMM with EMPhysics and HadPhysics off)
 #   B_Decay_EM   + electromagnetic physics (ionisation, bremsstrahlung, pair production, Compton, photoelectric, multiple scattering)
@@ -130,15 +131,15 @@ draw() {  # draw <case> <input> <event> <label>
   grep -E "^SimHitAnalyzer run|^  station|^    primaries with hits" "$OUT/simHits_${case}_${CHAPTER}.log"
 }
 if [[ " $CASES " == *" signal "* ]]; then
-  draw signal "$OUT/step2_SIM_signal_${CHAPTER}.root" "$EVENT" "chapter $CHAPTER (10a): the signal|bbbar, pTHat > $PTHATMIN GeV|full Geant4 physics, 2024 detector|no pileup"
+  draw signal "$OUT/step2_SIM_signal_${CHAPTER}.root" "$EVENT" "chapter $CHAPTER (10a): the signal|bbbar, pTHat > $PTHATMIN GeV|full Geant4 physics, $YEAR detector|no pileup"
 fi
 if [[ " $CASES " == *" pileup "* ]]; then
-  draw pileup "$OUT/step2_SIM_pileup_${CHAPTER}.root" "1:1:$((SKIP + 1))" "chapter $CHAPTER (10b): one pileup collision|library event $((SKIP + 1)), full Geant4 physics|SoftQCD inelastic, 13.6 TeV|2024 detector, no signal"
+  draw pileup "$OUT/step2_SIM_pileup_${CHAPTER}.root" "1:1:$((SKIP + 1))" "chapter $CHAPTER (10b): one pileup collision|library event $((SKIP + 1)), full Geant4 physics|SoftQCD inelastic, 13.6 TeV|$YEAR detector, no signal"
 fi
 fi  # ANALYZE
 if [[ " $CASES " == *" mixed "* ]]; then
   mkdir -p "$OUT/mixed"
-  label="chapter $CHAPTER (10a+10b): signal + pileup at SimHit level|PU = $PU per bx (Poisson), bx $bx_min..$bx_max|library in sequence, no digitisers|2024 detector, 13.6 TeV"
+  label="chapter $CHAPTER (10a+10b): signal + pileup at SimHit level|PU = $PU per bx (Poisson), bx $bx_min..$bx_max|library in sequence, no digitisers|$YEAR detector, 13.6 TeV"
   py_true() { (( $1 )) && echo True || echo False; }
   kw="highlight=$HIGHLIGHT, highlightPtMin=$HIGHLIGHT_PTMIN, savePNG=$(py_true "$PNG"), printHits=$(py_true "$PRINTHITS")"
   [[ -n $STATIONS ]] && kw+=", stations='$STATIONS'"

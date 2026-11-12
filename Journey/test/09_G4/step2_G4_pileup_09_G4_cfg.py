@@ -2,12 +2,12 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: step2 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/08_PU/out/step1_GEN_MinBias_08_PU.root --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended --beamspot DBrealistic -n -1 -s SIM --datatier GEN-SIM --eventcontent FEVTDEBUG --fileout file:step2_G4_pileup_09_G4.root --customise_commands process.g4SimHits.UseMagneticField = cms.bool(False)\nprocess.g4SimHits.Physics.type = cms.string('SimG4Core/Physics/JourneyTransportPhysics')\nprocess.g4SimHits.Physics.G4TransportWithMSC = cms.int32(0)\nprocess.g4SimHits.Physics.G4GammaGeneralProcess = cms.bool(False)\nprocess.g4SimHits.TrackerSD.ZeroEnergyLoss = cms.bool(True)\nprocess.RandomNumberGeneratorService.g4SimHits.initialSeed = 20243 --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/09_G4/step2_G4_pileup_09_G4_cfg.py --no_exec
+# with command line options: step2 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/08_PU/out/step1_GEN_MinBias_08_PU.root --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended --beamspot DBrealistic -n -1 -s SIM --datatier GEN-SIM --eventcontent FEVTDEBUG --fileout file:step2_G4_pileup_09_G4.root --customise_commands process.g4SimHits.UseMagneticField = cms.bool(False)\nprocess.g4SimHits.Physics.type = cms.string('SimG4Core/Physics/JourneyTransportPhysics')\nprocess.g4SimHits.Physics.G4TransportWithMSC = cms.int32(0)\nprocess.g4SimHits.Physics.G4GammaGeneralProcess = cms.bool(False)\nprocess.g4SimHits.TrackerSD.ZeroEnergyLoss = cms.bool(True)\nprocess.RandomNumberGeneratorService.g4SimHits.initialSeed = 20243 --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/09_G4/step2_G4_pileup_09_G4_cfg.py --no_exec
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.Eras.Era_Run3_2024_cff import Run3_2024
+from Configuration.Eras.Era_Run3_2025_cff import Run3_2025
 
-process = cms.Process('SIM',Run3_2024)
+process = cms.Process('SIM',Run3_2025)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -90,7 +90,7 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 if hasattr(process, "XMLFromDBSource"): process.XMLFromDBSource.label="Extended"
 if hasattr(process, "DDDetectorESProducerFromDB"): process.DDDetectorESProducerFromDB.label="Extended"
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2024_realistic', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2025_realistic', '')
 
 # Path and EndPath definitions
 process.simulation_step = cms.Path(process.psim)

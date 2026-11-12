@@ -95,10 +95,19 @@ print('\n-- 5. Step 5: the decision')
 acc = [kv(l) for l in lines('  path: ') if ' accept=1 ' in l]
 names = [a['name'] for a in acc]
 # what satisfies each accepted HLT_/DST_ path (the reasons are those of the chapter: the muon is the kaon decay of a
-# pileup collision found in chapter 12, the calorimeter MET is 3.5 times the neutrino of the signal)
+# pileup collision found in chapter 12, the calorimeter MET is several times the neutrino of the signal); the values
+# are read from the objects of the last filter of the two paths
+def filterValue(label, default='?'):
+    for l in lines('  filter: label=%s ' % label):
+        m = re.search(r'\(([\d.]+),', l)
+        if m:
+            return m.group(1)
+    return default
+
 signalJets = re.compile(r'^HLT_(PFJet|PFJetFwd|AK8PFJet|AK8PFJetFwd|DiPFJetAve)\d+_v\d+$')
-pileupObject = {'HLT_Mu3_PFJet40': 'the muon of a pileup kaon decay (3.1 GeV) and the b jet',
-                'HLT_CaloMET90_NotCleaned': 'a calorimeter MET of 133.3 GeV (the neutrino has 37.5)'}
+pileupObject = {'HLT_Mu3_PFJet40': 'the muon of a pileup kaon decay (%s GeV at L2, %s GeV at L3) and the b jet'
+                                   % (filterValue('hltL2fL1sMu3L1f0L2Filtered0'), filterValue('hltL3fL1sMu3L1f0L2f0L3Filtered3')),
+                'HLT_CaloMET90_NotCleaned': 'a calorimeter MET of %s GeV (the neutrino has 37.5)' % filterValue('hltMET90')}
 l1only = {'HLT_L1ETMHadSeeds': 'the L1 seed alone (ETMHF)', 'HLT_L1SingleMuCosmics': 'the L1 seed alone (the pileup muon)',
           'HLT_L1AlwaysTrue': 'the L1 seed alone (always true)'}
 groups = {'signal jets': [], 'a pileup object': [], 'the L1 seed alone': [], 'no object (zero bias, random, calibration, monitoring)': [],

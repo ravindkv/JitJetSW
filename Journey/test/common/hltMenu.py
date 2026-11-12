@@ -3,7 +3,7 @@
 # CMSSW actually ran (like l1tSettings.py for chapter 12).
 #   python3 hltMenu.py <step5_HLT_..._cfg.py> [path ...]
 # Section 1: the menu: its name in the configuration database, the paths by kind, the datasets and streams, what
-# python/hltL1Menu_cff.py changed to run it on the 2024 Level-1 menu. Section 2: the anatomy of the jet paths of the
+# python/hltL1Menu_cff.py changed to run it on the Level-1 menu of chapter 12. Section 2: the anatomy of the jet paths of the
 # book (default HLT_PFJet110, HLT_PFJetFwd140, HLT_DiPFJetAve100_HFJEC, HLT_PFJet40): every module in the order it
 # runs, with its C++ type. Section 3: the parameters of the modules that the chapter describes, step by step. What is
 # not here is in the database: the jet energy corrections (payloads AK4CaloHLT, AK4PFHLT of JetCorrectionsRecord), the

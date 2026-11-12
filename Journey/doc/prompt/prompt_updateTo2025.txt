@@ -1,0 +1,5 @@
+Since the CMSSW_15_0_5 is a release of 2025, we need to update a few chapters for 2025 from 2024.  Let us update the chapters which are CMS centric e.g. 08_PU, 09_G4, 10_SIM, 11_DIGI, 12_L1T, 13_HLT and the corresponding .tex and .md files in the ../doc/chapter/ dir. Basically, in these chapters all the CMS imports/arguments can be changed to 2025. However, nPU, the number of events, etc can remain the same (of course depending upon the condition, the content of events might change a bit which we should update). Update the ../Constitution.txt as well. We can update them in two stages:
+(a) For now:  08_PU, 09_G4, 10_SIM
+(b) and in the next step in the future we can update: 11_DIGI, 12_L1T, 13_HLT. 
+
+Please update (a) and then (b)

@@ -55,6 +55,16 @@ and muon system (one per subdetector and time-of-flight window, e.g.\ \code{Trac
 \code{HcalHits}). The smeared primary vertex of the signal, drawn in chapter~\ref{ch:06_Decay}, is where all
 primaries start: $(0.028, -0.017, 3.11)\cm$ for the signal, $(0.029, -0.017, -0.48)\cm$ for library event~72.
 
+The \code{SIM} job runs with the 2025 settings of the release (global tag \code{auto:phase1\_2025\_realistic},
+era \code{Run3\_2025}; the signal was generated with those of 2024, which at generator level are the same,
+chapter~\ref{ch:08_PU}). The detector given to Geant4 comes from the global tag, and in this release the 2025 tag
+has the geometry and the field map of 2024: \code{GeometryFileRcd} \code{Extended} is
+\code{141DD4hepV2\_Extended2024} in both, the field \code{MFGeometry\_160812} at 3.8\,T too. None of the five
+modifiers that \code{Run3\_2025} adds to \code{Run3\_2024} appears in \code{g4SimHits\_cfi.py}. Rerun with the
+2025 settings, both files of this chapter are the 2024 ones, primary for primary and hit for hit (companion,
+section~4): the 2025 detector of CMSSW\_15\_0\_5 differs from that of 2024 only in conditions and modifiers
+that the simulation does not read.
+
 The two objects to follow are the $b$ and $\bar b$ systems of chapter~\ref{ch:07_GenJet}: the nine stable
 decay products of the $B^-$ ($\pt=94.3\GeV$, $\eta=-1.57$, among them the $95.5\GeV$ antineutrino) and the
 16 of the $B^{*+}$ ($\pt=114.2\GeV$, $\eta=-3.75$, no neutrino).

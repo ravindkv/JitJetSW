@@ -63,6 +63,15 @@ objects to follow are unchanged: the $b$ system, 8 of its 9 stable particles han
 $(\eta,\phi) = (-1.55, -2.09)$ (the $37.5\GeV$ antineutrino is gone), and the $\bar b$ system, 16 of 16,
 $114.2\GeV$ at $(-3.75, 1.01)$, pointing at the HF.
 
+Every job of this chapter runs, like chapter~\ref{ch:09_G4}, with the 2025 settings of the release
+(\code{auto:phase1\_2025\_realistic}, \code{Run3\_2025}): the geometry and the field map are those of 2024,
+and nothing in \code{g4SimHits} or in the \code{MixingModule} depends on the year. The four stages, the library
+and the mixture come out as with the 2024 settings, hit for hit, and the mixing draws the same 71, 68 and 54
+collisions (companion, section~4). Only the drawing moves: the analyzers place a tracker hit, recorded in the frame
+of its module, with the reconstruction geometry, which applies the tracker alignment of the global tag, and the
+2025 alignment (\code{TrackerAlignment\_Run3MC\_2025\_EOY\_v1}) puts the modules $10\,\mu$m away from those of
+2024 in the median, the TEC $0.3$\,mm: invisible in the displays, and no number of the chapter changes.
+
 \section{The numbers of the event}
 
 \textbf{The stages.} Table~\ref{tab:10_stages} is the ledger of the physics, ingredient by ingredient. The
@@ -153,7 +162,8 @@ that passed beside the calorimeters.
 \textbf{One pileup collision.} The library (sample 10b) is the 250 collisions through the same Geant4 with its own
 seed (\code{PUSEED}$+2 = 20243$): $38\,862$ primaries become $120\,574$ \code{SimTrack}s with $548\,028$ tracker
 hits, $394\,627$ EB hits ($3149\GeV$), $691\,000$ EE hits ($11\,616\GeV$) and $119\,964$ HCAL hits, 60\,MB in
-all; the 250 collisions took $7.4$ minutes, $1.8$\,s each, the signal event alone 8\,s. Library event 72, the first
+all; the 250 collisions took 7 to 12 minutes, $1.8$ to $2.8$\,s each, the signal event alone 8 to 12\,s,
+depending on the load of the shared machine. Library event 72, the first
 in-time collision, has 164 primaries and 534 \code{SimTrack}s, 2097 tracker hits, 4742
 ECAL hits in 3388 cells (EB 1217 cells with $9.45\GeV$, EE 1948 with $43.5\GeV$, ES 223), 392 HCAL hits in 262
 cells (HB 21, HE 122, HF 119 with 173 photoelectrons) and 11 CSC hits in station 1 from a track without stored
@@ -323,13 +333,14 @@ Phase-2 entry. The 1849 photoelectrons of the signal and the $53\,900$ of the bu
 stored for the Run-3 detector; the HF geometry does not change for Phase-2, so the library carries over, but it has
 not been regenerated for 14\,TeV or for darkened fibres as far as the python shows.
 
-\textbf{The mixing window of Phase-2 is shorter than that of Run 3.} The Run-3 production scenario
-\code{2024\_25ns\_RunIII2024Summer24\_PoissonOOTPU} (a \code{probFunction} over 0--99 collisions built on
-\path{SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py}) mixes \code{minBunch = -12} to
-\code{maxBunch = 3}: 16 bunch crossings, about $16\times60 = 960$ library collisions per signal event, which is why
-the production premixes. The Phase-2 relvals (\code{PUDataSets} for \code{Run4} in
+\textbf{The mixing window of Phase-2 is shorter than that of Run 3.} The 2025 production profile of the release,
+\path{2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23} (a \code{probFunction} over 0--99
+collisions with mean 64.3; 44.9 for the 2024 one, \path{2024_25ns_RunIII2024Summer24_PoissonOOTPU}), built on
+\path{SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py}, mixes \code{minBunch = -12} to
+\code{maxBunch = 3}: 16 bunch crossings, about $16\times64 \simeq 1030$ library collisions per signal event, which
+is why the production premixes. The Phase-2 relvals (\code{PUDataSets} for \code{Run4} in
 \path{Configuration/PyReleaseValidation/python/relval_steps.py}) use \code{AVE\_200\_BX\_25ns}, defined in
-\code{Mixing.py} as \code{mix\_POISSON\_average\_cfi} with \code{N = 200} and \code{B = (-3, 3)}: seven bunch
+\code{Mixing.py} as \path{mix_POISSON_average_cfi} with \code{N = 200} and \code{B = (-3, 3)}: seven bunch
 crossings, 1400 collisions, and the out-of-time pileup cut at $-75\ns$ instead of $-300\ns$ (the variants
 \code{AVE\_200\_BX\_25ns\_m12p3} and \code{\_m6p6} exist next to it). In this event the one early bunch crossing
 already puts 51 of the 204 muon-chamber hits and $139\,551$ tracker hits in front of the digitisers; whether

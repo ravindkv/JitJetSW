@@ -2,8 +2,9 @@
 # Chapter 08, PU: pileup at generator level. Three samples:
 #   (8a) the signal: the bbbar event with its jets, the output of chapter 07 (nothing is rerun; its pages are reused)
 #   (8b) the pileup: PUEVENTS minimum-bias collisions (Pythia8 SoftQCD:inelastic, tune CP5, the release fragment
-#        MinBias_14TeV_pythia8_TuneCP5_cfi with comEnergy set to 13.6 TeV like the signal) through the same 2024 GEN step
-#        (Run 3 vertex smearing from the database) with their own random seeds (PUSEED, +1): the generator-level pileup
+#        MinBias_14TeV_pythia8_TuneCP5_cfi with comEnergy set to 13.6 TeV like the signal) through the GEN step of 2025
+#        (YEAR=2025 of jitjet_common.sh; Run-3 vertex smearing from the database, the same beam-spot payload as the 2024
+#        global tag of the signal in chapter 07) with their own random seeds (PUSEED, +1): the generator-level pileup
 #        library of the book. One collision, library event SKIP+1 (the first in-time one of the mixing), is drawn.
 #   (8a+8b) the overlay: the stable particles of the NPU in-time collisions (library events SKIP+1 .. SKIP+NPU, the ones
 #        the MixingModule puts into bunch crossing 0 of this signal event in chapter 10, replayed in 11) are added to the signal

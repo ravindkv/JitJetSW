@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Chapter 12, L1T: the Level-1 trigger, the first checkpoint of the journey. The digis of chapter 11 go through the
-# emulator of the Run-3 (stage-2) Level-1 trigger (cmsDriver -s L1 = the SimL1Emulator sequence of the era Run3_2024),
+# emulator of the Run-3 (stage-2) Level-1 trigger (cmsDriver -s L1 = the SimL1Emulator sequence of the era Run3_2025),
 # which does not change the event: it decides, in six steps, whether the event is kept.
 #   step 1  the calorimeter trigger primitives (made in the DIGI step of chapter 11: simEcalTriggerPrimitiveDigis,
 #           simHcalTriggerPrimitiveDigis): one transverse energy per trigger tower and bunch crossing
@@ -34,7 +34,7 @@ out=step4_L1_${CHAPTER}.root
 # -s L1 alone is not a production configuration (the L1 emulator always runs behind the DIGI step): two lines are
 # added. (1) Layer-1 needs the HCAL trigger-tower geometry and the decoder of the HCAL trigger-primitive scale, two
 # event-setup producers that come with the HCAL trigger-primitive emulator of the DIGI step. (2) The anomaly score
-# of CICADA (simCaloStage2Layer1Summary), which five algorithms of the 2024 menu cut on, is not in the event content.
+# of CICADA (simCaloStage2Layer1Summary), which the eight L1_CICADA_* algorithms of the menu cut on, is not in the event content.
 customise="process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')"
 customise+='\n'"process.FEVTDEBUGoutput.outputCommands.append('keep *_simCaloStage2Layer1Summary_*_*')"
 customise+='\n'"process.source.eventsToProcess = cms.untracked.VEventRange('$EVENT')"
@@ -55,7 +55,7 @@ a=l1t_${CHAPTER}
 find "${OUT:?}" -maxdepth 1 -name "${a:?}_*.png" -delete
 run_cmsrun "$COMMON/l1tAnalyzer_cfg.py" "$OUT/$a.log" inputFiles="file:$OUT/$out" maxEvents=1 eventsToProcess="$EVENT" \
   globalTag="$CONDITIONS" era="$ERA" geometry="$GEOMETRY" pdfPrefix="$a" savePNG="$PNG" \
-  sampleLabel="chapter 12: the Level-1 trigger of 2024|bbbar, pTHat > $PTHATMIN GeV, 13.6 TeV|with PU = $PU per bx, bx $bx_min..$bx_max"
+  sampleLabel="chapter 12: the Level-1 trigger of $YEAR|bbbar, pTHat > $PTHATMIN GeV, 13.6 TeV|with PU = $PU per bx, bx $bx_min..$bx_max"
 grep -E '^== L1T|^  TP (ECAL|HCAL):|^  Layer1 all|^  L1Jet [01]:|^  counts|^  TF counts|^  uGMT counts|^  decision' "$OUT/$a.log" | cut -c1-200
 python3 "$COMMON/l1tSettings.py" "$cfg" "$TEST/11_DIGI/step3_DIGI_mixed_11_DIGI_cfg.py" \
   > "$OUT/settings_${CHAPTER}.txt" 2> "$OUT/settings_${CHAPTER}.log" || { tail -20 "$OUT/settings_${CHAPTER}.log" >&2; exit 1; }

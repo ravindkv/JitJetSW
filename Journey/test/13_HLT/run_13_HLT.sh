@@ -12,8 +12,10 @@
 #   step 4  particle flow and PF jets (hltParticleFlow, hltAK4PFJets, hltFixedGridRhoFastjetAll, hltAK4PFJetsCorrected)
 #   step 5  the decision of the paths: the PF-jet filters, TriggerResults of every path, the datasets and streams
 # ONE sample: the mixed event (Rule H). Input (Rule E): test/12_L1T/out/step4_L1_12_L1T.root
-# The GRun menu of CMSSW_15_0_5 is the 2025 menu; the seeds that name algorithms the 2024 L1 menu of chapter 12 does
-# not have are adapted by python/hltL1Menu_cff.py (reads the 'algo:' lines of 12_L1T/out/l1t_12_L1T.log).
+# The menu is the one the release gives the 2025 RelVals, HLT:@relval2025 = 2025v10 (Configuration/HLT/python/autoHLT.py),
+# the frozen 2025 menu /frozen/2025/2e34/v1.0/HLT/V2, module for module the GRun menu /dev/CMSSW_15_0_0/GRun/V62 of the
+# release. Its seeds are checked against the L1 menu of chapter 12 by python/hltL1Menu_cff.py (reads the 'algo:' lines
+# of 12_L1T/out/l1t_12_L1T.log): with the 2025 L1 menu of the global tag every seed is there and nothing is changed.
 # Output in test/13_HLT/out/:
 #   step5_HLT_13_HLT.root, .log, _cfg.driver.log       the DIGI2RAW + HLT step (config test/13_HLT/step5_HLT_13_HLT_cfg.py)
 #   hlt_13_HLT.log                                     the four analyzers (HLTPathAnalyzer, HLTCaloAnalyzer,
@@ -28,13 +30,13 @@ source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../common/jitjet_common.
 jitjet_init
 jitjet_build
 REUSE=${REUSE:-1}
-MENU=${MENU:-GRun}
+MENU=${MENU:-@relval2025}
 bx_min=${BUNCHES%,*}; bx_max=${BUNCHES#*,}
 input=$(jitjet_prev 12_L1T step4_L1_12_L1T.root)
 l1log=$(jitjet_prev 12_L1T l1t_12_L1T.log)
 cfg=$CHDIR/step5_HLT_${CHAPTER}_cfg.py
 out=step5_HLT_${CHAPTER}.root
-# Customise lines. (1) The seeds of the 2025 menu adapted to the 2024 L1 menu of chapter 12 (see above). (2) The
+# Customise lines. (1) The seeds of the menu checked against the L1 menu of chapter 12 (see above). (2) The
 # HLT keeps in FEVTDEBUGHLT the jets, the tracks, the vertices, the PF candidates and the trigger summaries; the
 # energy density rho, the PF vertices, the second tracking iteration, the calorimeter rec-hits, the PF clusters, the
 # HLT muons and the objects of every filter are added for the analyzers. (3) The event of the book (last line).

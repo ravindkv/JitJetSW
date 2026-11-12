@@ -25,6 +25,18 @@ alone, the signal with its pileup). `11_DIGI` is the last stage at which they ex
 sample, the mixed event, and no `<case>` in the file names. Whatever a later chapter needs to know about the signal
 alone is computed in chapter 11 and quoted from there.
 
+## The settings of a chapter (Rule I): 2025 for the CMS chapters
+
+CMSSW_15_0_5 is a release of 2025: the CMS chapters run with `--conditions auto:phase1_2025_realistic --era Run3_2025
+--geometry DB:Extended --beamspot DBrealistic`, the generator chapters 01-07 with the 2024 global tag and era (the same
+at generator level). The year is chosen per chapter by `YEAR` in `jitjet_init` of `test/common/jitjet_common.sh`
+(`0[1-7]_*` -> 2024, every other chapter 2025; 08-10 were moved first, 11-13 second). To move a new chapter:
+add it to that `case`, set the `globalTag` / `era` defaults of its analyzer configurations in `test/common/` to 2025,
+replace "2024" in its plot labels, rerun it, compare `out/` with the previous run (ledgers, logs; keep a copy first),
+and say in the .tex (B2 or B3) what the 2025 conditions changed, with the evidence (`conddb diff
+150X_mcRun3_2024_realistic_v2 150X_mcRun3_2025_realistic_v1`, the compared files) in C4 of the .md. The pileup
+(PU = 60, bx -1..1, SKIP = 71, NPU = 68), the number of events and the seeds do not change with the year.
+
 ## The .tex chapter (Rule B): exactly five sections, 5 +- 2 pages
 
 ```latex

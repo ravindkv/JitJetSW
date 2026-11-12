@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Chapter 09, G4: the hand-over to Geant4. The generator final state is given to the SIM step (cmsDriver -s SIM, Geant4)
+# Chapter 09, G4: the hand-over to Geant4. The generator final state is given to the SIM step (cmsDriver -s SIM, Geant4,
+# the 2025 settings: YEAR=2025 of jitjet_common.sh)
 # with the physics reduced to the transportation alone: no magnetic field, no decays, no electromagnetic and no hadronic
 # processes (physics list JitJetSW/Journey JourneyTransportPhysics), so that the file shows exactly which stable particles
 # Geant4 accepted as primaries, which it dropped (|eta| > 5.5, p < 40 MeV, neutrinos: the Generator and StackingAction cuts

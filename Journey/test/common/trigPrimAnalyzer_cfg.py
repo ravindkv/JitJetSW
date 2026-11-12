@@ -18,9 +18,9 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing('analysis')
 options.inputFiles = 'file:step3_DIGI_signal_11_DIGI.root'
 options.maxEvents = 1
-options.register('globalTag', 'auto:phase1_2024_realistic', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+options.register('globalTag', 'auto:phase1_2025_realistic', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'global tag of the DIGI step (the scale of the HCAL trigger primitives)')
-options.register('era', 'Run3_2024', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+options.register('era', 'Run3_2025', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'era of the DIGI step (Configuration.Eras.Era_<era>_cff)')
 options.register('geometry', 'DB:Extended', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'geometry: DB:Extended (GeometryRecoDB) or a Configuration.Geometry.Geometry<name>Reco_cff name')

@@ -17,7 +17,7 @@ JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./08_PU/run_08_PU.sh   # three o
 ```
 
 Variables (defaults): `PUEVENTS=250 PUSEED=20241 PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30`, plus
-the common ones of `common/jitjet_common.sh` (`CONDITIONS=auto:phase1_2024_realistic ERA=Run3_2024
+the common ones of `common/jitjet_common.sh` (`YEAR=2025 CONDITIONS=auto:phase1_2025_realistic ERA=Run3_2025
 GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0 EVENT=1:1:1 RUN=1 ANALYZE=1 PNG=1`, and the pileup
 convention of the book `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up
 by bunch crossing -1 and the in-time collisions of bunch crossing 0 in the mixing of chapter 10 for this
@@ -32,7 +32,7 @@ One `cmsDriver.py` command, written by `run_driver` of `common/jitjet_common.sh`
 configuration (`# with command line options: ...`):
 
 ```bash
-cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2024_realistic --era Run3_2024 \
+cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2025_realistic --era Run3_2025 \
   --geometry DB:Extended --beamspot DBrealistic -n 250 -s GEN --datatier GEN --eventcontent FEVTDEBUG \
   --fileout file:step1_GEN_MinBias_08_PU.root \
   --customise_commands "process.generator.comEnergy = cms.double(13600.0)\nprocess.RandomNumberGeneratorService.generator.initialSeed = 20241\nprocess.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242" \
@@ -42,8 +42,8 @@ cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2024_rea
 | argument | what it does |
 |---|---|
 | `MinBias_14TeV_pythia8_TuneCP5_cfi` | the generator fragment, `Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py` of the release: `Pythia8ConcurrentGeneratorFilter` with `SoftQCD:inelastic = on`, the common settings block and the CP5 tune block, `comEnergy = 14000` |
-| `--conditions auto:phase1_2024_realistic` | the global tag (`150X_mcRun3_2024_realistic_v2`, `Configuration/AlCa/python/autoCond.py`); in a GEN job it supplies the beam-spot payload (`SimBeamSpotObjectsRcd`) of the vertex smearing |
-| `--era Run3_2024` | the era modifiers (`Configuration/Eras/python/Era_Run3_2024_cff.py`); in a GEN job they switch on the PPS proton transport (`LHCTransport`) |
+| `--conditions auto:phase1_2025_realistic` | the global tag of 2025 (`150X_mcRun3_2025_realistic_v1`, `Configuration/AlCa/python/autoCond.py`, line 107); in a GEN job it supplies only the beam-spot payload (`SimBeamSpotObjectsRcd`) of the vertex smearing, `SimBeamSpot_Realistic25ns13p6TeVEarly2024CollisionVtxSmearingParameters_v1_mc`, the same tag as in the 2024 global tag `150X_mcRun3_2024_realistic_v2` of chapters 01-07 (section 4.9) |
+| `--era Run3_2025` | the era modifiers (`Configuration/Eras/python/Era_Run3_2025_cff.py`: `Run3_2024` plus `run3_GEM_2025`, `run3_CSC_2025`, `run3_SiPixel_2025`, `stage2L1Trigger_2025`, `ecal_cctiming`, which act only in the reconstruction and the Level-1 trigger); in a GEN job they switch on the PPS proton transport (`LHCTransport`, `run3_common`) |
 | `--geometry DB:Extended` | not used by the generator; carried in the configuration so that the SIM step of chapter 09 inherits it |
 | `--beamspot DBrealistic` | the vertex-smearing module: `IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py`, a `BetafuncEvtVtxGenerator` with `readDB = True` |
 | `-n 250` | events to generate (`PUEVENTS`); the filter accepts every event, so 250 are written |
@@ -53,8 +53,12 @@ cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2024_rea
 | `--customise_commands "..."` | Python lines appended verbatim to the configuration (a literal `\n` separates them): the energy of the signal and the two seeds (`PUSEED`, `PUSEED + 1`) |
 | `--python_filename ... --no_exec` | the name of the configuration, and "write it, do not run it" (`run_driver` then runs `cmsRun` on it) |
 
-The signal of chapters 01-07 used the same conditions, era, geometry, beam spot and energy with its own
-fragment (`BBbar_14TeV_TuneCP5_cfi`) and the `cmsDriver.py` default seeds; the library must not reuse those
+The signal of chapters 01-07 used the same geometry, beam spot and energy with its own fragment
+(`BBbar_14TeV_TuneCP5_cfi`), the `cmsDriver.py` default seeds and the 2024 settings (`YEAR=2024`:
+`auto:phase1_2024_realistic`, `Run3_2024`): the generator chapters keep 2024, the CMS chapters 08 to 13 run
+with the 2025 settings of the release. At generator level the two are the
+same: the only record a GEN job reads is `SimBeamSpotObjectsRcd`, one tag in both global tags, so the signal
+and the library come from the same luminous region (section 4.9). The library must not reuse the signal's
 seeds, or library event k would get the vertex of signal event k.
 
 ## 2. The cmsRun on the python config
@@ -65,7 +69,7 @@ cd 08_PU/out && cmsRun ../step1_GEN_MinBias_08_PU_cfg.py > step1_GEN_MinBias_08_
 
 The generated configuration `08_PU/step1_GEN_MinBias_08_PU_cfg.py`, part by part:
 
-- **process and era**: `process = cms.Process('GEN', Run3_2024)`; the standard includes (`Services_cff`,
+- **process and era**: `process = cms.Process('GEN', Run3_2025)`; the standard includes (`Services_cff`,
   the particle table `pythiapdt_cfi`, `MessageLogger`, `EventContent_cff`, `mixNoPU_cfi` (no mixing in a
   GEN job), `GeometryRecoDB_cff`, `MagneticField_cff`, `Generator_cff`, `VtxSmearedRealistic_cfi`,
   `genFilterSummary_cff`, `EndOfProcess_cff`, `FrontierConditions_GlobalTag_cff`).
@@ -73,7 +77,7 @@ The generated configuration `08_PU/step1_GEN_MinBias_08_PU_cfg.py`, part by part
   run 1, lumi 1, events 1 to 250); `process.maxEvents.input = 250`.
 - **output**: `process.FEVTDEBUGoutput`, a `PoolOutputModule` with `SelectEvents = ['generation_step']` (only
   events that pass the generator filter) and `fileName = 'file:step1_GEN_MinBias_08_PU.root'`.
-- **global tag**: `process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2024_realistic', '')`.
+- **global tag**: `process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2025_realistic', '')`.
 - **the generator**: `process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter", ...)`, the
   fragment spelled out in full: `processParameters = ['SoftQCD:inelastic = on']`, the CP5 block (`Tune:pp 14`,
   `MultipartonInteractions:pT0Ref=1.41`, `ecmPow=0.03344`, `bProfile=2`, `coreRadius=0.7634`,
@@ -87,8 +91,8 @@ The generated configuration `08_PU/step1_GEN_MinBias_08_PU_cfg.py`, part by part
   `endjob_step`, `FEVTDEBUGoutput_step`; `ProductionFilterSequence` (the generator filter) is inserted at the
   start of every path. `pgen` runs, per event: `randomEngineStateProducer` (records the engine states),
   `generator` (Pythia8, `HepMCProduct generator:unsmeared` + `GenEventInfoProduct`), `VtxSmeared` (moves the
-  event to a vertex of the 2024 beam spot, in space and time), `generatorSmeared` (the same record under the
-  label every later step reads), `genParticles` (the record as `reco::GenParticle`s with `xyz0`, `t0`),
+  event to a vertex of the Run-3 beam spot, the early-2024 payload that the 2025 global tag keeps, in space and
+  time), `generatorSmeared` (the same record under the label every later step reads), `genParticles` (the record as `reco::GenParticle`s with `xyz0`, `t0`),
   `genJetMET` (ak4 / ak8 jets with and without neutrinos, `genMetTrue`, `genMetCalo`), `LHCTransport` (the
   surviving protons carried to the PPS Roman pots).
 - **the customisation lines** at the end: `process.generator.comEnergy = cms.double(13600.0)`,
@@ -242,10 +246,10 @@ unity`, 3 `MultipartonInteractions::init: maximum increased`, 2 `TimeShower::ini
 ### 4.2 The configuration checks (`gencheck_08_PU.log`)
 
 ```
-process = cms.Process('GEN',Run3_2024)
+process = cms.Process('GEN',Run3_2025)
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('IOMC.EventVertexGenerators.VtxSmearedRealistic_cfi')
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2024_realistic', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2025_realistic', '')
 process.generator.comEnergy = cms.double(13600.0)
 process.RandomNumberGeneratorService.generator.initialSeed = 20241
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242
@@ -512,6 +516,11 @@ Configuration/StandardSequences/python/Mixing.py (184, 160, 124):
     addMixingScenario("AVE_200_BX_25ns",{'file': 'SimGeneral.MixingModule.mix_POISSON_average_cfi','BX':25, 'B': (-3,3), 'N': 200})
     addMixingScenario("AVE_50_BX_25ns",{'file': 'SimGeneral.MixingModule.mix_POISSON_average_cfi','BX':25, 'B': (-12,3), 'N': 50})
     addMixingScenario("Run3_Flat55To75_PoissonOOTPU",{'file': 'SimGeneral.MixingModule.mix_Run3_Flat55To75_PoissonOOTPU_cfi'})
+Configuration/StandardSequences/python/Mixing.py (139, 132): the production profiles of 2025 and 2024
+    "2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23" -> Run3_2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23_cfi
+        probFunction over 0-99 collisions: mean 64.34, r.m.s. 11.70, median 65; header "A distribution for Run3 studies (2023)
+        derived from LHC simulations", "Hadronic x-sec : 80mb", 2340 colliding bunches, minBunch -12, maxBunch 3
+    "2024_25ns_RunIII2024Summer24_PoissonOOTPU" -> mix_2024_25ns_RunIII2024Summer24_PoissonOOTPU_cfi: mean 44.92, r.m.s. 9.53
     defineMixing(): 'N' -> process.mix.input.nbPileupEvents.averageNumber, 'BX' -> process.mix.bunchspace, 'B' -> process.mix.minBunch / maxBunch
 SimGeneral/MixingModule/python/mix_POISSON_average_cfi.py: type = 'poisson', sequential = cms.untracked.bool(False), minBunch -5, maxBunch 3, bunchspace 450 (overridden by the scenario)
 SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py: minBunch = -12, maxBunch = 3, bunchspace = 25, type = 'probFunction', manage_OOT = True
@@ -520,7 +529,7 @@ Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py: comEnergy =
 Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py: SigmaTotal:mode = 0, SigmaTotal:sigmaEl = 21.89, SigmaTotal:sigmaTot = 100.309, MultipartonInteractions:pT0Ref=1.41, ecmPow=0.03344
 Configuration/Generator/python/: MinBias_13TeV_pythia8_TuneCUETP8M1_cfi, MinBias_14TeV_pythia8_TuneCUETP8M1_cfi, MinBias_TuneZ2star_*_pythia6_cff, Hydjet_*_MinBias_* (no 13.6 TeV CP5 fragment)
 Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py (3207-3218, 'Run4D110'): 'Geom': 'ExtendedRun4D110', 'BeamSpot': 'DBrealisticHLLHC', 'GT': 'auto:phase2_realistic_T33', 'Era': 'Phase2C17I13M9'
-Configuration/AlCa/python/autoCond.py (111): 'phase2_realistic' : '150X_mcRun4_realistic_v1'; (95): 'phase1_2024_realistic' : '150X_mcRun3_2024_realistic_v2'
+Configuration/AlCa/python/autoCond.py (111): 'phase2_realistic' : '150X_mcRun4_realistic_v1'; (95): 'phase1_2024_realistic' : '150X_mcRun3_2024_realistic_v2'; (107): 'phase1_2025_realistic' : '150X_mcRun3_2025_realistic_v1'
 IOMC/EventVertexGenerators/python/VtxSmearedRealisticHLLHC_cfi.py: VtxSmeared = HLLHCEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)   # SimBeamSpotHLLHCObjectsRcd
 IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py: VtxSmeared = BetafuncEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)    # SimBeamSpotObjectsRcd
 IOMC/EventVertexGenerators/python/VtxSmearedParameters_cfi.py (1101-1117), HLLHCVtxSmearingParameters:
@@ -536,3 +545,49 @@ doc/tmp/Gen4Phase2.md (53): SimBeamSpotHLLHCObjectsRcd payload SimBeamSpotHLLHCO
 Library sizes: PU 200 x 7 crossings (-3..3) = 1400 minimum-bias events per signal event; Run 3 scenario
 ~65 x 16 crossings (-12..3) = 1040; this book's mixing (chapter 10, bunch crossings -1..1, mean 60) 193 for
 this event: 71 + 68 + 54 library events for bunch crossings -1, 0 and +1.
+
+### 4.9 The 2024 and the 2025 settings (`conddb`, and the rerun)
+
+The generator chapters 01-07 run with `YEAR=2024`, chapters 08-13 with `YEAR=2025` (`common/jitjet_common.sh`,
+`jitjet_init`; 08-10 were moved first, 11-13 in a second step on the same day). `Configuration/AlCa/python/autoCond.py` (95, 107):
+
+```
+'phase1_2024_realistic' : '150X_mcRun3_2024_realistic_v2'
+'phase1_2025_realistic' : '150X_mcRun3_2025_realistic_v1'
+```
+
+`conddb diff 150X_mcRun3_2024_realistic_v2 150X_mcRun3_2025_realistic_v1` (622 and 623 records): 35 rows differ,
+34 tags plus `DeDxCalibrationRcd` (only in 2025): `BeamSpotObjectsRcd` and the two online beam spots (Early2024 ->
+Winter25), 13 ECAL records (`EcalPedestalsRcd` `EcalPedestals_2025_at80fb_corrected_mc`, the laser corrections
+`..._TL470fb_moy_2025_...`, the selective-readout settings `EcalSRSettings_2024_EBZS9.5_EEZS6.0_DCC2_mc` instead of
+`..._2023_EBZS6.5_...`, the channel status and 9 trigger-primitive tables), 7 HCAL records (pedestals and widths,
+response corrections, SiPM parameters, zero-suppression thresholds, PF cuts, TP channel parameters), 6 pixel records
+(templates, generic errors, Lorentz angles incl. `SiPixelLorentzAngleSimRcd`), `SiStripBadChannelRcd`,
+`TrackerAlignmentRcd`, `TrackerSurfaceDeformationRcd`, `JetCorrectionsRecord` (AK4PFPuppi: Winter24 in 2024,
+Winter23 in 2025) and `L1TUtmTriggerMenuRcd` (`L1Menu_Collisions2024_v1_3_0_xml` -> `L1Menu_Collisions2025_v1_0_0_xml`).
+None of them is read by a GEN job. Identical in both global tags (`conddb list`):
+
+```
+SimBeamSpotObjectsRcd   SimBeamSpot_Realistic25ns13p6TeVEarly2024CollisionVtxSmearingParameters_v1_mc
+GeometryFileRcd         Extended   141DD4hepV2_Extended2024
+MFGeometryFileRcd       160812     MFGeometry_160812
+MagFieldConfigRcd       3.8T       MFConfig_160812_Run2_3_8T
+```
+
+The simulated beam spot (`conddb list` of the tag: one IOV from run 1, inserted 2024-08-01, payload
+`2223f0e4e230c6c0e0e887bb366612aa500d5822`; `conddb dump`):
+
+```
+fX0 = 0.0284683  fY0 = -0.016576  fZ0 = 0.416038  (cm)   fSigmaZ = 3.6 cm   fbetastar = 30 cm
+femittance = 5.725e-08 cm   fSigmaX = fSigmaY = -1 (from betastar and emittance)   fPhi = fAlpha = 0   fTimeOffset = 0
+```
+
+The era: `Configuration/Eras/python/Era_Run3_2025_cff.py`: `Run3_2025 = cms.ModifierChain(Run3_2024, run3_GEM_2025,
+run3_SiPixel_2025, stage2L1Trigger_2025, run3_CSC_2025, ecal_cctiming)`; the five modifiers are used only in
+`RecoLocalMuon/GEMRecHit`, `L1Trigger/CSCTriggerPrimitives`, `RecoLocalTracker/SiPixelClusterizer`,
+`L1Trigger/L1TCaloLayer1`, `DQM/L1TMonitor` and `RecoLocalCalo/EcalRecProducers` (grep over the python of the release).
+
+The rerun with the 2025 settings (12 November 2026) against the 2024 run (7 November 2026): `ledger_08_PU.txt`,
+`genstats_08_PU.txt` (every collision: process, interactions, particles, PPS protons, vertex z and t), the Pythia8 statistics of
+`step1_GEN_MinBias_08_PU.log`, `genPartAnalyzer_MinBias_08_PU.log` and `genJetPileup_08_PU.log` are identical line by
+line; `gencheck_08_PU.log` differs only in the era and global-tag lines. Every number of the chapter holds for both years.

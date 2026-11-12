@@ -27,9 +27,9 @@ options = VarParsing('analysis')
 options.inputFiles = 'file:output_step2_SIM.root'
 options.outputFile = 'simAnalyzer.root'
 options.maxEvents = -1
-options.register('globalTag', 'auto:phase1_2024_realistic', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+options.register('globalTag', 'auto:phase1_2025_realistic', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'global tag of the geometry used for the hit positions (as in the SIM step)')
-options.register('era', 'Run3_2024', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+options.register('era', 'Run3_2025', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'era of the SIM step (Configuration.Eras.Era_<era>_cff); a Phase2* era selects the Phase2 hit collections')
 options.register('geometry', 'DB:Extended', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'geometry of the SIM step: DB:Extended (GeometryRecoDB) or the name of a Configuration.Geometry.Geometry<name>Reco_cff, e.g. ExtendedRun4D110')

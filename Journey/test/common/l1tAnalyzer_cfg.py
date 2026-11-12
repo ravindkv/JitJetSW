@@ -5,7 +5,7 @@
 #   L1TGlobalAnalyzer  step 6: the objects the global trigger receives, the menu, the decision, the thresholds
 #
 #   cmsRun l1tAnalyzer_cfg.py inputFiles=file:step4_L1_12_L1T.root eventsToProcess=1:1:1 \
-#          pdfPrefix=l1t_12_L1T sampleLabel="chapter 12: the Level-1 trigger of 2024|with PU = 60 per bx"
+#          pdfPrefix=l1t_12_L1T sampleLabel="chapter 12: the Level-1 trigger of 2025|with PU = 60 per bx"
 #
 # writes <pdfPrefix>_calo.pdf, <pdfPrefix>_muon.pdf, <pdfPrefix>_global.pdf and, with savePNG=1, one PNG per page:
 # <pdfPrefix>_calo_{ecaltp,hcaltp,layer1,layer2,jet<N>_{ecaltp,hcaltp,layer1}}_run<R>_event<E>.png,
@@ -19,9 +19,9 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing('analysis')
 options.inputFiles = 'file:step4_L1_12_L1T.root'
 options.maxEvents = 1
-options.register('globalTag', 'auto:phase1_2024_realistic', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+options.register('globalTag', 'auto:phase1_2025_realistic', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'global tag of the L1 step (menu, calorimeter-trigger parameters, HCAL TP scale)')
-options.register('era', 'Run3_2024', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+options.register('era', 'Run3_2025', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'era of the L1 step (Configuration.Eras.Era_<era>_cff)')
 options.register('geometry', 'DB:Extended', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'geometry: DB:Extended (GeometryRecoDB) or a Configuration.Geometry.Geometry<name>Reco_cff name')

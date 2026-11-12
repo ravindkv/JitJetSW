@@ -77,6 +77,32 @@ Rule H: Signal and pileup are followed separately only up to 11_DIGI
     (H3) anything that still needs the signal alone or the pileup alone (e.g. the trigger primitives of the signal alone) is
          computed and shown in 11_DIGI, the last chapter where it exists; later chapters quote it from there
 
+Rule I: The CMS chapters use the settings of the release year, 2025
+    CMSSW_15_0_5 is a release of 2025, so the CMS-centric chapters (08_PU, 09_G4, 10_SIM, 11_DIGI, 12_L1T, 13_HLT) run with the
+    2025 Run-3 settings of the release (upgradeWorkflowComponents.py, key '2025'): --conditions auto:phase1_2025_realistic
+    (150X_mcRun3_2025_realistic_v1), --era Run3_2025, --geometry DB:Extended, --beamspot DBrealistic, 13.6 TeV, and in
+    13_HLT the HLT menu of that key, -s HLT:@relval2025 (= 2025v10).
+    The year of a chapter is the variable YEAR of test/common/jitjet_common.sh (CONDITIONS and ERA follow from it).
+    (I1) the generator chapters 01_ME .. 07_GenJet keep the 2024 settings (auto:phase1_2024_realistic, Run3_2024): at generator
+         level the conditions only give the beam spot of the vertex smearing (SimBeamSpotObjectsRcd), the same payload in both
+         global tags
+    (I2) only the CMS settings (global tag, era, the defaults of the analyzer configs, the labels) move to 2025: the event, the
+         pileup (PU = 60, bunch crossings -1..1, SKIP = 71, NPU = 68), the number of events and the seeds stay the same
+    (I3) a chapter moved to 2025 is rerun and compared with its 2024 output; what the 2025 conditions change in the event (or the
+         fact that nothing changes, and why) is said in its .tex (B2 or B3) and listed with the evidence (conddb, the compared
+         files) in its .md (C4)
+    (I4) the move is made in two steps:
+         (a) 08_PU, 09_G4, 10_SIM: done. The 2025 global tag has the geometry (141DD4hepV2_Extended2024), the field map and the
+             simulated beam spot of 2024, and the five modifiers Run3_2025 adds to Run3_2024 act only in RECO and L1: the outputs
+             are identical to the 2024 ones, collision by collision and hit by hit
+         (b) 11_DIGI, 12_L1T, 13_HLT: done. They read conditions that do differ (ECAL selective-readout thresholds, laser
+             transparency and trigger-primitive tables, HCAL SiPM parameters, the pixel Lorentz angle and templates, the L1
+             menu L1Menu_Collisions2025_v1_0_0, the CICADA model of the era), and their numbers changed: fewer ECAL barrel
+             digis, no Level-1 jets in tower ring 28 (and with them no VBF algorithm fires), 63 of 465 L1 algorithms;
+             the HLT menu is the one the release gives the 2025 RelVals, HLT:@relval2025 = 2025v10 (module for module
+             GRun), complete (898 paths), since its seeds match the 2025 L1 menu. The path of the book, L1_SingleJet90 ->
+             HLT_PFJet110, accepts the event with either year; each chapter has a "What the year changed" paragraph
+
 List of chapters:
     01: ME
     02: PS
@@ -85,12 +111,14 @@ List of chapters:
     05: Had
     06: Decay
     07: GenJet
-    08: PU
-    09: G4
-    10: SIM
-    11: DIGI (the last chapter with signal and pileup apart, Rule H; with the hand-over section (B6) on the TriggerPrimitiveDigis)
-    12: L1T (checkpoint, Rule G: the Level-1 trigger of 2024, six steps; the mixed event only, Rule H)
-    13: HLT (checkpoint, Rule G: the High Level Trigger of the GRun menu of the release, five steps; the mixed event only, Rule H)
+    08: PU (2025 settings, Rule I)
+    09: G4 (2025 settings, Rule I)
+    10: SIM (2025 settings, Rule I)
+    11: DIGI (the last chapter with signal and pileup apart, Rule H; with the hand-over section (B6) on the TriggerPrimitiveDigis;
+        2025 settings, Rule I)
+    12: L1T (checkpoint, Rule G: the Level-1 trigger of 2025, six steps; the mixed event only, Rule H; 2025 settings, Rule I)
+    13: HLT (checkpoint, Rule G: the High Level Trigger of the 2025 menu of the release, HLT:@relval2025, five steps; the mixed
+        event only, Rule H; 2025 settings, Rule I)
 
 Length of each chapter:
     5 pdf pages +-2

@@ -2,12 +2,12 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: step2 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/09_G4/out/step2_G4_signal_09_G4.root --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended --beamspot DBrealistic -n 1 -s SIM --processName SIMFULL --datatier GEN-SIM --eventcontent FEVTDEBUG --outputCommands drop *_*_*_SIM --fileout file:step2_SIM_B_Decay_EM_10_SIM.root --customise_commands process.g4SimHits.UseMagneticField = cms.bool(True)\nprocess.g4SimHits.Physics.EMPhysics = cms.untracked.bool(True)\nprocess.g4SimHits.Physics.HadPhysics = cms.untracked.bool(False) --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/step2_SIM_B_Decay_EM_10_SIM_cfg.py --no_exec
+# with command line options: step2 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/09_G4/out/step2_G4_signal_09_G4.root --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended --beamspot DBrealistic -n 1 -s SIM --processName SIMFULL --datatier GEN-SIM --eventcontent FEVTDEBUG --outputCommands drop *_*_*_SIM --fileout file:step2_SIM_B_Decay_EM_10_SIM.root --customise_commands process.g4SimHits.UseMagneticField = cms.bool(True)\nprocess.g4SimHits.Physics.EMPhysics = cms.untracked.bool(True)\nprocess.g4SimHits.Physics.HadPhysics = cms.untracked.bool(False) --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/step2_SIM_B_Decay_EM_10_SIM_cfg.py --no_exec
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.Eras.Era_Run3_2024_cff import Run3_2024
+from Configuration.Eras.Era_Run3_2025_cff import Run3_2025
 
-process = cms.Process('SIMFULL',Run3_2024)
+process = cms.Process('SIMFULL',Run3_2025)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -90,7 +90,7 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 if hasattr(process, "XMLFromDBSource"): process.XMLFromDBSource.label="Extended"
 if hasattr(process, "DDDetectorESProducerFromDB"): process.DDDetectorESProducerFromDB.label="Extended"
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2024_realistic', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2025_realistic', '')
 process.FEVTDEBUGoutput.outputCommands.append('drop *_*_*_SIM')
 
 # Path and EndPath definitions

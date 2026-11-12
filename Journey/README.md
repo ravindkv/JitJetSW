@@ -20,8 +20,8 @@ quotes. `doc/chapter/README.md` says how a chapter is written.
 | `09_G4` | the hand-over to Geant4: transport-only SIM of the signal and of all library collisions (what is accepted, what is dropped) | `step2_G4_signal_09_G4.root`, `step2_G4_pileup_09_G4.root`, SimAnalyzer pages, `ledger_09_G4.txt` (g4Ledger.py) |
 | `10_SIM` | full Geant4 physics switched on stage by stage (B, decays, EM, hadronic); the signal, the library and the mixing at SimHit level, station by station | `step2_SIM_{B,B_Decay,B_Decay_EM,signal,pileup}_10_SIM.root`, SimAnalyzer and SimHitAnalyzer pages (`signal/`, `pileup/`, `mixed/`), `step3_MIX_10_SIM.root` (the playback record of the mixing), ledger |
 | `11_DIGI` | digitisation: the signal alone, one collision alone, the signal with PU = 60 in bx -1..1 (the last chapter with signal and pileup apart); the calorimeter trigger primitives made here for the Level-1 trigger | `step3_DIGI_{signal,pileup,mixed}_11_DIGI.root`, DigiAnalyzer pages, `thresholds_11_DIGI.txt`, ledger, TrigPrimAnalyzer pages, `trigprim_11_DIGI.txt` |
-| `12_L1T` | checkpoint (Rule G): the Level-1 trigger of 2024 in six steps (calorimeter trigger primitives, Layer-1, Layer-2, muon track finders, uGMT, uGT), for the mixed event only (the signal with its pileup) | `step4_L1_12_L1T.root`, L1TCaloAnalyzer / L1TMuonAnalyzer / L1TGlobalAnalyzer pages, `settings_12_L1T.txt`, `truth_12_L1T.txt`, ledger |
-| `13_HLT` | checkpoint (Rule G): DIGI2RAW and the High Level Trigger (the GRun menu of the release, its seeds adapted to the 2024 L1 menu by `python/hltL1Menu_cff.py`) in five steps (raw event and L1 seed, calorimeter jets, tracking and vertices, particle flow and PF jets, the decision of the paths), for the mixed event only | `step5_HLT_13_HLT.root`, HLTPathAnalyzer / HLTCaloAnalyzer / HLTTrackAnalyzer / HLTPFAnalyzer pages, `menu_13_HLT.txt`, ledger |
+| `12_L1T` | checkpoint (Rule G): the Level-1 trigger of 2025 in six steps (calorimeter trigger primitives, Layer-1, Layer-2, muon track finders, uGMT, uGT), for the mixed event only (the signal with its pileup) | `step4_L1_12_L1T.root`, L1TCaloAnalyzer / L1TMuonAnalyzer / L1TGlobalAnalyzer pages, `settings_12_L1T.txt`, `truth_12_L1T.txt`, ledger |
+| `13_HLT` | checkpoint (Rule G): DIGI2RAW and the High Level Trigger (the 2025 menu of the release, `HLT:@relval2025` = `2025v10`, its seeds checked against the L1 menu of chapter 12 by `python/hltL1Menu_cff.py`) in five steps (raw event and L1 seed, calorimeter jets, tracking and vertices, particle flow and PF jets, the decision of the paths), for the mixed event only | `step5_HLT_13_HLT.root`, HLTPathAnalyzer / HLTCaloAnalyzer / HLTTrackAnalyzer / HLTPFAnalyzer pages, `menu_13_HLT.txt`, ledger |
 
     cd CMSSW_15_0_5/src && cmsenv && cd JitJetSW/Journey/test
     ./runAll.sh                       # the whole journey in order (about three hours, chapters 10 and 11 dominate)
@@ -111,9 +111,13 @@ to stdout; the chapter scripts convert the pages to PNG (`pdftoppm -cropbox`) fo
 
 ## Phase-2 (HL-LHC)
 
-The book runs on the 2024 detector; every chapter ends with the open problems of its stage for Phase-2, dug out of the
-release configuration. The earlier Phase-2 runs (D110 geometry, `Phase2C17I13M9`, 14 TeV, PU 10 in bx -1..1, with the
+The CMS chapters 08-13 run with the 2025 settings of the release (`auto:phase1_2025_realistic`, `Run3_2025`, and in
+13_HLT the 2025 menu `HLT:@relval2025`; Rule I of the Constitution); the generator chapters 01-07 keep 2024 (at
+generator level the two are the same). The year of a chapter is `YEAR` in `test/common/jitjet_common.sh`. In this
+release the 2025 global tag has the geometry, the field map and the simulated beam spot of 2024, so 08-10 are identical
+with either year; the two years part at the digitisation (11-13 say in a "What the year changed" paragraph how).
+Every chapter ends with the open problems of its stage for Phase-2, dug out of the release configuration. The earlier Phase-2 runs (D110 geometry, `Phase2C17I13M9`, 14 TeV, PU 10 in bx -1..1, with the
 HGCAL station of SimHitAnalyzer) and their scripts are kept in `test/tmp/` (`runCMSDrivers_mcPhase2_BBbar_SIM.sh`,
 `runPileup_mcPhase2_BBbar.sh`, `runSimHitAnalyzer_mcPhase2_BBbar.sh`, `GEN_Phase2/`, `SIM_Phase2/`, `PU_Phase2/`)
 and `doc/tmp/` (`Gen4Phase2.md`, `pu/Phase2/`, `sim/At*.md`); the chapter scripts take the scenario from
-`CONDITIONS`, `ERA`, `GEOMETRY`, `BEAMSPOT`, `COMENERGY` (change all together).
+`YEAR` (or `CONDITIONS`, `ERA`), `GEOMETRY`, `BEAMSPOT`, `COMENERGY` (change all together).

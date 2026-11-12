@@ -1,8 +1,10 @@
-# hltL1Menu_cff.py: run the HLT menu of the release (GRun, /dev/CMSSW_15_0_0/GRun) on the Level-1 decision of chapter 12,
-# which was taken with the 2024 L1 menu of the global tag (L1Menu_Collisions2024_v1_3_0, 408 algorithms).
+# hltL1Menu_cff.py: run an HLT menu of the release on the Level-1 decision of chapter 12, taken with the L1 menu of the
+# global tag (2025: L1Menu_Collisions2025_v1_0_0, 465 algorithms; 2024: L1Menu_Collisions2024_v1_3_0, 408 algorithms).
 #
-# The GRun menu of CMSSW_15_0_5 is the 2025 menu: some of its L1 seeds (HLTL1TSeed modules, L1SeedsLogicalExpression)
-# name algorithms of the 2025 L1 menu that the 2024 menu does not have, and HLTL1TSeed stops the job on them
+# An HLT menu is written for one L1 menu. The HLT menus of CMSSW_15_0_5 (GRun, 2025v10) are the 2025 menu: with the
+# 2025 L1 menu every seed is there and this module changes nothing (it reports "0 seeds changed, 0 paths removed").
+# With the 2024 L1 menu (YEAR=2024) 30 of the algorithms named in the seeds (HLTL1TSeed modules,
+# L1SeedsLogicalExpression) do not exist, and HLTL1TSeed stops the job on them
 # ("Algorithm L1_X, requested as seed by a HLT path, cannot be matched to a L1 algo name in any GlobalObjectMap").
 # An algorithm that is not in the menu can never fire, so:
 #   - in a seed that is an OR of algorithms, the missing algorithms are dropped from the OR (the decision is unchanged:

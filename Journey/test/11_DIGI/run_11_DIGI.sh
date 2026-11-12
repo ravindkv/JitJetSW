@@ -68,9 +68,9 @@ draw() {  # draw <case> <event> <label>
     maxEvents=1 eventsToProcess="$ev" globalTag="$CONDITIONS" era="$ERA" geometry="$GEOMETRY" pdfFile="$a.pdf" pngPrefix="$a" savePNG="$PNG" sampleLabel="$label"
   grep -E '^== DigiAnalyzer|^  [A-Za-z]+: nDigis|^  total' "$OUT/$a.log"
 }
-[[ " $CASES " == *" signal "* ]] && draw signal "$EVENT" "chapter $CHAPTER (11a): the signal digitised|bbbar, pTHat > $PTHATMIN GeV|2024 detector, 13.6 TeV|no pileup"
-[[ " $CASES " == *" pileup "* ]] && draw pileup "$pu_event" "chapter $CHAPTER (11b): one pileup collision digitised|library event $((SKIP + 1))|SoftQCD inelastic, 13.6 TeV|2024 detector, no signal"
-[[ " $CASES " == *" mixed "* ]] && draw mixed "$EVENT" "chapter $CHAPTER (11a+11b): signal + pileup digitised|PU = $PU per bx (Poisson), bx $bx_min..$bx_max|the collisions of the chapter 10 mixing (playback)|2024 detector, 13.6 TeV"
+[[ " $CASES " == *" signal "* ]] && draw signal "$EVENT" "chapter $CHAPTER (11a): the signal digitised|bbbar, pTHat > $PTHATMIN GeV|$YEAR detector, 13.6 TeV|no pileup"
+[[ " $CASES " == *" pileup "* ]] && draw pileup "$pu_event" "chapter $CHAPTER (11b): one pileup collision digitised|library event $((SKIP + 1))|SoftQCD inelastic, 13.6 TeV|$YEAR detector, no signal"
+[[ " $CASES " == *" mixed "* ]] && draw mixed "$EVENT" "chapter $CHAPTER (11a+11b): signal + pileup digitised|PU = $PU per bx (Poisson), bx $bx_min..$bx_max|the collisions of the chapter 10 mixing (playback)|$YEAR detector, 13.6 TeV"
 # ------------------------------------------------------------------------------------------ the trigger primitives
 # The DIGI step also makes simEcalTriggerPrimitiveDigis and simHcalTriggerPrimitiveDigis, the coarse copy of the calorimeter
 # data that the Level-1 trigger of chapter 12 will use. This is the last chapter with the signal and the pileup apart

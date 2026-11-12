@@ -15,8 +15,8 @@ is in `out/step5_HLT_13_HLT_cfg.driver.log`):
 ```bash
 cd $J/test
 cmsDriver.py step5 --filein file:$J/test/12_L1T/out/step4_L1_12_L1T.root \
-  --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended \
-  -n -1 -s DIGI2RAW,HLT:GRun --datatier GEN-SIM-DIGI-RAW --eventcontent FEVTDEBUGHLT --fileout file:step5_HLT_13_HLT.root \
+  --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended \
+  -n -1 -s DIGI2RAW,HLT:@relval2025 --datatier GEN-SIM-DIGI-RAW --eventcontent FEVTDEBUGHLT --fileout file:step5_HLT_13_HLT.root \
   --customise_commands "from JitJetSW.Journey.hltL1Menu_cff import adaptSeedsToL1Menu; process = adaptSeedsToL1Menu(process, '$J/test/12_L1T/out/l1t_12_L1T.log')
 process.FEVTDEBUGHLToutput.outputCommands.extend(['keep *_hltFixedGridRhoFastjetAll_*_*', 'keep *_hltFixedGridRhoFastjetAllCalo_*_*', 'keep *_hltVerticesPF_*_*', 'keep *_hltDoubletRecoveryPFlowTrackSelectionHighPurity_*_*', 'keep recoPFClusters_hltParticleFlowCluster*_*_*', 'keep recoPFRecHits_hltParticleFlowRecHit*_*_*', 'keep EcalRecHitsSorted_hltEcalRecHit_*_*', 'keep HBHERecHitsSorted_hltHbhereco_*_*', 'keep HFRecHitsSorted_hltHfreco_*_*', 'keep SiPixelClusteredmNewDetSetVector_hltSiPixelClusters_*_*', 'keep SiStripClusteredmNewDetSetVector_hltSiStripRawToClustersFacility_*_*', 'keep recoRecoChargedCandidates_*_*_HLT', 'keep recoMuons_*_*_HLT', 'keep recoTracks_hltL2Muons_*_*', 'keep triggerTriggerFilterObjectWithRefs_*_*_HLT'])
 process.load('L1Trigger.L1TZDC.l1tZDCEtSums_cfi'); process.load('L1Trigger.L1TTwinMux.simTwinMuxDigis_cfi'); process.load('L1Trigger.Configuration.SimL1TechnicalTriggers_cff')
@@ -34,25 +34,27 @@ and its use share a line).
 |---|---|
 | `step5` | the name of the configuration (free; `step4` was the L1 of chapter 12) |
 | `--filein file:...` | the input (Rule E): the L1 file of chapter 12, the digis of chapter 11 with the Level-1 products |
-| `--conditions auto:phase1_2024_realistic` | the global tag of the book, `150X_mcRun3_2024_realistic_v2`. For the HLT it provides the calibrations of every subdetector, the online beam spot, the Level-1 menu that the HLT re-emulates (`L1TUtmTriggerMenuRcd`), the jet energy corrections of the HLT (`JetCorrectionsRecord` labels `AK4CaloHLT`: `JetCorrectorParametersCollection_Run3Winter24Digi_AK4CaloHLT`, `AK4PFHLT`: `..._Run3Winter24Digi_AK4PFHLT`) and the particle-flow hadron calibration (`PFCalibrationRcd` label `HLT`: `PFCalibration_Run3_2024_online_v1`); `conddb list 150X_mcRun3_2024_realistic_v2 \| grep -i "HLT"` |
-| `--era Run3_2024` | the era of the DIGI2RAW packers; the HLT menu itself carries no era modifier |
+| `--conditions auto:phase1_2025_realistic` | the global tag of the CMS chapters (Rule I), `150X_mcRun3_2025_realistic_v1`. For the HLT it provides the calibrations of every subdetector, the online beam spot (`BeamSpotOnlineHLTObjectsRcd`: `BeamSpotOnlineObjects_Realistic25ns_13p6TeVCollisions_Winter25_mc_v1`; 2024: `..._Early2024_v1_mc`), the Level-1 menu that the HLT re-emulates (`L1TUtmTriggerMenuRcd`: `L1Menu_Collisions2025_v1_0_0_xml`), the hadronic particle-flow thresholds (`HcalPFCutsRcd`: `HcalPFCuts_2025_mc`, 2024: `HcalPFCuts_2023_V1.0_mc`; read by the 26 modules of the menu with `usePFThresholdsFromDB = True`), the jet energy corrections of the HLT (`JetCorrectionsRecord` labels `AK4CaloHLT`: `JetCorrectorParametersCollection_Run3Winter24Digi_AK4CaloHLT`, `AK4PFHLT`: `..._Run3Winter24Digi_AK4PFHLT`, the same payloads as in the 2024 global tag) and the particle-flow hadron calibration (`PFCalibrationRcd` label `HLT`: `PFCalibration_Run3_2024_online_v1`, also unchanged); `conddb list 150X_mcRun3_2025_realistic_v1 \| grep -i "HLT"`. The other records of the 2025 tag that the HLT reads and that differ from 2024 are those of chapter 11: ECAL pedestals, laser corrections and channel status, HCAL pedestals, gains (`HcalRespCorrs`) and SiPM parameters, the pixel templates, generic errors and Lorentz angle (`..._phase1_EoR3_HV800_Tr2000...`), the strip bad components, the tracker alignment (`TrackerAlignment_Run3MC_2025_EOY_v1`) |
+| `--era Run3_2025` | the era of the DIGI2RAW packers; the HLT menu itself carries no era modifier (the five modifiers that `Run3_2025` adds to `Run3_2024` act on the offline local reconstruction, the Level-1 emulation and the DQM: `gemRecHits`, `cscTriggerPrimitiveDigis`, `simCaloStage2Layer1Summary`, `L1TStage2uGTTiming`, the offline pixel clusterizer, the offline ECAL rec-hits; neither on the packers nor on the `_cff` of the menu) |
 | `--geometry DB:Extended` | the reconstruction geometry from the database |
 | `-n -1` with `eventsToProcess` | all events of the input, restricted to the one event |
-| `-s DIGI2RAW,HLT:GRun` | two steps: `DIGI2RAW` (`Configuration/StandardSequences/python/DigiToRaw_cff.py`: the packers of every subdetector and of the Level-1 boards) and the HLT menu `HLTrigger/Configuration/python/HLT_GRun_cff.py` (`/dev/CMSSW_15_0_0/GRun/V62`). `HLT:@relval2024` would be `Fake2` (`Configuration/HLT/python/autoHLT.py`: `'relval2024' : 'Fake2'`, three paths `HLT_Physics`, `HLT_Random`, `HLT_ZeroBias`); `HLT:@relval2025` is `2025v10` (`/frozen/2025/2e34/v1.0/HLT/V2`); the release has no 2024 menu |
+| `-s DIGI2RAW,HLT:@relval2025` | two steps: `DIGI2RAW` (`Configuration/StandardSequences/python/DigiToRaw_cff.py`: the packers of every subdetector and of the Level-1 boards) and the HLT menu that the release gives the 2025 simulation: `Configuration/HLT/python/autoHLT.py` maps `'relval2025'` to `'2025v10'`, the file `HLTrigger/Configuration/python/HLT_2025v10_cff.py`, the frozen 2025 menu `/frozen/2025/2e34/v1.0/HLT/V2` (the RelVal workflows of 2025 in `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py` use the same `'HLTmenu': '@relval2025'`). It is the physics menu `GRun` of the release frozen: `diff HLT_2025v10_cff.py HLT_GRun_cff.py` gives 10 lines, the two header comments, the `tableName` (`/dev/CMSSW_15_0_0/GRun/V62` in `GRun`) and the menu-type argument of the last two calls, `customizeHLTforAll(fragment, "2025v10")` and `customizeHLTforCMSSW(fragment, "2025v10")`, which neither function uses (`HLTrigger/Configuration/python/customizeHLTforALL.py`, `customizeHLTforCMSSW.py`). Every module, path, seed and threshold is that of `GRun`, which the 2024 version of this chapter ran. For comparison: `HLT:@relval2024` is `Fake2` (three paths `HLT_Physics`, `HLT_Random`, `HLT_ZeroBias`); the release has no 2024 physics menu |
 | `--datatier GEN-SIM-DIGI-RAW --eventcontent FEVTDEBUGHLT` | the content: the input copied, the raw data (`rawDataCollector`), and the `HLTDebugFEVT` commands of `HLTrigger/Configuration/python/HLTrigger_EventContent_cff.py` (the calo and PF jets, the pixel and full tracks, the pixel vertices, the PF candidates, `hltTriggerSummaryAOD`/`RAW`, the unpacked L1 record) |
 | `--customise_commands "..."` | the lines explained below |
 | `--python_filename ... --no_exec` | write the configuration and do not run it; the script runs `cmsRun` itself |
 
 The customise lines.
 
-1. `adaptSeedsToL1Menu(process, '<12_L1T/out/l1t_12_L1T.log>')` (`python/hltL1Menu_cff.py`). The GRun menu of the release is
-   the 2025 menu; 30 Level-1 algorithms named in its seeds are not in the 2024 Level-1 menu of chapter 12
-   (`L1Menu_Collisions2024_v1_3_0`, 408 algorithms, read from the `algo:` lines of the chapter-12 log, Rule E), and
-   `HLTL1TSeed` throws `Algorithm L1_X, requested as seed by a HLT path, cannot be matched to a L1 algo name in any
-   GlobalObjectMap`. A missing algorithm can never fire: in an OR it is dropped (21 seeds); a seed made only of missing
-   algorithms can never fire, and the 37 paths that use it are removed with their entries in the dataset filters and the
-   `datasets` / `streams` PSets. 898 paths become 861. The report is printed in the driver log and in
-   `out/step5_HLT_13_HLT.log`, and kept in `process.hltL1MenuReport` (`out/menu_13_HLT.txt`, section 1).
+1. `adaptSeedsToL1Menu(process, '<12_L1T/out/l1t_12_L1T.log>')` (`python/hltL1Menu_cff.py`). A check that every Level-1
+   algorithm named in a seed of the menu (`HLTL1TSeed`, `L1SeedsLogicalExpression`) is in the Level-1 menu of chapter 12
+   (`L1Menu_Collisions2025_v1_0_0`, 465 algorithms, read from the `algo:` lines of the chapter-12 log, Rule E); a
+   missing algorithm would stop the job (`HLTL1TSeed` throws `Algorithm L1_X, requested as seed by a HLT path, cannot be
+   matched to a L1 algo name in any GlobalObjectMap`). With the 2025 Level-1 menu the report is
+   `hltL1Menu_cff: 465 L1 algorithms in the menu of chapter 12; 0 seeds changed, 0 paths removed`: the menu runs
+   complete, all 898 paths (`out/step5_HLT_13_HLT_cfg.driver.log`, `out/step5_HLT_13_HLT.log`, `out/menu_13_HLT.txt`,
+   section 1). With the 2024 Level-1 menu (`L1Menu_Collisions2024_v1_3_0`, 408 algorithms) the same call found 30
+   algorithms of the seeds missing, dropped them from 21 OR seeds and removed the 37 paths whose seed could never fire
+   (898 paths became 861; section 4, "The 2024 and the 2025 settings"). The call stays as the guard of that agreement.
 2. `process.FEVTDEBUGHLToutput.outputCommands.extend([...])`: products the analyzers need that `FEVTDEBUGHLT` does not
    keep: the two energy densities rho, the PF vertices, the second tracking iteration, the PF clusters and rec-hits, the
    calorimeter rec-hits, the pixel and strip clusters, the HLT muons, and the `TriggerFilterObjectWithRefs` of every filter.
@@ -71,21 +73,23 @@ The customise lines.
 
 ```bash
 cd $J/test/13_HLT/out
-cmsRun ../step5_HLT_13_HLT_cfg.py > step5_HLT_13_HLT.log 2>&1      # about 75 s: a minute to start, 9 s for the event
+cmsRun ../step5_HLT_13_HLT_cfg.py > step5_HLT_13_HLT.log 2>&1      # about 60 s: 53 s to start, 6 s for the event
 ```
 
-Or the whole chapter: `./13_HLT/run_13_HLT.sh` (about 1.5 minutes when the HLT file is reused, 3 minutes without;
-variables: `REUSE=1` keeps an existing `step5_HLT_13_HLT.root`, `REUSE=0` remakes it, `RUN=0` only writes the
-configuration, `ANALYZE=0` skips the analyzers, `PNG=0` skips the PNG pages, `MENU=GRun` the menu of `-s HLT:<MENU>`).
+Or the whole chapter: `./13_HLT/run_13_HLT.sh` (106 s without reuse on 12 November 2026: 12 s for cmsDriver, 61 s for
+the HLT job, 33 s for the analyzers and the two scripts; variables: `REUSE=1` keeps an existing `step5_HLT_13_HLT.root`,
+`REUSE=0` remakes it, `RUN=0` only writes the configuration, `ANALYZE=0` skips the analyzers, `PNG=0` skips the PNG
+pages, `MENU=@relval2025` the menu of `-s HLT:<MENU>`; `MENU=GRun` gives the same modules under the table name
+`/dev/CMSSW_15_0_0/GRun/V62`).
 
 ### Walk-through of `step5_HLT_13_HLT_cfg.py`
 
-- `process = cms.Process('HLT', Run3_2024)`: the process name under which the new products are stored (an analysis asks
+- `process = cms.Process('HLT', Run3_2025)`: the process name under which the new products are stored (an analysis asks
   for `TriggerResults::HLT`).
 - `process.load(...)`: `Services_cff`, `pythiapdt_cfi`, the `MessageLogger`, `EventContent_cff`, `mixNoPU_cfi` (loaded by
   cmsDriver for every step, not used), `GeometryRecoDB_cff`, `MagneticField_cff`, `DigiToRaw_cff` (the packers),
-  `HLTrigger.Configuration.HLT_GRun_cff` (the menu: 87 000 lines, the paths, sequences, modules, event-setup producers
-  and the `datasets` / `streams` PSets of `/dev/CMSSW_15_0_0/GRun/V62`), `EndOfProcess_cff`,
+  `HLTrigger.Configuration.HLT_2025v10_cff` (the menu: 87 551 lines, the paths, sequences, modules, event-setup producers
+  and the `datasets` / `streams` PSets of `/frozen/2025/2e34/v1.0/HLT/V2`), `EndOfProcess_cff`,
   `FrontierConditions_GlobalTag_cff`.
 - `process.digi2raw_step = cms.Path(process.DigiToRaw)`; then the schedule of the menu (`process.schedule`, from the
   `_cff`), with `digi2raw_step` inserted first and `endjob_step`, `FEVTDEBUGHLToutput_step` appended.
@@ -97,8 +101,8 @@ The menu in numbers (`out/menu_13_HLT.txt`, section 1, written by `test/common/h
 
 ```
 == 1. The menu
-process HLT, table /dev/CMSSW_15_0_0/GRun/V62
-paths: 862 | AlCa=11 DQM=3 DST=20 Dataset=99 HLT=697 HLTriggerFinalPath=1 HLTriggerFirstPath=1 MC=26 ScoutingPFOutput=1 Status=2 digi2raw=1
+process HLT, table /frozen/2025/2e34/v1.0/HLT/V2
+paths: 899 | AlCa=11 DQM=3 DST=21 Dataset=99 HLT=733 HLTriggerFinalPath=1 HLTriggerFirstPath=1 MC=26 ScoutingPFOutput=1 Status=2 digi2raw=1
 endpaths: HLTAnalyzerEndpath endjob_step FEVTDEBUGHLToutput_step
 datasets: 99
 streams: 68
@@ -109,75 +113,7 @@ event-setup: 220 producers, 16 sources
    HLT1PFJet                155
    HLT1CaloJet              111
    TriggerResultsFilter     48
-adapted to the L1 menu of chapter 12 (python/hltL1Menu_cff.py): 21 seeds changed, 37 paths removed
-   seed hltL1DiJetVBFMET: 3 of 5 algorithms not in the L1 menu, dropped from the OR: L1_DoubleJet_70_35_DoubleJet35_Mass_Min600_ETMHF65 L1_DoubleJet_70_35_DoubleJet35_Mass_Min700_ETMHF65 L1_DoubleJet_70_35_DoubleJet35_Ma
-   seed hltL1DiJetVBFdoubleJet: 3 of 5 algorithms not in the L1 menu, dropped from the OR: L1_DoubleJet_65_35_DoubleJet35_Mass_Min750_DoubleJetCentral50 L1_DoubleJet_65_35_DoubleJet35_Mass_Min850_DoubleJetCentral50 L1_Do
-   seed hltL1DiJetVBFincl: 3 of 5 algorithms not in the L1 menu, dropped from the OR: L1_DoubleJet_110_35_DoubleJet35_Mass_Min1000 L1_DoubleJet_110_35_DoubleJet35_Mass_Min1100 L1_DoubleJet_110_35_DoubleJet35_Mass_Min1200
-   seed hltL1DoubleJet8535MassMin600Mu3: 3 of 5 algorithms not in the L1 menu, dropped from the OR: L1_DoubleJet_85_35_DoubleJet35_Mass_Min700_Mu3OQ L1_DoubleJet_85_35_DoubleJet35_Mass_Min800_Mu3OQ L1_DoubleJet_85_35_Dou
-   seed hltL1VBFDiJetIsoTau: 2 of 4 algorithms not in the L1 menu, dropped from the OR: L1_DoubleJet45_Mass_Min700_IsoTau45er2p1_RmOvlp_dR0p5 L1_DoubleJet45_Mass_Min800_IsoTau45er2p1_RmOvlp_dR0p5
-   seed hltL1VBFLooseIsoEG: 2 of 4 algorithms not in the L1 menu, dropped from the OR: L1_DoubleJet45_Mass_Min700_LooseIsoEG20er2p1_RmOvlp_dR0p2 L1_DoubleJet45_Mass_Min800_LooseIsoEG20er2p1_RmOvlp_dR0p2
-   seed hltL1sAXOVVTight: "L1_AXO_VVTight" cannot fire with this L1 menu (missing: L1_AXO_VVTight)
-   seed hltL1sAXOVVVTight: "L1_AXO_VVVTight" cannot fire with this L1 menu (missing: L1_AXO_VVVTight)
-   seed hltL1sBigORDoubleTauJet: "L1_DoubleTau_Iso34_Iso26_er2p1_Jet55_RmOvlp_dR0p5 OR L1_DoubleTau_Iso38_Iso26_er2p1_Jet55_RmOvlp_dR0p5 OR L1_DoubleTau_Iso40_Iso26_er2p1_Jet55_RmOvlp_dR0p5" cannot fire with this L1 menu
-   seed hltL1sCICADAVVTight: "L1_CICADA_VVTight" cannot fire with this L1 menu (missing: L1_CICADA_VVTight)
-   seed hltL1sCICADAVVVTight: "L1_CICADA_VVVTight" cannot fire with this L1 menu (missing: L1_CICADA_VVVTight)
-   seed hltL1sCICADAVVVVTight: "L1_CICADA_VVVVTight" cannot fire with this L1 menu (missing: L1_CICADA_VVVVTight)
-   seed hltL1sDSTRun3AXOMediumPFScoutingTracking: "L1_AXO_Medium" cannot fire with this L1 menu (missing: L1_AXO_Medium)
-   seed hltL1sDSTRun3DoubleEGPFScoutingPixelTracking: 3 of 7 algorithms not in the L1 menu, dropped from the OR: L1_DoubleEG15_11_er1p2_dR_Max0p6 L1_DoubleEG16_11_er1p2_dR_Max0p6 L1_DoubleEG17_11_er1p2_dR_Max0p6
-   seed hltL1sDoubleEGXer1p2dRMaxY: "L1_DoubleEG15_11_er1p2_dR_Max0p6 OR L1_DoubleEG16_11_er1p2_dR_Max0p6 OR L1_DoubleEG17_11_er1p2_dR_Max0p6" cannot fire with this L1 menu (missing: L1_DoubleEG15_11_er1p2_dR_Max0p6 L1_D
-   seed hltL1sQuadJetOrHTTOrMuonHTTOrDiTauOrDiTauJet: 3 of 17 algorithms not in the L1 menu, dropped from the OR: L1_DoubleTau_Iso34_Iso26_er2p1_Jet55_RmOvlp_dR0p5 L1_DoubleTau_Iso38_Iso26_er2p1_Jet55_RmOvlp_dR0p5 L1_Dou
-   seed hltL1sSingleMu5Barrel: "L1_SingleMu5_BMTF" cannot fire with this L1 menu (missing: L1_SingleMu5_BMTF)
-   seed hltL1sSingleMuHP13: "L1_SingleMu13_SQ14_BMTF" cannot fire with this L1 menu (missing: L1_SingleMu13_SQ14_BMTF)
-   seed hltL1sSingleMuScouting: 2 of 3 algorithms not in the L1 menu, dropped from the OR: L1_SingleMu5_BMTF L1_SingleMu13_SQ14_BMTF
-   seed hltL1sTauVeryBigOR: 3 of 23 algorithms not in the L1 menu, dropped from the OR: L1_DoubleTau_Iso34_Iso26_er2p1_Jet55_RmOvlp_dR0p5 L1_DoubleTau_Iso38_Iso26_er2p1_Jet55_RmOvlp_dR0p5 L1_DoubleTau_Iso40_Iso26_er2p1_J
-   seed hltL1sTripleJet957565VBFIorHTTIorDoubleJetCIorSingleJetorQuadJet95756520: 3 of 12 algorithms not in the L1 menu, dropped from the OR: L1_DoubleJet_110_35_DoubleJet35_Mass_Min1000 L1_DoubleJet_110_35_DoubleJet35_M
-   path DST_PFScouting_AXOMedium_v1 removed
-   path HLT_DoubleEle10_eta1p22_mMax6_v11 removed
-   path HLT_DoubleEle6p5_eta1p22_mMax6_v11 removed
-   path HLT_DoubleEle8_eta1p22_mMax6_v11 removed
-   path HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60_v7 removed
-   path HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75_v7 removed
-   path HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3_v7 removed
-   path HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3_v7 removed
-   path HLT_IsoMu24_eta2p1_L1HT200_QuadPFJet25_PNet1Tauh0p50_v1 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet130_Loose_L2NN_eta2p3_CrossL1_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet130_Medium_L2NN_eta2p3_CrossL1_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet130_Tight_L2NN_eta2p3_CrossL1_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet26_L2NN_eta2p3_CrossL1_PFJet60_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet26_L2NN_eta2p3_CrossL1_PFJet75_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet26_L2NN_eta2p3_CrossL1_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet30_Medium_L2NN_eta2p3_CrossL1_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet30_Tight_L2NN_eta2p3_CrossL1_v7 removed
-   path HLT_IsoMu24_eta2p1_PNetTauhPFJet45_L2NN_eta2p3_CrossL1_v7 removed
-   path HLT_L1AXOVVTight_v1 removed
-   path HLT_L1AXOVVVTight_v1 removed
-   path HLT_L1CICADA_VVTight_v1 removed
-   path HLT_L1CICADA_VVVTight_v1 removed
-   path HLT_L1CICADA_VVVVTight_v1 removed
-   path HLT_L1HT200_QuadPFJet20_PNet1BTag0p50_PNet1Tauh0p50_v1 removed
-   path HLT_L1HT200_QuadPFJet25_PNet1BTag0p50_PNet1Tauh0p50_v1 removed
-   path HLT_Mu0_Barrel_L1HP13_v1 removed
-   path HLT_Mu12_Barrel_L1HP13_IP4_v1 removed
-   path HLT_Mu12_Barrel_L1HP13_IP6_v1 removed
-   path HLT_Mu4_Barrel_IP4_v1 removed
-   path HLT_Mu4_Barrel_IP6_v1 removed
-   path HLT_SingleEle8_v10 removed
-   path HLT_SinglePNetTauhPFJet130_Loose_L2NN_eta2p3_v7 removed
-   path HLT_SinglePNetTauhPFJet130_Medium_L2NN_eta2p3_v7 removed
-   path HLT_SinglePNetTauhPFJet130_Tight_L2NN_eta2p3_v7 removed
-   path HLT_VBF_DiPFJet45_Mjj650_PNetTauhPFJet45_L2NN_eta2p3_v7 removed
-   path HLT_VBF_DiPFJet45_Mjj750_PNetTauhPFJet45_L2NN_eta2p3_v7 removed
-   path HLT_VBF_DiPFJet45_Mjj850_PNetTauhPFJet45_L2NN_eta2p3_v1 removed
-   dataset filter hltDatasetEGamma: 4 paths removed from its conditions
-   dataset filter hltDatasetMuon: 10 paths removed from its conditions
-   dataset filter hltDatasetOnlineMonitor: 6 paths removed from its conditions
-   dataset filter hltDatasetParkingAnomalyDetection: 5 paths removed from its conditions
-   dataset filter hltDatasetParkingHH: 2 paths removed from its conditions
-   dataset filter hltDatasetParkingSingleMuon: 5 paths removed from its conditions
-   dataset filter hltDatasetParkingVBF: 3 paths removed from its conditions
-   dataset filter hltDatasetScoutingPFMonitor: 1 paths removed from its conditions
-   dataset filter hltDatasetScoutingPFRun3: 1 paths removed from its conditions
-   dataset filter hltDatasetTau: 7 paths removed from its conditions
+adapted to the L1 menu of chapter 12 (python/hltL1Menu_cff.py): 0 seeds changed, 0 paths removed
 prescales: no PrescaleService: every HLTPrescaler has prescale 1
 HLT_PFJet110: datasets JetMET0 JetMET1 OnlineMonitor; streams DQM PhysicsJetMET0 PhysicsJetMET1
 HLT_PFJetFwd140: datasets JetMET0 JetMET1 OnlineMonitor; streams DQM PhysicsJetMET0 PhysicsJetMET1
@@ -186,8 +122,14 @@ HLT_PFJet40: datasets JetMET0 JetMET1 OnlineMonitor; streams DQM PhysicsJetMET0 
 
 ```
 
+`paths: 899` is the 898 paths of the menu and `digi2raw_step`; 733 `HLT_` and 21 `DST_` paths, 754 in all, are the
+physics and scouting paths that the chapter counts. The module counts are those of the configuration and are the same
+as in 2024, when the 37 removed paths left their modules defined (the modules that run, as `HLTConfigProvider` sees
+them, are in the `menu modules:` line of section 4: 4783 distinct, against 4598 with the 861 paths of 2024).
+
 The anatomy of the path of the book (`out/menu_13_HLT.txt`, section 2; a module met again in a later sequence runs once,
-so the 209 entries of the path, `nModules=209` in `hlt_13_HLT.log`, are 174 distinct modules):
+so the 209 entries of the path, `nModules=209` in `hlt_13_HLT.log`, are 174 distinct modules; sections 2 and 3 of
+`menu_13_HLT.txt` are identical to those of the 2024 run with `GRun`, the path is the same module for module):
 
 ```
 -- HLT_PFJet110_v13: 174 modules
@@ -416,8 +358,9 @@ step), for example the tower thresholds:
 
 ### The content of the output ROOT file
 
-`edmDumpEventContent file:$J/test/13_HLT/out/step5_HLT_13_HLT.root | grep '"HLT"'` lists 2977 products of the process
-`HLT` (21.2 MB in all; the input is 12.3 MB). The ones the chapter uses, by step:
+`edmDumpEventContent file:$J/test/13_HLT/out/step5_HLT_13_HLT.root | grep '"HLT"'` lists 3121 products of the process
+`HLT` (20.8 MB in all; the input is 12.3 MB; in 2024, with the 37 paths removed, 2977 products and 21.2 MB). The ones
+the chapter uses, by step:
 
 | step | product | what it is |
 |---|---|---|
@@ -445,9 +388,9 @@ tower grid of chapter 12 and the jet corrections level by level in `plugins/HLTD
 ```bash
 cd $J/test/13_HLT/out
 cmsRun $J/test/common/hltAnalyzer_cfg.py inputFiles=file:step5_HLT_13_HLT.root maxEvents=1 eventsToProcess=1:1:1 \
-  globalTag=auto:phase1_2024_realistic era=Run3_2024 geometry=DB:Extended pdfPrefix=hlt_13_HLT savePNG=1 \
+  globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended pdfPrefix=hlt_13_HLT savePNG=1 \
   sampleLabel="chapter 13: the High Level Trigger|bbbar, pTHat > 100 GeV, 13.6 TeV|with PU = 60 per bx, bx -1..1" \
-  > hlt_13_HLT.log 2>&1                                        # about 30 s
+  > hlt_13_HLT.log 2>&1                                        # about 20 s
 ```
 
 Options: `processName=HLT`, `jetPtMin=30` (the ak4GenJets drawn and followed), `dzMax=0.1` (a track belongs to a vertex
@@ -497,52 +440,49 @@ Every number of the chapter, by step, copied from `test/13_HLT/out/`.
 ```
 == hltLedger 13_HLT
 event: run:lumi:event 1:1:1
-menu: table=/dev/CMSSW_15_0_0/GRun/V62 process=HLT globalTag=150X_mcRun3_2024_realistic_v2 paths=862 datasets=99 streams=68 prescaleColumns=0 | AlCa=11 DQM=3 DST=20 Dataset=99 HLT=697 HLTriggerFinalPath=1 HLTriggerFirstPath=1 MC=26 ScoutingPFOutput=1 Status=2 digi2raw=1
-menu modules: distinct=4598 =7 EDAnalyzer=1 EDFilter=3294 EDProducer=1296
+menu: table=/frozen/2025/2e34/v1.0/HLT/V2 process=HLT globalTag=150X_mcRun3_2025_realistic_v1 paths=899 datasets=99 streams=68 prescaleColumns=0 | AlCa=11 DQM=3 DST=21 Dataset=99 HLT=733 HLTriggerFinalPath=1 HLTriggerFirstPath=1 MC=26 ScoutingPFOutput=1 Status=2 digi2raw=1
+menu modules: distinct=4783 =7 EDAnalyzer=1 EDFilter=3474 EDProducer=1301
 ```
 
 ### Step 1 (`ledger_13_HLT.txt`, section 1)
 
 ```
 -- 1. Step 1: the raw event, the Level-1 record, the seeds and the prescales
-raw event: 678 FEDs, 1928.6 kB
-   strip               381 FEDs    1001.8 kB  51.9 %
-   pixel               108 FEDs     316.0 kB  16.4 %
-   HCAL                 44 FEDs     225.4 kB  11.7 %
-   ECAL                 54 FEDs     173.3 kB   9.0 %
-   preshower            40 FEDs     136.9 kB   7.1 %
-   CSC                  36 FEDs      46.9 kB   2.4 %
-   Level-1 trigger       7 FEDs      27.1 kB   1.4 %
+raw event: 678 FEDs, 1861.5 kB
+   strip               381 FEDs     997.5 kB  53.6 %
+   pixel               108 FEDs     306.7 kB  16.5 %
+   HCAL                 44 FEDs     240.6 kB  12.9 %
+   preshower            40 FEDs     137.4 kB   7.4 %
+   ECAL                 54 FEDs     103.9 kB   5.6 %
+   CSC                  36 FEDs      46.9 kB   2.5 %
+   Level-1 trigger       7 FEDs      27.1 kB   1.5 %
    GEM                   2 FEDs       0.9 kB   0.0 %
    DT                    3 FEDs       0.3 kB   0.0 %
    RPC                   3 FEDs       0.2 kB   0.0 %
-L1 unpacked: finalOR=1 algorithmsFired=57 jets=12 egammas=12 taus=12 muons=1
-paths HLT_ and DST_: 717; stopped by the L1 seed 593; by the prescale 0; start their reconstruction 124 (of which 83 stopped by a filter, 41 accept)
-seedObjects: label=hltL1sSingleJet90 expression="L1_SingleJet90" n=2 | L1Jet(137.0,-3.74,1.00) L1Jet(106.5,-1.52,-1.98)
+L1 unpacked: finalOR=1 algorithmsFired=63 jets=9 egammas=12 taus=12 muons=1
+paths HLT_ and DST_: 754; stopped by the L1 seed 652; by the prescale 0; start their reconstruction 102 (of which 62 stopped by a filter, 40 accept)
+seedObjects: label=hltL1sSingleJet90 expression="L1_SingleJet90" n=2 | L1Jet(136.0,-3.74,1.00) L1Jet(108.5,-1.52,-1.98)
 seedObjects: label=hltL1sZeroBias expression="L1_ZeroBias" n=0 |
-seedObjects: label=hltL1sSingleJet120 expression="L1_SingleJet120" n=1 | L1Jet(137.0,-3.74,1.00)
-seedObjects: label=hltL1sSingleJet90Fwd expression="L1_SingleJet90_FWD2p5" n=1 | L1Jet(137.0,-3.74,1.00)
+seedObjects: label=hltL1sSingleJet120 expression="L1_SingleJet120" n=1 | L1Jet(136.0,-3.74,1.00)
+seedObjects: label=hltL1sSingleJet90Fwd expression="L1_SingleJet90_FWD2p5" n=1 | L1Jet(136.0,-3.74,1.00)
 ```
 
 The unpacked Level-1 jets and the seeds of the jet paths (`hlt_13_HLT.log`):
 
 ```
-  L1Jet: et=137 eta=-3.741 phi=1.0005
-  L1Jet: et=106.5 eta=-1.5225 phi=-1.97669
-  L1Jet: et=75.5 eta=-2.7405 phi=1.0005
-  L1Jet: et=56 eta=2.7405 phi=-0.0626853
-  L1Jet: et=36.5 eta=-2.7405 phi=-0.584686
-  L1Jet: et=22.5 eta=2.7405 phi=-3.02069
-  L1Jet: et=18 eta=0.9135 phi=1.6965
-  L1Jet: et=17 eta=0.9135 phi=-2.49869
-  L1Jet: et=15.5 eta=1.5225 phi=0.9135
-  L1Jet: et=14 eta=-0.3045 phi=0.3045
-  L1Jet: et=13.5 eta=-2.7405 phi=2.2185
-  L1Jet: et=12.5 eta=2.7405 phi=1.0005
-  seedObjects: label=hltL1sSingleJet90 expression="L1_SingleJet90" n=2 | L1Jet(137.0,-3.74,1.00) L1Jet(106.5,-1.52,-1.98)
+  L1Jet: et=136 eta=-3.741 phi=1.0005
+  L1Jet: et=108.5 eta=-1.5225 phi=-1.97669
+  L1Jet: et=23 eta=0.9135 phi=1.6965
+  L1Jet: et=20 eta=-0.3045 phi=0.3045
+  L1Jet: et=17.5 eta=1.5225 phi=0.9135
+  L1Jet: et=15 eta=0.9135 phi=-2.49869
+  L1Jet: et=14 eta=-2.262 phi=-1.80269
+  L1Jet: et=13 eta=1.0875 phi=2.7405
+  L1Jet: et=9.5 eta=2.3925 phi=-1.54169
+  seedObjects: label=hltL1sSingleJet90 expression="L1_SingleJet90" n=2 | L1Jet(136.0,-3.74,1.00) L1Jet(108.5,-1.52,-1.98)
   seedObjects: label=hltL1sZeroBias expression="L1_ZeroBias" n=0 |
-  seedObjects: label=hltL1sSingleJet120 expression="L1_SingleJet120" n=1 | L1Jet(137.0,-3.74,1.00)
-  seedObjects: label=hltL1sSingleJet90Fwd expression="L1_SingleJet90_FWD2p5" n=1 | L1Jet(137.0,-3.74,1.00)
+  seedObjects: label=hltL1sSingleJet120 expression="L1_SingleJet120" n=1 | L1Jet(136.0,-3.74,1.00)
+  seedObjects: label=hltL1sSingleJet90Fwd expression="L1_SingleJet90_FWD2p5" n=1 | L1Jet(136.0,-3.74,1.00)
 ```
 
 ### Step 2 (`ledger_13_HLT.txt`, section 2)
@@ -550,153 +490,152 @@ The unpacked Level-1 jets and the seeds of the jet paths (`hlt_13_HLT.log`):
 ```
 -- 2. Step 2: calorimeter rec-hits, towers, calo jets
 rec-hits          n      sum E     sum ET
-EB             2039      384.9      268.2
-EE             4141     2866.7      498.6
-HB             1882      476.9      344.9
-HE             3271     3282.0      592.3
-HF             1728    50755.8     1603.5
+EB              956      208.3      142.6
+EE             2515     2135.3      378.7
+HB             2162      671.3      493.4
+HE             3832     3028.3      578.0
+HF             1728    50809.4     1606.2
 towers            n     sum ET         EM        HAD
-barrel          844      444.3      235.3      208.9
-endcap          807     1028.2      467.1      561.1
-forward         790     1613.0      597.2     1015.8
-all            2441     3085.5     1299.7     1785.8
-rho calo (hltFixedGridRhoFastjetAllCalo): 40.026 GeV per unit area
-calo jets: raw=187 corrected=187 corrected>10=29 >30=2 >80=2
+barrel          492      342.8      136.1      206.8
+endcap          771      882.9      360.9      522.0
+forward         788     1617.2      593.3     1023.9
+all            2051     2842.9     1090.3     1752.6
+rho calo (hltFixedGridRhoFastjetAllCalo): 36.349 GeV per unit area
+calo jets: raw=190 corrected=190 corrected>10=35 >30=2 >80=2
 jec calo: level=L1FastJet records=82 formula="max(0.0001,1-(z/y)*([0]+([1]*(x))*(1+[2]*log(y))))" binVar=JetEta, parVar=Rho,JetPt,JetA,
 jec calo: level=L2Relative records=82 formula="max(0.0001,[0]+[1]/(pow(log10(x),2)+[2])+[3]*exp(-[4]*(log10(x)-[5])*(log10(x)-[5])))" binVar=JetEta, parVar=JetPt,
 jec calo: level=L3Absolute records=1 formula="1" binVar=JetEta, parVar=JetPt,
 jec calo: level=L2L3Residual records=1 formula="1" binVar=JetEta, parVar=JetPt,
-CaloJet 0: rawPt=162.3 eta=-3.73 phi=0.96 area=0.503 towers=17 n90=9 emf=0.26 | L1FastJet=0.7049 L2Relative=0.6988 L3Absolute=0.6988 L2L3Residual=0.6988 jecBin=eta[-3.839,-3.664] | recomputedPt=113.4 correctedPt=113.4 | gen=115.9 dR=0.05
-CaloJet 1: rawPt=68.4 eta=-1.57 phi=-2.09 area=0.503 towers=35 n90=21 emf=0.54 | L1FastJet=0.7827 L2Relative=1.2935 L3Absolute=1.2935 L2L3Residual=1.2935 jecBin=eta[-1.653,-1.566] | recomputedPt=88.5 correctedPt=88.5 | gen=117.8 dR=0.02
-CaloJet 2: rawPt=41.8 eta=2.98 phi=2.06 area=0.503 towers=18 n90=14 emf=0.44 | L1FastJet=0.2597 L2Relative=0.4560 L3Absolute=0.4560 L2L3Residual=0.4560 jecBin=eta[2.964,3.139] | recomputedPt=19.1 correctedPt=19.1 | gen=- dR=-
-CaloJet 3: rawPt=40.8 eta=-2.78 phi=0.89 area=0.503 towers=17 n90=14 emf=0.50 | L1FastJet=0.2297 L2Relative=0.4956 L3Absolute=0.4956 L2L3Residual=0.4956 jecBin=eta[-2.853,-2.65] | recomputedPt=20.2 correctedPt=20.2 | gen=- dR=-
-CaloJet 4: rawPt=39.9 eta=2.74 phi=0.46 area=0.503 towers=19 n90=15 emf=0.46 | L1FastJet=0.2172 L2Relative=0.4912 L3Absolute=0.4912 L2L3Residual=0.4912 jecBin=eta[2.65,2.853] | recomputedPt=19.6 correctedPt=19.6 | gen=- dR=-
-CaloJet 6: rawPt=39.0 eta=-2.74 phi=-0.71 area=0.503 towers=17 n90=13 emf=0.44 | L1FastJet=0.2044 L2Relative=0.4630 L3Absolute=0.4630 L2L3Residual=0.4630 jecBin=eta[-2.853,-2.65] | recomputedPt=18.1 correctedPt=18.1 | gen=- dR=-
-CaloJet 10: rawPt=36.9 eta=2.98 phi=-0.27 area=0.457 towers=19 n90=15 emf=0.34 | L1FastJet=0.2459 L2Relative=0.4451 L3Absolute=0.4451 L2L3Residual=0.4451 jecBin=eta[2.964,3.139] | recomputedPt=16.4 correctedPt=16.4 | gen=- dR=-
-CaloJet 11: rawPt=36.5 eta=-2.81 phi=-1.37 area=0.463 towers=17 n90=14 emf=0.55 | L1FastJet=0.2305 L2Relative=0.5139 L3Absolute=0.5139 L2L3Residual=0.5139 jecBin=eta[-2.853,-2.65] | recomputedPt=18.7 correctedPt=18.7 | gen=- dR=-
-CaloJet 22: rawPt=30.9 eta=2.35 phi=-2.35 area=0.441 towers=20 n90=16 emf=0.45 | L1FastJet=0.3030 L2Relative=0.5949 L3Absolute=0.5949 L2L3Residual=0.5949 jecBin=eta[2.322,2.5] | recomputedPt=18.4 correctedPt=18.4 | gen=- dR=-
-CaloJet 36: rawPt=26.3 eta=-2.26 phi=0.14 area=0.415 towers=18 n90=13 emf=0.43 | L1FastJet=0.3018 L2Relative=0.6639 L3Absolute=0.6639 L2L3Residual=0.6639 jecBin=eta[-2.322,-2.172] | recomputedPt=17.4 correctedPt=17.4 | gen=- dR=-
-CaloJet 42: rawPt=24.6 eta=-2.13 phi=-1.77 area=0.433 towers=15 n90=12 emf=0.33 | L1FastJet=0.2907 L2Relative=0.6939 L3Absolute=0.6939 L2L3Residual=0.6939 jecBin=eta[-2.172,-2.043] | recomputedPt=17.1 correctedPt=17.1 | gen=- dR=-
-CaloJet 53: rawPt=21.2 eta=-0.32 phi=0.36 area=0.503 towers=21 n90=16 emf=0.65 | L1FastJet=0.5686 L2Relative=1.1526 L3Absolute=1.1526 L2L3Residual=1.1526 jecBin=eta[-0.348,-0.261] | recomputedPt=24.4 correctedPt=24.4 | gen=- dR=-
-CaloJet 55: rawPt=21.0 eta=-2.31 phi=-0.42 area=0.292 towers=12 n90=10 emf=0.53 | L1FastJet=0.4180 L2Relative=0.8990 L3Absolute=0.8990 L2L3Residual=0.8990 jecBin=eta[-2.322,-2.172] | recomputedPt=18.9 correctedPt=18.9 | gen=- dR=-
-CaloJet 56: rawPt=20.6 eta=-0.85 phi=-2.88 area=0.503 towers=23 n90=17 emf=0.66 | L1FastJet=0.4945 L2Relative=1.0618 L3Absolute=1.0618 L2L3Residual=1.0618 jecBin=eta[-0.879,-0.783] | recomputedPt=21.9 correctedPt=21.9 | gen=- dR=-
-CaloJet 59: rawPt=18.4 eta=1.06 phi=2.75 area=0.503 towers=19 n90=14 emf=0.19 | L1FastJet=0.3806 L2Relative=0.9565 L3Absolute=0.9565 L2L3Residual=0.9565 jecBin=eta[1.044,1.131] | recomputedPt=17.6 correctedPt=17.6 | gen=- dR=-
-CaloJet 64: rawPt=17.9 eta=1.02 phi=1.75 area=0.503 towers=18 n90=13 emf=0.37 | L1FastJet=0.3844 L2Relative=0.9379 L3Absolute=0.9379 L2L3Residual=0.9379 jecBin=eta[0.957,1.044] | recomputedPt=16.8 correctedPt=16.8 | gen=- dR=-
-CaloJet 97: rawPt=11.2 eta=1.16 phi=2.25 area=0.265 towers=9 n90=7 emf=0.65 | L1FastJet=0.5184 L2Relative=1.3652 L3Absolute=1.3652 L2L3Residual=1.3652 jecBin=eta[1.131,1.218] | recomputedPt=15.2 correctedPt=15.2 | gen=- dR=-
-zoom gen jet 1: pt=117.8 centre ieta=-19 iphi=49 towersEt(dR<0.4 of the jet axis)=71.7 towersEt(9x9)=80.3
-zoom gen jet 2: pt=115.9 centre ieta=-34 iphi=12 towersEt(dR<0.4 of the jet axis)=169.9 towersEt(9x9)=215.6
+CaloJet 0: rawPt=163.5 eta=-3.72 phi=0.96 area=0.503 towers=17 n90=9 emf=0.27 | L1FastJet=0.7335 L2Relative=0.7243 L3Absolute=0.7243 L2L3Residual=0.7243 jecBin=eta[-3.839,-3.664] | recomputedPt=118.5 correctedPt=118.5 | gen=115.9 dR=0.05
+CaloJet 1: rawPt=70.9 eta=-1.58 phi=-2.08 area=0.503 towers=33 n90=19 emf=0.56 | L1FastJet=0.8091 L2Relative=1.3162 L3Absolute=1.3162 L2L3Residual=1.3162 jecBin=eta[-1.653,-1.566] | recomputedPt=93.3 correctedPt=93.3 | gen=117.8 dR=0.01
+CaloJet 5: rawPt=36.1 eta=4.57 phi=-1.23 area=0.503 towers=14 n90=12 emf=0.36 | L1FastJet=0.3374 L2Relative=0.4622 L3Absolute=0.4622 L2L3Residual=0.4622 jecBin=eta[4.538,4.716] | recomputedPt=16.7 correctedPt=16.7 | gen=- dR=-
+CaloJet 7: rawPt=35.7 eta=2.77 phi=0.51 area=0.503 towers=17 n90=12 emf=0.53 | L1FastJet=0.2248 L2Relative=0.5222 L3Absolute=0.5222 L2L3Residual=0.5222 jecBin=eta[2.65,2.853] | recomputedPt=18.6 correctedPt=18.6 | gen=- dR=-
+CaloJet 8: rawPt=35.1 eta=-2.72 phi=-0.71 area=0.503 towers=16 n90=12 emf=0.43 | L1FastJet=0.2206 L2Relative=0.5041 L3Absolute=0.5041 L2L3Residual=0.5041 jecBin=eta[-2.853,-2.65] | recomputedPt=17.7 correctedPt=17.7 | gen=- dR=-
+CaloJet 9: rawPt=34.8 eta=-2.79 phi=3.12 area=0.503 towers=18 n90=13 emf=0.63 | L1FastJet=0.2154 L2Relative=0.4972 L3Absolute=0.4972 L2L3Residual=0.4972 jecBin=eta[-2.853,-2.65] | recomputedPt=17.3 correctedPt=17.3 | gen=- dR=-
+CaloJet 18: rawPt=31.1 eta=-2.82 phi=0.89 area=0.457 towers=16 n90=13 emf=0.48 | L1FastJet=0.2270 L2Relative=0.5335 L3Absolute=0.5335 L2L3Residual=0.5335 jecBin=eta[-2.853,-2.65] | recomputedPt=16.6 correctedPt=16.6 | gen=- dR=-
+CaloJet 21: rawPt=30.8 eta=2.38 phi=-1.73 area=0.501 towers=17 n90=13 emf=0.59 | L1FastJet=0.2809 L2Relative=0.5606 L3Absolute=0.5606 L2L3Residual=0.5606 jecBin=eta[2.322,2.5] | recomputedPt=17.3 correctedPt=17.3 | gen=- dR=-
+CaloJet 32: rawPt=26.1 eta=2.15 phi=0.89 area=0.484 towers=18 n90=13 emf=0.53 | L1FastJet=0.3073 L2Relative=0.6969 L3Absolute=0.6969 L2L3Residual=0.6969 jecBin=eta[2.043,2.172] | recomputedPt=18.2 correctedPt=18.2 | gen=- dR=-
+CaloJet 41: rawPt=22.7 eta=-2.13 phi=-1.76 area=0.414 towers=14 n90=10 emf=0.29 | L1FastJet=0.3468 L2Relative=0.8084 L3Absolute=0.8084 L2L3Residual=0.8084 jecBin=eta[-2.172,-2.043] | recomputedPt=18.4 correctedPt=18.4 | gen=- dR=-
+CaloJet 52: rawPt=19.0 eta=-0.35 phi=0.36 area=0.503 towers=19 n90=15 emf=0.67 | L1FastJet=0.5691 L2Relative=1.1964 L3Absolute=1.1964 L2L3Residual=1.1964 jecBin=eta[-0.435,-0.348] | recomputedPt=22.7 correctedPt=22.7 | gen=- dR=-
+CaloJet 54: rawPt=18.9 eta=-0.83 phi=-2.78 area=0.503 towers=23 n90=18 emf=0.56 | L1FastJet=0.5094 L2Relative=1.1070 L3Absolute=1.1070 L2L3Residual=1.1070 jecBin=eta[-0.879,-0.783] | recomputedPt=20.9 correctedPt=20.9 | gen=- dR=-
+zoom gen jet 1: pt=117.8 centre ieta=-19 iphi=49 towersEt(dR<0.4 of the jet axis)=72.7 towersEt(9x9)=79.5
+zoom gen jet 2: pt=115.9 centre ieta=-34 iphi=12 towersEt(dR<0.4 of the jet axis)=168.9 towersEt(9x9)=215.9
 ```
 
-The arithmetic of the chapter: b jet 68.4 x 0.7827 = 53.5, x 1.2935 / 0.7827 = 1.653 -> 88.5; bbar jet 162.3 x 0.7049 =
-114.4, x 0.6988 / 0.7049 = 0.991 -> 113.4; pileup jet 41.8 x 0.2597 = 10.9, x 1.756 -> 19.1. 26 raw calo jets above
-30 GeV (`CaloJet` lines with `rawPt` > 30), 2 corrected. rho x area: 40.0 x 0.503 = 20 GeV. The 9 x 9 windows of the L1
-jets of chapter 12: 71.0 (b) and 190.5 GeV (bbar) (`ledger_12_L1T.txt`, section 3).
+The arithmetic of the chapter: b jet 70.9 x 0.8091 = 57.4 (13.5 GeV subtracted), x 1.3162 / 0.8091 = 1.627 -> 93.3;
+bbar jet 163.5 x 0.7335 = 119.9 (43.6 GeV subtracted), x 0.7243 / 0.7335 = 0.987 -> 118.5. The section lists the calo
+jets above 15 GeV after the corrections; the leading jet of the pileup before them is `CaloJet 2` of `hlt_13_HLT.log`,
+not listed here:
+
+```
+  CaloJet 2: rawPt=39.5 eta=3.66 phi=-0.36 area=0.503 towers=16 n90=13 emf=0.35 | L1FastJet=0.2602 L2Relative=0.3169 L3Absolute=0.3169 L2L3Residual=0.3169 jecBin=eta[3.489,3.664] | recomputedPt=12.5 correctedPt=12.5 | gen=- dR=-
+```
+
+39.5 x 0.2602 = 10.3, x 0.3169 / 0.2602 = 1.218 -> 12.5. 23 raw calo jets above 30 GeV (`CaloJet` lines of
+`hlt_13_HLT.log` with `rawPt` > 30; the log has 143 `CaloJet` lines), 2 corrected. rho x area: 36.3 x 0.503 = 18.3 GeV.
+The 9 x 9 windows of the L1 jets of chapter 12: 74.5 (b) and 189.0 GeV (bbar) (`ledger_12_L1T.txt`, section 3); the HLT
+towers in the same windows: 79.5 and 215.9 GeV (`zoom gen jet` lines).
 
 ### Step 3 (`ledger_13_HLT.txt`, section 3)
 
 ```
 -- 3. Step 3: tracking and vertices
-clusters: pixel=20699 (modules 1752) strip=115932 (modules 13919)
-tracks pixel: n=2978 pt>1=1761 pt>10=166 sumPt=38313.1
-tracks iter0: n=110 pt>1=44 pt>10=2 sumPt=158.4
-tracks doubletRecovery: n=5 pt>1=2 pt>10=0 sumPt=5.4
-tracks merged: n=115 pt>1=46 pt>10=2 sumPt=163.7
-tracks merged: highPurity=115 meanPixelHits=4.16 meanStripHits=9.44
+clusters: pixel=20925 (modules 1766) strip=115249 (modules 13859)
+tracks pixel: n=2981 pt>1=1771 pt>10=156 sumPt=18982.2
+tracks iter0: n=108 pt>1=42 pt>10=3 sumPt=165.4
+tracks doubletRecovery: n=8 pt>1=7 pt>10=0 sumPt=14.1
+tracks merged: n=116 pt>1=49 pt>10=3 sumPt=179.5
+tracks merged: highPurity=116 meanPixelHits=3.97 meanStripHits=9.34
 truth: signal vertex x=0.0277 y=-0.0169 z=3.1119 | in-time pileup collisions=68 (mean 68)
 truth: pileup collisions within 1 mm of the signal in z: 0 | z range -9.52 .. 6.53
-vertices pixel: n=27
-vertices trimmed (seeds of iteration 0): n=1 | z=3.106(signal)
+vertices pixel: n=31
+vertices trimmed (seeds of iteration 0): n=1 | z=3.107(signal)
 vertices PF: n=1
-vertex PF 0: z=3.1114 ndof=103.1 tracks=104 near=63 sumPt=104.8 sumPt2=487.3 sim=signal dzSim=0.0005
+vertex PF 0: z=3.1112 ndof=95.4 tracks=107 near=59 sumPt=115.6 sumPt2=627.0 sim=signal dzSim=0.0007
 signal vertex rank: pixel=0 PF=0 (0 = the first, the primary vertex)
-jet tracks: gen jet 1 pt=117.8 eta=-1.59 chargedGenPt=32.6 | tracks dR<0.4: n=5 sumPt=34.0 | from the signal vertex (|dz|<0.1 cm): n=4 sumPt=33.1
+jet tracks: gen jet 1 pt=117.8 eta=-1.59 chargedGenPt=32.6 | tracks dR<0.4: n=7 sumPt=50.1 | from the signal vertex (|dz|<0.1 cm): n=6 sumPt=49.2
 jet tracks: gen jet 2 pt=115.9 eta=-3.75 chargedGenPt=44.0 | tracks dR<0.4: n=0 sumPt=0.0 | from the signal vertex (|dz|<0.1 cm): n=0 sumPt=0.0
-tracks from the signal vertex (|dz| < 0.1 cm of z=3.111): n=63 sumPt=104.8
-vertex pixel 0: z=3.1060 ndof=37.0 tracks=38 near=63 sumPt=104.8 sumPt2=487.3 sim=signal dzSim=0.0060
-vertex pixel 1: z=-0.3332 ndof=26.0 tracks=27 near=0 sumPt=0.0 sumPt2=0.0 sim=pu9 dzSim=0.0052
-vertex pixel 2: z=-5.4505 ndof=35.0 tracks=36 near=0 sumPt=0.0 sumPt2=0.0 sim=pu30 dzSim=0.0038
-vertex pixel 3: z=2.0841 ndof=18.0 tracks=19 near=0 sumPt=0.0 sumPt2=0.0 sim=pu46 dzSim=0.0014
-vertex pixel 4: z=0.3606 ndof=27.0 tracks=28 near=0 sumPt=0.0 sumPt2=0.0 sim=pu35 dzSim=0.0002
-vertex pixel 5: z=1.2489 ndof=18.0 tracks=19 near=0 sumPt=0.0 sumPt2=0.0 sim=pu31 dzSim=0.0015
-vertex pixel 6: z=-2.0501 ndof=17.0 tracks=18 near=0 sumPt=0.0 sumPt2=0.0 sim=pu38 dzSim=0.0004
-vertex pixel 7: z=2.8838 ndof=25.0 tracks=26 near=27 sumPt=34.1 sumPt2=59.9 sim=pu34 dzSim=0.0047
+tracks from the signal vertex (|dz| < 0.1 cm of z=3.111): n=61 sumPt=121.8
+vertex pixel 0: z=3.1066 ndof=39.0 tracks=40 near=61 sumPt=121.8 sumPt2=653.8 sim=signal dzSim=0.0053
+vertex pixel 1: z=-0.3305 ndof=21.0 tracks=22 near=0 sumPt=0.0 sumPt2=0.0 sim=pu9 dzSim=0.0079
+vertex pixel 2: z=-5.4560 ndof=30.0 tracks=31 near=0 sumPt=0.0 sumPt2=0.0 sim=pu30 dzSim=0.0017
+vertex pixel 3: z=2.0815 ndof=21.0 tracks=22 near=0 sumPt=0.0 sumPt2=0.0 sim=pu42 dzSim=0.0012
+vertex pixel 4: z=0.3620 ndof=26.0 tracks=27 near=0 sumPt=0.0 sumPt2=0.0 sim=pu35 dzSim=0.0016
+vertex pixel 5: z=-2.0472 ndof=12.0 tracks=13 near=0 sumPt=0.0 sumPt2=0.0 sim=pu51 dzSim=0.0003
+vertex pixel 6: z=-2.8665 ndof=17.0 tracks=18 near=0 sumPt=0.0 sumPt2=0.0 sim=pu29 dzSim=0.0009
+vertex pixel 7: z=2.4981 ndof=24.0 tracks=25 near=0 sumPt=0.0 sumPt2=0.0 sim=pu22 dzSim=0.0034
 ```
 
 The pixel vertices in full (`hlt_13_HLT.log`):
 
 ```
-  vertex pixel 0: z=3.1060 ndof=37.0 tracks=38 near=63 sumPt=104.8 sumPt2=487.3 sim=signal dzSim=0.0060
-  vertex pixel 1: z=-0.3332 ndof=26.0 tracks=27 near=0 sumPt=0.0 sumPt2=0.0 sim=pu9 dzSim=0.0052
-  vertex pixel 2: z=-5.4505 ndof=35.0 tracks=36 near=0 sumPt=0.0 sumPt2=0.0 sim=pu30 dzSim=0.0038
-  vertex pixel 3: z=2.0841 ndof=18.0 tracks=19 near=0 sumPt=0.0 sumPt2=0.0 sim=pu46 dzSim=0.0014
-  vertex pixel 4: z=0.3606 ndof=27.0 tracks=28 near=0 sumPt=0.0 sumPt2=0.0 sim=pu35 dzSim=0.0002
-  vertex pixel 5: z=1.2489 ndof=18.0 tracks=19 near=0 sumPt=0.0 sumPt2=0.0 sim=pu31 dzSim=0.0015
-  vertex pixel 6: z=-2.0501 ndof=17.0 tracks=18 near=0 sumPt=0.0 sumPt2=0.0 sim=pu38 dzSim=0.0004
-  vertex pixel 7: z=2.8838 ndof=25.0 tracks=26 near=27 sumPt=34.1 sumPt2=59.9 sim=pu34 dzSim=0.0047
-  vertex pixel 8: z=0.2745 ndof=17.0 tracks=18 near=0 sumPt=0.0 sumPt2=0.0 sim=pu37 dzSim=0.0001
-  vertex pixel 9: z=-2.8358 ndof=22.0 tracks=23 near=0 sumPt=0.0 sumPt2=0.0 sim=pu50 dzSim=0.0184
-  vertex pixel 10: z=5.5124 ndof=10.0 tracks=11 near=0 sumPt=0.0 sumPt2=0.0 sim=pu20 dzSim=0.0022
-  vertex pixel 11: z=-0.0668 ndof=26.0 tracks=27 near=0 sumPt=0.0 sumPt2=0.0 sim=pu28 dzSim=0.0086
-  vertex pixel 12: z=1.4895 ndof=23.0 tracks=24 near=0 sumPt=0.0 sumPt2=0.0 sim=pu10 dzSim=0.0030
-  vertex pixel 13: z=2.5022 ndof=18.0 tracks=19 near=0 sumPt=0.0 sumPt2=0.0 sim=pu22 dzSim=0.0007
-  vertex pixel 14: z=3.4953 ndof=7.0 tracks=8 near=1 sumPt=1.1 sumPt2=1.2 sim=pu23 dzSim=0.0023
+  vertex pixel 0: z=3.1066 ndof=39.0 tracks=40 near=61 sumPt=121.8 sumPt2=653.8 sim=signal dzSim=0.0053
+  vertex pixel 1: z=-0.3305 ndof=21.0 tracks=22 near=0 sumPt=0.0 sumPt2=0.0 sim=pu9 dzSim=0.0079
+  vertex pixel 2: z=-5.4560 ndof=30.0 tracks=31 near=0 sumPt=0.0 sumPt2=0.0 sim=pu30 dzSim=0.0017
+  vertex pixel 3: z=2.0815 ndof=21.0 tracks=22 near=0 sumPt=0.0 sumPt2=0.0 sim=pu42 dzSim=0.0012
+  vertex pixel 4: z=0.3620 ndof=26.0 tracks=27 near=0 sumPt=0.0 sumPt2=0.0 sim=pu35 dzSim=0.0016
+  vertex pixel 5: z=-2.0472 ndof=12.0 tracks=13 near=0 sumPt=0.0 sumPt2=0.0 sim=pu51 dzSim=0.0003
+  vertex pixel 6: z=-2.8665 ndof=17.0 tracks=18 near=0 sumPt=0.0 sumPt2=0.0 sim=pu29 dzSim=0.0009
+  vertex pixel 7: z=2.4981 ndof=24.0 tracks=25 near=0 sumPt=0.0 sumPt2=0.0 sim=pu22 dzSim=0.0034
+  vertex pixel 8: z=2.8856 ndof=19.0 tracks=20 near=27 sumPt=30.3 sumPt2=41.7 sim=pu34 dzSim=0.0064
+  vertex pixel 9: z=1.4886 ndof=27.0 tracks=28 near=0 sumPt=0.0 sumPt2=0.0 sim=pu10 dzSim=0.0039
+  vertex pixel 10: z=-0.0608 ndof=16.0 tracks=17 near=0 sumPt=0.0 sumPt2=0.0 sim=pu59 dzSim=0.0043
+  vertex pixel 11: z=3.4951 ndof=11.0 tracks=12 near=2 sumPt=2.6 sumPt2=3.4 sim=pu23 dzSim=0.0021
+  vertex pixel 12: z=1.2480 ndof=16.0 tracks=17 near=0 sumPt=0.0 sumPt2=0.0 sim=pu31 dzSim=0.0024
+  vertex pixel 13: z=-5.3849 ndof=1.0 tracks=2 near=0 sumPt=0.0 sumPt2=0.0 sim=pu7 dzSim=0.0389
+  vertex pixel 14: z=-2.8111 ndof=14.0 tracks=15 near=0 sumPt=0.0 sumPt2=0.0 sim=pu50 dzSim=0.0063
 ```
 
 ### Step 4 (`ledger_13_HLT.txt`, section 4)
 
 ```
 -- 4. Step 4: particle flow and PF jets
-pfcands all: n=1421 sumPt=2728.4
-pfcands h: n=115 sumPt=163.9
+pfcands all: n=1366 sumPt=2655.8
+pfcands h: n=117 sumPt=181.9
 pfcands e: n=0 sumPt=0.0
-pfcands mu: n=1 sumPt=3.1
-pfcands gamma: n=276 sumPt=212.9
-pfcands h0: n=224 sumPt=779.3
-pfcands h_HF: n=703 sumPt=1482.1
-pfcands egamma_HF: n=102 sumPt=87.1
-pfcands region tracker: n=568 sumPt=855.8 charged n=108 sumPt=158.8
-pfcands region outside: n=68 sumPt=312.2 charged n=8 sumPt=8.2
-pfcands region HF: n=785 sumPt=1560.3 charged n=0 sumPt=0.0
-rho (hltFixedGridRhoFastjetAll): 36.405 GeV per unit area
-pf jets: raw=194 corrected=194 corrected>10=36 >30=2 >30 with a gen jet=2
+pfcands mu: n=1 sumPt=3.0
+pfcands gamma: n=238 sumPt=196.3
+pfcands h0: n=209 sumPt=702.5
+pfcands h_HF: n=700 sumPt=1486.0
+pfcands egamma_HF: n=101 sumPt=86.0
+pfcands region tracker: n=515 sumPt=833.1 charged n=110 sumPt=176.7
+pfcands region outside: n=68 sumPt=259.1 charged n=8 sumPt=8.3
+pfcands region HF: n=783 sumPt=1563.6 charged n=0 sumPt=0.0
+rho (hltFixedGridRhoFastjetAll): 36.743 GeV per unit area
+pf jets: raw=192 corrected=192 corrected>10=30 >30=2 >30 with a gen jet=2
 jec pf: level=L1FastJet records=118 formula="max(0.0001,1-(z/y)*([0]+([1]*(x))*(1+[2]*log(y))))" binVar=JetEta,JetPhi, parVar=Rho,JetPt,JetA, JetPhiBins(eta -5.191..-4.889)=-3.15..3.15, etaBinsWithSeveralPhiBins=36 | split bins: [-1.566,-1.479]x[-3.15,-1.2] [-1.566,-1.479]x[-1.2,-0.8] [-1.566,-1.479]x[-0.8,3.15] [-1.479,-1.392]x[-3.15,-1.2] [-1.479,-1.392]x[-1.2,-0.8] [-1.479,-1.392]x[-0.8,3.15] [-1.392,-1.305]x[-3.1
 jec pf: level=L2Relative records=118 formula="max(0.0001,[0]+([1]/(pow(log10(x),2)+[2]))+([3]*exp(-([4]*((log10(x)-[5])*(log10(x)-[5])))))+([6]*exp(-([7]*((log10(x)-[8])*(log10(x)-[8]))))))" binVar=JetEta,JetPhi, parVar=JetPt, JetPhiBins(eta -5.191..-4.889)=-3.15..3.15, etaBinsWithSeveralPhiBins=36 | split bins: [-1.566,-1.479]x[-3.15,-1.2] [-1.566,-1.479]x[-1.2,-0.8] [-1.566,-1.479]x[-0.8,3.15] [-1.479,-1.392]x[-3.1
 jec pf: level=L3Absolute records=1 formula="1" binVar=JetEta, parVar=JetPt,
 jec pf: level=L2L3Residual records=1 formula="1" binVar=JetEta, parVar=JetPt,
-PFJet 0: pt=125.9 rawPt=155.6 eta=-3.77 phi=0.96 area=0.503 n=17 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.8246 L2Relative=0.8089 L3Absolute=0.8089 L2L3Residual=0.8089 jecBin=eta[-3.839,-3.664]phi[-3.15,3.15] | recomputedPt=125.9 | gen=115.9 dR=0.05
-PFJet 1: pt=80.3 rawPt=77.9 eta=-1.58 phi=-2.08 area=0.503 n=31 chf=0.43 nhf=0.11 phf=0.46 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.8613 L2Relative=1.0308 L3Absolute=1.0308 L2L3Residual=1.0308 jecBin=eta[-1.653,-1.566]phi[-3.15,3.15] | recomputedPt=80.3 | gen=117.8 dR=0.01
-PFJet 2: pt=29.0 rawPt=32.0 eta=-2.05 phi=-1.76 area=0.412 n=13 chf=0.24 nhf=0.67 phf=0.09 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.6719 L2Relative=0.9062 L3Absolute=0.9062 L2L3Residual=0.9062 jecBin=eta[-2.172,-2.043]phi[-3.15,3.15] | recomputedPt=29.0 | gen=- dR=-
-PFJet 3: pt=25.6 rawPt=39.9 eta=3.21 phi=-0.42 area=0.503 n=14 chf=0.00 nhf=0.98 phf=0.00 elf=0.00 muf=0.00 hfhf=0.82 hfemf=0.02 | L1FastJet=0.5276 L2Relative=0.6408 L3Absolute=0.6408 L2L3Residual=0.6408 jecBin=eta[3.139,3.314]phi[-3.15,3.15] | recomputedPt=25.6 | gen=- dR=-
-PFJet 4: pt=23.3 rawPt=34.3 eta=-2.94 phi=0.95 area=0.503 n=12 chf=0.00 nhf=0.74 phf=0.00 elf=0.00 muf=0.00 hfhf=0.21 hfemf=0.26 | L1FastJet=0.3692 L2Relative=0.6799 L3Absolute=0.6799 L2L3Residual=0.6799 jecBin=eta[-2.964,-2.853]phi[-3.15,3.15] | recomputedPt=23.3 | gen=- dR=-
-PFJet 5: pt=23.1 rawPt=25.8 eta=1.11 phi=2.45 area=0.503 n=13 chf=0.35 nhf=0.35 phf=0.30 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.7001 L2Relative=0.8954 L3Absolute=0.8954 L2L3Residual=0.8954 jecBin=eta[1.044,1.131]phi[-3.15,3.15] | recomputedPt=23.1 | gen=- dR=-
-zoom gen jet 1: pt=117.8 eta=-1.59 | PF jet 80.3 (raw 77.9) dR=0.01 | constituents: h=5/34.0 e=0/0.0 mu=0/0.0 gamma=21/35.7 h0=5/9.0 h_HF=0/0.0 egamma_HF=0/0.0
-zoom gen jet 2: pt=115.9 eta=-3.75 | PF jet 125.9 (raw 155.6) dR=0.05 | constituents: h=0/0.0 e=0/0.0 mu=0/0.0 gamma=0/0.0 h0=0/0.0 h_HF=17/156.9 egamma_HF=0/0.0
+PFJet 0: pt=126.7 rawPt=156.8 eta=-3.77 phi=0.96 area=0.503 n=17 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.8241 L2Relative=0.8081 L3Absolute=0.8081 L2L3Residual=0.8081 jecBin=eta[-3.839,-3.664]phi[-3.15,3.15] | recomputedPt=126.7 | gen=115.9 dR=0.05
+PFJet 1: pt=86.7 rawPt=83.7 eta=-1.58 phi=-2.08 area=0.503 n=29 chf=0.59 nhf=0.07 phf=0.34 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.8685 L2Relative=1.0353 L3Absolute=1.0353 L2L3Residual=1.0353 jecBin=eta[-1.653,-1.566]phi[-3.15,3.15] | recomputedPt=86.7 | gen=117.8 dR=0.01
+PFJet 2: pt=21.2 rawPt=24.2 eta=1.11 phi=2.43 area=0.503 n=12 chf=0.37 nhf=0.31 phf=0.32 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.6804 L2Relative=0.8758 L3Absolute=0.8758 L2L3Residual=0.8758 jecBin=eta[1.044,1.131]phi[-3.15,3.15] | recomputedPt=21.2 | gen=- dR=-
+zoom gen jet 1: pt=117.8 eta=-1.59 | PF jet 86.7 (raw 83.7) dR=0.01 | constituents: h=7/50.1 e=0/0.0 mu=0/0.0 gamma=20/28.4 h0=2/5.8 h_HF=0/0.0 egamma_HF=0/0.0
+zoom gen jet 2: pt=115.9 eta=-3.75 | PF jet 126.7 (raw 156.8) dR=0.05 | constituents: h=0/0.0 e=0/0.0 mu=0/0.0 gamma=0/0.0 h0=0/0.0 h_HF=17/158.1 egamma_HF=0/0.0
 ```
 
-The arithmetic of the chapter: b jet 77.9 x 0.8613 = 67.1 (10.8 GeV subtracted), x 1.0308 / 0.8613 = 1.197 -> 80.3;
-bbar jet 155.6 x 0.8246 = 128.3 (27.3 GeV subtracted), x 0.8089 / 0.8246 = 0.981 -> 125.9. The PF jets above 15 GeV
-(`hlt_13_HLT.log`, `PFJet` lines; table 13.11):
+The arithmetic of the chapter: b jet 83.7 x 0.8685 = 72.7 (11.0 GeV subtracted), x 1.0353 / 0.8685 = 1.192 -> 86.7;
+bbar jet 156.8 x 0.8241 = 129.2 (27.6 GeV subtracted), x 0.8081 / 0.8241 = 0.981 -> 126.7. 9 raw PF jets above 30 GeV
+(`PFJet` lines with `rawPt` > 30; the log has 30 `PFJet` lines), 2 corrected. The PF jets above 15 GeV after the
+corrections (`hlt_13_HLT.log`, `PFJet` lines; the table of the PF jets in step 4 of the chapter):
 
 ```
-  PFJet 0: pt=125.9 rawPt=155.6 eta=-3.77 phi=0.96 area=0.503 n=17 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.8246 L2Relative=0.8089 L3Absolute=0.8089 L2L3Residual=0.8089 jecBin=eta[-3.839,-3.664]phi[-3.15,3.15] | recomputedPt=125.9 | gen=115.9 dR=0.05
-  PFJet 1: pt=80.3 rawPt=77.9 eta=-1.58 phi=-2.08 area=0.503 n=31 chf=0.43 nhf=0.11 phf=0.46 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.8613 L2Relative=1.0308 L3Absolute=1.0308 L2L3Residual=1.0308 jecBin=eta[-1.653,-1.566]phi[-3.15,3.15] | recomputedPt=80.3 | gen=117.8 dR=0.01
-  PFJet 2: pt=29.0 rawPt=32.0 eta=-2.05 phi=-1.76 area=0.412 n=13 chf=0.24 nhf=0.67 phf=0.09 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.6719 L2Relative=0.9062 L3Absolute=0.9062 L2L3Residual=0.9062 jecBin=eta[-2.172,-2.043]phi[-3.15,3.15] | recomputedPt=29.0 | gen=- dR=-
-  PFJet 3: pt=25.6 rawPt=39.9 eta=3.21 phi=-0.42 area=0.503 n=14 chf=0.00 nhf=0.98 phf=0.00 elf=0.00 muf=0.00 hfhf=0.82 hfemf=0.02 | L1FastJet=0.5276 L2Relative=0.6408 L3Absolute=0.6408 L2L3Residual=0.6408 jecBin=eta[3.139,3.314]phi[-3.15,3.15] | recomputedPt=25.6 | gen=- dR=-
-  PFJet 4: pt=23.3 rawPt=34.3 eta=-2.94 phi=0.95 area=0.503 n=12 chf=0.00 nhf=0.74 phf=0.00 elf=0.00 muf=0.00 hfhf=0.21 hfemf=0.26 | L1FastJet=0.3692 L2Relative=0.6799 L3Absolute=0.6799 L2L3Residual=0.6799 jecBin=eta[-2.964,-2.853]phi[-3.15,3.15] | recomputedPt=23.3 | gen=- dR=-
-  PFJet 5: pt=23.1 rawPt=25.8 eta=1.11 phi=2.45 area=0.503 n=13 chf=0.35 nhf=0.35 phf=0.30 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.7001 L2Relative=0.8954 L3Absolute=0.8954 L2L3Residual=0.8954 jecBin=eta[1.044,1.131]phi[-3.15,3.15] | recomputedPt=23.1 | gen=- dR=-
-  PFJet 6: pt=18.7 rawPt=35.7 eta=3.07 phi=2.06 area=0.503 n=11 chf=0.00 nhf=0.91 phf=0.00 elf=0.00 muf=0.00 hfhf=0.60 hfemf=0.09 | L1FastJet=0.3469 L2Relative=0.5251 L3Absolute=0.5251 L2L3Residual=0.5251 jecBin=eta[2.964,3.139]phi[-3.15,3.15] | recomputedPt=18.7 | gen=- dR=-
-  PFJet 7: pt=18.7 rawPt=31.4 eta=-2.89 phi=-1.21 area=0.503 n=12 chf=0.01 nhf=0.86 phf=0.00 elf=0.00 muf=0.00 hfhf=0.28 hfemf=0.12 | L1FastJet=0.3082 L2Relative=0.5949 L3Absolute=0.5949 L2L3Residual=0.5949 jecBin=eta[-2.964,-2.853]phi[-3.15,3.15] | recomputedPt=18.7 | gen=- dR=-
-  PFJet 8: pt=18.6 rawPt=34.9 eta=-4.23 phi=1.26 area=0.398 n=12 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.4683 L2Relative=0.5327 L3Absolute=0.5327 L2L3Residual=0.5327 jecBin=eta[-4.363,-4.191]phi[-3.15,3.15] | recomputedPt=18.6 | gen=- dR=-
-  PFJet 9: pt=18.6 rawPt=25.9 eta=-2.21 phi=2.90 area=0.503 n=11 chf=0.16 nhf=0.70 phf=0.04 elf=0.00 muf=0.10 hfhf=0.00 hfemf=0.00 | L1FastJet=0.4994 L2Relative=0.7176 L3Absolute=0.7176 L2L3Residual=0.7176 jecBin=eta[-2.322,-2.172]phi[-3.15,3.15] | recomputedPt=18.6 | gen=- dR=-
-  PFJet 10: pt=15.6 rawPt=30.1 eta=4.77 phi=1.67 area=0.503 n=11 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.4095 L2Relative=0.5170 L3Absolute=0.5170 L2L3Residual=0.5170 jecBin=eta[4.716,4.889]phi[-3.15,3.15] | recomputedPt=15.6 | gen=- dR=-
-  PFJet 11: pt=15.4 rawPt=19.0 eta=1.05 phi=1.71 area=0.494 n=12 chf=0.05 nhf=0.69 phf=0.26 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.6156 L2Relative=0.8108 L3Absolute=0.8108 L2L3Residual=0.8108 jecBin=eta[1.044,1.131]phi[-3.15,3.15] | recomputedPt=15.4 | gen=- dR=-
+  PFJet 0: pt=126.7 rawPt=156.8 eta=-3.77 phi=0.96 area=0.503 n=17 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.8241 L2Relative=0.8081 L3Absolute=0.8081 L2L3Residual=0.8081 jecBin=eta[-3.839,-3.664]phi[-3.15,3.15] | recomputedPt=126.7 | gen=115.9 dR=0.05
+  PFJet 1: pt=86.7 rawPt=83.7 eta=-1.58 phi=-2.08 area=0.503 n=29 chf=0.59 nhf=0.07 phf=0.34 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.8685 L2Relative=1.0353 L3Absolute=1.0353 L2L3Residual=1.0353 jecBin=eta[-1.653,-1.566]phi[-3.15,3.15] | recomputedPt=86.7 | gen=117.8 dR=0.01
+  PFJet 2: pt=21.2 rawPt=24.2 eta=1.11 phi=2.43 area=0.503 n=12 chf=0.37 nhf=0.31 phf=0.32 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.6804 L2Relative=0.8758 L3Absolute=0.8758 L2L3Residual=0.8758 jecBin=eta[1.044,1.131]phi[-3.15,3.15] | recomputedPt=21.2 | gen=- dR=-
+  PFJet 3: pt=19.6 rawPt=37.7 eta=3.41 phi=1.94 area=0.503 n=15 chf=0.00 nhf=0.95 phf=0.00 elf=0.00 muf=0.00 hfhf=0.95 hfemf=0.05 | L1FastJet=0.4269 L2Relative=0.5206 L3Absolute=0.5206 L2L3Residual=0.5206 jecBin=eta[3.314,3.489]phi[-3.15,3.15] | recomputedPt=19.6 | gen=- dR=-
+  PFJet 4: pt=18.3 rawPt=34.7 eta=4.61 phi=-1.23 area=0.503 n=14 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.4211 L2Relative=0.5263 L3Absolute=0.5263 L2L3Residual=0.5263 jecBin=eta[4.538,4.716]phi[-3.15,3.15] | recomputedPt=18.3 | gen=- dR=-
+  PFJet 5: pt=18.0 rawPt=34.6 eta=-4.22 phi=1.25 area=0.397 n=12 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.4584 L2Relative=0.5222 L3Absolute=0.5222 L2L3Residual=0.5222 jecBin=eta[-4.363,-4.191]phi[-3.15,3.15] | recomputedPt=18.0 | gen=- dR=-
+  PFJet 6: pt=16.7 rawPt=29.9 eta=4.78 phi=1.67 area=0.464 n=11 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.4454 L2Relative=0.5605 L3Absolute=0.5605 L2L3Residual=0.5605 jecBin=eta[4.716,4.889]phi[-3.15,3.15] | recomputedPt=16.7 | gen=- dR=-
+  PFJet 7: pt=16.3 rawPt=19.7 eta=1.02 phi=1.69 area=0.493 n=12 chf=0.05 nhf=0.73 phf=0.22 elf=0.00 muf=0.00 hfhf=0.00 hfemf=0.00 | L1FastJet=0.6417 L2Relative=0.8266 L3Absolute=0.8266 L2L3Residual=0.8266 jecBin=eta[0.957,1.044]phi[-3.15,3.15] | recomputedPt=16.3 | gen=- dR=-
+  PFJet 8: pt=16.1 rawPt=38.9 eta=3.69 phi=-0.36 area=0.503 n=16 chf=0.00 nhf=1.00 phf=0.00 elf=0.00 muf=0.00 hfhf=1.00 hfemf=0.00 | L1FastJet=0.3565 L2Relative=0.4142 L3Absolute=0.4142 L2L3Residual=0.4142 jecBin=eta[3.664,3.839]phi[-3.15,3.15] | recomputedPt=16.1 | gen=- dR=-
 ```
 
 ### Step 5 (`ledger_13_HLT.txt`, section 5)
 
 ```
 -- 5. Step 5: the decision
-HLT_ and DST_ paths that accept the event: 41
+HLT_ and DST_ paths that accept the event: 40
   satisfied by signal jets: 16
      HLT_DiPFJetAve40_v27
      HLT_DiPFJetAve60_v27
@@ -715,8 +654,8 @@ HLT_ and DST_ paths that accept the event: 41
      HLT_AK8PFJetFwd60_v27
      HLT_AK8PFJetFwd80_v27
   satisfied by a pileup object: 2
-     HLT_Mu3_PFJet40_v29: the muon of a pileup kaon decay (3.1 GeV) and the b jet
-     HLT_CaloMET90_NotCleaned_v15: a calorimeter MET of 133.3 GeV (the neutrino has 37.5)
+     HLT_Mu3_PFJet40_v29: the muon of a pileup kaon decay (3.1 GeV at L2, 3.0 GeV at L3) and the b jet
+     HLT_CaloMET90_NotCleaned_v15: a calorimeter MET of 138.5 GeV (the neutrino has 37.5)
   satisfied by the L1 seed alone: 3
      HLT_L1SingleMuCosmics_v9: the L1 seed alone (the pileup muon)
      HLT_L1ETMHadSeeds_v11: the L1 seed alone (ETMHF)
@@ -734,37 +673,36 @@ HLT_ and DST_ paths that accept the event: 41
      HLT_ZeroBias_Alignment_v9
      HLT_ZeroBias_Beamspot_v17
      HLT_PPSRandom_v1
-  satisfied by scouting (DST_): 8
+  satisfied by scouting (DST_): 7
      DST_ZeroBias_v12
      DST_Physics_v17
      DST_PFScouting_CICADAVLoose_v3
      DST_PFScouting_CICADALoose_v3
      DST_PFScouting_CICADAMedium_v3
      DST_PFScouting_CICADATight_v3
-     DST_PFScouting_CICADAVTight_v3
      DST_PFScouting_ZeroBias_v5
 
 the paths whose L1 seed fired (they start their reconstruction), by kind:
    single jets, dijets                        accepted 16, stopped 14  HLTDiPFJetAveEtaFilter 4, HLT1PFJet 4, HLT1CaloJet 4, HLTDiCaloJetAveFilter 2
-   multijets                                  accepted  0, stopped  6  HLT1CaloJet 6
-   VBF (two jets far apart in eta)            accepted  0, stopped 13  HLTPFJetVBFFilter 6, HLT1CaloJet 4, HLTCaloJetVBFFilter 3
+   multijets                                  accepted  0, stopped  0  
+   VBF (two jets far apart in eta)            accepted  0, stopped  0  
    missing energy, HT                         accepted  1, stopped 29  HLTMhtFilter 16, HLT1PFMET 5, HLTDeDxFilter 3, HLTHtMhtFilter 2, HLTMuonRecHitClusterFilter 2, HLT1CaloMET 1
    muons                                      accepted  1, stopped 12  HLTMuonL2FromL1TPreFilter 9, HLTMuonL3PreFilter 3
-   electrons                                  accepted  0, stopped  2  HLTEgammaL1TMatchFilterRegional 1, HLTEgammaGenericFilter 1
-   scouting                                   accepted  8, stopped  0
-   no object, L1 seed only, calibration       accepted 15, stopped  0
+   electrons                                  accepted  0, stopped  0  
+   scouting                                   accepted  7, stopped  0  
+   no object, L1 seed only, calibration       accepted 15, stopped  0  
    others (isolated tracks, PPS, monitoring)  accepted  0, stopped  7  TriggerResultsFilter 3, HLTPixelIsolTrackL1TFilter 2, HLTPPSCalFilter 2
-   all                                        accepted 41, stopped 83
-other accepted paths (AlCa_, MC_, Dataset_, Status_): 73
+   all                                        accepted 40, stopped 62
+other accepted paths (AlCa_, MC_, Dataset_, Status_): 75
 
 the jet paths (ladders: threshold(stage), stage = accept, seed, or the filter that stopped the path)
-leading jets: pf=125.9 pf2=80.3 pfFwd=125.9 calo=113.4 calo2=88.5
-ladder PFJet: value=125.906 thresholds(stage): 40(accept) 60(accept) 80(accept) 110(accept) 140(hltSinglePFJet140) 200(hltSingleCaloJet170) 260(seed) 320(seed) 400(seed) 450(seed) 500(seed) 550(seed)
-ladder PFJetFwd: value=125.906 thresholds(stage): 40(accept) 60(accept) 80(accept) 140(hltSinglePFFwdJet140) 200(hltSingleCaloFwdJet170) 260(seed) 320(seed) 400(seed) 450(seed) 500(seed)
-ladder AK8PFJet: value=139.414 thresholds(stage): 40(accept) 60(accept) 80(accept) 140(hltSinglePFJet140AK8) 200(hltSingleCaloJet170AK8) 260(seed) 320(seed) 400(seed) 450(seed) 500(seed) 550(seed)
-ladder DiPFJetAve: value=103.108 thresholds(stage): 40(accept) 60(accept) 80(accept) 140(hltDiCaloJetAve110) 200(hltDiCaloJetAve170) 260(seed) 320(seed) 400(seed) 500(seed)
-ladder DiPFJetAve_HFJEC: value=103.108 thresholds(stage): 60(hltDiPFJetAve60ForHFJEC) 80(hltDiPFJetAve80ForHFJEC) 100(hltDiPFJetAve100ForHFJEC) 160(hltDiPFJetAve160ForHFJEC) 220(seed) 260(seed) 300(seed)
-ladder PFHT: value=80.3103 thresholds(stage): 180(seed) 250(seed) 350(seed) 370(seed) 430(seed) 510(seed) 590(seed) 680(seed) 780(seed) 890(seed) 1050(seed)
+leading jets: pf=126.7 pf2=86.7 pfFwd=126.7 calo=118.5 calo2=93.3
+ladder PFJet: value=126.723 thresholds(stage): 40(accept) 60(accept) 80(accept) 110(accept) 140(hltSinglePFJet140) 200(hltSingleCaloJet170) 260(seed) 320(seed) 400(seed) 450(seed) 500(seed) 550(seed)
+ladder PFJetFwd: value=126.723 thresholds(stage): 40(accept) 60(accept) 80(accept) 140(hltSinglePFFwdJet140) 200(hltSingleCaloFwdJet170) 260(seed) 320(seed) 400(seed) 450(seed) 500(seed)
+ladder AK8PFJet: value=139.141 thresholds(stage): 40(accept) 60(accept) 80(accept) 140(hltSinglePFJet140AK8) 200(hltSingleCaloJet170AK8) 260(seed) 320(seed) 400(seed) 450(seed) 500(seed) 550(seed)
+ladder DiPFJetAve: value=106.709 thresholds(stage): 40(accept) 60(accept) 80(accept) 140(hltDiCaloJetAve110) 200(hltDiCaloJetAve170) 260(seed) 320(seed) 400(seed) 500(seed)
+ladder DiPFJetAve_HFJEC: value=106.709 thresholds(stage): 60(hltDiPFJetAve60ForHFJEC) 80(hltDiPFJetAve80ForHFJEC) 100(hltDiPFJetAve100ForHFJEC) 160(hltDiPFJetAve160ForHFJEC) 220(seed) 260(seed) 300(seed)
+ladder PFHT: value=86.695 thresholds(stage): 180(seed) 250(seed) 350(seed) 370(seed) 430(seed) 510(seed) 590(seed) 680(seed) 780(seed) 890(seed) 1050(seed)
 cut: label=hltSingleAK4CaloJet80 type=HLT1CaloJet MinPt=80 MinEta=-1 MaxEta=5 input=hltAK4CaloJetsCorrectedIDPassed
 cut: label=hltSinglePFJet110 type=HLT1PFJet MinPt=110 MinEta=-1 MaxEta=5 input=hltPFJetsCorrectedMatchedToCaloJets80
 cut: label=hltSingleCaloJet110 type=HLT1CaloJet MinPt=110 MinEta=-1 MaxEta=5 input=hltAK4CaloJetsCorrectedIDPassed
@@ -773,17 +711,17 @@ cut: label=hltSingleCaloJet170 type=HLT1CaloJet MinPt=170 MinEta=-1 MaxEta=5 inp
 cut: label=hltSinglePFJet200 type=HLT1PFJet MinPt=200 MinEta=-1 MaxEta=5 input=hltPFJetsCorrectedMatchedToCaloJets170
 cut: label=hltSingleCaloFwdJet110 type=HLT1CaloJet MinPt=110 MinEta=2.7 MaxEta=5 input=hltAK4CaloJetsCorrectedIDPassed
 cut: label=hltSinglePFFwdJet140 type=HLT1PFJet MinPt=140 MinEta=2.7 MaxEta=5 input=hltPFJetsCorrectedMatchedToCaloFwdJets110
-filter: label=hltSingleAK4CaloJet80 type=HLT1CaloJet n=2 | Jet(113.4,-3.73,0.96) Jet(88.5,-1.57,-2.09)
-filter: label=hltSinglePFJet110 type=HLT1PFJet n=1 | Jet(125.9,-3.77,0.96)
-filter: label=hltSingleCaloJet110 type=HLT1CaloJet n=1 | Jet(113.4,-3.73,0.96)
+filter: label=hltSingleAK4CaloJet80 type=HLT1CaloJet n=2 | Jet(118.5,-3.72,0.96) Jet(93.3,-1.58,-2.08)
+filter: label=hltSinglePFJet110 type=HLT1PFJet n=1 | Jet(126.7,-3.77,0.96)
+filter: label=hltSingleCaloJet110 type=HLT1CaloJet n=1 | Jet(118.5,-3.72,0.96)
 filter: label=hltSinglePFJet140 type=HLT1PFJet n=0 |
 filter: label=hltSinglePFFwdJet140 type=HLT1PFJet n=0 |
-filter: label=hltDiPFJetAve100ForHFJEC type=HLTDiPFJetAveEtaFilter n=1 | Jet(125.9,-3.77,0.96)
+filter: label=hltDiPFJetAve100ForHFJEC type=HLTDiPFJetAveEtaFilter n=1 | Jet(126.7,-3.77,0.96)
 filter: label=hltDiCaloJetAve110 type=HLTDiCaloJetAveFilter n=0 |
-filter: label=hltMET90 type=HLT1CaloMET n=1 | MET(133.3,0.00,-2.42)
+filter: label=hltMET90 type=HLT1CaloMET n=1 | MET(138.5,0.00,-2.69)
 filter: label=hltL2fL1sMu3L1f0L2Filtered0 type=HLTMuonL2FromL1TPreFilter n=1 | Muon(3.1,-2.06,3.03)
-filter: label=hltL3fL1sMu3L1f0L2f0L3Filtered3 type=HLTMuonL3PreFilter n=1 | Muon(3.1,-2.03,3.03)
-filter: label=hltMu3PFJet40MuCleaned type=HLTPFJetCollectionsFilter n=1 | Jet(80.3,-1.58,-2.08)
+filter: label=hltL3fL1sMu3L1f0L2f0L3Filtered3 type=HLTMuonL3PreFilter n=1 | Muon(3.0,-2.04,3.03)
+filter: label=hltMu3PFJet40MuCleaned type=HLTPFJetCollectionsFilter n=1 | Jet(86.7,-1.58,-2.08)
 path: name=HLT_PFJet110_v13 accept=1 stage=accept seedFired=1 last=hltBoolEnd lastType=HLTBool lastIndex=208 nModules=209 seed="L1_SingleJet90"
 path: name=HLT_PFJet140_v32 accept=0 stage=filter seedFired=1 last=hltSinglePFJet140 lastType=HLT1PFJet lastIndex=207 nModules=209 seed="L1_SingleJet90"
 path: name=HLT_PFJetFwd140_v31 accept=0 stage=filter seedFired=1 last=hltSinglePFFwdJet140 lastType=HLT1PFJet lastIndex=207 nModules=209 seed="L1_SingleJet90_FWD2p5"
@@ -795,6 +733,7 @@ datasets that accept the event:
    AlCaLowPtJet                   2 of 2 paths
    AlCaLumiPixelsCountsExpress    1 of 1 paths
    AlCaLumiPixelsCountsPrompt     2 of 2 paths
+   AlCaP0                         1 of 4 paths
    AlCaPhiSym                     1 of 1 paths
    Cosmics                        1 of 1 paths
    DQMOnlineBeamspot              1 of 2 paths
@@ -831,52 +770,59 @@ datasets that accept the event:
    JetMET1                        18 of 150 paths
    L1Accept                       2 of 2 paths
    MonteCarlo                     19 of 26 paths
-   Muon0                          1 of 119 paths
-   Muon1                          1 of 119 paths
-   OnlineMonitor                  26 of 560 paths
-   ScoutingPFMonitor              6 of 18 paths
-   ScoutingPFRun3                 6 of 18 paths
+   Muon0                          1 of 129 paths
+   Muon1                          1 of 129 paths
+   OnlineMonitor                  26 of 566 paths
+   ScoutingPFMonitor              5 of 19 paths
+   ScoutingPFRun3                 5 of 19 paths
    TestEnablesEcalHcal            2 of 2 paths
    TestEnablesEcalHcalDQM         2 of 2 paths
    ZeroBias                       3 of 8 paths
 streams that accept the event:
-   32: ALCALowPtJet ALCALumiPixelsCountsExpress ALCALumiPixelsCountsPrompt ALCAPHISYM Calibration DQM DQMCalibration DQMEventDisplay DQMOnlineBeamspot DQMPPSRandom EcalCalibration Express ExpressAlignment NanoDST PhysicsCommissioning PhysicsEmittanceScan0 PhysicsEmittanceScan1 PhysicsEmittanceScan2 PhysicsHLTPhysics0 PhysicsHLTPhysics1 PhysicsHLTPhysics2 PhysicsHLTPhysics3 PhysicsJetMET0 PhysicsJetMET1 PhysicsMuon0 PhysicsMuon1 PhysicsScoutingPFMonitor PhysicsZeroBias0 PhysicsZeroBias1 PhysicsZeroBias2 PhysicsZeroBias3 ScoutingPF
-accepted: paths=33 datasets=47 streams=32
+   33: ALCALowPtJet ALCALumiPixelsCountsExpress ALCALumiPixelsCountsPrompt ALCAP0 ALCAPHISYM Calibration DQM DQMCalibration DQMEventDisplay DQMOnlineBeamspot DQMPPSRandom EcalCalibration Express ExpressAlignment NanoDST PhysicsCommissioning PhysicsEmittanceScan0 PhysicsEmittanceScan1 PhysicsEmittanceScan2 PhysicsHLTPhysics0 PhysicsHLTPhysics1 PhysicsHLTPhysics2 PhysicsHLTPhysics3 PhysicsJetMET0 PhysicsJetMET1 PhysicsMuon0 PhysicsMuon1 PhysicsScoutingPFMonitor PhysicsZeroBias0 PhysicsZeroBias1 PhysicsZeroBias2 PhysicsZeroBias3 ScoutingPF
+accepted: paths=33 datasets=48 streams=33
 ```
 
-The margins of the chapter: `HLT_PFJet110` 125.9 - 110 = 15.9 GeV; `HLT_PFJet140` 140 - 125.9 = 14.1; `HLT_AK8PFJet140`
-140 - 139.4 = 0.6; the dijet average (125.9 + 80.3) / 2 = 103.1, of the calo jets (113.4 + 88.5) / 2 = 101.0 < 110;
+The margins of the chapter: `HLT_PFJet110` 126.7 - 110 = 16.7 GeV; `HLT_PFJet140` 140 - 126.7 = 13.3; `HLT_AK8PFJet140`
+140 - 139.1 = 0.9; the dijet average (126.7 + 86.7) / 2 = 106.7, of the calo jets (118.5 + 93.3) / 2 = 105.9 < 110;
 the HF calibration paths need a tag jet with |eta| < 1.4, the b jet is at |eta| = 1.58; Delta phi of the two PF jets
-|0.96 - (-2.08)| = 3.04.
+|0.96 - (-2.08)| = 3.04. The objects of the two paths accepted on a pileup object are in the `filter:` lines: the
+calorimeter missing transverse energy of `HLT_CaloMET90_NotCleaned` is the `hltMET90` object, 138.5 GeV at phi = -2.69
+(the reason lines of the ledger read both values from these `filter:` lines; until 12 November 2026 `hltLedger.py`
+had the 2024 values written into it); the muon of
+`HLT_Mu3_PFJet40` has 3.1 GeV in the muon chambers (`hltL2fL1sMu3L1f0L2Filtered0`) and 3.0 GeV with the tracker
+(`hltL3fL1sMu3L1f0L2f0L3Filtered3`; 3.1 and 3.1 in 2024).
 
 ### The ledger (`ledger_13_HLT.txt`, section 6)
 
 ```
 -- 6. The ledger: what the HLT sees, step by step (nothing is added to or removed from the recorded event)
                                                               GeV
-step 2: rec-hits, sum ET (ECAL + HCAL + HF)                3307.5
-step 2: calorimeter towers, sum ET                         3085.5
-step 2: rho of the calorimeter (per unit area)               40.0
-step 3: merged tracks, sum pT                               163.7
-step 3: tracks of the signal vertex, sum pT                 104.8
-step 4: PF candidates, sum pT                              2728.4
-step 4: rho of particle flow (per unit area)                 36.4
+step 2: rec-hits, sum ET (ECAL + HCAL + HF)                3198.9
+step 2: calorimeter towers, sum ET                         2842.9
+step 2: rho of the calorimeter (per unit area)               36.3
+step 3: merged tracks, sum pT                               179.5
+step 3: tracks of the signal vertex, sum pT                 121.8
+step 4: PF candidates, sum pT                              2655.8
+step 4: rho of particle flow (per unit area)                 36.7
 the two jets of the signal (generator pT; L1 jet; calo jet raw -> corrected; PF jet raw -> corrected):
-   gen 117.8: calo 68.4 -> 88.5, PF 77.9 -> 80.3
-   gen 115.9: calo 162.3 -> 113.4, PF 155.6 -> 125.9
-L1 jets of chapter 12 (unpacked by the HLT): 137 106.5 75.5
+   gen 117.8: calo 70.9 -> 93.3, PF 83.7 -> 86.7
+   gen 115.9: calo 163.5 -> 118.5, PF 156.8 -> 126.7
+L1 jets of chapter 12 (unpacked by the HLT): 136 108.5 23
 ```
 
 ### What is quoted from earlier chapters
 
 | number in the chapter | value | source |
 |---|---|---|
-| L1 algorithms fired, `L1_SingleJet90` margins | 57 of 408; 47.0 GeV (bbar, 137.0), 16.5 GeV (b, 106.5) | `test/12_L1T/out/ledger_12_L1T.txt` |
-| L1 objects handed to the global trigger | 12 jets, 12 e/gamma, 12 taus, 1 muon | `test/12_L1T/out/l1t_12_L1T.log` |
-| L1 trigger primitives | 3411.5 GeV | `test/12_L1T/out/ledger_12_L1T.txt`, section 1 |
+| L1 algorithms fired, `L1_SingleJet90` margins | 63 of 465; 46.0 GeV (bbar, 136.0), 18.5 GeV (b, 108.5) | `test/12_L1T/out/ledger_12_L1T.txt` |
+| L1 objects handed to the global trigger | 9 jets, 12 e/gamma, 12 taus, 1 muon | `test/12_L1T/out/l1t_12_L1T.log` |
+| L1 trigger primitives | 2793.0 GeV | `test/12_L1T/out/ledger_12_L1T.txt`, section 1 |
+| L1 jet windows (9 x 9 Layer-1 towers) | 74.5 (b), 189.0 GeV (bbar) | `test/12_L1T/out/ledger_12_L1T.txt`, section 3 |
 | the muon of a pileup kaon decay | K- of 3.27 GeV, mu- of 2.78 GeV | `test/12_L1T/out/truth_12_L1T.txt` |
 | collisions in bx -1, 0, +1 | 71, 68, 54 | `test/11_DIGI/out/ledger_11_DIGI.txt` |
-| digis of the event | 551 889 | `test/11_DIGI/out/ledger_11_DIGI.txt` |
+| digis of the event | 544 407 | `test/11_DIGI/out/ledger_11_DIGI.txt` |
+| EB data frames of the signal alone (zero suppression of 2025) | 156 (2024: 399) | `test/11_DIGI/out/ledger_11_DIGI.txt` |
 | generator jets (visible) | 117.8 (79.8) and 115.9 GeV | `test/07_GenJet/out/` (chapter 7) |
 | the neutrino, the electron of the B- decay | 37.5 GeV pT; 10.9 GeV | chapter 6 (`test/06_Decay/out/`) |
 
@@ -891,9 +837,106 @@ Relative to `$CMSSW_RELEASE_BASE/src`; the conditions with `conddb list 150X_mcR
 | the jet paths and their seeds | `HLT_75e33/paths/HLT_AK4PFPuppiJet520_cfi.py`; `HLT_75e33/modules/hltL1SeedsForPuppiJetFilter_cfi.py` (`PathStatusFilter`, `'pSinglePuppiJet230'`); `hltSingleAK4PFPuppiJet520_cfi.py` (MinPt 520); `hltDoublePFPuppiJets128MaxEta2p4_cfi.py` (MinPt 128, MaxEta 2.4, MinN 2); `hltDoublePFPuppiJets128Eta2p4MaxDeta1p6_cfi.py`; `hltPFPuppiHT1070_cfi.py`; `hltPFPuppiMETTypeOne140_cfi.py` |
 | the PUPPI jet corrections | `HLT_75e33/modules/hltAK4PFPuppiJetCorrectorL1_cfi.py` (`AK4PFPuppiHLT`, `L1FastJet`, rho from `hltFixedGridRhoFastjetAll`), `..._L2_cfi.py`, `..._L3_cfi.py`; `hltFixedGridRhoFastjetAll_cfi.py` (`hltParticleFlowTmp`); payload `JetCorrectorParametersCollection_Phase2Spring23ticlv4_MC_AK4PFPuppiHLT_v1`, one IOV inserted 2023-09-21 08:50:47; `conddb dump` of payload `1581021745b44b8b690b85a0b5c09713a30d2baf`: L1FastJet and L3Absolute formula `1`, L2Relative in 19 eta bins |
 | PUPPI at the HLT | `HLT_75e33/modules/hltPFPuppi_cfi.py`: `PUProxyValue = hltPixelClustersMultiplicity` (11), `usePUProxyValue = True` (66), regions `etaMin (0.0, 2.5)`, `etaMax (2.5, 3.5)`, `MinNeutralPt (0.5105, 0.821)`, slopes `(9.51e-06, 1.902e-05)`, third region 3.5 to 10.0 with `MinNeutralPt 3.656` and `useCharged False` |
-| HF calibration and PF hadron calibration | `HLT_75e33/modules/hltParticleFlowTmpBarrel_cfi.py`: `calibHF_use = False` (121), `calibrationsLabel = ''` (122); `HLT_GRun_cff.py`: `calibrationsLabel = "HLT"` (11366); `PFCalibrationRcd` '' -> `PFCalibration_Run3_mc_offline` (Phase-2 GT); 'HLT' -> `PFCalibration_Run3_2024_online_v1` (`150X_mcRun3_2024_realistic_v2`) |
-| tracking without vertex trimming | `HLT_75e33/modules/hltInitialStepSeeds_cfi.py`: `InputVertexCollection = ""`, `usePV = False`; the only `PixelVertexCollectionTrimmer`: `hltPhase2L3FromL1TkMuonTrimmedPixelVertices_cfi.py`; Run 3: `HLT_GRun_cff.py` `hltTrimmedPixelVertices` (`fractionSumPt2 = 0.3`) and `hltIter0PFLowPixelSeedsFromPixelTracks` (`InputVertexCollection = hltTrimmedPixelVertices`) |
+| HF calibration and PF hadron calibration | `HLT_75e33/modules/hltParticleFlowTmpBarrel_cfi.py`: `calibHF_use = False` (121), `calibrationsLabel = ''` (122); `HLT_2025v10_cff.py`: `calibrationsLabel = "HLT"` (11366, the same line in `HLT_GRun_cff.py`); `PFCalibrationRcd` '' -> `PFCalibration_Run3_mc_offline` (Phase-2 GT); 'HLT' -> `PFCalibration_Run3_2024_online_v1` (`150X_mcRun3_2025_realistic_v1`, as in `150X_mcRun3_2024_realistic_v2`) |
+| tracking without vertex trimming | `HLT_75e33/modules/hltInitialStepSeeds_cfi.py`: `InputVertexCollection = ""`, `usePV = False`; the only `PixelVertexCollectionTrimmer`: `hltPhase2L3FromL1TkMuonTrimmedPixelVertices_cfi.py`; Run 3: `HLT_2025v10_cff.py` `hltTrimmedPixelVertices` (line 8854) (`fractionSumPt2 = 0.3`) and `hltIter0PFLowPixelSeedsFromPixelTracks` (`InputVertexCollection = hltTrimmedPixelVertices`) |
 | vertices without timing | `HLT_75e33/modules/hltOfflinePrimaryVertices_cfi.py`: `useTiming = cms.bool(False)` (22); `hltUnsortedOfflinePrimaryVertices_cfi.py`: `DA_vect`, no `TrackTimesLabel`; `Configuration/Eras/python/Era_Phase2_cff.py`: `phase2_timing`, `phase2_timing_layer` (17, 24) |
 | no calo-jet cut in the Phase-2 jet paths | `HLT_75e33/paths/HLT_AK4PFPuppiJet520_cfi.py`; among the modules of all the paths of `75e33` the jet filters are `HLT1PFJet` on PUPPI jets only, there is no `HLT1CaloJet` |
 | comments of the menu | `HLT_75e33_cff.py`: 411 ("Removed temporarily until final decision on L1T tau Phase-2"); `HLT_75e33/modules/hltEgammaHoverEL1Seeded_cfi.py`: 17 (`eThresHB`, the HCAL thresholds of the e/gamma H/E: "Run3 thresholds. Will be overwritten with valid aging customisation"); `HLT_75e33/sequences/HLTInitialStepSequence_cfi.py`: 31-32 ("Probably need to move elsewhere in the final setup") |
 | the Phase-2 L1 menu | `Configuration/Applications/python/ConfigBuilder.py`: 1597 (`defaultMenuFile = "step1_2024"`) |
+
+### The 2024 and the 2025 settings
+
+The chapter was first written on 11 November 2026 with the settings of 2024 and rerun on 12 November 2026 with those of
+2025 (Rule I of the Constitution; the 2024 files were kept aside for the comparison). What changed in the job:
+
+- **The menu.** 2024: `-s DIGI2RAW,HLT:GRun`, `/dev/CMSSW_15_0_0/GRun/V62`, whose seeds name 30 Level-1 algorithms
+  that the 2024 Level-1 menu of chapter 12 (`L1Menu_Collisions2024_v1_3_0`, 408 algorithms) does not have;
+  `hltL1Menu_cff` dropped them from 21 OR seeds and removed 37 paths (898 -> 861; 697 `HLT_` and 20 `DST_` paths
+  left, 717). 2025: `-s DIGI2RAW,HLT:@relval2025`, `2025v10`, `/frozen/2025/2e34/v1.0/HLT/V2`, the same modules as
+  `GRun` V62 (section 1), on the 2025 Level-1 menu `L1Menu_Collisions2025_v1_0_0` (465 algorithms): 0 seeds changed,
+  0 paths removed, all 898 paths run (733 `HLT_`, 21 `DST_`, 754). The 37 paths are back: among them the `L1CICADA`
+  and `L1AXO` paths of the tightest thresholds, the PNet tau paths, the barrel-muon paths with `L1_SingleMu5_BMTF` and
+  `L1_SingleMu13_SQ14_BMTF`, `HLT_SingleEle8` (the full list is in the 2024 version of `menu_13_HLT.txt`, section 1).
+- **The global tag** (`conddb list`): `150X_mcRun3_2024_realistic_v2` -> `150X_mcRun3_2025_realistic_v1`. Unchanged
+  for the HLT: the jet energy corrections (`AK4CaloHLT`, `AK4PFHLT`, `AK8CaloHLT`, `AK8PFHLT`: `..._Run3Winter24Digi_...`),
+  the particle-flow hadron calibration (`PFCalibrationRcd` label `HLT`: `PFCalibration_Run3_2024_online_v1`), the ECAL
+  particle-flow thresholds (`EcalPFRecHitThresholds_34sigma_TL235`), the pixel gains for the HLT. Changed: the online
+  beam spot (`..._Early2024_v1_mc` -> `..._Winter25_mc_v1`), the HCAL particle-flow cuts (`HcalPFCuts_2023_V1.0_mc` ->
+  `HcalPFCuts_2025_mc`), the Level-1 menu, and the detector conditions of chapter 11 (ECAL pedestals, laser and
+  channel status, HCAL pedestals, gains and SiPM parameters, pixel templates, generic errors and Lorentz angle, strip
+  bad components, tracker alignment and surface deformations).
+- **The input.** The digis of chapter 11 and the Level-1 record of chapter 12 are those of 2025: 544 407 digis
+  (551 889), 156 EB frames for the signal alone (399) after the zero suppression of the 2025 selective-readout payload
+  (`EcalSRSettings_2024_EBZS9.5_EEZS6.0_DCC2_mc`, low-interest threshold in the barrel 0.3325 GeV, 2024 0.2275 GeV);
+  63 Level-1 algorithms fired of 465 (57 of 408), 9 Level-1 jets (12): no jet seeded in tower ring 28, so no VBF, no
+  `HTMHF` and no multijet seed fired.
+
+The numbers, step by step (2024 from the files of 11 November 2026, 2025 from `out/`; GeV unless stated):
+
+| | 2024 | 2025 | why (verified, or "not established") |
+|---|---|---|---|
+| raw event, kB (678 FEDs) | 1928.6 | 1861.5 | |
+| ECAL, kB | 173.3 | 103.9 | fewer ECAL frames: chapter 11, mixed EB 2050 -> 964, EE 4144 -> 2520 |
+| HCAL, kB | 225.4 | 240.6 | more HB/HE frames after the zero suppression: 5839 -> 6545 (chapter 11, FWLite extras) |
+| strip / pixel / preshower, kB | 1001.8 / 316.0 / 136.9 | 997.5 / 306.7 / 137.4 | chapter 11: mixed pixel digis 80 346 -> 77 980; why: not established |
+| Level-1: algorithms fired / jets unpacked | 57 / 12 | 63 / 9 | chapter 12 |
+| `HLT_` + `DST_` paths / stopped by the seed / started | 717 / 593 / 124 | 754 / 652 / 102 | 37 paths back, none of them started; 22 fewer paths start |
+| started: jets / multijets / VBF / MET, HT / muons / electrons | 30 / 6 / 13 / 30 / 13 / 2 | 30 / 0 / 0 / 30 / 13 / 0 | multijet seeds are ORs with `L1_DoubleJet_110_35_DoubleJet35_Mass_Min800`, a VBF algorithm that fired on a ring-28 jet in 2024; the electron paths are seeded by `L1_SingleEG8er2p5`, fired by an e/gamma of 8.0 in 2024, 7.5 in 2025 |
+| started: scouting / no object / others | 8 / 15 / 7 | 7 / 15 / 7 | `L1_CICADA_VTight` does not fire in 2025 (score 88.3 with `CICADAModel_v2p2p0`; the 2025 menu fires VLoose to Tight, thresholds 50 to 80) |
+| stopped by a filter / accepted | 83 / 41 | 62 / 40 | the 21 VBF, multijet and electron paths that started and failed in 2024 do not start; `DST_PFScouting_CICADAVTight` |
+| other paths accepted (`AlCa_`, `MC_`, `Dataset_`, `Status_`) | 73 | 75 | `AlCa_EcalPi0EBonly` (seeded by `L1_ZeroBias` among others) accepts, and with it `Dataset_AlCaP0`; why the pi0 filter passes: not established |
+| rec-hits EB / EE, n | 2039 / 4141 | 956 / 2515 | the ECAL frames of chapter 11 (above) |
+| rec-hits HB / HE / HF, n | 1882 / 3271 / 1728 | 2162 / 3832 / 1728 | the HCAL frames of chapter 11 (above) |
+| rec-hits, sum E_T | 3307.5 | 3198.9 | EB 268.2 -> 142.6, EE 498.6 -> 378.7, HB 344.9 -> 493.4, HE 592.3 -> 578.0, HF 1603.5 -> 1606.2 |
+| towers barrel / endcap / HF, n | 844 / 807 / 790 | 492 / 771 / 788 | fewer barrel rec-hits above the tower thresholds |
+| towers, sum E_T | 3085.5 | 2842.9 | barrel 444.3 -> 342.8, endcap 1028.2 -> 882.9, HF 1613.0 -> 1617.2 |
+| rho calo / rho PF, per unit area | 40.0 / 36.4 | 36.3 / 36.7 | rho calo: fewer towers with energy; not established in detail |
+| calo jets raw / raw above 30 / corrected above 30 | 187 / 26 / 2 | 190 / 23 / 2 | |
+| b calo jet: raw, x L1FastJet, x L2Relative -> corrected | 68.4, 0.783, 1.653 -> 88.5 | 70.9, 0.809, 1.627 -> 93.3 | same payload `Run3Winter24Digi_AK4CaloHLT`; the factors follow from raw pT and rho |
+| bbar calo jet | 162.3, 0.705, 0.991 -> 113.4 | 163.5, 0.734, 0.987 -> 118.5 | idem; the subtraction 47.9 -> 43.6 follows from rho |
+| pixel clusters / strip clusters | 20 699 / 115 932 | 20 925 / 115 249 | pixel templates, Lorentz angle, alignment of 2025: not established in detail |
+| pixel tracks / pixel vertices / kept | 2978 / 27 / 1 | 2981 / 31 / 1 | idem; the signal is the first vertex in both |
+| full tracks (iteration 0 + doublet recovery) | 115 (110 + 5) | 116 (108 + 8) | |
+| PF vertex: tracks, distance to the simulated signal | 104, 5 um | 107, 7 um | |
+| tracks within 1 mm of the signal vertex, sum pT | 63, 104.8 | 61, 121.8 | |
+| tracks in the b jet (dR < 0.4), sum pT | 5, 34.0 | 7, 50.1 | two more: the electron of the B- decay and an 11.2 GeV track (below) |
+| PF candidates, sum pT | 1421, 2728.4 | 1366, 2655.8 | photons 276 -> 238, neutral hadrons 224 -> 209 |
+| b PF jet: raw, x L1FastJet, x L2Relative -> corrected | 77.9, 0.861, 1.197 -> 80.3 | 83.7, 0.869, 1.192 -> 86.7 | constituents: charged 5 / 34.0 -> 7 / 50.1, photons 21 / 35.7 -> 20 / 28.4, neutral hadrons 5 / 9.0 -> 2 / 5.8 |
+| bbar PF jet | 155.6, 0.825, 0.981 -> 125.9 | 156.8, 0.824, 0.981 -> 126.7 | 17 HF hadronic particles in both; the HF rec-hits hardly change |
+| `HLT_PFJet110` | accepted by 15.9 | accepted by 16.7 | on the bbar jet in both |
+| `HLT_PFJet140` / `HLT_AK8PFJet140` | fail by 14.1 / 0.6 | fail by 13.3 / 0.9 | AK8 jet 139.4 -> 139.1 |
+| dijet average PF / calo | 103.1 / 101.0 | 106.7 / 105.9 | `HLT_DiPFJetAve140` stopped by the calo cut at 110 in both; HF calibration paths fail on the tag jet in both |
+| `hltMET90` (calorimeter MET) | 133.3 | 138.5 | `HLT_CaloMET90_NotCleaned` accepts in both |
+| HLT muon, L2 / L3 | 3.1 / 3.1 | 3.1 / 3.0 | the same pileup kaon decay (chapter 12) |
+| datasets / streams | 47 / 32 | 48 / 33 | `AlCaP0` and the stream `ALCAP0` added |
+| products of the process `HLT` / file size | 2977 / 21.2 MB | 3121 / 20.8 MB | the 37 paths back |
+
+The tracks of the b jet (FWLite on `hltMergedTracks` within dR < 0.4 of the generator jet, eta = -1.589,
+phi = -2.084, in the two files; the charged generator particles above 1 GeV in the same cone for comparison):
+
+```
+== 2024
+  pt=  6.94 +-  0.14 eta=-1.603 phi=-2.080 dz=  3.119 dR=0.01 pixel=3 strip=12 chi2/ndf=1.32
+  pt=  2.13 +-  0.03 eta=-1.688 phi=-1.823 dz=  3.156 dR=0.28 pixel=4 strip=13 chi2/ndf=0.78
+  pt=  0.89 +-  0.03 eta=-1.766 phi=-1.954 dz=  3.354 dR=0.22 pixel=5 strip=2 chi2/ndf=0.20
+  pt= 13.10 +-  0.21 eta=-1.544 phi=-2.081 dz=  3.091 dR=0.04 pixel=4 strip=17 chi2/ndf=0.80
+  pt= 10.94 +-  0.16 eta=-1.532 phi=-2.066 dz=  3.084 dR=0.06 pixel=5 strip=15 chi2/ndf=0.88
+== 2025
+  pt=  6.99 +-  0.13 eta=-1.602 phi=-2.080 dz=  3.078 dR=0.01 pixel=3 strip=11 chi2/ndf=1.56
+  pt=  2.10 +-  0.03 eta=-1.685 phi=-1.822 dz=  3.126 dR=0.28 pixel=3 strip=19 chi2/ndf=1.40
+  pt=  0.89 +-  0.03 eta=-1.766 phi=-1.955 dz=  3.366 dR=0.22 pixel=5 strip=2 chi2/ndf=0.16
+  pt=  5.03 +-  0.11 eta=-1.431 phi=-2.210 dz=  3.013 dR=0.20 pixel=3 strip=3 chi2/ndf=1.11
+  pt= 12.97 +-  0.22 eta=-1.544 phi=-2.081 dz=  3.091 dR=0.04 pixel=4 strip=18 chi2/ndf=0.82
+  pt= 11.21 +-  0.40 eta=-1.565 phi=-2.086 dz=  3.101 dR=0.02 pixel=3 strip=6 chi2/ndf=0.53
+  pt= 10.95 +-  0.17 eta=-1.532 phi=-2.066 dz=  3.083 dR=0.06 pixel=5 strip=15 chi2/ndf=0.85
+== generator (status 1, charged, pT > 1 GeV, dR < 0.4)
+  pi+ pt=2.14 eta=-1.685 phi=-1.822 | e- pt=4.95 eta=-1.431 phi=-2.210 | pi- pt=11.00 eta=-1.533 phi=-2.065 | pi+ pt=13.31 eta=-1.545 phi=-2.081
+```
+
+The 5.03 GeV track of 2025 is the electron of the B- decay (4.95 GeV), which had no track in 2024. The 11.21 GeV track
+has 3 pixel and 6 strip hits, lies 0.04 from the 11.0 GeV pion and has no generator particle of its own: a duplicate of
+the pion track or a secondary particle (the generator record holds only the particles of the generator); which of the
+two is not established. The 6.9 GeV track at eta = -1.60 has no charged generator particle above 1 GeV either, in both
+years. Why the tracking finds the two tracks in 2025 and not in 2024 (the pixel conditions, the alignment) is not
+established. The PF b jet is 86.7 GeV, 9 % above the 79.8 GeV of visible particles of chapter 7, where it was within
+a per cent in 2024 (80.3 GeV); the generator jet with its neutrino has 117.8 GeV.

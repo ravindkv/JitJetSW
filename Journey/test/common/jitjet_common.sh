@@ -8,7 +8,7 @@
 #
 # Functions
 #   jitjet_init                 checks CMSSW_15_0_5, sets JOURNEY, TEST, COMMON, CHDIR (= test/<chapter>), OUT (= test/<chapter>/out)
-#                               and the 2024 (Run 3) settings of the book; creates OUT
+#                               and the Run-3 settings of the chapter (YEAR: 2025 or 2024); creates OUT
 #   jitjet_build                rebuilds the JitJetSW/Journey plugins when the plugin library is older than the sources
 #   jitjet_fragment             symlinks the bbbar fragment into Configuration/GenProduction, where cmsDriver.py looks for it
 #   jitjet_prev <chapter> <file>  prints test/<chapter>/out/<file> (the output of a previous chapter, Rule E) and checks it exists
@@ -25,7 +25,8 @@
 #   EVENTS=1       events generated / simulated (the book follows ONE event; more only for illustration)
 #   EVENT=1:1:1    the event of the book (run:lumi:event), the one drawn and mixed
 #   PNG=0          do not convert the PDF pages to PNG
-#   CONDITIONS, ERA, GEOMETRY, BEAMSPOT, COMENERGY, PTHATMIN   the 2024 settings (change all together for another scenario)
+#   YEAR           2025 for the CMS chapters 08-13, 2024 for the generator chapters 01-07 (the defaults of CONDITIONS, ERA)
+#   CONDITIONS, ERA, GEOMETRY, BEAMSPOT, COMENERGY, PTHATMIN   the Run-3 settings (change all together for another scenario)
 
 jitjet_init() {
   if [[ ${CMSSW_VERSION:-} != CMSSW_15_0_5 ]]; then
@@ -39,9 +40,17 @@ jitjet_init() {
   CHDIR=$TEST/$CHAPTER
   OUT=$CHDIR/out
   mkdir -p "$OUT"
-  # the 2024 (Run 3) RelVal settings of the book
-  CONDITIONS=${CONDITIONS:-auto:phase1_2024_realistic}
-  ERA=${ERA:-Run3_2024}
+  # the Run-3 RelVal settings of the chapter (upgradeWorkflowComponents.py, keys '2024' and '2025'). CMSSW_15_0_5 is a
+  # release of 2025, so the CMS chapters 08-13 (detector, conditions) use YEAR=2025: the global tag
+  # auto:phase1_2025_realistic (150X_mcRun3_2025_realistic_v1) and the era Run3_2025 (Rule I of the Constitution).
+  # The generator chapters 01-07 keep 2024: in a GEN job the conditions only give the beam spot of the vertex
+  # smearing, the same SimBeamSpotObjects payload in both global tags.
+  case $CHAPTER in
+    0[1-7]_*) YEAR=${YEAR:-2024} ;;
+    *)        YEAR=${YEAR:-2025} ;;
+  esac
+  CONDITIONS=${CONDITIONS:-auto:phase1_${YEAR}_realistic}
+  ERA=${ERA:-Run3_${YEAR}}
   GEOMETRY=${GEOMETRY:-DB:Extended}
   BEAMSPOT=${BEAMSPOT:-DBrealistic}
   COMENERGY=${COMENERGY:-13600.0}
