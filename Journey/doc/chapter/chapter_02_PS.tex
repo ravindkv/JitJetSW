@@ -23,7 +23,8 @@ What happens to our event is small in size and large in meaning. The record grow
 branches five times, all on the $b$ side: one $b\to bg$, three $g\to gg$ and one $g\to d\bar d$. The $b$ quark that
 leaves the shower carries $46.9\GeV$ instead of $113.2\GeV$; the six partons of its system together still carry
 $113.6\GeV$, all within $\Delta R = 0.31$ of the quark. The $\bar b$ does not radiate at all and the ISR evolution
-produces no emission. The first lesson of the journey is written in these numbers: the momentum of the hard process
+produces no emission, although it is switched on: 1000 events with the same settings show that this happens in only
+2.2\% of them. The first lesson of the journey is written in these numbers: the momentum of the hard process
 is carried by the jet, not by the quark, and the jet exists before any hadron does.
 
 \begin{plainwords}[The parton shower in plain words]
@@ -145,32 +146,14 @@ ends at $46.88\GeV$ (index 20, status 52, the copy the analyzer reports) and at 
 \paragraph{Where the momentum went.} The six final-state partons of the $b$ side ($b$, three gluons, $d$, $\bar d$:
 indices 24 to 29) have a vector \pt{} of $113.56\GeV$, a scalar sum of $113.75\GeV$, an energy of $256.9\GeV$ and
 an invariant mass of $13.8\GeV$; the farthest of them, the $\bar d$ of $6.3\GeV$, is $\Delta R = 0.311$ from the
-$b$, the gluon of $43.2\GeV$ is at $0.161$. A jet of radius 0.4 drawn around the $b$ would contain them all and
-measure $113.6\GeV$: the shower did not change the jet, it changed what the jet is made of. The analyzer sees it
+$b$, the gluon of $43.2\GeV$ is at $0.161$. A cone of $\Delta R < 0.4$ around the $b$, what a jet of radius 0.4
+would collect, contains them all and measures $113.6\GeV$, as before the shower (the cone rows of
+table~\ref{tab:02_PS_ledger}): the shower did not change the jet, it changed what the jet is made of. The analyzer sees it
 from the other side: its ``net $b+\bar b$'' is the vector sum of the two \emph{quarks} and jumps from
 $0.0$ to $66.4\GeV$, with a scalar sum of $160.1\GeV$ instead of $226.4\GeV$. That imbalance is the radiation
 that is still in the record, six entries lower; the vector sum of the $b$ system and the $\bar b$ is $0.6\GeV$, all
 of it the primordial $k_\mathrm{T}$ added with the beam remnants (the recoil taken by the incoming $u$ is
-longitudinal: the shower copies of the $b$ system balance the $\bar b$ exactly). The $\bar b$ at $\eta = -3.75$ radiated
-nothing: in a shower every emission is a random draw against the Sudakov factor, and a $b$ quark of $113\GeV$ has a
-sizeable probability to emit nothing above the cut-off. The same holds for the ISR: the evolution from $113.3\GeV$
-down to the cut-off happened to produce no emission. One reason it is not rare here is kinematic: the $u$ carries
-$x_2 = 0.39$, and the backward evolution of a valence quark that already has a large $x$ must find a parent with
-an even larger $x$, which the steeply falling parton distribution disfavours.
-
-\begin{plainwords}[Why this shower is not the shower of chapters 04 to 06]
-Pythia8 does not run ISR, FSR and multiparton interactions one after the other; it runs them \emph{interleaved} in
-one \pt-ordered evolution, in which at every step the next emission is the one with the highest \pt{} among all
-three. With MPI switched off, as here, the sequence of random numbers after the hard process is different from the
-sequence with MPI on, and so are the emissions. The same event in chapter 04 (\code{test/04\_MPI/out/},
-MPI on) has \code{ISR = 28, FSRproc = 64} branchings counted in its log, and its analyzer reports at stage 2 a $b$ of
-$91.6\GeV$ and a $\bar b$ of $118.6\GeV$, both status 52, net $27.3\GeV$, against $46.9\GeV$, $113.2\GeV$ (status 23)
-and $66.4\GeV$ here. The hard process is the same event, the shower emissions are not identical between this
-chapter and the later ones; chapters 04, 05 and 06 are identical to each other at parton level. This chapter shows
-what a shower does, isolated; the shower that the detector will see is the one of chapter 04.
-\end{plainwords}
-
-\section{Ledger and display}
+longitudinal: the shower copies of the $b$ system balance the $\bar b$ exactly).
 
 \begin{table}[htbp]
 \centering\small
@@ -179,7 +162,10 @@ what a shower does, isolated; the shower that the detector will see is the one o
 \code{genPartAnalyzer\_02\_PS.log}). $E$ and \pt{} are sums over the final-state (status 1) particles of the region;
 the whole event is $13600\GeV$ in both. The $b$ and $\bar b$ rows are the last quark copies the analyzer follows
 (status 23 before, status 52 and 23 after); the $b$ system row is the vector sum of the status-1 $b$, alone before
-and with its five radiated partons after. The differences are computed before rounding.}
+and with its five radiated partons after. The cone rows sum, by geometry instead of ancestry, the status-1 particles
+(no neutrinos) within $\Delta R < 0.4$ of the last copy of the quark, what a jet of radius 0.4 would collect
+(\code{genLedger.py}); the $\bar b$ cone changes only by the primordial $k_\mathrm{T}$ of the re-drawn beam remnants.
+The differences are computed before rounding.}
 \label{tab:02_PS_ledger}
 \begin{tabular}{lrrr}
 \toprule
@@ -203,32 +189,67 @@ visible ($\abseta < 5.2$): $n$ / $E$ [GeV] & 3 / 2676.9 & 7 / 2670.8 & $+4$ / $-
 $b$ quark \pt{} [GeV] & 113.2 & 46.9 & $-66.3$ \\
 $\bar b$ quark \pt{} [GeV] & 113.2 & 113.2 & 0.0 \\
 $b$ system ($b$ + radiation) vector \pt{} [GeV] & 113.6 & 113.6 & 0.0 \\
+$b$ cone $\Delta R < 0.4$: $n$ / vector \pt{} [GeV] & 1 / 113.6 & 6 / 113.6 & $+5$ / 0.0 \\
+$\bar b$ cone $\Delta R < 0.4$: $n$ / vector \pt{} [GeV] & 1 / 112.3 & 1 / 114.0 & 0 / $+1.7$ \\
 net $|\vec\pt(b) + \vec\pt(\bar b)|$ [GeV] & 0.0 & 66.4 & $+66.4$ \\
 scalar $\pt(b) + \pt(\bar b)$ [GeV] & 226.4 & 160.1 & $-66.3$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:02_PS_ledger} closes the ledger and figure~\ref{fig:02_PS_display} shows the result. The shower added twenty entries and five final-state partons, all of
-them in the tracker region $\abseta < 2.5$ next to the $b$; it moved no energy between the regions beyond what the
-re-drawn beam remnants did (the $u$ of $9.1\GeV$ at $\eta = 3.36$ of chapter 01 is gone, the forward region now
-holds the $\bar b$ alone; the remnants beyond $\abseta = 5.5$ gained one entry and $6\GeV$). The energy of the
-event is conserved to the first decimal and the visible energy changes by $6\GeV$ out of $2671$. The one large number
-of the table, $-66.3\GeV$ on the $b$ quark, is not a loss: the $b$ system row shows it was moved to the five partons
-that now share the jet with the quark.
+\paragraph{No ISR, and a silent $\bar b$: checked with 1000 events.} The ISR row of table~\ref{tab:02_PS_ledger}
+reads 0, and the Info listing says \code{ISR = 0}. The initial-state shower was on: \code{PartonLevel:ISR = on} is
+the Pythia8 default, which is why the settings table of the log (changes only) does not list it, and the log prints
+its starting scale (\code{Max pT scale for ISR = 1.133e+02}). The record agrees: no entry has a status 41--49, and the
+incoming $u$ reaches the hard process from its beam remnant through its two status-53 recoil copies only. To see how
+unusual the event is, \path{run_02_PS.sh} runs the 1000-event job of chapter 01 with the settings of this chapter and
+keeps the events (\path{xsec_GEN_02_PS.root}); \path{genShowerStats.py} counts the branchings
+(\path{showerStats_02_PS.txt}). Its first event is ours (ISR 0, FSR 5). A shower of these settings has on average
+3.3 ISR and 14.0 FSR branchings (the FSR count includes the radiation of the ISR partons, which our event has none
+of). Only 22 of the 1000 events (2.2\%) have no ISR branching, and ours is one of them: a rare draw, not a switch left
+off. The large $x_2 = 0.39$ of the $u$ is not the reason: of the 72 events in which the larger $x$ exceeds 0.3, one
+has no ISR (1.4\%), no more than on average. The silent $\bar b$, on the other hand, is common: in every shower each
+emission is a random draw against the Sudakov factor, and in 35.4\% of the events the $\bar b$ emits no gluon (the
+$b$: 35.5\%, both: 12.4\%). The same job gives the cross section again, $348.2\pm6.1$ pb, the $348.6\pm6.0$ pb of
+chapter 01 within the errors: the shower moves momentum around, it does not change how often the hard process happens.
 
 \begin{figure}[!tb]
 \centering
 \includegraphics[width=\textwidth]{02_PS/out/genPartAnalyzer_02_PS_page-2.png}
 \caption{The $\eta$--$\phi$ display of the event after the shower (\code{GenPartAnalyzer}, page 2 of
 \code{test/02\_PS/out/genPartAnalyzer\_02\_PS.pdf} as \code{genPartAnalyzer\_02\_PS\_page-2.png}; the marker size
-grows with $\log\pt$; page 1, the hard process, is the display of chapter 01): the $b$ at $46.9\GeV$ with its five
-radiated partons (green triangles, labelled when above $5\GeV$), the untouched $\bar b$, and the vector sum
-$b+\bar b$ of $66.4\GeV$ (magenta star). All five emissions sit within $\Delta R = 0.31$ of the $b$: on this scale
-the jet is already one blob.}
+grows with $\log\pt$; page 1 is the display of chapter 01): the $b$ at $46.9\GeV$ with its five radiated partons
+(green triangles), the untouched $\bar b$ and the vector sum $b+\bar b$ of $66.4\GeV$ (magenta star). Dashed: the
+cones $\Delta R < 0.4$ (analyzer option \code{coneR}) with their \pt; the inset magnifies the $b$ cone, whose
+partons are too close to be told apart on this scale. The partons are drawn at the end of the shower, before the
+primordial $k_\mathrm{T}$: the $b$ cone holds exactly the $113.2\GeV$ of the hard-process $b$ here, $113.6\GeV$ in
+the status-1 copies of the ledger.}
 \label{fig:02_PS_display}
 \end{figure}
 
+\begin{plainwords}[Why this shower is not the shower of chapters 04 to 06]
+Pythia8 does not run ISR, FSR and multiparton interactions one after the other; it runs them \emph{interleaved} in
+one \pt-ordered evolution, in which at every step the next emission is the one with the highest \pt{} among all
+three. With MPI switched off, as here, the sequence of random numbers after the hard process is different from the
+sequence with MPI on, and so are the emissions. The same event in chapter 04 (\code{test/04\_MPI/out/},
+MPI on) has \code{ISR = 28, FSRproc = 64} branchings counted in its log, and its analyzer reports at stage 2 a $b$ of
+$91.6\GeV$ and a $\bar b$ of $118.6\GeV$, both status 52, net $27.3\GeV$, against $46.9\GeV$, $113.2\GeV$ (status 23)
+and $66.4\GeV$ here. The hard process is the same event, the shower emissions are not identical between this
+chapter and the later ones; chapters 04, 05 and 06 are identical to each other at parton level. This chapter shows
+what a shower does, isolated; the shower that the detector will see is the one of chapter 04.
+\end{plainwords}
+
+\section{Ledger and display}
+
+Table~\ref{tab:02_PS_ledger} closes the ledger and figure~\ref{fig:02_PS_display} shows the result. The shower added twenty entries and five final-state partons, all of
+them in the tracker region $\abseta < 2.5$ next to the $b$; it moved no energy between the regions beyond what the
+re-drawn beam remnants did (the $u$ of $9.1\GeV$ at $\eta = 3.36$ of chapter 01 is gone, the forward region now
+holds the $\bar b$ alone; the remnants beyond $\abseta = 5.5$ gained one entry and $6\GeV$). The energy of the
+event is conserved to the first decimal and the visible energy changes by $6\GeV$ out of $2671$. The one large number
+of the table, $-66.3\GeV$ on the $b$ quark, is not a loss: the $b$ system and $b$ cone rows show it was moved to the
+five partons that now share the jet with the quark.
+
+\FloatBarrier
 \section{Open problems for Phase-2}
 
 The shower of this chapter is steered by two python files of the release, both imported by the fragment

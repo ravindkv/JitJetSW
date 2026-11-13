@@ -29,10 +29,11 @@ different from a light-quark or a gluon jet, and it is set by one fragmentation 
 that CMS has never tuned.
 
 \section{From the previous chapter}
-Chapter~\ref{ch:04_MPI} ended with 169 partons in the final state (status~1 in that file): the two $b$ quarks
-after their showers, 61 partons from the 31 additional multiparton interactions, 26 from the initial-state
-and 67 from the final-state radiation, and 13 beam-remnant quarks, all colour connected, with
-$\sum E=13600.0\GeV$ and $\sum\pt=481.2\GeV$. This chapter regenerates the same event with the same seeds,
+Chapter~\ref{ch:04_MPI} ended with 169 partons in the final state (status~1 in that file), counted there by the
+scattering they belong to: the two $b$ quarks with the 12 ISR and FSR partons of the hard process, 142 partons of
+the 31 additional multiparton interactions and their showers, and 13 beam-remnant quarks, all colour connected,
+with $\sum E=13600.0\GeV$ and $\sum\pt=481.2\GeV$; the cone $\Delta R<0.4$ around the $b$ held $127.3\GeV$,
+$6.9\GeV$ of it from the underlying event, the one around the $\bar b$ $117.1\GeV$. This chapter regenerates the same event with the same seeds,
 so the parton level is identical: the same 169 partons are in this file with status~62 (156 outgoing
 partons with their primordial $k_T$ included) and 63 (13 beam remnants), with the same $13600.0\GeV$ and
 $481.2\GeV$, the same $b$ quark ($\pt=91.74\GeV$, $\eta=-1.57$) and $\bar b$ ($116.36\GeV$, $\eta=-3.75$).
@@ -107,8 +108,23 @@ its quark because the string also holds the three gluons and the $\bar s$ end, w
 the string. The $B^{*+}$ carries $x_E=0.980$ of its $\bar b$ and leaves $50\GeV$ to three light hadrons. Both $b$
 hadrons are within $\Delta R$ of $0.009$ and $0.001$ of their quark: hadronisation does not move the $b$
 direction, it only dresses it. The five light hadrons of the $b$ string have $\pt$ between $0.9$ and
-$7.2\GeV$; within $\Delta R<0.4$ of the $B^-$ there are eight other primary hadrons with $\sum\pt=20.4\GeV$,
-within $\Delta R<0.4$ of the $B^{*+}$ a single $K^{*-}$ of $1.8\GeV$.
+$7.2\GeV$.
+
+\paragraph{The cones around the two $b$ hadrons.}
+The dashed circles of figure~\ref{fig:05display} are the cones $\Delta R<0.4$ of chapters~\ref{ch:02_PS}
+and~\ref{ch:04_MPI}, now around the $B^-$ and the $B^{*+}$, and the inset magnifies the cone of the $B^-$, whose
+hadrons the main frame cannot separate. It holds nine primary hadrons with a vector \pt{} of $114.4\GeV$: the
+$B^-$ and eight light hadrons with $\sum\pt=20.4\GeV$, five $\pi^0$ ($7.2$, $6.5$, $2.8$, $2.0$ and $0.5\GeV$), a
+$K^0$, a $\bar K^{*0}$ and a $\pi^-$; the cone of the $B^{*+}$ holds a single $K^{*-}$ of $1.8\GeV$ besides it,
+$116.0\GeV$. At parton level the same two cones held $127.3$ and $117.1\GeV$: hadronisation takes $12.8\GeV$
+out of the $b$ cone. A cone is not a string: the hadrons are made along the strings, and several strings pass
+through this cone (the $b$ string and those of the ISR and MPI partons that were inside it). Four hadrons just
+outside the circle carry about as much as the cone lost: a $\bar p$ of $5.3\GeV$ at $\Delta R=0.45$, a
+$\Delta^{++}$ of $2.8\GeV$ at $0.51$, and a $\rho^+$ and a $\pi^+$ of $2.4\GeV$ at $0.46$ and $0.42$, the $\pi^+$
+one of the five light hadrons of the $b$ string.\footnote{\code{genPartAnalyzer\_05\_Had.log} (the ``cone'' line
+of stage 4) and \code{ledger\_05\_Had.txt}; the hadrons outside the cone from FWLite (companion, section 4).}
+This loss out of the cone is what the jet energy corrections later call the hadronisation part of the
+out-of-cone showering; it is a property of the Lund strings, and of their parameters.
 
 Which hadron is made at a break is the second draw of the model: a $q\bar q$ pair is created with
 probability $u:d:s = 1:1:0.217$ (\code{StringFlav:probStoUD}), a diquark pair with probability 0.081 relative
@@ -199,10 +215,11 @@ rapidity and their hadrons land where the string, not the parton, was. The regio
 $604.6\GeV$ and the ring $5.2<\abseta<5.5$ gains $565.4\GeV$ (fifteen hadrons there instead of three
 partons), while the tracker region gains 61 particles and $42.5\GeV$. The visible energy within $\abseta<5.2$
 goes from $5740.0$ to $5779.2\GeV$, less than 1\% of a change; the scalar $\sum\pt$ rises by 5\% for the
-reason given above. Figure~\ref{fig:05display} is the $\eta$--$\phi$ display of the primary hadrons: the
-$B^-$ at $(-1.57,-2.09)$ and the $B^{*+}$ at $(-3.75,1.01)$ are the only two large markers; the rest is the
-soft spray of the 26 strings, denser at large $\abseta$, with 25 hadrons beyond $\abseta=6$ drawn on the
-border.
+reason given above. The two cone rows are the jet side of the ledger: hadronisation takes $12.8\GeV$ of \pt{}
+out of the $b$ cone and $1.1\GeV$ out of the $\bar b$ cone. Figure~\ref{fig:05display} is the $\eta$--$\phi$
+display of the primary hadrons: the $B^-$ at $(-1.57,-2.09)$ and the $B^{*+}$ at $(-3.75,1.01)$ are the only two
+large markers, each in its cone; the rest is the soft spray of the 26 strings, denser at large $\abseta$, with
+25 hadrons beyond $\abseta=6$ drawn on the border.
 
 \begin{plainwords}[What a detector will see of this stage]
 Nothing of the strings themselves, only the hadrons, and only after the next chapter has decayed the unstable
@@ -216,7 +233,9 @@ set by the Lund parameters.
 \captionof{table}{Ledger of the hadronisation stage, event 1:1:1. Before: the 169 partons of chapter~\ref{ch:04_MPI}
 (\code{test/04\_MPI/out/ledger\_04\_MPI.txt}, final state), after: the 320 primary hadrons
 (\code{test/05\_Had/out/ledger\_05\_Had.txt}); the $b$ and $\bar b$ rows from \code{genPartAnalyzer\_05\_Had.log},
-the masses from the FWLite count of the companion. $E$ and \pt{} in GeV, \pt{} scalar sums.}
+the masses from the FWLite count of the companion. $E$ and \pt{} in GeV, \pt{} scalar sums, except in the cone
+rows: the final-state particles within $\Delta R<0.4$ of the last copy of the $b$ and $\bar b$ quark
+(\code{genLedger.py}), vector \pt; differences before rounding.}
 \label{tab:05ledger}
 \begin{tabular}{lrrrrrrrrr}
 \toprule
@@ -240,17 +259,23 @@ $\sum m$ of the final state & & 30.8 & & & 176.7 & & & $+145.9$ & \\
 $b$ quark $\to$ $B^-$, \pt & & & 91.74 & & & 94.28 & & & $+2.54$ \\
 $\bar b$ quark $\to$ $B^{*+}$, \pt & & & 116.36 & & & 114.17 & & & $-2.18$ \\
 $|\vec\pt(b)+\vec\pt(\bar b)|$ & & & 25.08 & & & 20.30 & & & $-4.77$ \\
+\midrule
+$b$ cone $\Delta R<0.4$ & 9 & 325.3 & 127.3 & 9 & 290.6 & 114.4 & 0 & $-34.8$ & $-12.8$ \\
+$\bar b$ cone $\Delta R<0.4$ & 2 & 2485.9 & 117.1 & 2 & 2465.3 & 116.0 & 0 & $-20.6$ & $-1.1$ \\
 \bottomrule
 \end{tabular}
 \end{minipage}\end{center}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.8\textwidth]{05_Had/out/genPartAnalyzer_05_Had_page-4.png}
+\includegraphics[width=\textwidth]{05_Had/out/genPartAnalyzer_05_Had_page-4.png}
 \caption{The event after hadronisation (\code{test/05\_Had/out/genPartAnalyzer\_05\_Had\_page-4.png}, page 4 of
 \code{genPartAnalyzer\_05\_Had.pdf}): the 320 primary hadrons in $\eta$--$\phi$, marker size $\propto\log\pt$,
-the $B^-$ (red) and the $B^{*+}$ (blue) matched to the $b$ and $\bar b$ chains, the star their vector sum.
-Page 3 of the same file shows the 169 partons the strings were made of, with the quarks at the same places.}
+the $B^-$ (red) and the $B^{*+}$ (blue) matched to the $b$ and $\bar b$ chains, the star their vector sum. Dashed:
+the cones $\Delta R<0.4$ (analyzer option \code{coneR}), $114.4\GeV$ around the $B^-$ (nine hadrons) and
+$116.0\GeV$ around the $B^{*+}$ (two); the inset magnifies the $B^-$ cone with the name and \pt{} of every hadron
+within $1.25\times0.4$ of its axis (``+4 more'': the softest, not labelled). Page 3 of the same file is the end of
+the parton level, the display of chapter~\ref{ch:04_MPI}, with the quarks at the same places.}
 \label{fig:05display}
 \end{figure}
 

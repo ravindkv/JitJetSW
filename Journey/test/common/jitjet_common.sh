@@ -17,6 +17,7 @@
 #   run_cmsrun <cfg> <log> [key=value ...]      runs an analyzer config (cmsRun, in OUT) with VarParsing arguments
 #   pdf_pages_png <pdf> [dpi]   every page of a ROOT PDF as <pdf minus .pdf>_page-N.png (pdftoppm -cropbox), for the book
 #   gen_stage <isr> <fsr> <mpi> <had> <decay> <maxStage> <description>   the generator chapters 01, 02, 04, 05, 06
+#   gen_xsec <isr> <fsr> <mpi> <had> <decay>   the cross section from XSEC_EVENTS events with the settings of gen_stage
 #   sim_ld_library_path         LD_LIBRARY_PATH without the simulation biglib (a physics list built in this package cannot be
 #                               mixed with the statically linked Geant4 of biglib/pluginSimulation.so)
 # Variables understood by every chapter script
@@ -25,6 +26,11 @@
 #   EVENTS=1       events generated / simulated (the book follows ONE event; more only for illustration)
 #   EVENT=1:1:1    the event of the book (run:lumi:event), the one drawn and mixed
 #   PNG=0          do not convert the PDF pages to PNG
+#   CONE_R=0.4     gen_stage: the GenPartAnalyzer pages draw the cone Delta R < CONE_R around the b and the bbar, with its
+#                  pT and a zoom on the fuller cone (default 0: no cones; the ledger always lists the cones of R = 0.4)
+#   XSEC_EVENTS=1000, XSEC_FILE=1   gen_xsec: the number of events, and keep them in out/xsec_GEN_<chapter>.root
+#   REGEN=0        gen_stage: keep the existing out/step1_GEN_<chapter>.root (do not run the GEN job again) and redo only
+#                  the analyzer pages and the ledger, e.g. for a chapter whose GEN file a later chapter reads (06 -> 07)
 #   YEAR           2025 for the CMS chapters 08-13, 2024 for the generator chapters 01-07 (the defaults of CONDITIONS, ERA)
 #   CONDITIONS, ERA, GEOMETRY, BEAMSPOT, COMENERGY, PTHATMIN   the Run-3 settings (change all together for another scenario)
 
@@ -141,25 +147,57 @@ sim_ld_library_path() {
 
 # the generator chapters: the ONE bbbar event with the Pythia8 steps switched on one at a time. Same fragment, seeds,
 # conditions, era, geometry, beamspot and energy in every chapter, so that the hard process is the same event.
+gen_customise() {  # gen_customise <isr> <fsr> <mpi> <had> <decay>: the --customise_commands of the generator chapters
+  local isr=$1 fsr=$2 mpi=$3 had=$4 decay=$5
+  local joined="process.generator.comEnergy = cms.double($COMENERGY)"
+  joined+='\n'"process.generator.PythiaParameters.processParameters.extend(['PhaseSpace:pTHatMin = $PTHATMIN', 'PartonLevel:ISR = $isr', 'PartonLevel:FSR = $fsr', 'PartonLevel:MPI = $mpi', 'HadronLevel:all = $had', 'HadronLevel:Hadronize = $had', 'HadronLevel:Decay = $decay'])"
+  printf '%s' "$joined"
+}
+
 gen_stage() {  # gen_stage <isr> <fsr> <mpi> <had> <decay> <maxStage> <description>
   local isr=$1 fsr=$2 mpi=$3 had=$4 decay=$5 max_stage=$6 desc=$7
   jitjet_fragment
   local cfg=$CHDIR/step1_GEN_${CHAPTER}_cfg.py out=step1_GEN_${CHAPTER}.root log=$OUT/step1_GEN_${CHAPTER}.log
-  local joined="process.generator.comEnergy = cms.double($COMENERGY)"
-  joined+='\n'"process.generator.PythiaParameters.processParameters.extend(['PhaseSpace:pTHatMin = $PTHATMIN', 'PartonLevel:ISR = $isr', 'PartonLevel:FSR = $fsr', 'PartonLevel:MPI = $mpi', 'HadronLevel:all = $had', 'HadronLevel:Hadronize = $had', 'HadronLevel:Decay = $decay'])"
+  local joined
+  joined=$(gen_customise "$isr" "$fsr" "$mpi" "$had" "$decay")
   echo "Pythia8: ISR=$isr FSR=$fsr MPI=$mpi Hadronize=$had Decay=$decay (pTHatMin $PTHATMIN GeV, $COMENERGY GeV, $EVENTS event(s))"
-  run_driver "$cfg" "$log" "$GEN_FRAGMENT" --conditions "$CONDITIONS" --era "$ERA" --geometry "$GEOMETRY" --beamspot "$BEAMSPOT" \
-    -n "$EVENTS" -s GEN --datatier GEN --eventcontent FEVTDEBUG --fileout "file:$out" --customise_commands "$joined"
+  if (( ${REGEN:-1} )) || [[ ! -s $OUT/$out ]]; then
+    run_driver "$cfg" "$log" "$GEN_FRAGMENT" --conditions "$CONDITIONS" --era "$ERA" --geometry "$GEOMETRY" --beamspot "$BEAMSPOT" \
+      -n "$EVENTS" -s GEN --datatier GEN --eventcontent FEVTDEBUG --fileout "file:$out" --customise_commands "$joined"
+  else
+    echo "  REGEN=0: keeping $out ($(date -r "$OUT/$out" '+%Y-%m-%d %H:%M')), only the analysis is redone"
+  fi
   (( RUN )) || return 0
   [[ -s $OUT/$out ]] || { echo "No output produced: $OUT/$out" >&2; exit 1; }
   (( ANALYZE )) || return 0
   local a=genPartAnalyzer_${CHAPTER}
   local label="chapter $CHAPTER: $desc|ISR $isr, FSR $fsr, MPI $mpi|Hadronize $had, Decay $decay|pTHatMin $PTHATMIN GeV, 13.6 TeV"
   run_cmsrun "$COMMON/genPartAnalyzer_cfg.py" "$OUT/$a.log" inputFiles="file:$OUT/$out" outputFile="$a.root" maxEvents=1 \
-    eventsToProcess="$EVENT" maxStage="$max_stage" pdfFile="$a.pdf" sampleLabel="$label"
-  grep -E '^== GenPartAnalyzer|^  stage' "$OUT/$a.log"
+    eventsToProcess="$EVENT" maxStage="$max_stage" pdfFile="$a.pdf" sampleLabel="$label" coneR="${CONE_R:-0}"
+  grep -E '^== GenPartAnalyzer|^  stage|^  by scattering|^  cone' "$OUT/$a.log"
   pdf_pages_png "$OUT/$a.pdf"
   python3 "$COMMON/genLedger.py" "$OUT/$out" --event "$EVENT" > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" ||
     { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
   echo "  Ledger: $(basename "$OUT/ledger_${CHAPTER}.txt")"
+}
+
+# the cross section of a generator chapter. Pythia8 estimates sigma from the events it generated, with the statistical
+# error sigma/sqrt(N accepted): after the ONE event of the book it is sigma +- sigma. This second GEN job, with the
+# same fragment, settings and seeds as gen_stage, generates XSEC_EVENTS events (default 1000) without writing them
+# (cmsDriver --no_output) and keeps only the log, with the PYTHIA statistics and the GenXsecAnalyzer summary; with
+# XSEC_FILE=1 the events are kept in out/xsec_GEN_<chapter>.root, for statistics over many events (genShowerStats.py).
+# Its first event is the event of the book (same seeds); the output of gen_stage is not touched.
+gen_xsec() {  # gen_xsec <isr> <fsr> <mpi> <had> <decay>
+  local n=${XSEC_EVENTS:-1000}
+  jitjet_fragment
+  local cfg=$CHDIR/xsec_GEN_${CHAPTER}_cfg.py log=$OUT/xsec_GEN_${CHAPTER}.log out=(--no_output) what="no output file"
+  if (( ${XSEC_FILE:-0} )); then
+    out=(--fileout "file:xsec_GEN_${CHAPTER}.root")
+    what="events kept in xsec_GEN_${CHAPTER}.root"
+  fi
+  echo "Cross section: $n events, same settings and seeds, $what"
+  run_driver "$cfg" "$log" "$GEN_FRAGMENT" --conditions "$CONDITIONS" --era "$ERA" --geometry "$GEOMETRY" --beamspot "$BEAMSPOT" \
+    -n "$n" -s GEN --datatier GEN --eventcontent FEVTDEBUG "${out[@]}" --customise_commands "$(gen_customise "$@")"
+  (( RUN )) || return 0
+  grep -E 'total cross section|final cross section' "$log" | sed 's/^/  /'
 }

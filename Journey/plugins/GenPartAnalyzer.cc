@@ -35,10 +35,29 @@
 // origin of their mother, so a quark produced in an MPI stays "MPI" after it radiated and
 // received its primordial kT.
 //
+// In a record with multiparton interactions (status 31-39) a parton is also attributed to the SCATTERING it belongs to
+// (scatteringOf): the hard process, one of the MPI, or a beam remnant, following its mothers up through copies,
+// radiators and emissions and, from an incoming parton, down the chain of incoming partons to its scattering (the walk
+// of the FWLite script of chapter 04). The marker then shows both: the ISR and FSR of the hard process keep their
+// colours ("hard-process ISR / FSR", the same partons on the page of stage 2 and on the page of stage 3), everything
+// that belongs to an MPI is cyan (squares the outgoing partons of the interactions, triangles their ISR and FSR), the
+// remnants grey; the header of stage 3 counts the drawn partons by scattering. Without MPI nothing changes (ISR, FSR).
+//
 // The b and bbar of the hard process are followed through the stages: their same-flavour
 // copies (stages 1-3), the primary b hadron nearest in Delta R to the last quark copy
 // (stage 4) and the stable decay products of that hadron (stage 5). The pT of each and the
 // net (vector sum) pT of b + bbar are printed on every plot and to std::cout.
+//
+// With coneR > 0 (default 0: off) the cone Delta R < coneR around each of the two systems is added: every particle
+// alive at the stage except neutrinos within coneR of the system direction (what a jet of radius coneR would hold).
+// The cone is drawn as a dashed circle with its pT, its n and pT are added to the header and printed to std::cout
+// ("  cone ..."), and the fuller cone (at least two particles) is drawn again, magnified, in an inset placed in the
+// corner of the frame that hides the least: every particle of it with its name and pT, which the main frame cannot
+// separate (their labels are not written in the main frame); the other cone gets a second inset, in another corner,
+// when it holds at least three particles (the two clouds of decay products of stage 5). A neutrino is drawn in the inset
+// with its label in parentheses: it is not counted in the cone. In a record with MPI the cone of stage 3 also gives what of
+// it belongs to the underlying event (UE: the partons of the MPI and the beam remnants, scalar sum of their pT).
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <map>
@@ -52,7 +71,9 @@
 #include "TH2D.h"
 #include "TLatex.h"
 #include "TLegend.h"
+#include "TLine.h"
 #include "TMarker.h"
+#include "TPad.h"
 #include "TROOT.h"
 #include "TStyle.h"
 
@@ -75,7 +96,9 @@ public:
 
 private:
   // origin of a particle (the process that created it); each maps to one of the 5 stages
-  enum Origin { BEAM = 0, HARD, ISR, FSR, MPI, REMNANT, STRING, HADRON, DECAY, OTHER, NORIG };
+  // MPIISR, MPIFSR: an ISR / FSR emission that belongs to an MPI (only for drawing, see scatteringOf)
+  enum Origin { BEAM = 0, HARD, ISR, FSR, MPI, MPIISR, MPIFSR, REMNANT, STRING, HADRON, DECAY, OTHER, NORIG };
+  enum Scattering { SC_NONE = 0, SC_HARD = 1, SC_MPI = 3, SC_REMNANT = 6 };
   static constexpr int kNStages = 5;
   static constexpr const char* kStageName[kNStages + 1] = {
       "", "hardProcess", "partonShower", "mpiBeamRemnants", "hadronisation", "hadronDecays"};
@@ -85,18 +108,28 @@ private:
                                                             "3. + MPI / beam remnants",
                                                             "4. + hadronisation (primary hadrons)",
                                                             "5. + hadron decays (= genParticles status 1)"};
-  static constexpr const char* kOriginName[NORIG] = {"beam",         "hard process",   "ISR",           "FSR",
-                                                     "MPI",          "beam remnant",   "string parton", "primary hadron",
-                                                     "decay product", "other"};
-  static constexpr int kOriginColor[NORIG] = {kBlack,    kBlack,      kOrange + 7, kGreen + 2, kCyan + 2,
-                                              kGray + 2, kViolet + 1, kViolet + 1, kGray + 1,  kBlack};
-  static constexpr int kOriginMarker[NORIG] = {1, 24, 26, 32, 25, 27, 24, 20, 20, 24};
+  static constexpr const char* kOriginName[NORIG] = {"beam",          "hard process",  "ISR",           "FSR",
+                                                     "MPI",           "MPI ISR",       "MPI FSR",       "beam remnant",
+                                                     "string parton", "primary hadron", "decay product", "other"};
+  // the names in a record with MPI: the ISR and FSR of the hard process apart from those of the MPI
+  static constexpr const char* kOriginNameMPI[NORIG] = {"beam",          "hard process",   "hard-process ISR", "hard-process FSR",
+                                                        "MPI parton",    "MPI ISR",        "MPI FSR",          "beam remnant",
+                                                        "string parton", "primary hadron", "decay product",    "other"};
+  static constexpr int kOriginColor[NORIG] = {kBlack,     kBlack,    kOrange + 7, kGreen + 2,  kCyan + 2, kCyan + 2,
+                                              kCyan + 2,  kGray + 2, kViolet + 1, kViolet + 1, kGray + 1, kBlack};
+  static constexpr int kOriginMarker[NORIG] = {1, 24, 26, 32, 25, 26, 32, 27, 24, 20, 20, 24};
 
   struct Sys {  // one of the two b systems (b or bbar) at a given stage
     std::vector<size_t> idx;
     math::XYZTLorentzVector p4;
     std::string what;   // long description for the header
     std::string label;  // short label next to the marker (per particle at stage 5)
+    bool hasCone = false;            // coneR > 0 and the system exists
+    std::vector<size_t> coneIdx;     // the particles within coneR of p4
+    math::XYZTLorentzVector coneP4;  // their sum
+    bool hasUE = false;              // stage 3 of a record with MPI: the underlying-event part of the cone is given
+    size_t ueN = 0;                  // the cone particles from an MPI or a beam remnant
+    double uePt = 0.;                // the scalar sum of their pT
   };
 
   using Coll = reco::GenParticleCollection;
@@ -115,18 +148,27 @@ private:
   bool lineageOk(size_t i, int stage, const Coll& gens, const std::vector<int>& st, const std::vector<char>& inc,
                  std::vector<char>& memo) const;
   int scatteringStage(size_t k, const Coll& gens, int depth = 0) const;
+  int scatteringOf(size_t i, const Coll& gens, const std::vector<char>& inc, std::vector<int>& memo) const;
   void descendants(size_t i, const Coll& gens, std::vector<char>& out) const;
   static std::string pdgName(int pdg);
   static double markerSize(double pt);
   void draw(int stage, const edm::Event& ev, const Coll& gens, const std::vector<char>& alive,
             const std::vector<int>& origin, const std::vector<Sys>& systems);
+  void drawZoom(int stage, const Coll& gens, const std::vector<char>& alive, const std::vector<int>& origin,
+                const std::vector<int>& member, const std::vector<Sys>& systems, int k,
+                std::vector<std::pair<double, double>>& usedCorners);
 
   edm::EDGetTokenT<Coll> genParticlesTok_;
   std::string outputPrefix_, pdfFile_, sampleLabel_;
-  double etaMax_, labelPtMin_;
+  double etaMax_, labelPtMin_, coneR_;
   bool savePDF_, printParticles_, openPdf_, closePdf_;
   int maxStage_;
   bool pdfOpen_ = false;  // the multi-page pdfFile_ is opened on the first page and closed in endJob
+  // the event being drawn: the record has multiparton interactions (status 31-39), their number, and the scattering
+  // of every particle (Scattering)
+  bool hasMPI_ = false;
+  int nMPI_ = 0;
+  std::vector<int> scatter_;
 
   std::unique_ptr<TCanvas> canvas_;
   TH2D* hEtaPhiPt_[kNStages + 1] = {};
@@ -142,6 +184,7 @@ GenPartAnalyzer::GenPartAnalyzer(const edm::ParameterSet& ps)
       sampleLabel_(ps.getParameter<std::string>("sampleLabel")),
       etaMax_(ps.getParameter<double>("etaMax")),
       labelPtMin_(ps.getParameter<double>("labelPtMin")),
+      coneR_(ps.getParameter<double>("coneR")),
       savePDF_(ps.getParameter<bool>("savePDF")),
       printParticles_(ps.getParameter<bool>("printParticles")),
       openPdf_(ps.getParameter<bool>("openPdf")),
@@ -168,6 +211,8 @@ void GenPartAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descripti
       ->setComment("PDFs are written as <outputPrefix>_stageN_<name>_run<R>_event<E>.pdf");
   desc.add<double>("etaMax", 6.)->setComment("eta axis range; particles beyond are drawn on the border with an x marker");
   desc.add<double>("labelPtMin", 5.)->setComment("pT above which the pT value is written next to the marker (b, bbar always)");
+  desc.add<double>("coneR", 0.)
+      ->setComment("if > 0: the cone Delta R < coneR around the b and the bbar system (circle, pT, inset of the fuller cone; with MPI, its UE part at stage 3)");
   desc.add<bool>("savePDF", true);
   desc.add<std::string>("pdfFile", "")
       ->setComment("if set, all plots are written as pages of this single PDF instead of one PDF per stage and event");
@@ -228,6 +273,8 @@ int GenPartAnalyzer::stageOfOrigin(int o) {
     case FSR:
       return 2;
     case MPI:
+    case MPIISR:
+    case MPIFSR:
     case REMNANT:
       return 3;
     case STRING:
@@ -362,6 +409,34 @@ int GenPartAnalyzer::scatteringStage(size_t k, const Coll& gens, int depth) cons
   return 0;
 }
 
+// the scattering a particle belongs to (Scattering): an entry of the hard process (status 21-29) or of an MPI (31-39)
+// is its own; an incoming parton belongs to the scattering its chain of incoming partons leads to (scatteringStage); a
+// parton whose mother is a beam proton is a beam remnant; anything else belongs to the scattering of its mother (copies,
+// radiators, emissions, the final copies with the primordial kT). Hadrons and decay products end at SC_NONE or at the
+// scattering of their first mother; only partons are drawn by it.
+int GenPartAnalyzer::scatteringOf(size_t i, const Coll& gens, const std::vector<char>& inc, std::vector<int>& memo) const {
+  if (memo[i] >= 0)
+    return memo[i];
+  memo[i] = SC_NONE;  // guard against cycles
+  const reco::GenParticle& g = gens[i];
+  int s = std::abs(g.status()), r = SC_NONE;
+  if (s >= 21 && s <= 29)
+    r = SC_HARD;
+  else if (s >= 31 && s <= 39)
+    r = SC_MPI;
+  else if (inc[i]) {
+    int st = (s == 4 || (s >= 11 && s <= 19)) ? 0 : scatteringStage(i, gens);
+    r = st == 1 ? SC_HARD : (st == 3 ? SC_MPI : SC_NONE);
+  } else
+    for (size_t m = 0; m < g.numberOfMothers() && r == SC_NONE; ++m) {
+      size_t k = g.motherRef(m).key();
+      int ms = std::abs(gens[k].status());
+      r = (ms == 4 || (ms >= 11 && ms <= 19)) ? SC_REMNANT : scatteringOf(k, gens, inc, memo);
+    }
+  memo[i] = r;
+  return r;
+}
+
 void GenPartAnalyzer::descendants(size_t i, const Coll& gens, std::vector<char>& out) const {
   const reco::GenParticle& g = gens[i];
   for (size_t d = 0; d < g.numberOfDaughters(); ++d) {
@@ -451,6 +526,23 @@ void GenPartAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
   }
   for (size_t i = 0; i < n; ++i)
     classify(i, gens, inc, stage, origin);
+
+  // 1b. with MPI in the record: the scattering of every particle, and the origin drawn (ISR / FSR of an MPI apart)
+  int nStatus31 = 0;
+  for (size_t i = 0; i < n; ++i)
+    nStatus31 += std::abs(gens[i].status()) == 31;
+  nMPI_ = nStatus31 / 2;
+  hasMPI_ = nMPI_ > 0;
+  scatter_.assign(n, -1);
+  std::vector<int> shown(origin);
+  if (hasMPI_)
+    for (size_t i = 0; i < n; ++i) {
+      scatteringOf(i, gens, inc, scatter_);
+      if (scatter_[i] == SC_MPI && origin[i] == ISR)
+        shown[i] = MPIISR;
+      else if (scatter_[i] == SC_MPI && origin[i] == FSR)
+        shown[i] = MPIFSR;
+    }
 
   // 2. the hard-process b quarks and their same-flavour copies
   std::vector<size_t> hardB, hardBbar;
@@ -575,6 +667,27 @@ void GenPartAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
     for (auto& S : sys)
       for (size_t i : S.idx)
         S.p4 += gens[i].p4();
+    // the cones around the two systems: the particles alive at this stage, except neutrinos, within coneR of the axis
+    if (coneR_ > 0)
+      for (auto& S : sys) {
+        if (S.idx.empty())
+          continue;
+        S.hasCone = true;
+        for (size_t i = 0; i < n; ++i) {
+          int a = std::abs(gens[i].pdgId());
+          if (alive[i] && a != 12 && a != 14 && a != 16 &&
+              reco::deltaR(S.p4.eta(), S.p4.phi(), gens[i].eta(), gens[i].phi()) < coneR_) {
+            S.coneIdx.push_back(i);
+            S.coneP4 += gens[i].p4();
+            if (scatter_[i] == SC_MPI || scatter_[i] == SC_REMNANT) {
+              ++S.ueN;
+              S.uePt += gens[i].pt();
+            }
+          }
+        }
+        S.hasUE = hasMPI_ && s == 3;
+        std::sort(S.coneIdx.begin(), S.coneIdx.end(), [&](size_t a, size_t b) { return gens[a].pt() > gens[b].pt(); });
+      }
 
     // 5. histograms and printout
     size_t nAlive = 0;
@@ -604,6 +717,55 @@ void GenPartAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
     }
     std::cout << " | net b+bbar: |sum pT|=" << net.pt() << " (px=" << net.px() << " py=" << net.py()
               << ") scalar sum pT=" << sys[0].p4.pt() + sys[1].p4.pt() << "\n";
+    if (hasMPI_ && s <= 3) {  // the drawn particles by scattering and by the origin drawn
+      std::map<int, int> bySc;
+      std::vector<int> byOrigin(NORIG, 0);
+      for (size_t i = 0; i < n; ++i)
+        if (alive[i]) {
+          ++bySc[scatter_[i]];
+          ++byOrigin[shown[i]];
+        }
+      std::cout << "  by scattering (stage " << s << "): hard process " << bySc[SC_HARD] << ", MPI " << bySc[SC_MPI]
+                << " (of " << nMPI_ << " interactions), beam remnants " << bySc[SC_REMNANT] << ", none " << bySc[SC_NONE]
+                << " | by origin drawn:";
+      for (int o = 0; o < NORIG; ++o)
+        if (byOrigin[o])
+          std::cout << " " << kOriginNameMPI[o] << " " << byOrigin[o] << ";";
+      std::cout << " (the b and bbar copies are counted under their origin)\n";
+    }
+    if (coneR_ > 0) {
+      std::cout << "  cone dR<" << coneR_ << " (stage " << s << ")";
+      for (size_t k = 0; k < 2; ++k) {
+        auto const& S = sys[k];
+        if (!S.hasCone)
+          continue;
+        double scalar = 0;
+        for (size_t i : S.coneIdx)
+          scalar += gens[i].pt();
+        std::cout << " | around " << (k == 0 ? "b" : "bbar") << ": n=" << S.coneIdx.size() << " pt=" << S.coneP4.pt()
+                  << " eta=" << S.coneP4.eta() << " phi=" << S.coneP4.phi() << " scalar sum pT=" << scalar;
+        if (S.hasUE) {  // the cone without the underlying event: the vector sum of its hard-process partons
+          math::XYZTLorentzVector hard;
+          for (size_t i : S.coneIdx)
+            if (scatter_[i] == SC_HARD)
+              hard += gens[i].p4();
+          std::cout << " hard process: n=" << S.coneIdx.size() - S.ueN << " pt=" << hard.pt()
+                    << " scalar sum pT=" << scalar - S.uePt << " UE (MPI + remnants): n=" << S.ueN
+                    << " scalar sum pT=" << S.uePt;
+        }
+        // the scattering of a member only up to stage 3: a hadron comes from a string that joins partons of several
+        // scatterings, so it has none
+        bool tagSc = hasMPI_ && s <= 3;
+        std::cout << " members [idx]pdg:pt:dR" << (tagSc ? ":scattering(1 hard, 3 MPI, 6 remnant)" : "") << " =";
+        for (size_t i : S.coneIdx) {
+          std::cout << " [" << i << "]" << gens[i].pdgId() << ":" << gens[i].pt() << ":"
+                    << reco::deltaR(S.p4.eta(), S.p4.phi(), gens[i].eta(), gens[i].phi());
+          if (tagSc)
+            std::cout << ":" << scatter_[i];
+        }
+      }
+      std::cout << "\n";
+    }
     if (printParticles_) {
       std::cout << "    columns: [index] pdg status origin pt eta phi mothers daughters\n";
       for (size_t i = 0; i < n; ++i) {
@@ -622,7 +784,7 @@ void GenPartAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
     }
 
     if (savePDF_)
-      draw(s, ev, gens, alive, origin, sys);
+      draw(s, ev, gens, alive, shown, sys);
   }
 }
 
@@ -675,6 +837,28 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
     t->Draw();
     keep.push_back(std::move(t));
   };
+  // the cone shown magnified in the inset: the fuller one, if it holds at least two particles
+  int zoomK = -1;
+  for (int k = 0; k < 2; ++k)
+    if (sys[k].hasCone && sys[k].coneIdx.size() >= 2 &&
+        (zoomK < 0 || sys[k].coneIdx.size() > sys[zoomK].coneIdx.size()))
+      zoomK = k;
+  // ... and the other one as well when it holds at least three (two insets, in two corners: the stage-5 cones of the
+  // complete event, each a cloud of decay products)
+  std::vector<int> zoomKs;
+  if (zoomK >= 0) {
+    zoomKs.push_back(zoomK);
+    if (sys[1 - zoomK].hasCone && sys[1 - zoomK].coneIdx.size() >= 3)
+      zoomKs.push_back(1 - zoomK);
+  }
+  std::vector<char> inZoom(n, 0);  // labelled in the inset, not in the main frame
+  for (int k : zoomKs) {
+    for (size_t i : sys[k].coneIdx)
+      inZoom[i] = 1;
+    for (size_t i : sys[k].idx)  // the members the inset window shows (+-1.25 coneR), the neutrinos among them
+      if (reco::deltaR(sys[k].p4.eta(), sys[k].p4.phi(), gens[i].eta(), gens[i].phi()) < 1.25 * coneR_)
+        inZoom[i] = 1;
+  }
   // others first, b / bbar on top
   for (size_t i = 0; i < n; ++i) {
     if (!alive[i] || member[i] >= 0)
@@ -682,25 +866,71 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
     int o = origin[i];
     ++nOrigin[o];
     double eta = addPoint(kOriginColor[o], kOriginMarker[o], gens[i].eta(), gens[i].phi(), gens[i].pt());
-    if (gens[i].pt() >= labelPtMin_)
+    if (gens[i].pt() >= labelPtMin_ && !inZoom[i])
       label(eta + 0.05, gens[i].phi() + 0.06, Form("%.1f", gens[i].pt()), 0.016, kOriginColor[o]);
   }
   const int sysColor[2] = {kRed, kBlue};
   for (int k = 0; k < 2; ++k)
     for (size_t i : sys[k].idx) {
       double eta = addPoint(sysColor[k], 20, gens[i].eta(), gens[i].phi(), gens[i].pt());
-      if (stage == 5 && gens[i].pt() < labelPtMin_)
+      if (stage == 5 && (gens[i].pt() < labelPtMin_ || inZoom[i]))  // the decay products of a magnified cone: in the inset
         continue;
       std::string name = stage == 5 ? pdgName(gens[i].pdgId()) : sys[k].label;
       label(eta + 0.05, gens[i].phi() + 0.08, Form("%s %.1f", name.c_str(), gens[i].pt()), stage == 5 ? 0.016 : 0.022,
             sysColor[k]);
+    }
+  // the cones: dashed circles (split where they cross phi = +-pi) and their pT below them
+  auto circle = [&](double eta0, double phi0, double r, int color) {
+    std::vector<double> xs, ys;
+    auto flush = [&]() {
+      if (xs.size() > 1) {
+        auto g = std::make_unique<TGraph>(xs.size(), xs.data(), ys.data());
+        g->SetLineColor(color);
+        g->SetLineStyle(2);
+        g->SetLineWidth(2);
+        g->Draw("L same");
+        graphs.push_back(std::move(g));
+      }
+      xs.clear();
+      ys.clear();
+    };
+    for (int k = 0; k <= 96; ++k) {
+      double t = 2 * M_PI * k / 96, x = eta0 + r * std::cos(t), y = reco::deltaPhi(phi0 + r * std::sin(t), 0.);
+      if (std::fabs(x) > etaMax_) {
+        flush();
+        continue;
+      }
+      if (!ys.empty() && std::fabs(y - ys.back()) > M_PI)
+        flush();
+      xs.push_back(x);
+      ys.push_back(y);
+    }
+    flush();
+  };
+  for (int k = 0; k < 2; ++k)
+    if (sys[k].hasCone) {
+      double eta0 = sys[k].p4.eta(), phi0 = sys[k].p4.phi();
+      circle(eta0, phi0, coneR_, sysColor[k]);
+      double y = phi0 - coneR_ - 0.22 > -M_PI + 0.05 ? phi0 - coneR_ - 0.22 : phi0 + coneR_ + 0.08;
+      std::string cl = Form("cone %.1f: %.1f GeV (n = %zu", coneR_, sys[k].coneP4.pt(), sys[k].coneIdx.size());
+      cl += sys[k].hasUE ? Form("; UE %.1f GeV)", sys[k].uePt) : ")";
+      label(std::max(eta0 - coneR_, -etaMax_ + 0.05), y, cl.c_str(), 0.018, sysColor[k]);
     }
   // net b + bbar
   math::XYZTLorentzVector net = sys[0].p4 + sys[1].p4;
   bool haveBoth = !sys[0].idx.empty() && !sys[1].idx.empty();
   if (haveBoth && net.pt() > 0.1) {
     double eta = addPoint(kMagenta, 29, net.eta(), net.phi(), net.pt());
-    label(eta + 0.05, net.phi() - 0.15, Form("b+#bar{b} %.1f", net.pt()), 0.022, kMagenta);
+    if (coneR_ > 0) {  // left of the star, clear of the cone circles (right of it when the frame ends on the left)
+      bool left = eta - 1.3 > -etaMax_;
+      auto t = std::make_unique<TLatex>(left ? eta - 0.12 : eta + 0.10, net.phi() - 0.15, Form("b+#bar{b} %.1f", net.pt()));
+      t->SetTextAlign(left ? 31 : 11);
+      t->SetTextSize(0.022);
+      t->SetTextColor(kMagenta);
+      t->Draw();
+      keep.push_back(std::move(t));
+    } else
+      label(eta + 0.05, net.phi() - 0.15, Form("b+#bar{b} %.1f", net.pt()), 0.022, kMagenta);
   }
 
   // header: title, event, b / bbar summary
@@ -733,6 +963,19 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
     nAlive += alive[i];
   std::string info = Form("%zu particles drawn (marker size ~ log p_{T}; label = p_{T} [GeV] for p_{T} > %.0f GeV)", nAlive,
                           labelPtMin_);
+  if (hasMPI_ && stage == 2)  // the shower of the hard process alone: the MPI and their showers come with stage 3
+    info = Form("%zu particles drawn: the hard process and its own ISR + FSR (the %d MPI and their showers: stage 3)", nAlive,
+                nMPI_);
+  else if (hasMPI_ && stage == 3) {
+    int nSc[7] = {};
+    for (size_t i = 0; i < n; ++i)
+      if (alive[i] && scatter_[i] >= 0 && scatter_[i] < 7)
+        ++nSc[scatter_[i]];
+    info = Form("%zu particles drawn: hard process + showers %d, MPI + showers %d, beam remnants %d", nAlive, nSc[SC_HARD],
+                nSc[SC_MPI], nSc[SC_REMNANT]);
+    if (nSc[SC_NONE])
+      info += Form(", unattributed %d", nSc[SC_NONE]);
+  }
   if (nClamped)
     info += Form(", %d with |#eta| > %.0f drawn on the border (x)", nClamped, etaMax_);
   text(0.06, 0.922, info.c_str(), 0.02, kGray + 3);
@@ -742,6 +985,10 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
       line += "not found";
     else
       line += Form("p_{T} = %.2f GeV, #eta = %.2f, #phi = %.2f", sys[k].p4.pt(), sys[k].p4.eta(), sys[k].p4.phi());
+    if (sys[k].hasCone)
+      line += Form(";   cone #DeltaR < %.1f: n = %zu, p_{T} = %.2f GeV", coneR_, sys[k].coneIdx.size(), sys[k].coneP4.pt());
+    if (sys[k].hasUE)
+      line += Form(" (UE %.2f GeV)", sys[k].uePt);
     text(0.06, 0.891 - 0.028 * k, line.c_str(), 0.022, sysColor[k]);
   }
   if (haveBoth) {
@@ -773,7 +1020,15 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
     legEntry(kMagenta, 29, "b + #bar{b} (vector sum)");
   for (int o = 0; o < NORIG; ++o)
     if (nOrigin[o])
-      legEntry(kOriginColor[o], kOriginMarker[o], Form("%s (%d)", kOriginName[o], nOrigin[o]));
+      legEntry(kOriginColor[o], kOriginMarker[o], Form("%s (%d)", (hasMPI_ ? kOriginNameMPI : kOriginName)[o], nOrigin[o]));
+  std::unique_ptr<TLine> coneLine;
+  if (coneR_ > 0) {
+    coneLine = std::make_unique<TLine>();
+    coneLine->SetLineStyle(2);
+    coneLine->SetLineWidth(2);
+    coneLine->SetLineColor(kGray + 2);
+    leg->AddEntry(coneLine.get(), Form("cone #DeltaR < %.1f", coneR_), "l");
+  }
   leg->Draw();
 
   text(0.80, 0.46, "marker size:", 0.02);
@@ -792,6 +1047,10 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
   for (int k = 0; k < 5; ++k)  // stages beyond maxStage (not generated in this sample) in light grey
     text(0.81, 0.23 - 0.03 * k, flow[k], 0.018, k + 1 == stage ? kRed : (k < maxStage_ ? kGray + 2 : kGray));
 
+  std::vector<std::pair<double, double>> usedCorners;
+  for (int k : zoomKs)
+    drawZoom(stage, gens, alive, origin, member, sys, k, usedCorners);
+
   canvas_->Update();
   if (pdfFile_.empty()) {
     canvas_->Print(Form("%s_stage%d_%s_run%u_event%llu.pdf", outputPrefix_.c_str(), stage, kStageName[stage],
@@ -804,6 +1063,156 @@ void GenPartAnalyzer::draw(int stage, const edm::Event& ev, const Coll& gens, co
     pdfOpen_ = true;
   }
   canvas_->Print(pdfFile_.c_str());
+}
+
+// the inset with the cone of system k magnified: a TPad in a corner of the frame, its primitives owned by ROOT
+// (kCanDelete: deleted with the pad by the canvas_->Clear() of the next page). The window spans +-1.25 coneR around the
+// axis, plus a column on the right where the name and pT of every particle are written, joined to it by a thin line.
+void GenPartAnalyzer::drawZoom(int stage, const Coll& gens, const std::vector<char>& alive, const std::vector<int>& origin,
+                               const std::vector<int>& member, const std::vector<Sys>& sys, int k,
+                               std::vector<std::pair<double, double>>& usedCorners) {
+  const size_t n = gens.size();
+  const int sysColor[2] = {kRed, kBlue};
+  const double eta0 = sys[k].p4.eta(), phi0 = sys[k].p4.phi(), Z = 1.25 * coneR_;
+  // the corner of the frame (canvas NDC) that hides the least: never over a system or its cone
+  const double fx1 = 0.06, fx2 = 0.79, fy1 = 0.08, fy2 = 0.81, w = 0.27, h = 0.32, gap = 0.006;
+  auto toEta = [&](double x) { return -etaMax_ + (x - fx1) / (fx2 - fx1) * 2 * etaMax_; };
+  auto toPhi = [&](double y) { return -M_PI + (y - fy1) / (fy2 - fy1) * 2 * M_PI; };
+  double best = 1e30, bx = fx2 - gap - w, by = fy2 - gap - h;
+  for (double cx : {fx2 - gap - w, fx1 + gap})
+    for (double cy : {fy2 - gap - h, fy1 + gap}) {
+      if (std::find(usedCorners.begin(), usedCorners.end(), std::make_pair(cx, cy)) != usedCorners.end())
+        continue;  // taken by the inset of the other cone
+      double e1 = toEta(cx), e2 = toEta(cx + w), p1 = toPhi(cy), p2 = toPhi(cy + h), score = 0;
+      for (size_t i = 0; i < n; ++i) {
+        double e = std::clamp(gens[i].eta(), -etaMax_ + 0.05, etaMax_ - 0.05);
+        if (alive[i] && e > e1 && e < e2 && gens[i].phi() > p1 && gens[i].phi() < p2)
+          score += 1. + gens[i].pt();
+      }
+      for (auto const& T : sys)
+        if (!T.idx.empty() && T.p4.eta() + coneR_ > e1 && T.p4.eta() - coneR_ < e2 && T.p4.phi() + coneR_ > p1 &&
+            T.p4.phi() - coneR_ < p2)
+          score += 1e6;
+      if (score < best) {
+        best = score;
+        bx = cx;
+        by = cy;
+      }
+    }
+  usedCorners.emplace_back(bx, by);
+  canvas_->cd();
+  auto* pad = new TPad(Form("zoom%d_%d", stage, k), "", bx, by, bx + w, by + h);
+  pad->SetBit(kCanDelete);
+  pad->SetFillColor(kWhite);
+  pad->SetBorderMode(0);
+  pad->SetMargin(0.10, 0.03, 0.12, 0.13);  // left, right, bottom, top: the frame is 1.5 times wider than high
+  pad->SetGrid(0, 0);
+  pad->Draw();
+  pad->cd();
+  auto own = [](TObject* o) {
+    o->SetBit(kCanDelete);
+    return o;
+  };
+  auto* fr = new TH2D(Form("zoomFrame%d_%d", stage, k), ";#eta;#phi", 10, eta0 - Z, eta0 + 2 * Z, 10, phi0 - Z, phi0 + Z);
+  fr->SetDirectory(nullptr);
+  own(fr);
+  for (TAxis* a : {fr->GetXaxis(), fr->GetYaxis()}) {
+    a->SetLabelSize(0.06);
+    a->SetTitleSize(0.07);
+    a->SetNdivisions(505);
+  }
+  fr->GetXaxis()->SetTitleOffset(0.7);
+  fr->GetYaxis()->SetTitleOffset(0.55);
+  fr->Draw("axis");
+  // the border of the inset, in the colour of the system
+  const double bxs[5] = {0.002, 0.998, 0.998, 0.002, 0.002}, bys[5] = {0.002, 0.002, 0.998, 0.998, 0.002};
+  for (int j = 0; j < 4; ++j) {
+    auto* l = new TLine(bxs[j], bys[j], bxs[j + 1], bys[j + 1]);
+    l->SetNDC();
+    l->SetLineColor(sysColor[k]);
+    l->SetLineWidth(2);
+    own(l)->Draw();
+  }
+  // the cone
+  std::vector<double> cx(97), cy(97);
+  for (int j = 0; j <= 96; ++j) {
+    cx[j] = eta0 + coneR_ * std::cos(2 * M_PI * j / 96);
+    cy[j] = phi0 + coneR_ * std::sin(2 * M_PI * j / 96);
+  }
+  auto* gc = new TGraph(97, cx.data(), cy.data());
+  gc->SetLineColor(sysColor[k]);
+  gc->SetLineStyle(2);
+  gc->SetLineWidth(2);
+  own(gc)->Draw("L");
+  // the particles within 1.25 coneR (phi unwrapped around the axis), the softer first
+  struct P {
+    size_t i;
+    double x, y;
+    int color;
+  };
+  std::vector<P> ps;
+  for (size_t i = 0; i < n; ++i) {
+    if (!alive[i])
+      continue;
+    double x = gens[i].eta(), y = phi0 + reco::deltaPhi(gens[i].phi(), phi0);
+    if (std::hypot(x - eta0, y - phi0) < Z)
+      ps.push_back({i, x, y, member[i] >= 0 ? sysColor[member[i]] : kOriginColor[origin[i]]});
+  }
+  std::sort(ps.begin(), ps.end(), [&](const P& a, const P& b) { return gens[a.i].pt() < gens[b.i].pt(); });
+  for (auto const& p : ps) {
+    auto* g = new TGraph(1);
+    g->SetPoint(0, p.x, p.y);
+    g->SetMarkerColor(p.color);
+    g->SetMarkerStyle(member[p.i] >= 0 ? 20 : kOriginMarker[origin[p.i]]);
+    g->SetMarkerSize(markerSize(gens[p.i].pt()));
+    own(g)->Draw("P");
+  }
+  // the labels: the 12 hardest, in a column right of the cone, ordered in phi and kept apart
+  std::sort(ps.begin(), ps.end(), [&](const P& a, const P& b) { return gens[a.i].pt() > gens[b.i].pt(); });
+  size_t nMore = ps.size() > 12 ? ps.size() - 12 : 0;
+  ps.resize(ps.size() - nMore);
+  std::sort(ps.begin(), ps.end(), [](const P& a, const P& b) { return a.y > b.y; });
+  const double top = phi0 + 0.9 * Z, bottom = phi0 - (nMore ? 0.76 : 0.9) * Z, lx = eta0 + 1.08 * Z;
+  double dy = 0.19 * Z;
+  if (ps.size() > 1)
+    dy = std::min(dy, (top - bottom) / (ps.size() - 1));
+  std::vector<double> ly(ps.size());
+  for (size_t j = 0; j < ps.size(); ++j)
+    ly[j] = std::min(ps[j].y, j ? ly[j - 1] - dy : top);
+  for (size_t j = ps.size(); j-- > 0;)
+    ly[j] = std::max(ly[j], j + 1 < ps.size() ? ly[j + 1] + dy : bottom);
+  for (size_t j = 0; j < ps.size(); ++j) {
+    auto* l = new TLine(ps[j].x, ps[j].y, lx - 0.04 * Z, ly[j]);
+    l->SetLineColor(kGray + 1);
+    l->SetLineWidth(1);
+    own(l)->Draw();
+    int a = std::abs(gens[ps[j].i].pdgId());
+    bool nu = a == 12 || a == 14 || a == 16;  // drawn, not counted in the cone: in parentheses
+    auto* t = new TLatex(lx, ly[j], Form(nu ? "(%s %.1f)" : "%s %.1f", pdgName(gens[ps[j].i].pdgId()).c_str(),
+                                         gens[ps[j].i].pt()));
+    t->SetTextAlign(12);
+    t->SetTextSize(0.055);
+    t->SetTextColor(ps[j].color);
+    own(t)->Draw();
+  }
+  std::string ttl = Form("%s cone #DeltaR < %.1f: n = %zu, p_{T} = %.1f GeV", sys[k].label.c_str(), coneR_,
+                         sys[k].coneIdx.size(), sys[k].coneP4.pt());
+  if (sys[k].hasUE)
+    ttl += Form(" (UE %.1f)", sys[k].uePt);
+  if (nMore) {  // under the column of labels
+    auto* more = new TLatex(lx, phi0 - 0.93 * Z, Form("+%zu more", nMore));
+    more->SetTextAlign(12);
+    more->SetTextSize(0.05);
+    more->SetTextColor(kGray + 2);
+    own(more)->Draw();
+  }
+  bool longTitle = sys[k].hasUE;  // smaller and further left, to stay inside the inset
+  auto* title = new TLatex(longTitle ? 0.03 : 0.10, 0.92, ttl.c_str());
+  title->SetNDC();
+  title->SetTextSize(longTitle ? 0.052 : 0.058);
+  title->SetTextColor(sysColor[k]);
+  own(title)->Draw();
+  canvas_->cd();
 }
 
 void GenPartAnalyzer::endJob() {

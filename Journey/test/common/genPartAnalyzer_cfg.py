@@ -30,6 +30,8 @@ options.register('pdfFile', '', VarParsing.multiplicity.singleton, VarParsing.va
                  'if set, all plots go as pages into this single PDF instead of one PDF per stage and event')
 options.register('sampleLabel', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  "text printed in the right panel of every plot, '|' separates lines, e.g. the generator stage")
+options.register('coneR', 0.0, VarParsing.multiplicity.singleton, VarParsing.varType.float,
+                 'if > 0: draw the cone Delta R < coneR around the b and the bbar system, print its pT, zoom on the fuller cone')
 options.register('eventsToProcess', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'run:lumi:event (or a range) to analyse, e.g. 1:1:1; empty: the first maxEvents events')
 options._tags, options._tagOrder = {}, []  # keep outputFile as given (VarParsing would append _numEvent<N> when maxEvents > 0)
@@ -56,6 +58,7 @@ process.genPartAnalyzer = cms.EDAnalyzer('GenPartAnalyzer',
     maxStage=cms.int32(options.maxStage),
     pdfFile=cms.string(options.pdfFile),
     sampleLabel=cms.string(options.sampleLabel),
+    coneR=cms.double(options.coneR),
 )
 
 process.p = cms.Path(process.genPartAnalyzer)

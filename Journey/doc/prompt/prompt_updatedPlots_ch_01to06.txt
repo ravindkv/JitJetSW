@@ -1,0 +1,15 @@
+in the ../doc/chapter/chapter_01_ME.tex, the xsec is 157.7 ± 157.7 pb which I belive is due to the fact that we just generated one event. Also generate 1000 events so that we get accurate xsec. Then add this note  in the ../doc/chapter/chapter_01_ME.tex.
+
+Thanks a lot. Next in the ../doc/chapter/chapter_02_PS.tex, I would like to also have
+  row for b and bbar showing the sum in deltaR < 0.4 cone around them in the table and
+  also show the pT values in eta-phi display. Also somehow, the table lists 0 ISR in the
+  table. Please double check.
+
+The chapter ../doc/chapter/chapter_04_MPI.tex needs few change:
+First, somehow the top figure ( containing ISR+FSR) does not match with the previous chapter
+Second, similar to the ../doc/chapter/chapter_02_PS.tex, please add a circle of deltaR < 0.4 around the b and bbar and show the pt from the cone
+Third, please ensure the eta-phi plot of this chapter shows the ISR, FSR, MPI and beam remnant correctly from the same event.
+
+Thanks a lot. The deltaR circle and inset  inside figure is really  nice. Please add that in the eta-phi plot of the next two chapters:
+../doc/chapter/chapter_05_Had.tex ../doc/chapter/chapter_06_Decay.tex 
+

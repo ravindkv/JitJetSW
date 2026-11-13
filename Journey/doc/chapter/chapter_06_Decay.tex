@@ -128,6 +128,35 @@ are 10 photons, two $K^0_S$, one $K^0_L$, two $\pi^+$ and one $\pi^-$, with the 
 $B^{*+}$ and no neutrino: everything of the $\bar{b}$ system is in principle visible, but at $\eta = -3.75$ it is
 all in the forward calorimeter.
 
+\paragraph{The two cones after the decays.}
+Figure~\ref{fig:06_display} draws the cones $\Delta R<0.4$ of the previous chapters around the two $b$ systems,
+with one inset per cone, since each is now a cloud of decay products. The $\bar b$ cone holds 18 stable particles
+with $115.9\GeV$: all 16 products of the $B^{*+}$, within $\Delta R=0.20$ of the axis and 14 of them within
+$0.075$, the $K^-$ of $1.6\GeV$ into which the $K^{*-}$ of chapter~\ref{ch:05_Had} decayed, and a photon of
+$0.15\GeV$. A hadron of $2.4\TeV$ decays into a pencil, and the cone keeps the $116.0\GeV$ of
+chapter~\ref{ch:05_Had} to $0.04\GeV$. The $b$ cone holds 21 particles but only $79.1\GeV$, $35.3\GeV$ less than
+before the decays. Eight of the nine products of the $B^-$ are inside it, within $\Delta R=0.20$; the ninth, the
+antineutrino, is inside too ($\Delta R=0.02$, the label in parentheses in the inset), but a neutrino is not
+counted, as a jet made of visible particles cannot count it. The other 13 particles of the cone are 8 photons, 4
+charged pions and a $K^0_S$ from the light hadrons around the $B^-$; the decays move particles across the circle
+too, a $\pi^+$ of $2.1\GeV$ inside it comes from the $\Delta^{++}$ that sat just outside it in
+chapter~\ref{ch:05_Had}.\footnote{\code{genPartAnalyzer\_06\_Decay.log} (the ``cone'' line of stage 5),
+\code{ledger\_06\_Decay.txt}; membership and mothers from FWLite (companion, section 4).}
+
+\begin{figure}[!tb]
+\centering
+\includegraphics[width=\textwidth]{06_Decay/out/genPartAnalyzer_06_Decay_page-5.png}
+\caption{The $\eta$--$\phi$ display of the complete generator event, stage 5 of
+\code{test/06\_Decay/out/genPartAnalyzer\_06\_Decay.pdf} (page 5): the 634 stable particles, marker size growing with
+\pt, coloured by origin. Red: the 9 stable decay products of the $B^-$; blue: the 16 of the $B^{*+}$; violet: the
+primary hadrons left undecayed; grey: the decay products of the other hadrons. The magenta star is the vector sum
+of the $b$ and $\bar{b}$ systems, $\pt = 20.3\GeV$. Dashed: the cones $\Delta R<0.4$, $79.1\GeV$ around the $b$
+system (21 particles, neutrinos not counted) and $115.9\GeV$ around the $\bar b$ system (18); the two insets
+magnify them, with the name and \pt{} of the 12 hardest particles within $1.25\times0.4$ of each axis (``+N
+more'': the softer ones) and the antineutrino of the $B^-$ in parentheses.}
+\label{fig:06_display}
+\end{figure}
+
 \paragraph{Where the decays happen.}
 The $10\mm$ boundary is on the lifetime of the species, not on the distance a given particle travels. With
 $\gamma\beta = p/m = 44.7$ the $B^-$ flies $7.8\mm$ before it decays; the forward $B^+$, with $p = 2388\GeV$
@@ -178,21 +207,14 @@ That is the basis of particle-flow reconstruction and the reason the two calorim
 \end{plainwords}
 
 \section{Ledger and display}
-Table~\ref{tab:06_ledger} closes the ledger of the stage. Decays conserve energy and momentum, so the total energy
-of the stable particles stays $13\,600.0\GeV$, the two proton energies. The scalar sum of \pt{} rises from
-$505.7$ to $528.9\GeV$, because a decay shares the momentum of one particle among several that are not
-collinear, and for the same reason energy migrates between the $\eta$ regions: the tracker region
-$\abseta < 2.5$ gains $49\GeV$ and the region beyond $\abseta = 5.5$ loses $193\GeV$ as forward hadrons decay
-into products spread over a wider range of $\eta$. The visible energy within $\abseta < 5.2$ grows from $5779$
-to $5851\GeV$, while $95.5\GeV$ become invisible in the one neutrino: at this stage the only hole in the event
-is the semileptonic $B^-$ decay.
-
 \begin{table}[htbp]
 \centering\small
 \caption{Ledger of the decay stage: the stable (status 1) particles before (chapter~\ref{ch:05_Had},
 \code{test/05\_Had/out/ledger\_05\_Had.txt}) and after the hadron decays (\code{test/06\_Decay/out/ledger\_06\_Decay.txt}).
 $n$ is the number of particles, $E$ the energy and \pt{} the scalar sum of transverse momenta, in GeV.
-The rows by region count every stable particle, the neutrino (at $\eta=-1.59$) included.}
+The rows by region count every stable particle, the neutrino (at $\eta=-1.59$) included. The cone rows: the
+stable particles except neutrinos within $\Delta R<0.4$ of the last copy of the $b$ and $\bar b$ quark
+(\code{genLedger.py}), vector \pt; differences before rounding.}
 \label{tab:06_ledger}
 \begin{tabular}{@{}lrrrrrrrrr@{}}
 \toprule
@@ -218,28 +240,31 @@ $\abseta \ge 5.5$ (not simulated) & 40 & 7010.1 &  20.9 &  58 & 6817.1 &  20.3 &
 \midrule
 visible ($\abseta < 5.2$, no $\nu$) & 265 & 5779.2 & 476.9 & 559 & 5851.0 & 463.4 & $+294$ & $+71.8$ & $-13.5$ \\
 invisible (neutrinos)               &   0 &    0.0 &   0.0 &   1 &   95.5 &  37.5 & $+1$   & $+95.5$ & $+37.5$ \\
+\midrule
+$b$ cone $\Delta R<0.4$ (no $\nu$)       &   9 &  290.6 & 114.4 &  21 &  200.6 &  79.1 & $+12$  & $-89.9$ & $-35.3$ \\
+$\bar b$ cone $\Delta R<0.4$             &   2 & 2465.3 & 116.0 &  18 & 2457.4 & 115.9 & $+16$  & $-7.9$  & $-0.04$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+Table~\ref{tab:06_ledger} closes the ledger of the stage. Decays conserve energy and momentum, so the total energy
+of the stable particles stays $13\,600.0\GeV$, the two proton energies. The scalar sum of \pt{} rises from
+$505.7$ to $528.9\GeV$, because a decay shares the momentum of one particle among several that are not
+collinear, and for the same reason energy migrates between the $\eta$ regions: the tracker region
+$\abseta < 2.5$ gains $49\GeV$ and the region beyond $\abseta = 5.5$ loses $193\GeV$ as forward hadrons decay
+into products spread over a wider range of $\eta$. The visible energy within $\abseta < 5.2$ grows from $5779$
+to $5851\GeV$, while $95.5\GeV$ become invisible in the one neutrino: at this stage the only hole in the event
+is the semileptonic $B^-$ decay.
 
 Figure~\ref{fig:06_display} is the $\eta$--$\phi$ display of the complete event. Compared with the stage-4
 display of chapter~\ref{ch:05_Had}, where the $B^-$ and the $B^{*+}$ were two single large markers, the two
 $b$ systems are now clusters of 9 (red) and 16 (blue) small markers around the same positions, $(\eta, \phi) =
 (-1.57, -2.09)$ and $(-3.75, 1.01)$: the decay products of a $236\GeV$ and a $2421\GeV$ hadron stay within a
-few tenths of a unit of their parent. This is the picture a jet algorithm will see in the next chapter. The
+few tenths of a unit of their parent, inside the dashed cones, and the two insets magnify them. The two cone rows
+of table~\ref{tab:06_ledger} give the balance: the $\bar b$ cone loses nothing, the $b$ cone loses $35.3\GeV$,
+the antineutrino. This is the picture a jet algorithm will see in the next chapter. The
 grey points are the 477 other decay products, the violet ones the 132 primary hadrons that did not decay; 38
 particles beyond $\abseta = 6$ are drawn on the border.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{06_Decay/out/genPartAnalyzer_06_Decay_page-5.png}
-\caption{The $\eta$--$\phi$ display of the complete generator event, stage 5 of
-\code{test/06\_Decay/out/genPartAnalyzer\_06\_Decay.pdf} (page 5): the 634 stable particles, marker size growing with
-\pt, coloured by origin. Red: the 9 stable decay products of the $B^-$; blue: the 16 of the $B^{*+}$; violet: the
-primary hadrons left undecayed; grey: the decay products of the other hadrons. The magenta star is the vector sum
-of the $b$ and $\bar{b}$ systems, $\pt = 20.3\GeV$.}
-\label{fig:06_display}
-\end{figure}
 
 \FloatBarrier
 \section{Open problems for Phase-2}

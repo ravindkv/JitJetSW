@@ -54,7 +54,7 @@ in `test/<XX_YYY>/out2024/` and writes the comparison, as `test/12_L1T/run_12_L1
 
 - Written for a student who has read the previous chapters: explain every CMSSW or Pythia word the first time; one
   `plainwords` box per key idea (`\begin{plainwords}[Title] ... \end{plainwords}`, keep it under half a page, it cannot break).
-- Every number comes from `test/<XX_YYY>/out/` (logs, `ledger_*.txt`, `genstats_*.txt`, `thresholds_*.txt`), never from
+- Every number comes from `test/<XX_YYY>/out/` (logs, `ledger_*.txt`, `genstats_*.txt`, `showerStats_*.txt`, `thresholds_*.txt`, the 1000-event `xsec_GEN_*.log`), never from
   memory; the companion lists them in full. Use the macros of `doc/JitJetSW.tex`: `\pt`, `\GeV`, `\TeV`, `\code{}`, `\bbbar`,
   `\ptHat`, `\abseta`; long file names go in `\path{...}` or `\code{...}` with escaped underscores.
 - Figures: the PNG pages of the chapter, `\includegraphics[width=\textwidth]{<XX_YYY>/out/<prefix>_page-N.png}`

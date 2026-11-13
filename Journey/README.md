@@ -9,12 +9,12 @@ quotes. `doc/chapter/README.md` says how a chapter is written.
 
 | chapter | stage | script produces (in `test/<chapter>/out/`) |
 |---|---|---|
-| `01_ME` | the matrix element (Pythia8 with showers, MPI, hadronisation, decays off) | `step1_GEN_01_ME.root`, GenPartAnalyzer page, ledger |
-| `02_PS` | + parton showers (ISR, FSR) | `step1_GEN_02_PS.root`, 2 pages, ledger |
+| `01_ME` | the matrix element (Pythia8 with showers, MPI, hadronisation, decays off) | `step1_GEN_01_ME.root`, GenPartAnalyzer page, ledger, `xsec_GEN_01_ME.log` (cross section from 1000 events) |
+| `02_PS` | + parton showers (ISR, FSR) | `step1_GEN_02_PS.root`, 2 pages (with the Delta R < 0.4 cones), ledger, `xsec_GEN_02_PS.root` (1000 events), `showerStats_02_PS.txt` |
 | `03_MnM` | matching and merging: empty for this LO 2 -> 2 event (a check and a link to the 02 output) | `mnm_03_MnM.log` |
-| `04_MPI` | + multiparton interactions and beam remnants | `step1_GEN_04_MPI.root`, 3 pages, ledger |
-| `05_Had` | + hadronisation (Lund strings) | `step1_GEN_05_Had.root`, 4 pages, ledger |
-| `06_Decay` | + hadron decays: the full generator event | `step1_GEN_06_Decay.root`, 5 pages, ledger |
+| `04_MPI` | + multiparton interactions and beam remnants | `step1_GEN_04_MPI.root`, 3 pages (with the Delta R < 0.4 cones and their underlying-event part, partons coloured by scattering), ledger |
+| `05_Had` | + hadronisation (Lund strings) | `step1_GEN_05_Had.root`, 4 pages (with the Delta R < 0.4 cones and a zoom on the B- cone), ledger |
+| `06_Decay` | + hadron decays: the full generator event | `step1_GEN_06_Decay.root`, 5 pages (with the Delta R < 0.4 cones, neutrinos not counted, and a zoom on each cone), ledger |
 | `07_GenJet` | anti-kT generator jets as a separate step (process GENJET) | `step2_GENJET_07_GenJet.root`, 5 + 3 pages (GenJetAnalyzer), ledger |
 | `08_PU` | pileup at generator level: 250 minimum-bias collisions (GEN), one drawn; the signal + its 68 in-time collisions re-clustered | `step1_GEN_MinBias_08_PU.root`, `genstats_08_PU.txt`, `genJetAnalyzer_08_PU.pdf`, ledger |
 | `09_G4` | detector chapter (Rule J, 12 pages): the hand-over to Geant4: transport-only SIM of the signal and of all library collisions (what is accepted, what is dropped) | `step2_G4_signal_09_G4.root`, `step2_G4_pileup_09_G4.root`, SimAnalyzer pages, `ledger_09_G4.txt` (g4Ledger.py), `extras_09_G4.txt` (g4Extras_09_G4.py, FWLite) |

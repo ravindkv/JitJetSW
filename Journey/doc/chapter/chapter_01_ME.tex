@@ -67,8 +67,9 @@ that is $2653\GeV$. The parton distribution functions at the scale of the scatte
 $Q^2 = 1.284\times10^4\GeV^2$ ($Q = 113.3\GeV$, the transverse mass of the $b$), are
 $x f_{\bar u}(x_1) = 1.145$ and $x f_u(x_2) = 0.211$: the sea is dense at small $x$, the valence $u$ is
 still sizeable at $x=0.39$. Their invariant mass is $\sqrt{\shat} = 396.1\GeV$, the strong coupling at $Q$ is
-$\alpha_s = 0.114$, and Pythia8's estimate of the cross section after this single event is
-$157.7\pm157.7$ pb (\code{GenXsecAnalyzer} at the end of the log).
+$\alpha_s = 0.114$. Pythia8's estimate of the cross section after this single event, $157.7\pm157.7$ pb
+(\code{GenXsecAnalyzer} at the end of the log), is not a measurement; the note below the table explains why
+and gives $348.6\pm6.0$ pb from 1000 events.
 
 \begin{table}[htb]
 \centering\small
@@ -88,6 +89,24 @@ out & $b$ & 23 & & $-62.071$ & $-94.690$ & $-225.148$ & 252.059 & 113.22 & $-1.4
 \bottomrule
 \end{tabular}
 \end{table}
+
+\paragraph{Note: a cross section needs many events, not one.} Pythia8 computes the cross section by Monte
+Carlo integration. It throws trial points in the phase space of $\qqbar\to\bbbar$ with $\ptHat>100\GeV$, gives
+each the weight matrix element $\times$ the two PDFs, keeps the point as an event with the probability weight /
+maximum (the maximum, $1.004\times10^{-6}\mb = 1004$ pb, is found at initialisation), and quotes the average weight
+of all trials as $\sigma$. After the single event of the book there was one trial: the estimate is the weight
+of that one point, $157.7$ pb (it was kept with the probability $157.7/1004 = 16\%$), and with one value there
+is no spread to take an error from, so Pythia8 quotes $\pm157.7$ pb, a 100\% uncertainty. The error of an average
+falls like $1/\sqrt{N}$, so \path{run_01_ME.sh} runs a second GEN job with the same fragment, settings and seeds and
+1000 events, written to no file (\code{gen\_xsec} of \path{jitjet_common.sh}, log \path{xsec_GEN_01_ME.log}).
+Its first event is the event of the book, and the 1000 events came from 2913 trials:
+\[
+  \sigma(\qqbar\to\bbbar,\ \ptHat>100\GeV,\ \sqrt{s}=13.6\TeV) = 348.6\pm6.0~\mathrm{pb}\quad(1.7\%).
+\]
+A quick check: the fraction of trials kept times the maximum, $1000/2913\times1004 = 345$ pb, agrees within the
+error. The single-event value is 2.2 times too small: one weight says where the event sits on the matrix element,
+not what the total is. This is the cross section of the one subprocess the fragment switches on, not of all \bbbar{}
+production. It is the number to quote; \code{XSEC\_EVENTS} changes the number of events.
 
 \paragraph{Why the event is so asymmetric.} The two $b$ quarks have the same \pt{} of $113.2\GeV$ and
 are back to back in $\phi$ ($\Delta\phi = 3.14$, \path{genPartAnalyzer_01_ME.log}), as they must be for a

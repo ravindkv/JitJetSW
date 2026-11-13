@@ -9,12 +9,14 @@ quotes, copied from `test/01_ME/out/`. All commands are run from `test/` of an i
     RUN=0 ./01_ME/run_01_ME.sh        # only write 01_ME/step1_GEN_01_ME_cfg.py
     ANALYZE=0 ./01_ME/run_01_ME.sh    # generate, no analyzer / ledger
     EVENTS=10 ./01_ME/run_01_ME.sh    # more events (only for illustration; the book follows event 1:1:1)
+    XSEC_EVENTS=10000 ./01_ME/run_01_ME.sh   # the cross-section job with 10000 events instead of 1000
 
 The script sets `CHAPTER=01_ME`, sources `common/jitjet_common.sh` (`jitjet_init`: checks `CMSSW_15_0_5`, sets the 2024
 settings `CONDITIONS=auto:phase1_2024_realistic ERA=Run3_2024 GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0
 PTHATMIN=100 EVENTS=1 EVENT=1:1:1`; `jitjet_build`: rebuilds the `JitJetSW/Journey` plugins if they are older than the
 sources) and calls `gen_stage off off off off off 1 "the matrix element q qbar -> b bbar"` (ISR, FSR, MPI, Hadronize,
-Decay all off; one GenPartAnalyzer page).
+Decay all off; one GenPartAnalyzer page), then `gen_xsec off off off off off`: the same GEN job with `XSEC_EVENTS=1000`
+events and no output file, for the cross section (section 1 below, table 4.2b).
 
 ## 1. The cmsDriver.py commands
 
@@ -54,6 +56,19 @@ characters backslash and n, which `cmsDriver.py` turns into a line break, so two
 What the script does not pass: random seeds. They are the defaults of `IOMC/RandomEngine/python/IOMC_cff.py`
 (`generator` 123456789, `VtxSmeared` 98765432, `LHCTransport` 87654321, engine `MixMaxRng`), identical in every generator
 chapter, which is why chapters 01 to 06 share the same hard process.
+
+The second command, for the cross section (`gen_xsec` of `common/jitjet_common.sh`; the header of
+`01_ME/xsec_GEN_01_ME_cfg.py`, output `01_ME/out/xsec_GEN_01_ME_cfg.driver.log`, log of `cmsRun`
+`01_ME/out/xsec_GEN_01_ME.log`). With one event Pythia8 can only quote sigma +- sigma (157.7 +- 157.7 pb), so the same
+fragment, settings and seeds are run for `XSEC_EVENTS` (default 1000) events; `--no_output` drops the output module,
+so only the log is kept, and `step1_GEN_01_ME.root` is not touched. Its first event is event 1:1:1 of the book (same
+"PYTHIA Info Listing" and "Event Listing (hard process)" as `step1_GEN_01_ME.log`):
+
+    cmsDriver.py Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py \
+      --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended --beamspot DBrealistic \
+      -n 1000 -s GEN --datatier GEN --eventcontent FEVTDEBUG --no_output \
+      --customise_commands "<the same two statements as above>" \
+      --python_filename 01_ME/xsec_GEN_01_ME_cfg.py --no_exec
 
 ## 2. The cmsRun on the python config
 
@@ -256,6 +271,22 @@ xPDF2 0.210684.
 Cross-section statistics: `q qbar -> b bbar  124 | 1 tried, 1 selected, 1 accepted | sigma 1.577e-07 +- 1.577e-07 mb`;
 `GenXsecAnalyzer`: "Before Filter: total cross section = 1.577e+02 +- 1.577e+02 pb", "After filter: final equivalent
 lumi for 1M events (1/fb) = 6.340e+00". Pythia 8.311 (8 Mar 2024), LHAPDF 6.4.0, FastJet 3.4.1.
+The initialisation table ("PYTHIA Process Initialization") gives the estimated maximum `q qbar -> b bbar  124 | 1.004e-06`
+mb = 1004 pb; the one trial was kept with the probability 157.7 / 1004 = 16%.
+
+### 4.2b The cross section from 1000 events (`01_ME/out/xsec_GEN_01_ME.log`)
+
+    | q qbar -> b bbar                               124 |        2913       1000       1000 |   3.486e-07  6.035e-09 |
+    | sum                                                |        2913       1000       1000 |   3.486e-07  6.035e-09 |
+
+    Before Filter: total cross section = 3.486e+02 +- 6.035e+00 pb
+    Filter efficiency (event-level)= (1000) / (1000) = 1.000e+00 +- 0.000e+00    [TO BE USED IN MCM]
+    After filter: final cross section = 3.486e+02 +- 6.035e+00 pb
+    After filter: final equivalent lumi for 1M events (1/fb) = 2.869e+00 +- 4.975e-02
+
+Derived in the chapter: relative error 6.035 / 348.6 = 1.7%; trials kept times the maximum 1000 / 2913 x 1004 = 345 pb
+(within the error of 348.6); one event / 1000 events: 348.6 / 157.7 = 2.2. Only warnings: the two
+`SimpleTimeShower::init: pTmin too low` of the configuration check and the run (harmless, the shower is off).
 
 ### 4.3 The 14 entries of genParticles (FWLite dump of `step1_GEN_01_ME.root`, event 1:1:1)
 
@@ -319,12 +350,18 @@ Delta phi(b, bbar) = 3.14.
       5.2-5.5                 0       0.0      0.0      0.0
       >5.5                    3   10923.1      2.1      0.0
       visible (|eta|<5.2, no neutrinos): n=3 E=2676.9 GeV pT=226.5 GeV; neutrinos: n=0 E=0.0 GeV pT=0.0 GeV
+      cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+        bbar axis [8] status 1 pT=112.3 eta=-3.76 phi=0.99: n=1 E=2414.6 GeV vector pT=112.3 GeV scalar pT=112.3 GeV
+             members (pdg pT dR): -5 112.3 0.00
+        b    axis [9] status 1 pT=113.6 eta=-1.44 phi=-2.16: n=1 E=253.1 GeV vector pT=113.6 GeV scalar pT=113.6 GeV
+             members (pdg pT dR): 5 113.6 0.00
 
 The ledger table of the chapter: "before" is the two protons (2 particles, 13600 GeV, pT 0, both at |eta| > 5.5);
 "after" is the status-1 lines above; the differences are after minus before. 3.0 < |eta| < 5.2 holds the bbar
 (2414.6 GeV) and the u quark at eta 3.36 (9.1 GeV); |eta| > 5.5 holds the two diquarks and the u quark at eta 6.47
 (6643.3 + 4147.0 + 132.8 = 10923.1 GeV); the scalar pT of the remnants is 0.736 + 0.413 + 0.634 + 0.965 = 2.75 GeV
-(228.6 - 225.9).
+(228.6 - 225.9). The cone lines (`genLedger.py --cone`, default 0.4) are quoted in chapter 02 (the "before" column
+of its cone rows): each quark is alone in its cone here, with the primordial kT of its status-1 copy.
 
 ### 4.6 The generator jets and MET of the file (FWLite)
 

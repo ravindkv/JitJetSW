@@ -7,7 +7,10 @@
 # Input (Rule E): the configuration of chapter 05 with the decay switch turned on; parton level and hadronisation
 # are identical to chapter 05.
 # Output in test/06_Decay/out/: step1_GEN_06_Decay.root/.log/.driver.log, genPartAnalyzer_06_Decay.pdf/.root/.log
-# (pages: hard process, parton shower, MPI, hadronisation, decays) + PNG pages, ledger_06_Decay.txt.
+# (pages: hard process, parton shower, MPI, hadronisation, decays; with the cones Delta R < CONE_R = 0.4 around the b and
+# the bbar, neutrinos not counted, and a zoom on the fuller cone, as in chapters 02, 04, 05) + PNG pages,
+# ledger_06_Decay.txt (with the cones of R = 0.4). Chapter 07 reads step1_GEN_06_Decay.root: REGEN=0 redoes only the
+# analysis on the existing file.
 set -euo pipefail
 CHAPTER=06_Decay
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../common/jitjet_common.sh"
@@ -15,4 +18,4 @@ jitjet_init
 jitjet_build
 jitjet_prev 05_Had step1_GEN_05_Had.root > /dev/null
 #         ISR FSR MPI Had Decay pages
-gen_stage on  on  on  on  on   5 "hadron decays (the full generator event)"
+CONE_R=${CONE_R:-0.4} gen_stage on  on  on  on  on   5 "hadron decays (the full generator event)"

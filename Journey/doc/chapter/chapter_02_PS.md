@@ -8,12 +8,18 @@ All commands are run from `test/` of an initialized `CMSSW_15_0_5` (`cd CMSSW_15
 ## 1. The cmsDriver.py commands
 
 The chapter script is `test/02_PS/run_02_PS.sh`. It sets `CHAPTER=02_PS`, sources `test/common/jitjet_common.sh`
-and calls one function:
+and runs three steps:
 
 ```bash
 #         ISR FSR MPI Had Decay pages
-gen_stage on  on  off off off  2 "the parton shower (ISR + FSR)"
+CONE_R=${CONE_R:-0.4} gen_stage on  on  off off off  2 "the parton shower (ISR + FSR)"
+XSEC_FILE=1 gen_xsec            on  on  off off off
+python3 "$COMMON/genShowerStats.py" "$OUT/xsec_GEN_02_PS.root" --event 1:1:1 > "$OUT/showerStats_02_PS.txt"
 ```
+
+`CONE_R=0.4` makes the GenPartAnalyzer pages draw the cones of Delta R < 0.4 around the b and the bbar (section 3).
+`gen_xsec` (chapter 01) generates 1000 events with the same settings and seeds; `XSEC_FILE=1` keeps them in
+`out/xsec_GEN_02_PS.root`, and `genShowerStats.py` counts the shower branchings of every event (sections 3 and 4.7).
 
 `gen_stage` (in `jitjet_common.sh`) symlinks the fragment `JitJetSW/Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py`
 into `Configuration/GenProduction/python/` (where `cmsDriver.py` looks for it), then runs `cmsDriver.py` with
@@ -24,7 +30,9 @@ the PNG conversion and the ledger. The exact `cmsDriver.py` command, as recorded
 ```bash
 ./02_PS/run_02_PS.sh                 # the whole chapter: config, cmsRun, analyzer, PNG pages, ledger
 RUN=0 ./02_PS/run_02_PS.sh           # only write the configuration
-ANALYZE=0 ./02_PS/run_02_PS.sh       # generate without the analyzer and the ledger
+ANALYZE=0 ./02_PS/run_02_PS.sh       # generate without the analyzer, the ledger and the shower statistics
+CONE_R=0 ./02_PS/run_02_PS.sh        # the display without the cones
+XSEC_EVENTS=10000 ./02_PS/run_02_PS.sh   # the 1000-event job with 10000 events
 
 # what gen_stage runs (the python_filename is given as an absolute path by the script):
 cmsDriver.py Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py \
@@ -51,6 +59,17 @@ The arguments:
 | `--customise_commands "..."` | python appended at the end of the configuration: the beam energy `13600 GeV` (`COMENERGY`) and the Pythia8 switches appended to `processParameters`: `PhaseSpace:pTHatMin = 100` (`PTHATMIN`, replaces the 30 of the fragment because a later setting of the same parameter wins), `PartonLevel:ISR = on`, `PartonLevel:FSR = on`, `PartonLevel:MPI = off`, `HadronLevel:all = off`, `HadronLevel:Hadronize = off`, `HadronLevel:Decay = off`. The `\n` is a literal backslash-n in the bash string; `cmsDriver.py` turns it into a line break, so the generated file has two lines |
 | `--python_filename` | where to write the configuration (`test/02_PS/step1_GEN_02_PS_cfg.py`) |
 | `--no_exec` | write the configuration, do not run it (the script runs `cmsRun` itself, in `out/`) |
+
+The second command, for the 1000 events (`gen_xsec`; header of `test/02_PS/xsec_GEN_02_PS_cfg.py`, output
+`out/xsec_GEN_02_PS_cfg.driver.log`, log of `cmsRun` `out/xsec_GEN_02_PS.log`), differs only in `-n` and the file:
+
+```bash
+cmsDriver.py Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py \
+  --conditions auto:phase1_2024_realistic --era Run3_2024 --geometry DB:Extended --beamspot DBrealistic \
+  -n 1000 -s GEN --datatier GEN --eventcontent FEVTDEBUG --fileout file:xsec_GEN_02_PS.root \
+  --customise_commands "<the same two statements as above>" \
+  --python_filename 02_PS/xsec_GEN_02_PS_cfg.py --no_exec
+```
 
 The only differences from chapter 01 (`diff 01_ME/step1_GEN_01_ME_cfg.py 02_PS/step1_GEN_02_PS_cfg.py`) are
 `PartonLevel:ISR = on`, `PartonLevel:FSR = on` (off in 01) and the file names. The random seed is the default of
@@ -147,9 +166,10 @@ cd 02_PS/out
 cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_02_PS.root outputFile=genPartAnalyzer_02_PS.root \
   maxEvents=1 eventsToProcess=1:1:1 maxStage=2 pdfFile=genPartAnalyzer_02_PS.pdf \
   sampleLabel="chapter 02_PS: the parton shower (ISR + FSR)|ISR on, FSR on, MPI off|Hadronize off, Decay off|pTHatMin 100 GeV, 13.6 TeV" \
-  > genPartAnalyzer_02_PS.log 2>&1
+  coneR=0.4 > genPartAnalyzer_02_PS.log 2>&1
 pdftoppm -cropbox -r 110 -png genPartAnalyzer_02_PS.pdf genPartAnalyzer_02_PS_page
 python3 ../../common/genLedger.py step1_GEN_02_PS.root --event 1:1:1 > ledger_02_PS.txt 2> ledger_02_PS.log
+python3 ../../common/genShowerStats.py xsec_GEN_02_PS.root --event 1:1:1 > showerStats_02_PS.txt 2> showerStats_02_PS.log
 cd ../..
 ```
 
@@ -161,10 +181,27 @@ cd ../..
   `genPartAnalyzer_02_PS.pdf` (2 pages: the hard process, the parton shower), `genPartAnalyzer_02_PS.root`
   (TH2 eta-phi weighted by pT and the pT histograms of the b, bbar and net b+bbar per stage, in the `TFileService`
   file) and `genPartAnalyzer_02_PS.log` (the b, bbar and net b+bbar per stage, quoted in section 4).
+  With `coneR=0.4` (default 0, off; `gen_stage` passes `CONE_R`) every page also has the cone Delta R < 0.4 around
+  the b and the bbar system: all particles alive at the stage except neutrinos within 0.4 of the system direction.
+  Each cone is a dashed circle with its pT and n below it, its n and pT are appended to the b / bbar header lines,
+  and a line `  cone dR<0.4 (stage N) | around b: n=... pt=... members [idx]pdg:pt:dR = ...` is printed per stage.
+  The fuller cone (here the b cone, six partons) is drawn again in an inset placed in the corner of the frame that
+  covers the fewest particles and no cone (`GenPartAnalyzer::drawZoom`): +-0.5 around the axis, every particle with
+  its name and pT in a column on the right, joined to it by a thin line; the main frame then does not write their
+  labels, which overlapped. The b+bbar label moves to the left of the star, clear of the bbar circle.
 - `pdftoppm -cropbox` renders the pages as `genPartAnalyzer_02_PS_page-1.png` and `page-2.png` (the ROOT PDF has an
   A4 MediaBox around the landscape canvas, hence `-cropbox`); these PNGs are the figure of the chapter.
 - `genLedger.py` (FWLite, no `cmsRun`) prints `ledger_02_PS.txt`: the record by status group, the hard process, the
-  final state by kind and by region.
+  final state by kind and by region, and (option `--cone`, default 0.4) the cone around each outgoing parton of the
+  hard process: the axis is the last copy of the parton (status 1 here, with the primordial kT), the cone holds the
+  status-1 particles except neutrinos within Delta R < 0.4 (what `ak4GenJets` would cluster). These are the cone
+  rows of table 2.3; they are of the status-1 record, the display's of the partons at the end of the shower.
+- `genShowerStats.py` (FWLite) reads the 1000 events of `xsec_GEN_02_PS.root` and counts per event: the ISR
+  branchings (entries with status 43, one per branching), the FSR branchings (status-51 entries / 2, including the
+  FSR of the ISR partons) and the emissions q -> q g of the b and of the bbar of the hard process (a quark of the
+  same-flavour chain with two status-51 daughters). It prints mean, distribution and number of events with none, the
+  values of event 1:1:1 (the event of the book: the first of the 1000, same seeds) and the fraction of events without
+  ISR in bins of the two momentum fractions x (`showerStats_02_PS.txt`, section 4.7).
 
 The full record and the derived numbers of the chapter (table 2.2, the b system, the recoil of the incoming u) come
 from this FWLite snippet, run from `test/`:
@@ -226,6 +263,11 @@ final state (status 1): n=6 sumE=13600.0 GeV sumPt=228.6 GeV
   5.2-5.5                 0       0.0      0.0      0.0
   >5.5                    3   10923.1      2.1      0.0
   visible (|eta|<5.2, no neutrinos): n=3 E=2676.9 GeV pT=226.5 GeV; neutrinos: n=0 E=0.0 GeV pT=0.0 GeV
+  cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+    bbar axis [8] status 1 pT=112.3 eta=-3.76 phi=0.99: n=1 E=2414.6 GeV vector pT=112.3 GeV scalar pT=112.3 GeV
+         members (pdg pT dR): -5 112.3 0.00
+    b    axis [9] status 1 pT=113.6 eta=-1.44 phi=-2.16: n=1 E=253.1 GeV vector pT=113.6 GeV scalar pT=113.6 GeV
+         members (pdg pT dR): 5 113.6 0.00
 ```
 
 ```
@@ -248,6 +290,11 @@ final state (status 1): n=11 sumE=13600.0 GeV sumPt=230.7 GeV
   5.2-5.5                 0       0.0      0.0      0.0
   >5.5                    4   10929.2      2.9      0.0
   visible (|eta|<5.2, no neutrinos): n=7 E=2670.8 GeV pT=227.8 GeV; neutrinos: n=0 E=0.0 GeV pT=0.0 GeV
+  cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+    bbar axis [23] status 1 pT=114.0 eta=-3.74 phi=0.99: n=1 E=2413.9 GeV vector pT=114.0 GeV scalar pT=114.0 GeV
+         members (pdg pT dR): -5 114.0 0.00
+    b    axis [24] status 1 pT=47.0 eta=-1.37 phi=-2.19: n=6 E=256.9 GeV vector pT=113.6 GeV scalar pT=113.7 GeV
+         members (pdg pT dR): 5 47.0 0.00, 21 43.2 0.16, 21 9.7 0.13, -1 6.3 0.31, 21 5.0 0.13, 1 2.5 0.05
 ```
 
 No ISR group is printed for 02_PS because the record has no status 41-49 entry (the ledger prints only non-empty groups).
@@ -257,9 +304,11 @@ No ISR group is printed for 02_PS because the record has no status 41-49 entry (
 `test/02_PS/out/genPartAnalyzer_02_PS.log`:
 
 ```
-== GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=34 nStatus1=11 hard b idx=5 hard bbar idx=4
+== GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=34 nStatus1=11 hard b idx=5 hard bbar idx=4 
   stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
+  cone dR<0.4 (stage 1) | around b: n=1 pt=113.221 eta=-1.43851 phi=-2.15105 scalar sum pT=113.221 members [idx]pdg:pt:dR = [5]5:113.221:1.11022e-15 | around bbar: n=1 pt=113.221 eta=-3.75298 phi=0.990547 scalar sum pT=113.221 members [idx]pdg:pt:dR = [4]-5:113.221:3.06422e-14
   stage 2 (partonShower): nParticles=7 | b quark (status 52): pt=46.8792 eta=-1.36616 phi=-2.18942 idx=[20] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=66.4005 (px=34.8855 py=56.498) scalar sum pT=160.1
+  cone dR<0.4 (stage 2) | around b: n=6 pt=113.221 eta=-1.45084 phi=-2.15105 scalar sum pT=113.414 members [idx]pdg:pt:dR = [20]5:46.8792:0 [18]21:43.1201:0.161834 [19]21:9.65485:0.129597 [17]-1:6.28181:0.311934 [16]21:5.01816:0.127676 [12]1:2.46026:0.0498073 | around bbar: n=1 pt=113.221 eta=-3.75298 phi=0.990547 scalar sum pT=113.221 members [idx]pdg:pt:dR = [4]-5:113.221:3.06422e-14
 ```
 
 `test/01_ME/out/genPartAnalyzer_01_ME.log` (stage 1 only, identical numbers):
@@ -460,6 +509,8 @@ status-1 particles has vector pT = 0.000, sum pz = 0.00 and sum E = 13600.00 GeV
 | b quark pT [GeV] | 113.221 (status 23) | 46.8792 (status 52) | genPartAnalyzer_*.log |
 | bbar quark pT [GeV] | 113.221 (status 23) | 113.221 (status 23) | genPartAnalyzer_*.log |
 | b system vector pT [GeV], status 1 | 113.560 (the b alone, index 9 of the 01_ME record) | 113.56 | 4.4, 4.5 |
+| b cone Delta R < 0.4: n / vector pT [GeV] | 1 / 113.6 (113.560) | 6 / 113.6 (113.555) | ledger_*.txt, "cone"; three decimals FWLite |
+| bbar cone Delta R < 0.4: n / vector pT [GeV] | 1 / 112.3 (112.329) | 1 / 114.0 (114.048) | ledger_*.txt, "cone"; three decimals FWLite |
 | net b+bbar [GeV] | 9.9e-06 | 66.4005 | genPartAnalyzer_*.log |
 | scalar pT(b) + pT(bbar) [GeV] | 226.442 | 160.1 | genPartAnalyzer_*.log |
 
@@ -467,11 +518,57 @@ The difference column of table 2.3 is computed before rounding, from the same su
 the status-1 particles of the two records, with the regions of `genLedger.py`): scalar pT of the final state
 228.637 -> 230.662 (+2.024); |eta| < 2.5: E 253.145 -> 256.940 (+3.795), pT 113.560 -> 113.749 (+0.188);
 3.0-5.2: E 2423.707 -> 2413.905 (-9.802), pT 112.963 -> 114.048 (+1.085); > 5.5: E 10923.144 -> 10929.153 (+6.009),
-pT 2.114 -> 2.865 (+0.751); visible E 2676.852 -> 2670.845 (-6.007); b system 113.560 -> 113.555 (-0.005). The
+pT 2.114 -> 2.865 (+0.751); visible E 2676.852 -> 2670.845 (-6.007); b system 113.560 -> 113.555 (-0.005); b cone the same members as the b
+system, 113.560 -> 113.555 (-0.005); bbar cone (the bbar alone in both) 112.329 -> 114.048 (+1.719), the primordial
+kT of the re-drawn beam remnants. The
 vector sum of the b system before the beam remnants (the shower copies, 113.22 GeV, section 4.5) equals the pT of
 the hard b: the 0.6 GeV of the status-1 system against the bbar is the primordial kT, balanced by the remnants.
 
-### 4.7 The release files of "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`)
+### 4.7 The 1000 events of the cross-section job (`test/02_PS/out/showerStats_02_PS.txt`, `xsec_GEN_02_PS.log`)
+
+`showerStats_02_PS.txt` (genShowerStats.py on `xsec_GEN_02_PS.root`):
+
+```
+== genShowerStats xsec_GEN_02_PS.root: 1000 events
+ISR branchings per event (status 43)     mean 3.34, none in 22 events (2.2%)
+  distribution (value: events): 0: 22, 1: 101, 2: 203, 3: 220, 4: 226, 5: 133, 6: 69, 7: 23, 8: 2, 9: 1
+FSR branchings per event (status 51 / 2) mean 13.99, none in 1 events (0.1%)
+  distribution (value: events): 0: 1, 1: 10, 2: 12, 3: 26, 4: 32, 5: 35, 6: 35, 7: 48, 8: 45, 9: 56, 10: 59, 11: 63, 12: 64, 13: 59, 14: 43, 15: 44, 16: 40, 17: 40, 18: 38, 19: 41, 20: 36, 21: 17, 22: 25, 23: 20, 24: 19, 25: 17, 26: 14, 27: 15, 28: 7, 29: 2, 30: 5, 31: 6, 32: 4, 33: 2, 34: 3, 35: 2, 36: 3, 37: 1, 38: 2, 40: 1, 41: 3, 42: 1, 43: 1, 44: 1, 46: 1, 47: 1
+b emissions (b -> b g) per event         mean 0.78, none in 355 events (35.5%)
+  distribution (value: events): 0: 355, 1: 516, 2: 122, 3: 7
+bbar emissions per event                 mean 0.78, none in 354 events (35.4%)
+  distribution (value: events): 0: 354, 1: 522, 2: 117, 3: 7
+b and bbar both without emission: 124 events (12.4%)
+events without ISR: 22: 1:1:1 1:1:28 1:1:38 1:1:72 1:1:119 1:1:274 1:1:290 1:1:305 1:1:314 1:1:330 1:1:408 1:1:486 1:1:555 1:1:563 1:1:616 1:1:656 1:1:657 1:1:689 1:1:812 1:1:863 1:1:957 1:1:993
+the event of the book 1:1:1: ISR 0, FSR 5, b emissions 1, bbar emissions 0, x = 0.0022 and 0.3901
+events without ISR in bins of xmax (the larger momentum fraction of the two incoming partons):
+  xmax in [0.000, 0.100):  587 events,  11 without ISR (1.9%), mean ISR 3.44
+  xmax in [0.100, 0.200):  228 events,   5 without ISR (2.2%), mean ISR 3.22
+  xmax in [0.200, 0.300):  113 events,   5 without ISR (4.4%), mean ISR 3.19
+  xmax in [0.300, 1.000):   72 events,   1 without ISR (1.4%), mean ISR 3.04
+events without ISR in bins of xmin (the smaller momentum fraction of the two incoming partons):
+  xmin in [0.000, 0.003):  256 events,   9 without ISR (3.5%), mean ISR 3.07
+  xmin in [0.003, 0.010):  429 events,  10 without ISR (2.3%), mean ISR 3.34
+  xmin in [0.010, 0.030):  295 events,   3 without ISR (1.0%), mean ISR 3.56
+  xmin in [0.030, 1.000):   20 events,   0 without ISR (0.0%), mean ISR 3.30
+```
+
+The cross section of the same job (`xsec_GEN_02_PS.log`; chapter 01: 348.6 +- 6.0 pb from 2913 trials):
+
+```
+ | q qbar -> b bbar                               124 |        2871       1000       1000 |   3.482e-07  6.127e-09 |
+Before Filter: total cross section = 3.482e+02 +- 6.127e+00 pb
+After filter: final cross section = 3.482e+02 +- 6.127e+00 pb
+After filter: final equivalent lumi for 1M events (1/fb) = 2.872e+00 +- 5.063e-02
+```
+
+Quoted in the chapter: mean ISR 3.34 -> 3.3, mean FSR 13.99 -> 14.0; 22 of 1000 events without ISR (2.2%), event
+1:1:1 among them; x_max > 0.3: 1 of 72 without ISR (1.4%); bbar without emission 35.4%, b 35.5%, both 12.4%;
+sigma 348.2 +- 6.1 pb. ISR is on in this chapter: `PartonLevel:ISR = on` is the Pythia8 default and is therefore
+missing from the "changed settings" table of `step1_GEN_02_PS.log`; the Info listing prints `Max pT scale for MPI =
+1.360e+04, ISR = 1.133e+02, FSR = 1.133e+02`.
+
+### 4.8 The release files of "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`)
 
 `Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py` (imported by the fragment), the full block:
 

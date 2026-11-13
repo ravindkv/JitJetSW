@@ -4,6 +4,7 @@
 # the stage the file was generated with, and how much of it a detector could see.
 #
 #   python3 genLedger.py <GEN file> [--event run:lumi:event] [--collection genParticles] [--jets ak4GenJets,ak8GenJets] [--pu]
+#                        [--cone 0.4]
 #
 # Prints, for the event (default: the first one):
 #   the record by Pythia8 status group (hard process 21-29, MPI 31-39, ISR 41-49, FSR 51-59, beam remnants 61-69,
@@ -11,6 +12,10 @@
 #   the outgoing partons, and the final state (status 1): number, energy, scalar pT by kind (partons / diquarks, charged
 #   hadrons, neutral hadrons, photons, electrons, muons, neutrinos) and by region (|eta| < 2.5 tracker, 2.5-3.0, 3.0-5.2
 #   forward calorimeter, 5.2-5.5, > 5.5 beyond what Geant4 is given), with the invisible (neutrino) energy;
+#   the cone of Delta R < R (--cone, default 0.4; 0: none) around each outgoing parton of the hard process: the axis
+#   is the LAST copy of the parton in the record (the same-flavour daughter followed down from status 23), the cone
+#   holds the status-1 particles except neutrinos (what ak4GenJets cluster), with their number, energy, vector and
+#   scalar pT and the members;
 #   with --jets the jets of each collection: number, scalar sum of pT, the two leading jets, the clustered final state.
 # With --pu the collection carries a collisionId (genParticlesPU of chapter 08): every final-state line is given for
 # the signal (collisionId 0), for the pileup collisions (collisionId > 0) and for the sum.
@@ -31,6 +36,7 @@ if pu:
 event = opt('--event', '')
 collection = opt('--collection', 'genParticlesPU' if pu else 'genParticles')
 jets = [j for j in opt('--jets', '').split(',') if j]
+cone_r = float(opt('--cone', '0.4'))
 fname = args[0]
 E_BEAM = 6800.
 
@@ -56,6 +62,22 @@ regions = [('|eta|<2.5', 0., 2.5), ('2.5-3.0', 2.5, 3.0), ('3.0-5.2', 3.0, 5.2),
 groups = [('hard process (21-29)', 21, 29), ('MPI (31-39)', 31, 39), ('ISR (41-49)', 41, 49), ('FSR (51-59)', 51, 59),
           ('beam remnants (61-69)', 61, 69), ('strings (71-79)', 71, 79), ('hadronisation (81-89)', 81, 89),
           ('decayed (status 2)', 2, 2), ('final state (status 1)', 1, 1)]
+
+def delta_r(a, b):
+    dphi = abs(a.phi() - b.phi())
+    if dphi > math.pi:
+        dphi = 2 * math.pi - dphi
+    return math.hypot(a.eta() - b.eta(), dphi)
+def last_copy(p):
+    while True:
+        same = [p.daughter(j) for j in range(p.numberOfDaughters()) if p.daughter(j).pdgId() == p.pdgId()]
+        if not same:
+            return p
+        p = same[0]
+quark_names = {1: 'd', 2: 'u', 3: 's', 4: 'c', 5: 'b', 6: 't', 21: 'g'}
+def short_name(pdg):
+    n = quark_names.get(abs(pdg))
+    return n + ('bar' if pdg < 0 else '') if n else str(pdg)
 
 class Sum:
     def __init__(self):
@@ -129,6 +151,20 @@ for ev in Events(fname):
                 vis.add(p)
         print('  visible (|eta|<5.2, no neutrinos): n=%d E=%.1f GeV pT=%.1f GeV; neutrinos: n=%d E=%.1f GeV pT=%.1f GeV'
               % (vis.n, vis.e, vis.pt, inv.n, inv.e, inv.pt))
+        # the cones around the outgoing partons of the hard process
+        if cone_r > 0 and out:
+            print('  cone Delta R < %.1f around the last copy of each outgoing parton (status 1, no neutrinos):' % cone_r)
+            index = {(q.pdgId(), q.status(), round(q.energy(), 6), round(q.pz(), 6)): i for i, q in enumerate(parts)}
+            for q in out:
+                a = last_copy(q)
+                members = [(i, p) for i, p in enumerate(final) if abs(p.pdgId()) not in neutrinos and delta_r(a, p) < cone_r]
+                px = sum(p.px() for _, p in members); py = sum(p.py() for _, p in members)
+                e = sum(p.energy() for _, p in members); spt = sum(p.pt() for _, p in members)
+                ai = index.get((a.pdgId(), a.status(), round(a.energy(), 6), round(a.pz(), 6)), -1)
+                print('    %-4s axis [%d] status %d pT=%.1f eta=%.2f phi=%.2f: n=%d E=%.1f GeV vector pT=%.1f GeV scalar pT=%.1f GeV'
+                      % (short_name(q.pdgId()), ai, a.status(), a.pt(), a.eta(), a.phi(), len(members), e, math.hypot(px, py), spt))
+                print('         members (pdg pT dR): ' + ', '.join('%d %.1f %.2f' % (p.pdgId(), p.pt(), delta_r(a, p))
+                                                         for _, p in sorted(members, key=lambda m: -m[1].pt())))
     # the jets
     for j in jets:
         ev.getByLabel(j, hJet)

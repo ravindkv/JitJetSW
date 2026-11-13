@@ -153,7 +153,10 @@ listing, and the cross-section statistics (`q qbar -> b bbar`, code 124, sigma =
 
 ## 3. The analyzer configs
 
-Three things are run by `gen_stage` after `cmsRun`, all in `test/06_Decay/out/`:
+Three things are run by `gen_stage` after `cmsRun`, all in `test/06_Decay/out/` (`CONE_R=${CONE_R:-0.4}` in
+`run_06_Decay.sh`). Chapter 07 reads `step1_GEN_06_Decay.root`, so the pages with the cones were made on 13 November
+2026 with `REGEN=0 ./06_Decay/run_06_Decay.sh`, which keeps the GEN file (md5 `4490ef15...`, unchanged) and redoes only
+these three steps:
 
 ```bash
 cd 06_Decay/out
@@ -162,7 +165,7 @@ cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_06_Decay.ro
    outputFile=genPartAnalyzer_06_Decay.root maxEvents=1 eventsToProcess=1:1:1 maxStage=5 \
    pdfFile=genPartAnalyzer_06_Decay.pdf \
    sampleLabel="chapter 06_Decay: hadron decays (the full generator event)|ISR on, FSR on, MPI on|Hadronize on, Decay on|pTHatMin 100 GeV, 13.6 TeV" \
-   > genPartAnalyzer_06_Decay.log 2>&1
+   coneR=0.4 > genPartAnalyzer_06_Decay.log 2>&1
 # 2. the PNG pages of the PDF for the book (ROOT PDFs carry an A4 MediaBox, hence -cropbox)
 pdftoppm -cropbox -r 110 -png genPartAnalyzer_06_Decay.pdf genPartAnalyzer_06_Decay_page
 # 3. the ledger (FWLite, no cmsRun)
@@ -176,7 +179,12 @@ cd ../..
   - `genPartAnalyzer_06_Decay.pdf`: five pages, the eta-phi map of the particles alive at the end of stage 1
     (hard process), 2 (+ parton shower), 3 (+ MPI and beam remnants), 4 (+ hadronisation: the 320 primary
     hadrons) and 5 (+ hadron decays: the 634 status-1 particles), marker size growing with pT, colour = origin;
-    `genPartAnalyzer_06_Decay_page-1..5.png` are the pages, page 5 is figure 6.2 of the chapter;
+    `genPartAnalyzer_06_Decay_page-1..5.png` are the pages, page 5 is figure 6.1 of the chapter. On every page
+    the dashed cones Delta R < 0.4 around the two systems with their pT (neutrinos not counted) and an inset of the
+    fuller cone; on page 5 a second inset, since the other cone holds at least three particles: the b cone (21
+    particles, 79.1 GeV) bottom right, the bbar cone (18, 115.9 GeV) top right, each with the name and pT of its 12
+    hardest particles within 1.25 x 0.4 of the axis ("+N more" for the others), the antineutrino in parentheses;
+    the decay products of a magnified cone are labelled only in its inset;
   - `genPartAnalyzer_06_Decay.root`: the TH2 (eta, phi, weight pT) per stage (`TFileService`);
   - `genPartAnalyzer_06_Decay.log`: the `== GenPartAnalyzer` line and one `stage N` line per stage with the b and
     bbar (quark, then primary hadron, then its stable decay products) pT, eta, phi, indices and the net b + bbar pT.
@@ -243,6 +251,11 @@ final state (status 1): n=634 sumE=13600.0 GeV sumPt=528.9 GeV
   5.2-5.5                16     836.4      7.8      0.0
   >5.5                   58    6817.1     20.3      0.0
   visible (|eta|<5.2, no neutrinos): n=559 E=5851.0 GeV pT=463.4 GeV; neutrinos: n=1 E=95.5 GeV pT=37.5 GeV
+  cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+    bbar axis [964] status 71 pT=116.4 eta=-3.75 phi=1.01: n=18 E=2457.4 GeV vector pT=115.9 GeV scalar pT=116.0 GeV
+         members (pdg pT dR): 211 30.6 0.01, 310 15.7 0.03, 310 12.9 0.01, 130 11.8 0.07, 22 8.2 0.03, 211 7.5 0.04, 22 6.4 0.06, 22 5.8 0.00, -211 4.3 0.06, 22 2.9 0.07, 22 2.5 0.04, 22 2.3 0.06, -321 1.6 0.18, 22 1.6 0.02, 22 0.8 0.07, 22 0.7 0.13, 22 0.3 0.20, 22 0.1 0.14
+    b    axis [824] status 71 pT=91.7 eta=-1.57 phi=-2.08: n=21 E=200.6 GeV vector pT=79.1 GeV scalar pT=79.5 GeV
+         members (pdg pT dR): 22 17.7 0.00, 211 13.3 0.03, -211 11.0 0.04, 310 8.0 0.04, 22 5.8 0.09, 11 5.0 0.19, 22 3.5 0.14, 22 3.0 0.16, 22 2.4 0.26, 211 2.1 0.29, 22 2.0 0.35, 22 1.5 0.11, 22 1.4 0.04, 310 0.9 0.25, 211 0.5 0.36, 22 0.5 0.33, 22 0.3 0.21, 22 0.3 0.30, 22 0.2 0.08, -211 0.2 0.27, -211 0.1 0.28
 ```
 
 ### 4.2 The ledger before the decays, `test/05_Had/out/ledger_05_Had.txt` (the "before" column of table 6.2)
@@ -257,6 +270,9 @@ record by status group:
   beam remnants (61-69)         233
   strings (71-79)               165
   final state (status 1)        320
+hard process: incoming pdg -2 (E=14.8 GeV, x=0.0022) + pdg 2 (E=2652.9 GeV, x=0.3901) -> sqrt(s_hat) = 396.1 GeV
+  outgoing pdg -5: pT=113.2 eta=-3.75 phi=0.99 E=2415.7 GeV
+  outgoing pdg 5: pT=113.2 eta=-1.44 phi=-2.15 E=252.1 GeV
 final state (status 1): n=320 sumE=13600.0 GeV sumPt=505.7 GeV
   by kind                 n    E[GeV]  pT[GeV]
   charged hadron        169    8863.8    355.0
@@ -268,6 +284,11 @@ final state (status 1): n=320 sumE=13600.0 GeV sumPt=505.7 GeV
   5.2-5.5                15     810.7      7.9      0.0
   >5.5                   40    7010.1     20.9      0.0
   visible (|eta|<5.2, no neutrinos): n=265 E=5779.2 GeV pT=476.9 GeV; neutrinos: n=0 E=0.0 GeV pT=0.0 GeV
+  cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+    bbar axis [964] status 71 pT=116.4 eta=-3.75 phi=1.01: n=2 E=2465.3 GeV vector pT=116.0 GeV scalar pT=116.0 GeV
+         members (pdg pT dR): 523 114.2 0.00, -323 1.8 0.18
+    b    axis [824] status 71 pT=91.7 eta=-1.57 phi=-2.08: n=9 E=290.6 GeV vector pT=114.4 GeV scalar pT=114.7 GeV
+         members (pdg pT dR): -521 94.3 0.01, 111 7.2 0.08, 111 6.5 0.15, 111 2.8 0.27, 111 2.0 0.36, 311 0.9 0.25, 111 0.5 0.26, -313 0.3 0.40, -211 0.1 0.28
 ```
 
 Differences quoted in the chapter: record 1230 -> 1846 (+616); stable 320 -> 634 (+314); decayed 0 -> 302;
@@ -281,18 +302,45 @@ visible 5779.2 -> 5851.0 GeV (+71.8); invisible 0 -> 95.5 GeV. Of the 320 primar
 ```
 == GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=1846 nStatus1=634 hard b idx=5 hard bbar idx=4
   stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
+  by scattering (stage 1): hard process 2, MPI 0 (of 31 interactions), beam remnants 0, none 0 | by origin drawn: hard process 2; (the b and bbar copies are counted under their origin)
+  cone dR<0.4 (stage 1) | around b: n=1 pt=113.221 eta=-1.43851 phi=-2.15105 scalar sum pT=113.221 members [idx]pdg:pt:dR:scattering(1 hard, 3 MPI, 6 remnant) = [5]5:113.221:1.11022e-15:1 | around bbar: n=1 pt=113.221 eta=-3.75298 phi=0.990547 scalar sum pT=113.221 members [idx]pdg:pt:dR:scattering(1 hard, 3 MPI, 6 remnant) = [4]-5:113.221:3.06422e-14:1
   stage 2 (partonShower): nParticles=14 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  by scattering (stage 2): hard process 14, MPI 0 (of 31 interactions), beam remnants 0, none 0 | by origin drawn: hard process 2; hard-process ISR 1; hard-process FSR 11; (the b and bbar copies are counted under their origin)
+  cone dR<0.4 (stage 2) | around b: n=6 pt=120.27 eta=-1.58969 phi=-2.08609 scalar sum pT=120.405 members [idx]pdg:pt:dR:scattering(1 hard, 3 MPI, 6 remnant) = [182]5:91.5874:4.44089e-16:1 [235]21:15.3477:0.0675868:1 [373]21:5.31642:0.295817:1 [214]-3:3.50206:0.195194:1 [236]21:2.91632:0.363979:1 [372]21:1.73549:0.340223:1 | around bbar: n=1 pt=118.574 eta=-3.72888 phi=1.01942 scalar sum pT=118.574 members [idx]pdg:pt:dR:scattering(1 hard, 3 MPI, 6 remnant) = [207]-5:118.574:4.44089e-14:1
   stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 62): pt=91.7437 eta=-1.56979 phi=-2.08372 idx=[515] | #bar{b} quark (status 62): pt=116.356 eta=-3.74787 phi=1.01139 idx=[514] | net b+bbar: |sum pT|=25.0768 (px=16.727 py=18.6829) scalar sum pT=208.1
+  by scattering (stage 3): hard process 14, MPI 142 (of 31 interactions), beam remnants 13, none 0 | by origin drawn: hard process 2; hard-process ISR 1; hard-process FSR 11; MPI parton 61; MPI ISR 25; MPI FSR 56; beam remnant 13; (the b and bbar copies are counted under their origin)
+  cone dR<0.4 (stage 3) | around b: n=9 pt=127.253 eta=-1.58967 phi=-2.09225 scalar sum pT=127.526 hard process: n=6 pt=120.48 scalar sum pT=120.616 UE (MPI + remnants): n=3 scalar sum pT=6.9105 members [idx]pdg:pt:dR:scattering(1 hard, 3 MPI, 6 remnant) = [515]5:91.7437:4.44089e-16:1 [520]21:15.3744:0.0674676:1 [519]21:5.33019:0.295186:1 [548]-2:3.72603:0.267234:3 [516]-3:3.50953:0.194818:1 [523]21:2.91884:0.363519:1 [581]21:2.2518:0.386309:3 [527]21:1.73925:0.339568:1 [640]21:0.932667:0.350387:3 | around bbar: n=2 pt=117.121 eta=-3.74775 phi=1.01223 scalar sum pT=117.127 hard process: n=1 pt=116.356 scalar sum pT=116.356 UE (MPI + remnants): n=1 scalar sum pT=0.770667 members [idx]pdg:pt:dR:scattering(1 hard, 3 MPI, 6 remnant) = [514]-5:116.356:5.68434e-14:1 [637]-4:0.770667:0.130228:3
   stage 4: b quark [824] pt=91.7437 -> primary hadron [829] pdg=-521 pt=94.2789 dR=0.00887172
   stage 4: bbar quark [964] pt=116.356 -> primary hadron [968] pdg=523 pt=114.174 dR=0.00134803
   stage 4 (hadronisation): nParticles=320 | b hadron B^{-}: pt=94.2789 eta=-1.56724 phi=-2.09222 idx=[829] | #bar{b} hadron B^{*+}: pt=114.174 eta=-3.74697 phi=1.01039 idx=[968] | net b+bbar: |sum pT|=20.302 (px=13.7251 py=14.9597) scalar sum pT=208.453
+  cone dR<0.4 (stage 4) | around b: n=9 pt=114.446 eta=-1.58091 phi=-2.08909 scalar sum pT=114.654 members [idx]pdg:pt:dR = [829]-521:94.2789:2.22045e-16 [830]111:7.16559:0.0763584 [832]111:6.54856:0.154071 [833]111:2.83494:0.260293 [1131]111:1.97535:0.362117 [834]311:0.906323:0.244158 [1147]111:0.496996:0.269733 [959]-313:0.347957:0.389463 [804]-211:0.0993873:0.285037 | around bbar: n=2 pt=115.983 eta=-3.74922 phi=1.00843 scalar sum pT=115.997 members [idx]pdg:pt:dR = [968]523:114.174:5.06262e-14 [967]-323:1.82287:0.178355
   stage 5 (hadronDecays): nParticles=634 | b hadron B^{-} decay products (n=9): pt=94.2789 eta=-1.56724 phi=-2.09222 idx=[1434,1435,1812,1813,1827,1828,1838,1839,...] | #bar{b} hadron B^{*+} decay products (n=16): pt=114.174 eta=-3.74697 phi=1.01039 idx=[1504,1753,1818,1819,1820,1821,1831,1832,...] | net b+bbar: |sum pT|=20.302 (px=13.7251 py=14.9597) scalar sum pT=208.453
+  cone dR<0.4 (stage 5) | around b: n=21 pt=79.1207 eta=-1.58026 phi=-2.07815 scalar sum pT=79.467 members [idx]pdg:pt:dR = [1813]22:17.7277:0.00938886 [1828]211:13.3128:0.0251742 [1827]-211:10.9951:0.0438498 [1838]310:7.95839:0.0499624 [1438]22:5.77836:0.0854139 [1435]11:4.95115:0.179882 [1440]22:3.51683:0.147643 [1439]22:3.0324:0.16388 [1442]22:2.3646:0.251945 [1374]211:2.14455:0.29478 [1586]22:1.96827:0.356353 [1840]22:1.46305:0.115927 [1437]22:1.38732:0.0378915 [1236]310:0.906323:0.244158 [1451]211:0.478113:0.355992 [1441]22:0.470439:0.323616 [1839]22:0.301431:0.201592 [1593]22:0.292582:0.310631 [1812]22:0.163679:0.08783 [1348]-211:0.154445:0.274446 [804]-211:0.0993873:0.285037 | around bbar: n=18 pt=115.944 eta=-3.74635 phi=1.00816 scalar sum pT=116.011 members [idx]pdg:pt:dR = [1753]211:30.6144:0.0106927 [1821]310:15.6545:0.0340961 [1841]310:12.873:0.00906361 [1835]130:11.7772:0.0673147 [1842]22:8.23657:0.0256749 [1832]211:7.51836:0.0450077 [1844]22:6.40256:0.0549173 [1818]22:5.76164:0.00230666 [1831]-211:4.27048:0.0579937 [1819]22:2.94065:0.0676758 [1820]22:2.52864:0.0392866 [1845]22:2.2628:0.0541929 [1282]-321:1.64258:0.18046 [1504]22:1.55608:0.023542 [1843]22:0.817201:0.07345 [1836]22:0.696542:0.134685 [1837]22:0.307863:0.198276 [1797]22:0.149714:0.141523
 ```
 
 The page-5 display (`genPartAnalyzer_06_Decay_page-5.png`) header: 634 particles drawn, 38 with |eta| > 6 on the
 border; legend: b system (9), bbar system (16), primary hadron (132), decay product (477); net b+bbar
 |pT| = 20.30 GeV (px = 13.73, py = 14.96), sum |pT| = 208.45 GeV, Delta phi(b, bbar) = 3.10. The stage-2 and
 stage-3 lines are identical to those of `test/05_Had/out/genPartAnalyzer_05_Had.log` (same parton level).
+
+The cones of stage 5 (figure 6.1, table 6.2; the "cone" line above and the cone lines of the two ledgers; unrounded sums
+from FWLite, the script of chapter_05_Had.md section 4.3 run as `python3 -I cones0506.py
+06_Decay/out/step1_GEN_06_Decay.root 829 968`): b cone 9 hadrons, 290.560 GeV, vector pT 114.446 GeV (chapter 05) -> 21
+stable particles, 200.624 GeV, 79.121 GeV (differences +12, -89.936, -35.325); bbar cone 2, 2465.317, 115.983 -> 18,
+2457.411, 115.944 (+16, -7.906, -0.039). Members of the b cone (pdg pT dR, "product" = stable descendant of the B-):
+22 17.73 0.009 product, [-12 37.46 0.022 product: the antineutrino, not counted], 211 13.31 0.025 product, 22 1.39 0.038,
+-211 11.00 0.044 product, 310 7.96 0.050 product, 22 5.78 0.085, 22 0.16 0.088 product, 22 1.46 0.116 product,
+22 3.52 0.148, 22 3.03 0.164, 11 4.95 0.180 product, 22 0.30 0.202 product, 310 0.91 0.244, 22 2.37 0.252,
+-211 0.15 0.274, -211 0.10 0.285, 211 2.14 0.295, 22 0.29 0.311, 22 0.47 0.324, 211 0.48 0.356, 22 1.97 0.356: 8 of the
+9 products (all but the neutrino, the farthest at 0.202) and 13 others, 8 photons, 4 charged pions and a K0S. Their
+mothers (FWLite, up the mothers to the first string parton): the K0S 0.906 [1236] from the K0 [834] of the b string,
+the pi- 0.099 [804] a primary hadron, the pi+ 2.145 [1374] from the Delta++ [1146] (pT 2.80, Delta R = 0.51 from the
+B- in chapter 05, outside the cone then), the pi+ 0.478 [1451] from an eta [878], the pi- 0.154 [1348] from a rho0
+[1108], the photons 1.968 [1586] and 0.293 [1593] from the pi0 [1131] and [1147] that were in the chapter-05 cone.
+Members of the bbar cone: the 16 products of the B*+, all within Delta R = 0.198 and 14 within 0.073 (dR 0.002, 0.009,
+0.011, 0.024, 0.026, 0.034, 0.039, 0.045, 0.054, 0.055, 0.058, 0.067, 0.068, 0.073, 0.135, 0.198), the K- 1.643
+[1282] from the K*- [967] of chapter 05, and a photon 0.150 [1797] from a pi0 of an eta. Just outside the b cone
+(0.4-0.6, pT > 1 GeV): pi+ 2.39 at 0.418, pbar 5.30 at 0.453, pi+ 1.99 at 0.462.
 
 ### 4.4 The decay trees of the b hadrons (FWLite on `step1_GEN_06_Decay.root`, section 3 script)
 
@@ -372,7 +420,7 @@ largest flight of a Pythia-decayed particle: 140.69 mm [1817] pdg -421
 status 2 decays: 302; flight >0.01 mm: 17, >1 mm: 4, >10 mm: 2
 ```
 
-### 4.6 Species counts (FWLite), table 6.1 and figure 6.1
+### 4.6 Species counts (FWLite), table 6.1 and figure 6.2
 
 Status 2 (decayed by Pythia8), 302 in total:
 
