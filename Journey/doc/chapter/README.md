@@ -32,9 +32,12 @@ CMSSW_15_0_5 is a release of 2025: the CMS chapters run with `--conditions auto:
 at generator level). The year is chosen per chapter by `YEAR` in `jitjet_init` of `test/common/jitjet_common.sh`
 (`0[1-7]_*` -> 2024, every other chapter 2025; 08-10 were moved first, 11-13 second). To move a new chapter:
 add it to that `case`, set the `globalTag` / `era` defaults of its analyzer configurations in `test/common/` to 2025,
-replace "2024" in its plot labels, rerun it, compare `out/` with the previous run (ledgers, logs; keep a copy first),
-and say in the .tex (B2 or B3) what the 2025 conditions changed, with the evidence (`conddb diff
-150X_mcRun3_2024_realistic_v2 150X_mcRun3_2025_realistic_v1`, the compared files) in C4 of the .md. The pileup
+replace "2024" in its plot labels, rerun it, compare `out/` with the previous run (ledgers, logs), and say in the .tex
+(B2 or B3) what the 2025 conditions changed, with the evidence (`conddb diff 150X_mcRun3_2024_realistic_v2
+150X_mcRun3_2025_realistic_v1`, the compared files) in C4 of the .md. Keep the 2024 run in the repository, not in a
+scratch area (`/tmp` is local to one lxplus node and is cleaned): a `test/<XX_YYY>/run_<XX_YYY>_2024.sh` that remakes it
+in `test/<XX_YYY>/out2024/` and writes the comparison, as `test/12_L1T/run_12_L1T_2024.sh` and
+`yearCompare_12_L1T.py` do (`out2024/compare_12_L1T.txt`). The pileup
 (PU = 60, bx -1..1, SKIP = 71, NPU = 68), the number of events and the seeds do not change with the year.
 
 ## The .tex chapter (Rule B): exactly five sections, 5 +- 2 pages (detector chapters: Rule J below)

@@ -90,7 +90,7 @@ namespace hltdisplay {
         o << " parVar=";
         for (auto const& v : d.parVar())
           o << v << ",";
-        // the bins of the second binning variable (JetPhi in the PF payload of 2024) for the first eta bin
+        // the bins of the second binning variable (JetPhi in the PF payloads of 2024 and 2025) for the first eta bin
         if (d.nBinVar() > 1 && coll[l].size() > 0) {
           o << " " << d.binVar(1) << "Bins(eta " << coll[l].record(0).xMin(0) << ".." << coll[l].record(0).xMax(0) << ")=";
           for (unsigned r = 0; r < coll[l].size(); ++r)

@@ -15,8 +15,11 @@
 // The Pythia8 status codes kept in genParticles (Pythia8 manual, "Particle Properties")
 // give the stage in which each particle (or copy of a particle) was produced:
 //   1 hard process (ME)       status 21-29           (23 = outgoing b, bbar)
-//   2 parton shower           status 41-49 ISR, 51-59 FSR
-//   3 MPI / beam remnants     status 31-39 MPI, 61-69 primordial kT + beam remnants
+//   2 parton shower           status 41-49 ISR, 51-59 FSR (of the hard process: an initial-state emission belongs to the
+//                            scattering its backward chain of incoming partons leads to, and one that leads to an MPI is
+//                            produced in stage 3)
+//   3 MPI / beam remnants     status 31-39 MPI, 61-69 primordial kT + beam remnants; a final parton written with
+//                            status 1 (hadronisation off: the copy that carries the primordial kT, Pythia8 62/63)
 //   4 hadronisation           status 71-79 (partons entering the strings) and the
 //                            primary hadrons: status 1/2 with a status 71-79 mother
 //   5 hadron decays           status 1/2 with a decayed hadron/lepton (status 1/2) mother
@@ -111,6 +114,7 @@ private:
                 std::vector<int>& origin) const;
   bool lineageOk(size_t i, int stage, const Coll& gens, const std::vector<int>& st, const std::vector<char>& inc,
                  std::vector<char>& memo) const;
+  int scatteringStage(size_t k, const Coll& gens, int depth = 0) const;
   void descendants(size_t i, const Coll& gens, std::vector<char>& out) const;
   static std::string pdgName(int pdg);
   static double markerSize(double pt);
@@ -247,6 +251,20 @@ void GenPartAnalyzer::classify(size_t i, const Coll& gens, const std::vector<cha
   origin[i] = DECAY;
   const reco::GenParticle& g = gens[i];
   int s = std::abs(g.status());
+  if (s == 1 && isParton(g.pdgId())) {
+    // a final parton of a record that is not hadronised: the copy of a parton that received the primordial kT with the
+    // beam remnants (Pythia8 status 62/63, written as status 1), produced in stage 3 with the origin of what it copies
+    stage[i] = 3;
+    origin[i] = REMNANT;
+    if (g.numberOfMothers() == 1) {
+      size_t k = g.motherRef(0).key();
+      if (!inc[k] && isParton(gens[k].pdgId())) {
+        classify(k, gens, inc, stage, origin);
+        origin[i] = origin[k];
+      }
+    }
+    return;
+  }
   if (s == 1 || s == 2) {
     bool fromString = false, fromDecay = false;
     int best = -1, bestStage = -1;
@@ -283,6 +301,10 @@ void GenPartAnalyzer::classify(size_t i, const Coll& gens, const std::vector<cha
   Origin o = originOfStatus(s);
   stage[i] = stageOfOrigin(o);
   origin[i] = o;
+  // an initial-state emission hangs on an incoming parton (status 41), which lineageOk does not follow: it is produced
+  // with the scattering that its chain of incoming partons leads to, in stage 3 when that is a multiparton interaction
+  if (o == ISR && !inc[i] && g.numberOfMothers() == 1 && inc[g.motherRef(0).key()])
+    stage[i] = std::max(stage[i], scatteringStage(g.motherRef(0).key(), gens));
   // copy or FSR radiator: inherit the origin of the mother
   if (g.numberOfMothers() == 1) {
     size_t k = g.motherRef(0).key();
@@ -314,6 +336,30 @@ bool GenPartAnalyzer::lineageOk(size_t i, int stage, const Coll& gens, const std
     }
   }
   return true;
+}
+
+// the stage of the scattering an incoming parton evolves into, following the backward chain of the initial-state
+// shower down the record (incoming copies and recoilers, status 41, 42, 45, 46, 53, 61): 1 for the hard process
+// (status 21-29), 3 for a multiparton interaction (status 31-39), 0 if none is found
+int GenPartAnalyzer::scatteringStage(size_t k, const Coll& gens, int depth) const {
+  if (depth > 100)
+    return 0;
+  const reco::GenParticle& g = gens[k];
+  for (size_t d = 0; d < g.numberOfDaughters(); ++d) {
+    int s = std::abs(gens[g.daughterRef(d).key()].status());
+    if (s >= 21 && s <= 29)
+      return 1;
+    if (s >= 31 && s <= 39)
+      return 3;
+  }
+  for (size_t d = 0; d < g.numberOfDaughters(); ++d) {
+    size_t c = g.daughterRef(d).key();
+    int s = std::abs(gens[c].status());
+    if (s == 41 || s == 42 || s == 45 || s == 46 || s == 53 || s == 61)
+      if (int r = scatteringStage(c, gens, depth + 1))
+        return r;
+  }
+  return 0;
 }
 
 void GenPartAnalyzer::descendants(size_t i, const Coll& gens, std::vector<char>& out) const {

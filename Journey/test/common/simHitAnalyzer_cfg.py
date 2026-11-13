@@ -11,7 +11,8 @@
 # globalTag, era and geometry are those of the SIM step (see simAnalyzer_cfg.py); with a Phase2* era the
 # Phase2 collections and stations are used (HGCal instead of EE, ES and HE), otherwise the Run 3 ones.
 # The stations and the module are defined in JitJetSW/Journey/python/simHitAnalyzer_cff.py, which the
-# pileup-mixing job of runPileup_mcPhase2_BBbar.sh also uses (there the analyzer reads the CrossingFrames).
+# mixing job of chapter 10 also uses (python/mixOnly_cff.py, test/10_SIM/run_10_SIM.sh: there the analyzer reads the
+# CrossingFrames).
 import importlib
 import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing

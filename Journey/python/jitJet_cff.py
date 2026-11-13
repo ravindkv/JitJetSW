@@ -66,7 +66,7 @@ def customiseJitJet(process, level=1, maxElements=-1, maxSub=-1, g4Threshold=1.0
             process.generator.pythiaHepMCVerbosity = cms.untracked.bool(True)  # HepMC GenEvent::print()
 
     elif step == 'GENJET':
-        # GenJet step of runCMSDrivers_mc2024_BBbar_GEN.sh (genJet_cff): the jets clustered in this
+        # GenJet step of chapter 07 (genJet_cff): the jets clustered in this
         # process (InputTags without process name resolve to the most recent producer) with their
         # constituents as genParticles keys
         add('jitJetGenJet', cms.EDAnalyzer('GenJourney',

@@ -1,6 +1,6 @@
-# SimHitAnalyzer configuration shared by test/simHitAnalyzer_cfg.py (a SIM file, one event drawn station by
-# station) and the pileup-mixing job of test/runPileup_mcPhase2_BBbar.sh, where the analyzer runs inside the
-# DIGI step and reads the CrossingFrame collections of the MixingModule (signal + mixed pileup).
+# SimHitAnalyzer configuration shared by test/common/simHitAnalyzer_cfg.py (a SIM file, one event drawn station by
+# station) and the mixing job of chapter 10 (python/mixOnly_cff.py, test/10_SIM/run_10_SIM.sh), where the analyzer
+# runs inside the mixing step and reads the CrossingFrame collections of the MixingModule (signal + mixed pileup).
 #
 #   from JitJetSW.Journey.simHitAnalyzer_cff import simHitAnalyzer, addSimHitAnalyzer
 #   process.simHitAnalyzer = simHitAnalyzer(outputDir='SIM_Phase2', sampleLabel='...', phase2=True)

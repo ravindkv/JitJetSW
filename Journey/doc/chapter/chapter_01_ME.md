@@ -224,9 +224,10 @@ Derived in the chapter: sqrt(sHat) = sqrt(1.569e5) = 396.1 GeV (also the "Moment
 = 113.3 GeV = sqrt(pTHat^2 + m_b^2) = sqrt(113.22^2 + 4.8^2) (the transverse mass of the b); thetaHat = 2.533 rad =
 145.1 degrees; the rapidity of the parton-parton system y = 0.5 ln(x1/x2) = 0.5 ln(2.174e-3 / 0.3901) = -2.595 (the same
 from the momentum sum: 0.5 ln((2667.719 - 2638.149) / (2667.719 + 2638.149)) = -2.595); the rapidity of each b quark
-in the parton-parton rest frame, with p* = sqrt(sHat/4 - m_b^2) = 198.0 GeV and pz* = p* cos(thetaHat) = -160.8 GeV
-for the bbar: y* = 0.5 ln((198.05 - 160.8) / (198.05 + 160.8)) = -1.133 (bbar), +1.133 (b); y_lab = -2.595 -+ 1.133 =
--3.73 (bbar), -1.46 (b); E = pT cosh(eta): 113.22 cosh(1.4385) = 252.0 GeV, 113.22 cosh(3.753) = 2413 GeV.
+in the parton-parton rest frame, with p* = sqrt(sHat/4 - m_b^2) = 198.0 GeV and pz* = p* cos(thetaHat) = -162.4 GeV
+for the bbar: y* = 0.5 ln((198.05 - 162.4) / (198.05 + 162.4)) = -1.157 (bbar), +1.157 (b); y_lab = -2.595 -+ 1.157 =
+-3.752 (bbar), -1.438 (b) (the same from the listing: 0.5 ln((E+pz)/(E-pz)) = -3.752 and -1.438; the pseudorapidities
+-3.753 and -1.439 differ by 0.001); E = pT cosh(eta): 113.22 cosh(1.4385) = 252.0 GeV, 113.22 cosh(3.753) = 2415.4 GeV.
 
 The GenEventInfoProduct of the file (FWLite, `generator`): weight 1.0, qScale 113.3225, alphaQCD 0.114255, alphaQED
 0.00783681, signalProcessID 124, pdf id1 -2, id2 2, x1 0.00217429, x2 0.390137, scalePDF 113.3225, xPDF1 1.14545,

@@ -402,7 +402,7 @@ HLT process from the file (`HLTConfigProvider`): the paths, their modules, their
 | analyzer | steps | PDF and PNG pages (`hlt_13_HLT_...`) | log lines |
 |---|---|---|---|
 | `HLTPathAnalyzer` | 1, 5 | `_seed.pdf`; `_seed_seed` (the L1 objects unpacked by the HLT, the objects of `hltL1sSingleJet90`, the raw-data sizes, the fate of the paths), `_seed_ladders` (the thresholds of the jet paths and the stage that stopped each), `_seed_objects` (the objects of the accepted paths from `hltTriggerSummaryAOD`: the display of B4) | `menu:`, `menu modules:`, `rawdata`, `L1 unpacked:`, `L1Jet:`, `paths HLT_+DST_:`, `path:` (every path: accept, stage, seed, the last module and its type), `dataset:`, `stream:`, `summary:`, `filter:` (every filter with its objects), `cut:`, `leading jets:`, `ladder`, `seedObjects:`, `accepted:` |
-| `HLTCaloAnalyzer` | 2 | `_calo.pdf`; `_calo_towers` (the towers on the trigger-tower grid with the corrected calo jets), `_calo_jet1`, `_calo_jet2` (17 x 17 towers around the two signal jets, E_T in each, the 9 x 9 window of the L1 jet, the corrections level by level) | `rechits <region>:`, `towers <region>:`, `rho calo`, `jec calo:` (the formulas of the payload), `GenJet:`, `calo jets:`, `CaloJet N:` (raw, factors, recomputed and stored corrected pT, gen match), `zoom gen jet` |
+| `HLTCaloAnalyzer` | 2 | `_calo.pdf`; `_calo_towers` (the towers on the trigger-tower grid with the corrected calo jets), `_calo_jet1`, `_calo_jet2` (17 x 17 towers around the two signal jets, E_T in each, the 9 x 9 window of the L1 jet nearest to the calo jet, the corrections level by level) | `rechits <region>:`, `towers <region>:`, `rho calo`, `jec calo:` (the formulas of the payload), `GenJet:`, `calo jets:`, `CaloJet N:` (raw, factors, recomputed and stored corrected pT, gen match), `zoom gen jet` |
 | `HLTTrackAnalyzer` | 3 | `_track.pdf`; `_track_etaphi` (the merged tracks, those of the signal vertex in black), `_track_vertices` (pixel, kept and PF vertices along z with the simulated collisions) | `clusters:`, `tracks <iteration>:`, `truth:` (the simulated vertices, `addPileupInfo`, `genParticles:xyz0`), `vertices <collection>:`, `vertex <collection> N:` (with the nearest simulated collision), `vertices trimmed`, `signal vertex rank:`, `jet tracks:` |
 | `HLTPFAnalyzer` | 4 | `_pf.pdf`; `_pf_candidates` (the PF candidates by kind with the corrected PF jets), `_pf_jet1`, `_pf_jet2` (the constituents of the two signal PF jets and their corrections) | `pfcands <kind>:`, `pfcands region`, `rho`, `jec pf:` (formulas, the eta x phi bins), `pf jets:`, `PFJet N:` (composition, factors, `jecBin`, gen match), `zoom gen jet` |
 
@@ -518,8 +518,8 @@ CaloJet 32: rawPt=26.1 eta=2.15 phi=0.89 area=0.484 towers=18 n90=13 emf=0.53 | 
 CaloJet 41: rawPt=22.7 eta=-2.13 phi=-1.76 area=0.414 towers=14 n90=10 emf=0.29 | L1FastJet=0.3468 L2Relative=0.8084 L3Absolute=0.8084 L2L3Residual=0.8084 jecBin=eta[-2.172,-2.043] | recomputedPt=18.4 correctedPt=18.4 | gen=- dR=-
 CaloJet 52: rawPt=19.0 eta=-0.35 phi=0.36 area=0.503 towers=19 n90=15 emf=0.67 | L1FastJet=0.5691 L2Relative=1.1964 L3Absolute=1.1964 L2L3Residual=1.1964 jecBin=eta[-0.435,-0.348] | recomputedPt=22.7 correctedPt=22.7 | gen=- dR=-
 CaloJet 54: rawPt=18.9 eta=-0.83 phi=-2.78 area=0.503 towers=23 n90=18 emf=0.56 | L1FastJet=0.5094 L2Relative=1.1070 L3Absolute=1.1070 L2L3Residual=1.1070 jecBin=eta[-0.879,-0.783] | recomputedPt=20.9 correctedPt=20.9 | gen=- dR=-
-zoom gen jet 1: pt=117.8 centre ieta=-19 iphi=49 towersEt(dR<0.4 of the jet axis)=72.7 towersEt(9x9)=79.5
-zoom gen jet 2: pt=115.9 centre ieta=-34 iphi=12 towersEt(dR<0.4 of the jet axis)=168.9 towersEt(9x9)=215.9
+zoom gen jet 1: pt=117.8 centre ieta=-19 iphi=49 towersEt(dR<0.4 of the jet axis)=72.7 towersEt(9x9)=77.7 L1 jet 108.5 ieta=-18 iphi=50
+zoom gen jet 2: pt=115.9 centre ieta=-34 iphi=12 towersEt(dR<0.4 of the jet axis)=168.9 towersEt(9x9)=215.9 L1 jet 136.0 ieta=-34 iphi=12
 ```
 
 The arithmetic of the chapter: b jet 70.9 x 0.8091 = 57.4 (13.5 GeV subtracted), x 1.3162 / 0.8091 = 1.627 -> 93.3;
@@ -534,7 +534,10 @@ not listed here:
 39.5 x 0.2602 = 10.3, x 0.3169 / 0.2602 = 1.218 -> 12.5. 23 raw calo jets above 30 GeV (`CaloJet` lines of
 `hlt_13_HLT.log` with `rawPt` > 30; the log has 143 `CaloJet` lines), 2 corrected. rho x area: 36.3 x 0.503 = 18.3 GeV.
 The 9 x 9 windows of the L1 jets of chapter 12: 74.5 (b) and 189.0 GeV (bbar) (`ledger_12_L1T.txt`, section 3); the HLT
-towers in the same windows: 79.5 and 215.9 GeV (`zoom gen jet` lines).
+towers in the same windows (`plugins/HLTCaloAnalyzer.cc` takes the L1 jet of `hltGtStage2Digis` nearest to the calo
+jet): 77.7 and 215.9 GeV (`zoom gen jet` lines). For the bbar jet the calo jet and the L1 jet are in the same tower
+(ieta -34, iphi 12); for the b jet the calo jet is at ieta -19, iphi 49, one tower away in both from the seed of the
+L1 jet (ieta -18, iphi 50); centred on the calo jet, as the analyzer did before 13 November 2026, the window held 79.5 GeV.
 
 ### Step 3 (`ledger_13_HLT.txt`, section 3)
 
@@ -602,7 +605,7 @@ pfcands region tracker: n=515 sumPt=833.1 charged n=110 sumPt=176.7
 pfcands region outside: n=68 sumPt=259.1 charged n=8 sumPt=8.3
 pfcands region HF: n=783 sumPt=1563.6 charged n=0 sumPt=0.0
 rho (hltFixedGridRhoFastjetAll): 36.743 GeV per unit area
-pf jets: raw=192 corrected=192 corrected>10=30 >30=2 >30 with a gen jet=2
+pf jets: raw=192 raw>10=103 raw>30=13 corrected=192 corrected>10=30 >30=2 >30 with a gen jet=2
 jec pf: level=L1FastJet records=118 formula="max(0.0001,1-(z/y)*([0]+([1]*(x))*(1+[2]*log(y))))" binVar=JetEta,JetPhi, parVar=Rho,JetPt,JetA, JetPhiBins(eta -5.191..-4.889)=-3.15..3.15, etaBinsWithSeveralPhiBins=36 | split bins: [-1.566,-1.479]x[-3.15,-1.2] [-1.566,-1.479]x[-1.2,-0.8] [-1.566,-1.479]x[-0.8,3.15] [-1.479,-1.392]x[-3.15,-1.2] [-1.479,-1.392]x[-1.2,-0.8] [-1.479,-1.392]x[-0.8,3.15] [-1.392,-1.305]x[-3.1
 jec pf: level=L2Relative records=118 formula="max(0.0001,[0]+([1]/(pow(log10(x),2)+[2]))+([3]*exp(-([4]*((log10(x)-[5])*(log10(x)-[5])))))+([6]*exp(-([7]*((log10(x)-[8])*(log10(x)-[8]))))))" binVar=JetEta,JetPhi, parVar=JetPt, JetPhiBins(eta -5.191..-4.889)=-3.15..3.15, etaBinsWithSeveralPhiBins=36 | split bins: [-1.566,-1.479]x[-3.15,-1.2] [-1.566,-1.479]x[-1.2,-0.8] [-1.566,-1.479]x[-0.8,3.15] [-1.479,-1.392]x[-3.1
 jec pf: level=L3Absolute records=1 formula="1" binVar=JetEta, parVar=JetPt,
@@ -615,8 +618,9 @@ zoom gen jet 2: pt=115.9 eta=-3.75 | PF jet 126.7 (raw 156.8) dR=0.05 | constitu
 ```
 
 The arithmetic of the chapter: b jet 83.7 x 0.8685 = 72.7 (11.0 GeV subtracted), x 1.0353 / 0.8685 = 1.192 -> 86.7;
-bbar jet 156.8 x 0.8241 = 129.2 (27.6 GeV subtracted), x 0.8081 / 0.8241 = 0.981 -> 126.7. 9 raw PF jets above 30 GeV
-(`PFJet` lines with `rawPt` > 30; the log has 30 `PFJet` lines), 2 corrected. The PF jets above 15 GeV after the
+bbar jet 156.8 x 0.8241 = 129.2 (27.6 GeV subtracted), x 0.8081 / 0.8241 = 0.981 -> 126.7. 13 raw PF jets above 30 GeV
+(the `pf jets:` line, `pf jets: raw=192 raw>10=103 raw>30=13 corrected=192 corrected>10=30 >30=2 >30 with a gen jet=2`; the `PFJet` lines list every jet above 10 GeV before or after
+the corrections: 156.8, 83.7, 38.9, 37.7, 36.9, 34.7, 34.6, 32.6, 31.8, 31.5, 31.4, 31.2, 30.8 raw), 2 corrected. The PF jets above 15 GeV after the
 corrections (`hlt_13_HLT.log`, `PFJet` lines; the table of the PF jets in step 4 of the chapter):
 
 ```
@@ -824,7 +828,7 @@ L1 jets of chapter 12 (unpacked by the HLT): 136 108.5 23
 | digis of the event | 544 407 | `test/11_DIGI/out/ledger_11_DIGI.txt` |
 | EB data frames of the signal alone (zero suppression of 2025) | 156 (2024: 399) | `test/11_DIGI/out/ledger_11_DIGI.txt` |
 | generator jets (visible) | 117.8 (79.8) and 115.9 GeV | `test/07_GenJet/out/` (chapter 7) |
-| the neutrino, the electron of the B- decay | 37.5 GeV pT; 10.9 GeV | chapter 6 (`test/06_Decay/out/`) |
+| the neutrino, the electron of the B- decay | 37.5 GeV pT; 5.0 GeV pT (10.9 GeV energy) | chapter 6 (`test/06_Decay/out/ledger_06_Decay.txt`) |
 
 ### The Phase-2 statements (section B5 of the chapter)
 
@@ -833,7 +837,7 @@ Relative to `$CMSSW_RELEASE_BASE/src`; the conditions with `conddb list 150X_mcR
 
 | statement | where |
 |---|---|
-| the Phase-2 menu and its size: 54 entries in the schedule, 32 `HLT_`, 16 `L1T_`, 4 `MC_` | `HLTrigger/Configuration/python/HLT_75e33_cff.py`, line 353 on; `Configuration/HLT/python/autoHLT.py`: `'relvalRun4' : '75e33'` |
+| the Phase-2 menu and its size: 54 entries in the schedule, 32 `HLT_`, 16 `L1T_`, 4 `MC_`, `HLTriggerFinalPath`, `HLTAnalyzerEndpath` | `HLTrigger/Configuration/python/HLT_75e33_cff.py`, line 353 on; `Configuration/HLT/python/autoHLT.py`: `'relvalRun4' : '75e33'` |
 | the jet paths and their seeds | `HLT_75e33/paths/HLT_AK4PFPuppiJet520_cfi.py`; `HLT_75e33/modules/hltL1SeedsForPuppiJetFilter_cfi.py` (`PathStatusFilter`, `'pSinglePuppiJet230'`); `hltSingleAK4PFPuppiJet520_cfi.py` (MinPt 520); `hltDoublePFPuppiJets128MaxEta2p4_cfi.py` (MinPt 128, MaxEta 2.4, MinN 2); `hltDoublePFPuppiJets128Eta2p4MaxDeta1p6_cfi.py`; `hltPFPuppiHT1070_cfi.py`; `hltPFPuppiMETTypeOne140_cfi.py` |
 | the PUPPI jet corrections | `HLT_75e33/modules/hltAK4PFPuppiJetCorrectorL1_cfi.py` (`AK4PFPuppiHLT`, `L1FastJet`, rho from `hltFixedGridRhoFastjetAll`), `..._L2_cfi.py`, `..._L3_cfi.py`; `hltFixedGridRhoFastjetAll_cfi.py` (`hltParticleFlowTmp`); payload `JetCorrectorParametersCollection_Phase2Spring23ticlv4_MC_AK4PFPuppiHLT_v1`, one IOV inserted 2023-09-21 08:50:47; `conddb dump` of payload `1581021745b44b8b690b85a0b5c09713a30d2baf`: L1FastJet and L3Absolute formula `1`, L2Relative in 19 eta bins |
 | PUPPI at the HLT | `HLT_75e33/modules/hltPFPuppi_cfi.py`: `PUProxyValue = hltPixelClustersMultiplicity` (11), `usePUProxyValue = True` (66), regions `etaMin (0.0, 2.5)`, `etaMax (2.5, 3.5)`, `MinNeutralPt (0.5105, 0.821)`, slopes `(9.51e-06, 1.902e-05)`, third region 3.5 to 10.0 with `MinNeutralPt 3.656` and `useCharged False` |

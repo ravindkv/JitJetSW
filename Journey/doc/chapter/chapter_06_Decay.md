@@ -281,7 +281,7 @@ visible 5779.2 -> 5851.0 GeV (+71.8); invisible 0 -> 95.5 GeV. Of the 320 primar
 ```
 == GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=1846 nStatus1=634 hard b idx=5 hard bbar idx=4
   stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
-  stage 2 (partonShower): nParticles=57 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  stage 2 (partonShower): nParticles=14 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
   stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 62): pt=91.7437 eta=-1.56979 phi=-2.08372 idx=[515] | #bar{b} quark (status 62): pt=116.356 eta=-3.74787 phi=1.01139 idx=[514] | net b+bbar: |sum pT|=25.0768 (px=16.727 py=18.6829) scalar sum pT=208.1
   stage 4: b quark [824] pt=91.7437 -> primary hadron [829] pdg=-521 pt=94.2789 dR=0.00887172
   stage 4: bbar quark [964] pt=116.356 -> primary hadron [968] pdg=523 pt=114.174 dR=0.00134803
@@ -378,7 +378,7 @@ Status 2 (decayed by Pythia8), 302 in total:
 
 ```
 pi0 131 | rho0 25, rho+ 21, rho- 14 (60) | K0bar 21, K0 12 (33) | omega 18 | eta 17 | K*- 7, K*0bar 6, K*0 4, K*+ 2 (19)
-eta' 3 | phi 1 | Delta0 2, Delta+ 1, Delta++ 1, Delta- 1, Sigma*-bar 1, Sigma*0 1, Sigma*+bar 1, Sigma*0bar 1, Sigma0bar 1 (10)
+eta' 3 | phi 1 | Delta0 2, Delta-bar 1, Delta++ 1, Delta- 1, Sigma*-bar 1, Sigma*0 1, Sigma*+bar 1, Sigma*0bar 1, Sigma0bar 1 (10)
 D0bar 2, D0 2, D*+ 1, D0*0 1, D*0bar 1 (7) | B- 1, B*+ 1, B+ 1 (3)
 ```
 
@@ -388,8 +388,11 @@ Status 1 (stable), 634 in total:
 
 ```
 gamma 273 | pi- 134, pi+ 127 (261) | K0L 22 | K+ 16, K- 13 (29) | K0S 13 | p 8, pbar 3 (11) | n 7, nbar 6 (13)
-Lambdabar 5, Lambda 3 (8) | Sigma+bar 2 | nu_ebar 1 | e- 1
+Lambdabar 5, Lambda 3 (8) | Sigma-bar 2 | nu_ebar 1 | e- 1
 ```
+
+(the two `Sigma-bar` are pdg -3112, charge +1, Pythia8's `Sigmabar+`: the antiparticle of the Sigma-, c tau0 = 44.34 mm;
+the `Delta-bar` of the status-2 list is pdg -1114.)
 
 Photons: 273 in total, E = 2875.9 GeV; 262 from pi0 (E = 2703.2 GeV); 8 from eta; 3 others (one each from the
 B*+, a D*0bar and a Sigma0bar). Photons + charged pions = 534 / 634 = 84%; photon energy / 13600 = 21%.

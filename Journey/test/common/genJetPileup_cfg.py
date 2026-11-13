@@ -4,24 +4,24 @@
 # GenJetAnalyzer draws the jets over signal (circles) and pileup (triangles) particles, one page per
 # jet collection, with the pileup pT of every jet.
 #
-#   cmsRun genJetPileup_cfg.py inputFiles=file:GEN/step1_GEN_ME_PS_MPI_Had_Decay_out.root \
-#          pileupFiles=file:PU_2024/step1_GEN_MinBias_out.root eventsToProcess=1:1:1 nPileup=55 skipPileup=66 \
-#          pdfFile=PU_2024/genJetPileup_out.pdf
+#   cd test/08_PU/out && cmsRun ../../common/genJetPileup_cfg.py inputFiles=file:../../07_GenJet/out/step2_GENJET_07_GenJet.root \
+#          pileupFiles=file:step1_GEN_MinBias_08_PU.root eventsToProcess=1:1:1 nPileup=68 skipPileup=71 \
+#          pdfFile=genJetPileup_08_PU.pdf          (the full command, with every option, is in test/08_PU/run_08_PU.sh)
 #
 # nPileup collisions are read in sequence from the library file(s) after the first skipPileup
 # events (pileupType=fixed; pileupType=poisson draws the number from Poisson(nPileup) with seed
-# pileupSeed), so that the in-time collisions of the DIGI mixing of runPileup_mc2024_BBbar.sh
-# (bunch crossing 0: the library events after those of the early bunch crossings) can be
+# pileupSeed), so that the in-time collisions of the mixing of chapters 10 and 11 (bunch crossing 0: the
+# library events after those of the early bunch crossings) can be
 # reproduced exactly. The merged genParticles (collisionId 0 = signal, 1..n = the pileup
 # collisions) and the jets are written to edmOutput (if set), the histograms to outputFile.
 import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 
 options = VarParsing('analysis')
-options.inputFiles = 'file:GEN/step1_GEN_ME_PS_MPI_Had_Decay_out.root'
+options.inputFiles = 'file:../../07_GenJet/out/step2_GENJET_07_GenJet.root'  # the signal of chapter 07, from test/08_PU/out
 options.outputFile = 'genJetPileup.root'
 options.maxEvents = -1
-options.register('pileupFiles', 'file:PU_2024/step1_GEN_MinBias_out.root', VarParsing.multiplicity.list, VarParsing.varType.string,
+options.register('pileupFiles', 'file:step1_GEN_MinBias_08_PU.root', VarParsing.multiplicity.list, VarParsing.varType.string,
                  'GEN file(s) of the minimum-bias library (generatorSmeared HepMCProduct)')
 options.register('eventsToProcess', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'signal event(s), e.g. 1:1:1 (empty: all)')

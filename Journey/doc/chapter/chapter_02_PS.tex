@@ -1,4 +1,4 @@
-% chapter_02_PS.tex -- JitJet chapter 02: the parton shower. \input by doc/JitJet.tex (Rule D).
+% chapter_02_PS.tex -- JitJet chapter 02: the parton shower. \input by doc/JitJetSW.tex (Rule D).
 % Every number is from test/02_PS/out/ (ledger_02_PS.txt, genPartAnalyzer_02_PS.log, step1_GEN_02_PS.log) or
 % test/01_ME/out/ and test/04_MPI/out/ for the comparisons; the companion doc/chapter/chapter_02_PS.md lists them in full.
 \chapter{02 -- PS: the parton shower dresses the $b$ quark with gluons}
@@ -122,10 +122,10 @@ or 53 (incoming). The last column is the vector sum of the \pt{} of the two daug
 branching & radiator (idx, st) & $\pt$ [GeV] & daughters (idx, st) & $\pt$ [GeV] & recoiler (idx $\to$ copy, st) & $|\sum\vec\pt|$ \\
 \midrule
 1 & $b$ (5, 23) & 113.22 & $b$ (6, 51), $g$ (7, 51) & 47.70, 65.58 & incoming $u$ (3 $\to$ 8, 53) & 113.22 \\
-2 & $g$ (7, 51) & 65.58 & $g$ (9, 51), $g$ (10, 51) & 61.70, 4.11 & incoming $u$ (8 $\to$ 11, 53) & 65.68 \\
-3 & $g$ (10, 51) & 4.11 & $d$ (12, 51), $\bar d$ (13, 51) & 2.46, 7.66 & $g$ (9 $\to$ 14, 52) & 10.10 \\
+2 & $g$ (7, 51) & 65.58 & $g$ (9, 51), $g$ (10, 51) & 61.70, 4.11 & incoming $u$ (8 $\to$ 11, 53) & 65.58 \\
+3 & $g$ (10, 51) & 4.11 & $d$ (12, 51), $\bar d$ (13, 51) & 2.46, 7.66 & $g$ (9 $\to$ 14, 52) & 10.07 \\
 4 & $g$ (14, 52) & 55.60 & $g$ (15, 51), $g$ (16, 51) & 51.94, 5.02 & $\bar d$ (13 $\to$ 17, 52) & 56.95 \\
-5 & $g$ (15, 51) & 51.94 & $g$ (18, 51), $g$ (19, 51) & 43.12, 9.66 & $b$ (6 $\to$ 20, 52) & 52.76 \\
+5 & $g$ (15, 51) & 51.94 & $g$ (18, 51), $g$ (19, 51) & 43.12, 9.65 & $b$ (6 $\to$ 20, 52) & 52.76 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -149,8 +149,9 @@ $b$, the gluon of $43.2\GeV$ is at $0.161$. A jet of radius 0.4 drawn around the
 measure $113.6\GeV$: the shower did not change the jet, it changed what the jet is made of. The analyzer sees it
 from the other side: its ``net $b+\bar b$'' is the vector sum of the two \emph{quarks} and jumps from
 $0.0$ to $66.4\GeV$, with a scalar sum of $160.1\GeV$ instead of $226.4\GeV$. That imbalance is the radiation
-that is still in the record, six entries lower; the vector sum of the $b$ system and the $\bar b$ is $0.6\GeV$, the
-rest being the primordial $k_\mathrm{T}$ and the recoil of the incoming $u$. The $\bar b$ at $\eta = -3.75$ radiated
+that is still in the record, six entries lower; the vector sum of the $b$ system and the $\bar b$ is $0.6\GeV$, all
+of it the primordial $k_\mathrm{T}$ added with the beam remnants (the recoil taken by the incoming $u$ is
+longitudinal: the shower copies of the $b$ system balance the $\bar b$ exactly). The $\bar b$ at $\eta = -3.75$ radiated
 nothing: in a shower every emission is a random draw against the Sudakov factor, and a $b$ quark of $113\GeV$ has a
 sizeable probability to emit nothing above the cut-off. The same holds for the ISR: the evolution from $113.3\GeV$
 down to the cut-off happened to produce no emission. One reason it is not rare here is kinematic: the $u$ carries
@@ -177,7 +178,8 @@ what a shower does, isolated; the shower that the detector will see is the one o
 \code{genPartAnalyzer\_01\_ME.log}) and after the shower (\code{test/02\_PS/out/ledger\_02\_PS.txt},
 \code{genPartAnalyzer\_02\_PS.log}). $E$ and \pt{} are sums over the final-state (status 1) particles of the region;
 the whole event is $13600\GeV$ in both. The $b$ and $\bar b$ rows are the last quark copies the analyzer follows
-(status 23 before, status 52 and 23 after); the $b$ system row is the $b$ with its five radiated partons.}
+(status 23 before, status 52 and 23 after); the $b$ system row is the vector sum of the status-1 $b$, alone before
+and with its five radiated partons after. The differences are computed before rounding.}
 \label{tab:02_PS_ledger}
 \begin{tabular}{lrrr}
 \toprule
@@ -188,18 +190,19 @@ entries in \code{genParticles} & 14 & 34 & $+20$ \\
 \quad FSR (status 51--59) & 0 & 15 & $+15$ \\
 \quad ISR (status 41--49) & 0 & 0 & 0 \\
 \quad beam remnants (status 61--69) & 2 & 2 & 0 \\
+\quad beam protons (status 4) & 2 & 2 & 0 \\
 \quad final state (status 1) & 6 & 11 & $+5$ \\
 \midrule
 final-state energy, all [GeV] & 13600.0 & 13600.0 & 0.0 \\
-final-state scalar \pt, all [GeV] & 228.6 & 230.7 & $+2.1$ \\
-$\abseta < 2.5$: $n$ / $E$ / \pt{} [GeV] & 1 / 253.1 / 113.6 & 6 / 256.9 / 113.7 & $+5$ / $+3.8$ / $+0.1$ \\
-$3.0 < \abseta < 5.2$: $n$ / $E$ / \pt{} [GeV] & 2 / 2423.7 / 113.0 & 1 / 2413.9 / 114.0 & $-1$ / $-9.8$ / $+1.0$ \\
-$\abseta > 5.5$: $n$ / $E$ / \pt{} [GeV] & 3 / 10923.1 / 2.1 & 4 / 10929.2 / 2.9 & $+1$ / $+6.1$ / $+0.8$ \\
-visible ($\abseta < 5.2$): $n$ / $E$ [GeV] & 3 / 2676.9 & 7 / 2670.8 & $+4$ / $-6.1$ \\
+final-state scalar \pt, all [GeV] & 228.6 & 230.7 & $+2.0$ \\
+$\abseta < 2.5$: $n$ / $E$ / \pt{} [GeV] & 1 / 253.1 / 113.6 & 6 / 256.9 / 113.7 & $+5$ / $+3.8$ / $+0.2$ \\
+$3.0 < \abseta < 5.2$: $n$ / $E$ / \pt{} [GeV] & 2 / 2423.7 / 113.0 & 1 / 2413.9 / 114.0 & $-1$ / $-9.8$ / $+1.1$ \\
+$\abseta > 5.5$: $n$ / $E$ / \pt{} [GeV] & 3 / 10923.1 / 2.1 & 4 / 10929.2 / 2.9 & $+1$ / $+6.0$ / $+0.8$ \\
+visible ($\abseta < 5.2$): $n$ / $E$ [GeV] & 3 / 2676.9 & 7 / 2670.8 & $+4$ / $-6.0$ \\
 \midrule
 $b$ quark \pt{} [GeV] & 113.2 & 46.9 & $-66.3$ \\
 $\bar b$ quark \pt{} [GeV] & 113.2 & 113.2 & 0.0 \\
-$b$ system ($b$ + radiation) vector \pt{} [GeV] & 113.2 & 113.6 & $+0.4$ \\
+$b$ system ($b$ + radiation) vector \pt{} [GeV] & 113.6 & 113.6 & 0.0 \\
 net $|\vec\pt(b) + \vec\pt(\bar b)|$ [GeV] & 0.0 & 66.4 & $+66.4$ \\
 scalar $\pt(b) + \pt(\bar b)$ [GeV] & 226.4 & 160.1 & $-66.3$ \\
 \bottomrule

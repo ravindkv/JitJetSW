@@ -49,7 +49,8 @@ Pythia8 does not run the showers and then the MPI: it runs ISR, FSR and MPI in o
 MPI on, the random numbers are consumed in a different order from the first MPI trial on, and every later
 emission is a different draw. Table~\ref{tab:04_shower} shows the result: the shower of chapter~\ref{ch:02_PS}
 had no ISR and five FSR emissions, the $b$ lost more than half of its \pt{} to its radiation ($113.2\to46.9\GeV$)
-and the $\bar b$ did not radiate at all; the shower inside this event has 28~ISR and 64~FSR emissions, the $b$
+and the $\bar b$ did not radiate at all; the event of this chapter has 28~ISR and 64~FSR emissions, but only 2
+and 10 of them in the shower of the hard process (the others are the showers of the 31~MPI), and the $b$
 ends at $91.6\GeV$ and the $\bar b$ at $118.6\GeV$. Neither is ``more right''; they are two draws of the same
 probability distribution. The shower of this chapter is the one that stays: chapters~\ref{ch:05_Had}
 and~\ref{ch:06_Decay} are identical to it at parton level.
@@ -60,25 +61,31 @@ and~\ref{ch:06_Decay} are identical to it at parton level.
 hard process, same seeds. The $b$ and $\bar b$ are their last shower copies (status 52; status 23 for the
 $\bar b$ of chapter~\ref{ch:02_PS}, which did not radiate). Emission counts from the Pythia8 ``Info Listing''
 of \code{step1\_GEN\_02\_PS.log} and \code{step1\_GEN\_04\_MPI.log} (its ``Number of MPI'' includes the hard
-process), the rest from \code{genPartAnalyzer\_02\_PS.log} and \code{genPartAnalyzer\_04\_MPI.log}.}
+process; they count the emissions of the whole event), the rest from \code{genPartAnalyzer\_02\_PS.log} and
+\code{genPartAnalyzer\_04\_MPI.log}; the split by scattering (each emission followed to the scattering it belongs
+to) from FWLite on \code{step1\_GEN\_04\_MPI.root}. The analyzer draws at stage 2 also the initial-state
+emissions of the MPI and their radiation, whose mother is an incoming parton.}
 \label{tab:04_shower}
 \begin{tabular}{lrrr}
 \toprule
 after the parton shower (stage 2) & chapter 02 & chapter 04 & difference \\
 \midrule
 ISR emissions & 0 & 28 & $+28$ \\
+\quad of which in the shower of the hard process & 0 & 2 & $+2$ \\
 FSR emissions & 5 & 64 & $+59$ \\
+\quad of which in the shower of the hard process & 5 & 10 & $+5$ \\
 MPI (Pythia8 count, hard process included) & 1 & 32 & $+31$ \\
 partons drawn at stage 2 & 7 & 57 & $+50$ \\
+\quad of which from the hard process and its shower & 7 & 14 & $+7$ \\
 $b$: \pt{} [GeV] & 46.88 & 91.59 & $+44.71$ \\
 $\bar b$: \pt{} [GeV] & 113.22 & 118.57 & $+5.35$ \\
-$|\vec\pt(b)+\vec\pt(\bar b)|$ [GeV] (recoil against the radiation) & 66.40 & 27.29 & $-39.11$ \\
+$|\vec\pt(b)+\vec\pt(\bar b)|$ [GeV] (recoil against the radiation) & 66.40 & 27.29 & $-39.12$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{plainwords}[Interleaved evolution]
-Pythia8 orders ISR, FSR and MPI in one falling \pt{} scale, starting at the hard scale ($113.2\GeV$ here, the
+Pythia8 orders ISR, FSR and MPI in one falling \pt{} scale, starting at the hard scale ($113.3\GeV$ here, the
 ``Max \pt{} scale'' of the log) and stopping at the shower cut-off and at the MPI regulator. At each step the
 three candidates propose a \pt, the highest wins, and the event is updated before the next step. The MPI
 switch changes the shower not because the physics of ISR or FSR changed but because the sequence of random draws
@@ -100,7 +107,7 @@ interactions on average (median 3, maximum 39).\footnote{\code{test/08\_PU/out/g
 interactions are soft: figure~\ref{fig:04_mpipt} gives the \pt{} of the outgoing pair of each of the 31, from
 $6.65\GeV$ ($s\,g\to s\,g$) down to $0.24\GeV$; 18 of the 31 are below $1\GeV$ and only five above $4\GeV$.
 Their 62 outgoing partons are 39 gluons, 11 $u$, 7 $d$, 4 $s$ and one $c$ (quark or antiquark), from incoming
-partons with momentum fractions $x$ between $2.9\times10^{-7}$ and $0.24$ (median $3.0\times10^{-3}$): the
+partons with momentum fractions $x$ between $2.9\times10^{-7}$ and $0.24$ (median $2.9\times10^{-3}$): the
 sea of the two protons at small $x$, where gluons dominate.\footnote{FWLite on \code{step1\_GEN\_04\_MPI.root};
 the list is in section 4 of the companion.}
 
@@ -109,7 +116,7 @@ the list is in section 4 of the companion.}
 \begin{tikzpicture}[x=1.6cm, y=0.22cm]
 \draw[->] (0,0) -- (5.4,0) node[right, font=\small] {$\pt$ of the pair [GeV]};
 \draw[->] (0,0) -- (0,14) node[above, font=\small] {interactions};
-\histbar{0}{6}\histbar{1}{12}\histbar{2}{3}\histbar{3}{5}\histbar{4}{5}
+\histbar{0}{7}\histbar{1}{11}\histbar{2}{3}\histbar{3}{5}\histbar{4}{5}
 \foreach \x/\l in {0/$<0.5$, 1/0.5--1, 2/1--2, 3/2--4, 4/$>4$} \node[below, font=\small] at (\x+0.5,0) {\l};
 \foreach \y in {5,10} \draw (0.1,\y) -- (-0.1,\y) node[left, font=\scriptsize] {\y};
 \end{tikzpicture}
@@ -154,8 +161,8 @@ $k_\mathrm{T}$ of $1.09\GeV$ (median $0.77\GeV$, largest $3.89\GeV$).\footnote{F
 \code{step1\_GEN\_04\_MPI.root}, status-61 entries.} The outgoing partons of each interaction are then copied
 with the kick included: the $b$ goes from $\pt=91.59$ to $91.74\GeV$, the $\bar b$ from 118.57 to
 $116.36\GeV$, and the net $|\vec\pt(b)+\vec\pt(\bar b)|$ from 27.29 to $25.08\GeV$. In this file these final
-copies have no daughters, so they are the status-1 partons of the record; in chapter~\ref{ch:05_Had}, where
-they fragment, the same copies appear as status 62 (the analyzer still reports the status-52 copies, 91.59 and $118.57\GeV$, the last with a stage code).
+copies have no daughters, so they are the status-1 partons of the record, the ones page~3 of the analyzer draws;
+in chapter~\ref{ch:05_Had}, where they fragment, the same copies appear as status 62.
 
 \paragraph{Colour reconnection.}
 With 32 interactions the event has 32 colour-connected systems stretched between the two remnants. Pythia8's
@@ -175,19 +182,19 @@ two hardest, 416 and $350\GeV$, are at $\eta=7.0$ and $-7.3$, in the beam pipe.\
 \code{step1\_GEN\_04\_MPI.root}: the status-1 partons whose mother is a beam proton (status 4). In chapter~\ref{ch:05_Had}
 the same 13 partons carry status 63.} Energy and momentum are conserved exactly: the 169 final-state partons sum
 to $E=13\,600.0\GeV$ and $\sum\vec\pt=0$, because the remnants take what the interactions did not, and the
-primordial-$k_\mathrm{T}$ recoil is given to them. Of the $13.6\TeV$, $4274.7\GeV$ sits in the 57 partons of
-the hard process and its showers, $7542.4\GeV$ in the 99 partons of the MPI and their showers, and
-$1783.0\GeV$ in the remnants; the hard system has $326.6\GeV$ of scalar \pt, the MPI $148.1\GeV$, the remnants
+primordial-$k_\mathrm{T}$ recoil is given to them. Of the $13.6\TeV$, $2862.2\GeV$ sits in the 14 partons of
+the hard process and its showers, $8954.8\GeV$ in the 142 partons of the MPI and their showers, and
+$1783.0\GeV$ in the remnants; the hard system has $266.8\GeV$ of scalar \pt, the MPI $207.9\GeV$, the remnants
 $6.5\GeV$.
 
 \paragraph{What reaches the two $b$ jets.}
 For the jet chapters, how much MPI activity lands near the $b$ and $\bar b$? Inside
 $\Delta R<0.4$ of the $b$ (status 52, $\eta=-1.57$, $\phi=-2.08$) the final-state partons from the hard process
-and its showers carry $126.6\GeV$ of \pt{} and those from the MPI $0.9\GeV$; around the $\bar b$ the numbers
-are 116.4 and $0.8\GeV$. In the tracker acceptance, $\abseta<2.5$, the 80 final-state partons are 44 from the
-hard system ($190.9\GeV$ of \pt), 35 from the MPI ($63.3\GeV$) and one remnant quark ($0.3\GeV$): the underlying
-event of this collision is a quarter of the central \pt, spread over the whole $\eta$--$\phi$ plane, and less
-than one per cent inside the jet cones.
+and its showers carry $120.6\GeV$ of \pt{} and those from the MPI $6.9\GeV$; around the $\bar b$ the numbers
+are 116.4 and $0.8\GeV$. In the tracker acceptance, $\abseta<2.5$, the 80 final-state partons are 13 from the
+hard system ($150.5\GeV$ of \pt), 66 from the MPI ($103.8\GeV$) and one remnant quark ($0.3\GeV$): the underlying
+event of this collision is two fifths of the central \pt, spread over the whole $\eta$--$\phi$ plane, 5\% of
+the \pt{} inside the cone of the $b$ and less than one per cent inside that of the $\bar b$.
 
 \section{Ledger and display}
 
@@ -197,9 +204,10 @@ Table~\ref{tab:04_ledger} closes the ledger of the stage against chapter~\ref{ch
 chapter~\ref{ch:02_PS} sat with $10\,929\GeV$, into $3.0<\abseta<5.2$ ($+2493.5\GeV$, the MPI partons and their
 showers at small $x$) and the tracker ($+385.2\GeV$); the visible energy doubles from 2670.8 to $5740.0\GeV$, and
 $2.5<\abseta<3.0$, empty before, receives 17 partons and $190.5\GeV$. Figure~\ref{fig:04_display} is the
-$\eta$--$\phi$ display at the end of the stage: 169 partons, 61 from the MPI and 13 remnants next to the
-2 + 26 + 67 of the hard process and its showers (the analyzer's legend attributes every radiated parton to the
-process that created its ancestor).
+$\eta$--$\phi$ display at the end of the stage: 169 partons, in the analyzer's legend 61 MPI partons and 13
+remnants next to the $b$, the $\bar b$, 26 ISR and 67 FSR partons. The legend labels an emitted parton by the
+shower that emitted it, whatever scattering it belongs to (only copies and radiators keep the label of their
+mother): by scattering, 14 of the 169 belong to the hard process and its showers and 142 to the MPI.
 
 \begin{table}[htb]
 \centering\small
@@ -238,13 +246,15 @@ final state (status 1), all partons & 11 & 13600.0 & 230.7 & 169 & 13600.0 & 481
 \includegraphics[width=\textwidth]{04_MPI/out/genPartAnalyzer_04_MPI_page-2.png}\\[6pt]
 \includegraphics[width=\textwidth]{04_MPI/out/genPartAnalyzer_04_MPI_page-3.png}
 \caption{The event of this chapter in the $\eta$--$\phi$ plane (\code{genPartAnalyzer\_04\_MPI.pdf}, pages 2 and 3;
-marker size grows with $\log\pt$, the \pt{} is written for $\pt>5\GeV$). Top: after the parton shower inside the
-MPI event (57 partons: the $b$ at $91.6\GeV$, the $\bar b$ at $118.6\GeV$, 26 ISR and 29 FSR partons); compare
-with the shower of chapter~\ref{ch:02_PS}, which has 7. Bottom: the end of the parton level, 169 partons; the
-61 partons from the multiparton interactions (cyan squares) are soft and spread over the whole plane, the 13
-beam remnants (grey diamonds) sit at large $\abseta$, 19 partons beyond $\abseta=6$ are drawn as crosses on the
-border. The magenta star is the vector sum $\vec\pt(b)+\vec\pt(\bar b)$, $27.3\GeV$, the recoil of the \bbbar{}
-pair against its radiation.}
+marker size grows with $\log\pt$, the \pt{} is written for $\pt>5\GeV$). Top: after the parton shower of the
+hard process (14 partons: the $b$ at $91.6\GeV$, the $\bar b$ at $118.6\GeV$, one ISR and 11 FSR partons; the
+showers of the multiparton interactions belong to stage 3); compare with the shower of chapter~\ref{ch:02_PS},
+which has 7. Bottom: the end of the parton level, 169 partons with their primordial $k_\mathrm{T}$ (the $b$ at
+$91.7\GeV$, the $\bar b$ at $116.4\GeV$); the 61 partons from the multiparton interactions (cyan squares) are soft
+and spread over the whole plane, 11 of the 13 beam remnants (grey diamonds) sit at $\abseta>3.5$, 16 partons
+beyond $\abseta=6$ are drawn as crosses on the border. The magenta star is the vector sum
+$\vec\pt(b)+\vec\pt(\bar b)$, the recoil of the \bbbar{} pair against its radiation: $27.3\GeV$ after the shower,
+$25.1\GeV$ with the primordial $k_\mathrm{T}$.}
 \label{fig:04_display}
 \end{figure}
 

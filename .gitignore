@@ -28,6 +28,7 @@ Journey/doc/tmp
 Journey/test/tmp
 
 Journey/test/12_L1T/out
+Journey/test/12_L1T/out2024
 Journey/test/12_L1T/*.log
 Journey/test/13_HLT/out
 Journey/test/13_HLT/*.log

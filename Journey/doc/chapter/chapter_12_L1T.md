@@ -52,6 +52,26 @@ The three customise lines.
 3. `process.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')`: the event of the book; the DIGI file of
    chapter 11 holds only that event, the line is a safeguard.
 
+### The 2024 comparison run (Rule I3)
+
+```bash
+./12_L1T/run_12_L1T_2024.sh            # after run_12_L1T.sh; REUSE=1 keeps the ROOT files of out2024/, ANALYZE=0 only the cmsRun jobs
+```
+
+It runs four `cmsDriver.py` configurations, written next to the script, with the output in `test/12_L1T/out2024/`:
+
+| configuration | what it is |
+|---|---|
+| `step3_DIGI_mixed_2024_12_L1T_cfg.py` | the mixed DIGI of `run_11_DIGI.sh` (`-s DIGI:pdigi_valid`, the same `--pileup`, `--pileup_input` and playback lines) with `--conditions auto:phase1_2024_realistic --era Run3_2024` -> `step3_DIGI_mixed_11_DIGI.root` |
+| `step4_L1_2024_12_L1T_cfg.py` | the L1 step of this chapter (the same three lines) with the 2024 settings on that file -> `step4_L1_12_L1T.root` |
+| `step4_CICADA_input2024_v2p2p0_12_L1T_cfg.py` | the L1 step on the 2024 input with `process.simCaloStage2Layer1Summary.CICADAModelVersion = 'CICADAModel_v2p2p0'` (the model of 2025), keeping only `simCaloStage2Layer1Summary` -> `cicada_input2024_v2p2p0.root` |
+| `step4_CICADA_input2025_v2p1p2_12_L1T_cfg.py` | the L1 step on the 2025 input of chapter 11 with the 2025 settings and the model of 2024, `CICADAModel_v2p1p2` -> `cicada_input2025_v2p1p2.root` |
+
+then the analyzers, `l1tSettings.py`, `l1tTruth.py` and `l1tLedger.py` as `run_12_L1T.sh` does (the same file names, in
+`out2024/`), and `test/12_L1T/yearCompare_12_L1T.py` (FWLite, `conddb list` and `conddb dump` of the ECAL payloads;
+the dumps go to a temporary directory) -> `out2024/compare_12_L1T.txt`. The numbers are in section 4, "The 2024 and the
+2025 settings".
+
 ## 2. The cmsRun on the python config
 
 ```bash
@@ -479,13 +499,15 @@ GEM pads                                         11
 GEM pad clusters                                  7
 stubs given to the EMTF                          16
    of which neighbour copies                      4
+   of which copies with no own-sector twin        1
+distinct stubs (drawn)                           13
 EMTF tracks                                       2
 BMTF (Kalman) candidates, all bx / bx 0         0/0
 OMTF candidates                                 0/0
 EMTF candidates                                 2/2
 uGMT muons                                        1
 muon showers                                      0
-EMTF input stubs: all=16 neighbourCopies=4 CSC=8 (bx0 6) RPC=4 (bx0 2) GEM=0 (bx0 0)
+EMTF input stubs: all=16 neighbourCopies=4 copiesWithoutTwin=1 distinct=13 CSC=8 (bx0 6) RPC=5 (bx0 3) GEM=0 (bx0 0)
 EMTFHit: subsystem=CSC endcap=1 station=1 ring=4 sector=2 chamber=11 bx=0 neighbour=0 eta=2.35422 phi=1.71534 rho=118.004 z=615.68 quality=3 pattern=8
 EMTFHit: subsystem=RPC endcap=-1 station=3 ring=2 sector=1 chamber=7 bx=-2 neighbour=0 eta=-1.483 phi=1.0718 rho=466.691 z=-975.2 quality=1 pattern=0
 EMTFHit: subsystem=CSC endcap=-1 station=1 ring=4 sector=6 chamber=2 bx=0 neighbour=1 eta=-2.20308 phi=0.198793 rho=131.146 z=-586.38 quality=5 pattern=6
@@ -510,8 +532,13 @@ uGMT muon: bx=0 pt=3 eta=-2.088 phi=-2.87989 charge=-1 quality=15 iso=3 etaAtVtx
 truth: genMuons(pt>1)=0 genJets(pt>30)=2
 ```
 
-The EMTF received 16 stubs of which 4 are neighbour copies: 12 distinct ones, 8 CSC and 4 RPC, 8 of them in bunch
-crossing 0 (6 CSC, 2 RPC). Steps 4 and 5 are identical, line for line, to those of the 2024 run. `pt = (hwPt - 1) x 0.5 GeV`, `eta = hwEta x 0.010875`, global phi =
+The EMTF received 16 stubs of which 4 are neighbour copies: 12 in their own sector, 8 CSC and 4 RPC, 8 of them in
+bunch crossing 0 (6 CSC, 2 RPC). Three of the copies repeat stubs of these 12 (CSC station 1 ring 4 chamber 2 of
+sector 6, station 1 ring 1 chamber 20 and station 2 ring 1 chamber 10 of sector 3); the fourth (RPC station 4 ring 3
+chamber 32 of sector 5, bx 0, eta -1.24) has no own-sector entry: 13 distinct stubs, 8 CSC and 5 RPC, 9 in bunch
+crossing 0. `L1TMuonAnalyzer` counts and draws a copy only when no stub of the same chamber, bunch crossing and
+position arrives in its own sector (until 13 November 2026 it skipped every copy, and this RPC hit was missing from
+the counts and the displays). Steps 4 and 5 are identical, line for line, to those of the 2024 run. `pt = (hwPt - 1) x 0.5 GeV`, `eta = hwEta x 0.010875`, global phi =
 (processor x 96 + hwPhi + 24) x 2 pi / 576 for the OMTF and EMTF (`l1t::MicroGMTConfiguration::calcGlobalPhi`). EMTF
 mode: bit 8 ME1, 4 ME2, 2 ME3, 1 ME4. The extrapolation to the vertex moves the muon from phi = -2.880 to 3.098, that
 is by 2 pi - 2.880 - 3.098 = 0.31.
@@ -824,7 +851,17 @@ The Phase-2 files quoted in B5, relative to `$CMSSW_RELEASE_BASE/src`:
 
 The chapter was written on 11 November 2026 with the 2024 settings (`auto:phase1_2024_realistic`, `Run3_2024`) and
 rerun on 12 November 2026 with those of 2025 (Rule I of the Constitution), on the DIGI file of chapter 11 remade with
-the 2025 settings. The 2024 outputs were kept aside and compared file by file. What changed for this chapter:
+the 2025 settings. The 2024 run is kept in the repository (since 13 November 2026): `test/12_L1T/run_12_L1T_2024.sh`
+remakes the mixed DIGI of chapter 11 and the L1 step with `auto:phase1_2024_realistic` and `Run3_2024` on the same
+SimHits and collisions (MixingModule playback) into `test/12_L1T/out2024/` (`step3_DIGI_mixed_11_DIGI.root`,
+`step4_L1_12_L1T.root`, `l1t_12_L1T.log`, `ledger_12_L1T.txt`, `truth_12_L1T.txt`, `settings_12_L1T.txt`), runs the L1
+step once more on each input with the CICADA model of the other year (`cicada_input2024_v2p2p0.root`,
+`cicada_input2025_v2p1p2.root`), and compares the two years with `test/12_L1T/yearCompare_12_L1T.py`
+(`out2024/compare_12_L1T.txt`: (1) the ledger lines that differ, (2) the ECAL primitives by tower ring, (3) the
+algorithms that fire, (4) the CICADA scores, (5) the ECAL conditions by tower ring, (6) the menus and the fired
+algorithms classified). Every 2024 number below and in the chapter is in these files; the 13 November run reproduces
+the first, 2024 version of the chapter line for line (ledger, CICADA scores, fired algorithms). Cost: about two
+minutes. What changed for this chapter:
 
 | what | 2024 | 2025 | where it acts |
 |---|---|---|---|
@@ -839,7 +876,7 @@ muon payloads, the pass-through prescales, `HcalTPParameters_2019_v1.0_mc`, `Hca
 modules of `SimL1Emulator` and every other parameter of `settings_12_L1T.txt`. The input changed as well: the digis and
 the primitives of chapter 11 were made with the 2025 calorimeter conditions (chapter 11 compares them).
 
-The event, step by step (`ledger_12_L1T.txt` of the two runs; GeV):
+The event, step by step (`out2024/ledger_12_L1T.txt` and `out/ledger_12_L1T.txt`; `out2024/compare_12_L1T.txt`; GeV):
 
 | | 2024 | 2025 |
 |---|---|---|
@@ -859,7 +896,7 @@ The event, step by step (`ledger_12_L1T.txt` of the two runs; GeV):
 | e/gamma, tau: number, largest | 12 (15.5 at eta 2.52), 12 (59.5) | 12 (7.5 at eta -0.30), 12 (58.5) |
 | ETT / ETTEM / HTT | 1339.0 / 965.5 / 106.5 | 1086.0 / 730.0 / 108.5 |
 | ETM / ETMHF / HTM / HTMHF | 50.0 / 106.5 / 106.0 / 170.0 | 60.5 / 79.0 / 108.0 / 34.5 |
-| steps 4 and 5: stubs, EMTF candidates, muon | 8 CSC + 4 RPC, 2, one of 3.0 GeV (the pileup kaon) | identical |
+| steps 4 and 5: stubs, EMTF candidates, muon | 16 given, 13 distinct (8 CSC + 5 RPC), 2, one of 3.0 GeV (the pileup kaon) | identical |
 | step 6: algorithms fired (on an object; by the two signal jets alone) | 57 of 408 (49; 14) | 63 of 465 (55; 22) |
 | VBF `DoubleJet...Mass`, `ETMHF...`, `HTMHF...` fired | 8, 8, 5 | 0, 2, 0 |
 | CICADA score; thresholds of the menu | 181.7; 113, 116, 121, 127, 131 (5 fired) | 88.3; 50, 60, 70, 80, 90, 110, 125, 135 (4 fired) |
@@ -876,20 +913,28 @@ p from `EcalLaserAPDPNRatios` (2024: `..._2024_outliers_cleaned_3sigma_mc`, 2025
 `..._TL470fb_moy_2025_outliers_cleaned_3sigma_mc`), ref and alpha from `EcalLaserAPDPNRatiosRef_mc` and
 `EcalLaserAlphas_UL_Run1_Run2_2018_lastIOV_movedTo1` (the same in both tags). The trigger-primitive generator then
 multiplies the amplitude of every crystal by its linearisation factor mult_x12 / 2^shift_x12 of
-`EcalTPGLinearizationConst`. Averaged over the crystals of a tower ring (`conddb dump` of the payloads; for an endcap
-crystal the ring follows from its x, y index at z = 317 cm, an approximation near the ring boundaries):
+`EcalTPGLinearizationConst`. Averaged over the crystals of a tower ring (`out2024/compare_12_L1T.txt`, section (5):
+`conddb dump` of the payloads of the two global tags; the tower ring of a barrel crystal from `EBDetId`, of an endcap
+crystal from the crystal-to-tower map of the release, `Geometry/EcalMapping/data/EndCap_TTMap.txt`; the linear
+corrections `EcalLinearCorrections_mc` are 1 in both tags, and the light is (p/p_ref)^alpha as in
+`EcalLaserDbService::getLaserCorrection`):
 
 | tower ring | light delivered, 2024 | 2025 | linearisation factor, 2025 / 2024 | primitive per GeV deposited, 2025 / 2024 |
 |---|---|---|---|---|
 | 1 (barrel) | 0.809 | 0.701 | 1.087 | 0.94 |
 | 17 (barrel) | 0.652 | 0.557 | 1.132 | 0.96 |
-| 19 | 0.674 | 0.581 | 1.110 | 0.96 |
-| 22 | 0.480 | 0.399 | 1.173 | 0.97 |
-| 24 | 0.339 | 0.256 | 1.228 | 0.92 |
-| 25 | 0.269 | 0.189 | 1.253 | 0.88 |
-| 26 | 0.183 | 0.116 | 1.297 | 0.80 |
-| 27 | 0.130 | 0.053 | 1.388 | 0.54 |
-| 28 | 0.096 | 0.025 | 1.373 | 0.36 |
+| 19 | 0.663 | 0.572 | 1.113 | 0.96 |
+| 22 | 0.467 | 0.388 | 1.177 | 0.97 |
+| 23 | 0.386 | 0.319 | 1.198 | 0.99 |
+| 24 | 0.336 | 0.253 | 1.230 | 0.92 |
+| 25 | 0.267 | 0.188 | 1.257 | 0.88 |
+| 26 | 0.179 | 0.110 | 1.300 | 0.77 |
+| 27 | 0.123 | 0.051 | 1.357 | 0.54 |
+| 28 | 0.094 | 0.022 | 1.394 | 0.34 |
+
+(Rings 1 to 23, all in the file: 0.94 to 0.99. The first version of this table placed the endcap crystals in rings by
+their x, y position at z = 317 cm, an approximation near the ring boundaries; with the map of the release ring 28 is
+0.094 -> 0.022, x 1.394, 0.34, instead of 0.096 -> 0.025, x 1.373, 0.36.)
 
 The 2025 linearisation follows the additional transparency loss of the 2025 laser payload to within about 6 % up to
 ring 23, and not in the last rings: the same deposit gives in ring 28 a third of the primitive it gave in 2024, in
@@ -898,8 +943,9 @@ the larger linearisation factor. Whether the TPG constants of the 2025 tag are m
 not established (both payloads are named `TL470fb_moy`).
 
 The CICADA score. Both the model and its input changed. The L1 job was run once more on each input with each model
-(scratch jobs, only `simCaloStage2Layer1Summary` kept): 2024 input with `v2p1p2` 181.7, with `v2p2p0` 126.4; 2025
-input with `v2p1p2` 127.7, with `v2p2p0` 88.3. Each change alone lowers the score by 30 %, and the 2025 menu lowered
+(`out2024/cicada_input2024_v2p2p0.root`, `out2024/cicada_input2025_v2p1p2.root`, only `simCaloStage2Layer1Summary`
+kept; `out2024/compare_12_L1T.txt`, section (4)): 2024 input with `v2p1p2` 181.684, with `v2p2p0` 126.375; 2025
+input with `v2p1p2` 127.695, with `v2p2p0` 88.262. Each change alone lowers the score by 30 %, and the 2025 menu lowered
 the thresholds with the model.
 
 The HCAL. The HB primitives of the event go from 153 (129.5 GeV) to 233 (183.0 GeV); the payloads behind them that

@@ -36,8 +36,9 @@ $\sum E=13600.0\GeV$ and $\sum\pt=481.2\GeV$. This chapter regenerates the same 
 so the parton level is identical: the same 169 partons are in this file with status~62 (156 outgoing
 partons with their primordial $k_T$ included) and 63 (13 beam remnants), with the same $13600.0\GeV$ and
 $481.2\GeV$, the same $b$ quark ($\pt=91.74\GeV$, $\eta=-1.57$) and $\bar b$ ($116.36\GeV$, $\eta=-3.75$).
-Everything up to status~63 is kept. New in the record are 165 copies of the partons with status 71--79 (the
-partons as they enter the strings, reordered so that every colour singlet is contiguous) and the 320
+Everything up to status~63 is kept. New in the record are 165 entries with status 71--79, the partons as they
+enter the strings, reordered so that every colour singlet is contiguous (120 copies with status~71 and 45 partons
+with status~73, each made by joining two very nearby ones), and the 320
 primary hadrons: the record grows from 745 to 1230 entries. Gone is every free colour charge: the final
 state of this chapter has 169 charged and 151 neutral hadrons and not a single parton.
 
@@ -55,10 +56,11 @@ inherits them unchanged through the tune CP5.
 \section{The numbers of the event}
 \paragraph{The strings.}
 Grouping the 320 primary hadrons by the set of partons they descend from gives 26 colour singlets, from
-2 to 42 hadrons each (mean~12.3), listed in the companion. Twenty-two are ordinary strings with a quark at
+2 to 42 hadrons each (mean~12.3), listed in the companion. Twenty-one are ordinary strings with a quark at
 one end and an antiquark at the other, from a plain $q\bar q$ pair up to chains of 10, 17 and 18 gluons
 between the ends; two are \emph{junction} strings with three quark ends ($uud$ and $uds$), the leftovers of
-the two proton remnants; two are \emph{ministrings}, $q\bar q$ pairs of mass $1.3$ and $2.2\GeV$, too light to
+the two proton remnants; three are \emph{ministrings}, $q\bar q$ pairs of mass $1.0$, $1.3$ and $1.5\GeV$, less
+than \code{HadronLevel:mStringMin} $=1\GeV$ above the constituent masses of their two quarks, too light to
 fragment and turned directly into two hadrons each. The most energetic string carries $3630.7\GeV$ along the
 beam (a $u\bar d$ pair with 18 gluons, 42 hadrons); the heaviest has a mass of $1083.9\GeV$ (33 hadrons).
 Table~\ref{tab:05strings} gives the two strings of the hard process: the $b$ quark is colour connected
@@ -77,7 +79,7 @@ quark momenta of status~62, hadron momenta of the status-1 primary hadrons; $x_E
 string & quark \pt & quark $E$ & $M$ & $E$ & $n_{\rm had}$ & primary hadrons (GeV) \\
 \midrule
 $b\,g\,g\,g\,\bar s$ & 91.74 & 230.0 & 12.8 & 285.1 & 6 & $B^-$: $\pt=94.28$, $E=235.9$, $x_E=1.025$ \\
- & & & & & & $+\ \pi^0\,\pi^+\,\pi^0\,\pi^0\,K^0$ (\pt{} 0.1 to 7.2) \\
+ & & & & & & $+\ \pi^0\,\pi^+\,\pi^0\,\pi^0\,K^0$ (\pt{} 0.9 to 7.2) \\
 $d\,\bar b$ & 116.36 & 2469.9 & 99.6 & 2471.2 & 4 & $B^{*+}$: $\pt=114.17$, $E=2421.4$, $x_E=0.980$ \\
  & & & & & & $+\ \pi^-\,K^+\,K^{*-}$ (50 GeV between them) \\
 \bottomrule
@@ -97,14 +99,14 @@ out its momentum in many small steps, which is why the $u\bar d$ string of $3630
 hadron containing the heavy quark at the string end, $m_T^2\approx m_B^2\approx28\GeV^2$ makes the exponential
 kill all small $z$; in addition Pythia8 applies the Bowler modification for heavy quarks, an extra factor
 $1/z^{\,r_Q\,b\,m_Q^2}$ with $r_b=0.855$ (\code{StringZ:rFactB}) and the $b$ mass $m_b=4.8\GeV$ of the hard
-process. The result is a function that peaks near $z\approx0.8$--$0.9$ and vanishes at $z\to0$: the first
+process. The result is a function that peaks at $z\approx0.93$ (mean $0.89$, for $m_T=m_B$) and vanishes at $z\to0$: the first
 hadron produced at a $b$ end takes most of the string momentum, and the light hadrons that share the string
 with it are soft. The event shows exactly this. The $B^-$ carries $x_E=1.025$ of the energy of its $b$ quark
-and 83\% of the energy of the whole six-parton string ($235.9$ of $285.1\GeV$); it can carry \emph{more} than
+and 83\% of the energy of the whole five-parton string ($235.9$ of $285.1\GeV$); it can carry \emph{more} than
 its quark because the string also holds the three gluons and the $\bar s$ end, whose momentum is shared along
 the string. The $B^{*+}$ carries $x_E=0.980$ of its $\bar b$ and leaves $50\GeV$ to three light hadrons. Both $b$
 hadrons are within $\Delta R$ of $0.009$ and $0.001$ of their quark: hadronisation does not move the $b$
-direction, it only dresses it. The five light hadrons of the $b$ string have $\pt$ between $0.1$ and
+direction, it only dresses it. The five light hadrons of the $b$ string have $\pt$ between $0.9$ and
 $7.2\GeV$; within $\Delta R<0.4$ of the $B^-$ there are eight other primary hadrons with $\sum\pt=20.4\GeV$,
 within $\Delta R<0.4$ of the $B^{*+}$ a single $K^{*-}$ of $1.8\GeV$.
 
@@ -129,8 +131,9 @@ $e^+e^-$ data at the $Z$ pole.
 Table~\ref{tab:05species} counts the 320 primary hadrons: 286 mesons and 34 baryons, two of
 them with a $b$ quark and two with a $c$ quark (a $\bar D^0$ and a $D^{*+}$ from a $c\bar c$ pair created in the
 shower, with $\pt$ of only $2.0$ and $1.9\GeV$). The pions, charged and neutral, are 132; the vector mesons
-$\rho$ and $\omega$, 77, are as many as the charged pions, which is the vector-to-pseudoscalar ratio of 0.5 at
-work (two spin states for the pseudoscalar against six for the vector, suppressed by their mass); the
+$\rho$ and $\omega$, 77, are about half of the 149 light pseudoscalars ($\pi$, $\eta$, $\eta'$), which is the
+vector-to-pseudoscalar ratio of 0.5 at work (one spin state for the pseudoscalar against three for the vector,
+suppressed by their mass); the
 kaons and $K^*$, 56, reflect the strangeness suppression 0.217. The spectrum is soft: 124 hadrons have
 $\pt<0.5\GeV$, 226 have $\pt<1\GeV$, only 8 have $\pt>5\GeV$ and only the two $B$ hadrons exceed $10\GeV$.
 The transverse momentum of a light hadron comes from the Gaussian $\pt$ kick of each string break, of width
@@ -167,8 +170,9 @@ approximately, but string by string. String fragmentation takes the total four-m
 singlet and distributes it among its hadrons; the last two hadrons of every string are made together from
 whatever four-momentum is left (the ``final joining''), so that each string conserves energy and momentum
 by construction. In this event the 26 strings have $|\Delta E|<0.5\MeV$ each between their partons and
-their hadrons. What hadronisation does create is mass: the 169 partons had $\sum m=30.8\GeV$ (the two $b$
-quarks, the constituent masses of the remnants), the 320 hadrons have $\sum m=176.7\GeV$, taken from the
+their hadrons. What hadronisation does create is mass: the 169 partons had $\sum m=30.8\GeV$ ($9.6\GeV$ in the
+two $b$ quarks, $16.7\GeV$ in the 39 other quarks of the showers and the MPI, $4.5\GeV$ in the 13 remnant
+quarks; the gluons are massless), the 320 hadrons have $\sum m=176.7\GeV$, taken from the
 kinetic energy of the strings. Pythia8 then checks the sum over the whole event and would reject it if the
 mismatch exceeded \code{Check:epTolErr}, set to $0.01$ by CMS in
 \path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py} (Pythia8 default $10^{-4}$); the check never
@@ -234,8 +238,8 @@ visible, $\abseta<5.2$ & 147 & 5740.0 & 459.8 & 265 & 5779.2 & 476.9 & $+118$ & 
 \midrule
 $\sum m$ of the final state & & 30.8 & & & 176.7 & & & $+145.9$ & \\
 $b$ quark $\to$ $B^-$, \pt & & & 91.74 & & & 94.28 & & & $+2.54$ \\
-$\bar b$ quark $\to$ $B^{*+}$, \pt & & & 116.36 & & & 114.17 & & & $-2.19$ \\
-$|\vec\pt(b)+\vec\pt(\bar b)|$ & & & 25.08 & & & 20.30 & & & $-4.78$ \\
+$\bar b$ quark $\to$ $B^{*+}$, \pt & & & 116.36 & & & 114.17 & & & $-2.18$ \\
+$|\vec\pt(b)+\vec\pt(\bar b)|$ & & & 25.08 & & & 20.30 & & & $-4.77$ \\
 \bottomrule
 \end{tabular}
 \end{minipage}\end{center}
@@ -270,10 +274,13 @@ and SLD $e^+e^-$ data. \code{rFactB}, the Bowler parameter that fixes how much o
 takes, was fitted to the $B$-hadron energy fraction measured at the $Z$ pole and has never been set by CMS: not in
 CP5, not in its \code{TuneUp}/\code{TuneDown} variants (which vary only the MPI and CR parameters), not in the Run-3
 copy \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py} (which differs from the 2017 file only in
-\code{SigmaTotal:sigmaEl = 22.08}, \code{sigmaTot = 101.037}). The only CMS files that touch any string parameter
-are the colour-reconnection variants for the top-mass systematics, \path{MCTunes2017/PythiaCP5CR1TuneSettings_cfi.py}
+\code{SigmaTotal:sigmaEl = 22.08}, \code{sigmaTot = 101.037}). The only tune files that touch any string parameter
+are \path{MCTunes2017/PythiaCP5CR1TuneSettings_cfi.py}, the colour-reconnection variant for the top-mass systematics
 (\code{ColourReconnection:mode=1} with \code{StringZ:aLund=0.38}, \code{bLund=0.64}, \code{probQQtoQ=0.078},
-\code{probStoUD=0.2}) and \code{CP5CR2} (\code{mode=2}). Since when: the directory is \code{MCTunes2017} and CP5 dates
+\code{probStoUD=0.2}), and its $13.6\TeV$ copy; their sibling \code{CP5CR2} (\code{mode=2}) changes the colour
+reconnection only. Outside the tune files a single fragment of \path{Configuration/Generator/python} sets a string
+parameter: the Run-1 \path{UpsMM_8TeV_TuneCUETP8M1_cfi.py}, with \code{StringFlav:mesonBvector = 3.000} and the
+comment ``needs work''. Since when: the directory is \code{MCTunes2017} and CP5 dates
 from the 2017 tuning campaign (CMS-GEN-17-001); the release on \code{cvmfs} carries no git history, so the date at
 which the file took its present content could not be established here.
 

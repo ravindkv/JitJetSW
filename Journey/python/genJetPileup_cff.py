@@ -1,6 +1,6 @@
 # GenJet step with pileup: the generator final state of the signal event overlaid with the stable
 # particles of in-time minimum-bias collisions, and the anti-kT clustering (FastjetJetProducer) run
-# again on the sum (test/genJetPileup_cfg.py, runGenJetPileup_mc2024_BBbar.sh).
+# again on the sum (test/common/genJetPileup_cfg.py, run by test/08_PU/run_08_PU.sh).
 #
 # The overlay uses the same MixingModule as the DIGI step of the pileup chapter, restricted to the
 # HepMC record: 'mix' reads the generatorSmeared HepMCProduct of the signal event and of N library

@@ -65,10 +65,10 @@ Rule G: Checkpoint chapters (12_L1T, 13_HLT)
                 (3) tracking and vertices: pixel tracks and vertices, the vertices kept, the iterative tracking, the PF vertices
                 (4) particle flow and PF jets: PF candidates, AK4 PF jets, rho and the jet energy corrections
                 (5) the decision of the paths: the last filters, TriggerResults, the datasets and the streams
-                The menu is the GRun menu of the release (the 2025 menu; HLT:@relval2024 is a fake menu); the seeds that name
-                algorithms missing from the 2024 L1 menu of 12_L1T are adapted by python/hltL1Menu_cff.py (Rule E: it reads
-                the L1 menu from the output of 12_L1T). The path followed through the steps is HLT_PFJet110, seeded by
-                L1_SingleJet90.
+                The menu is the one the release gives the 2025 RelVals, HLT:@relval2025 = 2025v10, module for module the
+                GRun menu (Rule I); its seeds are checked against the L1 menu of 12_L1T by python/hltL1Menu_cff.py (Rule E:
+                it reads the L1 menu from the output of 12_L1T; with the 2025 L1 menu it changes no seed and removes no
+                path). The path followed through the steps is HLT_PFJet110, seeded by L1_SingleJet90.
 
 Rule H: Signal and pileup are followed separately only up to 11_DIGI
     The DIGI stage is the LAST stage at which the signal and the pileup exist apart. Up to 11_DIGI (08_PU, 09_G4, 10_SIM, 11_DIGI)
@@ -92,7 +92,10 @@ Rule I: The CMS chapters use the settings of the release year, 2025
          pileup (PU = 60, bunch crossings -1..1, SKIP = 71, NPU = 68), the number of events and the seeds stay the same
     (I3) a chapter moved to 2025 is rerun and compared with its 2024 output; what the 2025 conditions change in the event (or the
          fact that nothing changes, and why) is said in its .tex (B2 or B3) and listed with the evidence (conddb, the compared
-         files) in its .md (C4)
+         files) in its .md (C4). The compared files stay in the repository, never in a scratch area: a script of the chapter,
+         test/XYZ/run_XYZ_2024.sh, remakes the 2024 run next to the 2025 one in test/XYZ/out2024/ and writes the comparison
+         (12_L1T: run_12_L1T_2024.sh, yearCompare_12_L1T.py -> out2024/compare_12_L1T.txt); a chapter without such a
+         script quotes its 2024 numbers from the git history of its own .md (11_DIGI, 13_HLT)
     (I4) the move is made in two steps:
          (a) 08_PU, 09_G4, 10_SIM: done. The 2025 global tag has the geometry (141DD4hepV2_Extended2024), the field map and the
              simulated beam spot of 2024, and the five modifiers Run3_2025 adds to Run3_2024 act only in RECO and L1: the outputs

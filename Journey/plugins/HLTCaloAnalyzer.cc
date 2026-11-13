@@ -10,7 +10,9 @@
 // Pages (one PDF per event, one PNG per page with savePNG):
 //   towers   the calorimeter towers of the event (E_T, on the trigger-tower grid of chapter 12) with the corrected
 //            calo jets and the generator jets
-//   jet<N>   the towers around the calo jet of each of the two leading generator jets, E_T written in each tower
+//   jet<N>   the towers around the calo jet of each of the two leading generator jets, E_T written in each tower; the
+//            dashed box is the 9 x 9 window of the Level-1 jet of chapter 12 nearest to the calo jet (the L1 jets that
+//            the HLT unpacks, hltGtStage2Digis), so that the HLT towers are summed in the same window as the L1 ones
 // The log has the rec-hit and tower sums by region, the energy density, and every calo jet with its corrections
 // level by level (read by test/common/hltLedger.py).
 #include <algorithm>
@@ -282,6 +284,7 @@ void HLTCaloAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
   page_.print(savePNG_ ? pngPrefix_ + "_towers" + tag + ".png" : std::string());
 
   // ------------------------------------------------------------------ pages 2, 3: the towers around the two signal jets
+  const auto& l1jets = ev.get(l1Jets_);
   for (size_t ig = 0; ig < gj.size() && ig < 2; ++ig) {
     const auto& g = gj[ig];
     const reco::CaloJet* cj = nullptr;
@@ -293,6 +296,24 @@ void HLTCaloAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
       }
     double ceta = cj ? cj->eta() : g.eta(), cphi = cj ? cj->phi() : g.phi();
     int c0 = columnOfEta(ceta), p0 = iphiOfPhi(cphi);
+    // the Level-1 jet nearest to the calo jet (bunch crossing 0, within Delta R 0.5): the centre of its 9 x 9 window,
+    // in towers from the centre of the page
+    const l1t::Jet* lj = nullptr;
+    double drl = 0.5;
+    for (auto it = l1jets.begin(0); it != l1jets.end(0); ++it)
+      if (double d = dR(it->eta(), it->phi(), ceta, cphi); d < drl) {
+        drl = d;
+        lj = &*it;
+      }
+    int dxL = 0, dyL = 0;
+    if (lj) {
+      dxL = columnOfEta(lj->eta()) - c0;
+      dyL = iphiOfPhi(lj->phi()) - p0;
+      if (dyL > kNPhi / 2)
+        dyL -= kNPhi;
+      if (dyL < -kNPhi / 2)
+        dyL += kNPhi;
+    }
     const int half = 8, nb = 2 * half + 1;
     page_.begin(true);
     TH2F* z = page_.keep(new TH2F(Form("hltCaloZoom%zu", ig),
@@ -314,10 +335,16 @@ void HLTCaloAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
         z->SetBinContent(dx + half + 1, dy + half + 1, std::max(x.et, 0.051));
         if (dR(towerEta(ietaOfColumn(c)), towerPhi(p0 + dy), ceta, cphi) < 0.4)
           window += x.et;
-        if (std::abs(dx) <= 4 && std::abs(dy) <= 4)
-          window9 += x.et;
       }
     }
+    // the 9 x 9 towers of the Level-1 window (also where it reaches beyond the page)
+    for (int dx = dxL - 4; dx <= dxL + 4; ++dx)
+      for (int dy = dyL - 4; dy <= dyL + 4; ++dy)
+        if (validColumn(c0 + dx)) {
+          const Cell& x = cell(c0 + dx, p0 + dy);
+          if (x.hit && x.et > 0)
+            window9 += x.et;
+        }
     z->SetMinimum(0.05);
     z->SetMaximum(zMax_);
     z->SetMarkerSize(1.2);
@@ -331,9 +358,14 @@ void HLTCaloAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
       page_.line(i - 0.5, -half - 0.5, i - 0.5, half + 0.5, kGray, 1);
       page_.line(-half - 0.5, i - 0.5, half + 0.5, i - 0.5, kGray, 1);
     }
-    page_.box(-4.5, -4.5, 4.5, 4.5, kRed, 2, 2);  // the 9 x 9 towers of the Level-1 jet of chapter 12, for comparison
+    page_.box(std::max(dxL - 4.5, -half - 0.5), std::max(dyL - 4.5, -half - 0.5), std::min(dxL + 4.5, half + 0.5),
+              std::min(dyL + 4.5, half + 0.5), kRed, 2, 2);  // the 9 x 9 towers of the Level-1 jet of chapter 12, for comparison
     std::cout << "  zoom gen jet " << ig + 1 << ": pt=" << Form("%.1f", g.pt()) << " centre ieta=" << ietaOfColumn(c0) << " iphi=" << p0
-              << " towersEt(dR<0.4 of the jet axis)=" << Form("%.1f", window) << " towersEt(9x9)=" << Form("%.1f", window9) << "\n";
+              << " towersEt(dR<0.4 of the jet axis)=" << Form("%.1f", window) << " towersEt(9x9)=" << Form("%.1f", window9);
+    if (lj)
+      std::cout << " L1 jet " << Form("%.1f", lj->pt()) << " ieta=" << ietaOfColumn(c0 + dxL) << " iphi=" << wrapPhi(p0 + dyL) << "\n";
+    else
+      std::cout << " no L1 jet within dR 0.5: window around the calo jet\n";
     page_.label(sampleLabel_);
     page_.text(Form("generator jet %zu", ig + 1), 0.025, kGenColor);
     page_.text(Form("   p_{T} %.1f GeV, #eta %.2f, #phi %.2f", g.pt(), g.eta(), g.phi()), 0.021);
@@ -356,7 +388,11 @@ void HLTCaloAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
     }
     page_.skip();
     page_.text(Form("towers within #DeltaR < 0.4: %.1f GeV", window), 0.019);
-    page_.text(Form("dashed red: 9 #times 9 towers (L1 jet): %.1f GeV", window9), 0.019, kRed);
+    if (lj) {
+      page_.text("dashed red: the 9 #times 9 towers of the L1 jet", 0.019, kRed);
+      page_.text(Form("   (%.1f GeV, i#eta %d, i#phi %d): %.1f GeV", lj->pt(), ietaOfColumn(c0 + dxL), wrapPhi(p0 + dyL), window9), 0.019, kRed);
+    } else
+      page_.text(Form("dashed red: 9 #times 9 towers around the calo jet (no L1 jet): %.1f GeV", window9), 0.019, kRed);
     page_.print(savePNG_ ? pngPrefix_ + Form("_jet%zu", ig + 1) + tag + ".png" : std::string());
   }
   page_.closePdf();

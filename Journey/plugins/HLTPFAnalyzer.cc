@@ -140,7 +140,11 @@ void HLTPFAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
   for (auto const& j : ev.get(genJets_))
     if (j.pt() > jetPtMin_)
       gj.push_back(j);
-  int n10 = 0, n30 = 0, n30m = 0;
+  int n10 = 0, n30 = 0, n30m = 0, nRaw10 = 0, nRaw30 = 0;
+  for (auto const& j : raw) {
+    nRaw10 += j.pt() > 10;
+    nRaw30 += j.pt() > 30;
+  }
   for (auto const& j : corr) {
     n10 += j.pt() > 10;
     n30 += j.pt() > 30;
@@ -149,7 +153,8 @@ void HLTPFAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
       m |= dR(g.eta(), g.phi(), j.eta(), j.phi()) < 0.4;
     n30m += j.pt() > 30 && m;
   }
-  std::cout << "  pf jets: raw=" << raw.size() << " corrected=" << corr.size() << " corrected>10=" << n10 << " >30=" << n30 << " >30 with a gen jet=" << n30m << "\n";
+  std::cout << "  pf jets: raw=" << raw.size() << " raw>10=" << nRaw10 << " raw>30=" << nRaw30 << " corrected=" << corr.size() << " corrected>10=" << n10
+            << " >30=" << n30 << " >30 with a gen jet=" << n30m << "\n";
   auto rawOf = [&](const reco::PFJet& cj) -> const reco::PFJet* {
     for (auto const& x : raw)
       if (dR(x.eta(), x.phi(), cj.eta(), cj.phi()) < 0.01)
@@ -166,12 +171,11 @@ void HLTPFAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
       }
     return g;
   };
+  // every jet above 10 GeV before or after the corrections (the corrections can lower a jet below 10 GeV)
   int k = 0;
   for (auto const& j : corr) {
-    if (j.pt() < 10)
-      continue;
     const reco::PFJet* r = rawOf(j);
-    if (!r)
+    if (!r || (j.pt() < 10 && r->pt() < 10))
       continue;
     auto f = corrections_.factors(r->pt(), r->energy(), r->eta(), r->phi(), r->jetArea(), rho);
     double dr;
@@ -210,7 +214,7 @@ void HLTPFAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
   page_.skip();
   page_.text(Form("#rho = %.1f GeV per unit area", rho), 0.021);
   page_.text("AK4 PF jets, corrected", 0.025, kBlue + 1);
-  page_.text(Form("   %d above 10 GeV, %d above 30 GeV", n10, n30), 0.021);
+  page_.text(Form("   %d above 10 GeV, %d above 30 GeV (raw: %d, %d)", n10, n30, nRaw10, nRaw30), 0.021);
   page_.text(Form("   %d above 30 GeV have a gen jet", n30m), 0.021);
   page_.text(Form("   red dashed circles: the %d above 20 GeV", nDrawn), 0.019, kRed);
   page_.text("magenta: ak4GenJets; size: log(1 + p_{T})", 0.019, kGenColor);

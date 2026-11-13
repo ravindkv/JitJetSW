@@ -5,7 +5,8 @@
 // False) or helices in the field, cross the sensitive volumes without energy loss and leave the
 // detector or are stopped by the time cut (MaxTrackTime).
 //
-// Used by runCMSDrivers_mc2024_BBbar_SIM.sh for the Transport and Transport_B stages, which cannot
+// Used by the transport-only SIM of chapter 09 (test/09_G4/run_09_G4.sh) and the stage B of chapter 10
+// (test/10_SIM/run_10_SIM.sh: the field on, no physics), which cannot
 // be obtained from the standard lists: FTFP_BERT_EMM with EMPhysics and HadPhysics off still
 // registers G4DecayPhysics, and the Geant4 UI commands of G4Commands are applied before the
 // processes exist (PreInit state), so '/process/inactivate Decay' has no effect.

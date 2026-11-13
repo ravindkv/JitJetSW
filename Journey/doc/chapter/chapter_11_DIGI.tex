@@ -51,6 +51,8 @@ calorimeter zero suppression are modules of their own, after \code{mix}.};
 \node[st] (c4) at (7.95,-0.75) {sampling\\{\scriptsize one value per 25\,ns}};
 \node[st] (c5) at (10.6,-0.75) {$+$ noise, pedestal, gain, ADC};
 \node[outb] (c6) at (13.25,-0.75) {thresholds, zero suppression, selective readout $\rightarrow$ \textbf{digi}};
+\node[font=\scriptsize, text=black!60] at (6.2,3.45) {\ref*{sec:11_mix}};
+\node[font=\scriptsize, text=black!60, anchor=west] at (-1.1,-1.6) {\ref*{sec:11_pixel}--\ref*{sec:11_muon}: pixels, strips, ECAL, HCAL, muons};
 \foreach \a/\b in {c1/c2,c2/c3,c3/c4,c4/c5,c5/c6} \draw[->] (\a) -- (\b);
 \draw[->] (mix.south) -- ++(0,-0.35) -| (c1.north);
 \node[tp] (tp) at (10.6,-2.35) {calorimeter trigger primitives (section~\ref{sec:11_tp})};
@@ -74,7 +76,9 @@ written.}
 \centering\small\setlength{\tabcolsep}{3.5pt}
 \caption{The digitisers at a glance: what the electronics does, and what goes in and comes out for the signal alone
 and for the signal with its bunch crossing (\code{ledger\_11\_DIGI.txt}; the HCAL frames from the FWLite extras of the
-companion). Each row is one subsection of section~\ref{sec:11_numbers}.}
+companion). Each row is one subsection of section~\ref{sec:11_numbers}. The row ``all'' is the total of the ledger,
+in which the analyzer counts only the HCAL frames of non-negative amplitude (6241 and 8054 instead of the 7915 and
+$10\,003$ of the HCAL row).}
 \label{tab:11_glance}
 \begin{tabular}{@{}l>{\raggedright\arraybackslash}p{5.0cm}>{\raggedright\arraybackslash}p{3.0cm}rr@{}}
 \toprule
@@ -119,13 +123,14 @@ TIB 1182, TID 975, TOB 1022, TEC 5191, $2.33\GeV$ of energy loss) and $26\,793$ 
 photoelectrons of the shower library), no muon-chamber hit. The library,
 \path{step2_SIM_pileup_10_SIM.root}, holds the 250 minimum-bias collisions through the same Geant4; library event 72
 has 164 primaries, 2097 tracker hits, 11 CSC hits, 1217 EB cells with $9.4\GeV$, 1948 EE cells with $43.5\GeV$, 223
-ES, 21 HB, 101 HE and 119 HF cells. The third file, \path{step3_MIX_10_SIM.root}, is the signal again with one new
+ES, 21 HB, 122 HE and 119 HF cells. The third file, \path{step3_MIX_10_SIM.root}, is the signal again with one new
 product: the \code{CrossingFramePlaybackInfoNew} that the chapter-10 mixing job wrote, the list of which library
 events it drew into which bunch crossing. That mixing put $448\,315$ tracker \code{PSimHit}s in front of the
 digitisers: $10\,272$ of the signal, $146\,028$ of the 68 in-time collisions, $139\,551$ of the 71 early ones and
 $152\,464$ of the 54 late ones.\footnote{Signal hits from \path{test/10_SIM/out/simHits_signal_10_SIM.log}, the
-bunch crossing from \path{step3_MIX_10_SIM.log}; library event 72, the zero suppression and the truth counts from
-FWLite (companion, section~4); every digi count from \path{test/11_DIGI/out/ledger_11_DIGI.txt}; the data frames
+bunch crossing from \path{step3_MIX_10_SIM.log}, library event 72 from \path{simHits_pileup_10_SIM.log}; its
+energies, the zero suppression and the truth counts from FWLite (companion, section~4); every digi count from
+\path{test/11_DIGI/out/ledger_11_DIGI.txt}; the data frames
 followed by hand and the charges from \path{examples_11_DIGI.txt} (\path{test/11_DIGI/digiExamples_11_DIGI.py}).}
 
 The job runs with the 2025 settings of the release, as chapters~\ref{ch:08_PU}--\ref{ch:10_SIM}; unlike there, the
@@ -231,7 +236,8 @@ and 140--193; the \code{PileupSummaryInfo} then reports 71, 68 and 54 as the ``t
 figure~\ref{fig:11_windows} draws them on one axis. The pixels accept a hit only if it arrives within $\pm12.5\ns$ of
 the time a particle travelling at the speed of light from the centre of the detector would need
 (\code{TofLowerCut/TofUpperCut}): one crossing, nothing else. The strips accept $\pm50\ns$, but weight the charge with
-the APV pulse, which is non-zero only from $28\ns$ before to $30\ns$ after its peak. The calorimeters write ten
+the APV pulse, which is above 1\,\% of its height only from $28\ns$ before to $30\ns$ after its peak. The
+calorimeters write ten
 samples of $25\ns$, from five samples before the in-time peak to four after it, and their pulses last longer than
 that. The muon chambers are slower still: a DT wire sees electrons drift for hundreds of nanoseconds, a CSC strip
 integrates from $-250$ to $+500\ns$. The mixing of this book offers three crossings; the production profile of 2025
@@ -249,7 +255,7 @@ mixes from $-12$ to $+3$ (chapter~\ref{ch:10_SIM}), because the slow detectors r
 \node[below] at (100,-0.4) {time of the hit relative to our crossing [ns]};
 \foreach \y/\lab/\a/\b/\c in {8/pixels/-12.5/12.5/blue!60, 7/strips/-30.5/28.4/blue!60,
   6/ECAL/-125/100/green!50!black, 5/{HB, HE}/-125/100/red!60!black, 4/HF/-25/25/red!60!black,
-  3/GEM/-125/75/cyan!60!black, 2/DT/0/422/cyan!60!black, 1/CSC strips/-250/500/cyan!60!black}
+  3/GEM/-125/75/cyan!60!black, 2/DT/64/422/cyan!60!black, 1/CSC strips/-250/500/cyan!60!black}
   { \node[left] at (-320,\y) {\lab}; \fill[\c] (\a,\y-0.28) rectangle (\b,\y+0.28); }
 \draw[blue!60] (-50,6.75) rectangle (50,7.25);
 \node[right] at (55,7) {weighted by the APV pulse (box: $\pm50\ns$ accepted)};
@@ -525,9 +531,9 @@ median of the signal sample by its range, HE $(i\eta,i\phi)=(-16,31)$, depth 4, 
 a noise fluctuation that passed the level of its channel in slice 6.
 
 Of the $15\,840$ HB and HE frames the zero suppression keeps 4459 for the signal. The signal has hits in only 821 HB and
-HE cells, so at least 3600 of the kept frames are noise; library event 72, with hits in 122 cells, keeps 4310. The
-HF writes all its 3456 frames in every sample (the analyzer counts the 2270 of the signal with a positive amplitude),
-and the HO none (one cell with $4\times10^{-6}\GeV$). In the bunch crossing the zero suppression keeps 6545 HB/HE frames,
+HE cells, so at least 3600 of the kept frames are noise; library event 72, with hits in 143 cells, keeps 4310. The
+HF writes all its 3456 frames in every sample (the analyzer counts the 2270 of the signal with a non-negative
+amplitude), and the HO none (one cell with $4\times10^{-6}\GeV$). In the bunch crossing the zero suppression keeps 6545 HB/HE frames,
 2 HO frames, and the summed amplitudes grow from the signal alone by a factor 1.7 in the HB, 7.0 in the HE and 3.7 in
 the HF.
 
@@ -584,7 +590,7 @@ barrel ($r=4$ to 7\,m), grey where no particle is linked to them. The right pane
 \textbf{(11a) The signal alone.} $44\,172$ digis. In the tracker $36\,402$, of which $24\,218$ linked to a signal
 particle and $12\,184$ strip noise; the pixels have no noise digi. In the calorimeters 156 EB, 384 EE and 981 ES frames
 and 4459 HB/HE frames, most of them noise. In the muon chambers 8 RPC noise strips. In figure~\ref{fig:11_alone} (left)
-the $b$ jet at $(\eta,\phi)=(-1.6,-2.1)$ is a dense patch of black tracker digis under large green EB frames and the
+the $b$ jet at $(\eta,\phi)=(-1.6,-2.1)$ is a dense patch of black tracker digis under large green ECAL frames and the
 $\bar b$ jet at $\eta=-3.75$ sits in the HF ring beyond the tracker.
 
 \textbf{(11b) One collision alone.} Library event 72 is an ordinary inelastic collision: 2097 tracker hits, 5270
@@ -736,12 +742,12 @@ from towers where it deposited less than $0.25\GeV$. Library event 72 deposited 
 the whole ECAL, in only four towers as much as a quarter of a GeV, and still sends 445 primitives, $254.0\GeV$, the
 largest $3\GeV$: the sum of 25 noisy crystals fluctuates up to a count in one tower in nine. No particle is behind
 these numbers, and every step of the Level-1 trigger will need a threshold because of them. (In 2024 it was one
-tower in seventeen; the barrel crystals of 2025 are noisier, a pedestal width of 3.31 instead of 2.85 ADC counts.)
+tower in eighteen; the barrel crystals of 2025 are noisier, a pedestal width of 3.31 instead of 2.85 ADC counts.)
 
 \emph{One primitive per bunch crossing.} A primitive digi stores a few consecutive crossings, and their sums show
 that the calorimeters talk to the trigger continuously (\code{trigprim\_11\_DIGI.txt}, section 2). For the signal
 alone the ECAL sends 426.5, 268.5, [328.5], 274.0 and $280.0\GeV$ in crossings $-2$ to $+2$: some $270\GeV$ of
-noise in every crossing, and $60\GeV$ more in ours. With the pileup it sends 517.5, 826.0, [1047.5], 575.5 and
+noise in every crossing, and $55\GeV$ more in ours. With the pileup it sends 517.5, 826.0, [1047.5], 575.5 and
 $190.5\GeV$, and the HB and HE 34.0, 255.5, [424.5] and $350.0\GeV$: the crossings $-1$ and $+1$, with their 71 and
 54 collisions, are events of their own for the trigger, which will judge each of them separately.
 
@@ -812,7 +818,8 @@ tracker strips and at least 3600 HB/HE frames appear where nothing crossed the c
 \centering\scriptsize\setlength{\tabcolsep}{2.5pt}
 \caption{The ledger of the digitisation (\code{ledger\_11\_DIGI.txt}; the SimHits of the signal from
 \code{test/10\_SIM/out/simHits\_signal\_10\_SIM.log}, of the bunch crossing from \code{step3\_MIX\_10\_SIM.log}, of library
-event 72 and the HCAL cells from the FWLite extras of the companion). Top: tracker and muon chambers, hits in and digis
+event 72 from \code{simHits\_pileup\_10\_SIM.log}, its energies from the FWLite extras of the companion). Top: tracker
+and muon chambers, hits in and digis
 out, the digis split by their \code{DigiSimLink}; for the bunch crossing the hits per subdetector are the sum of the
 \code{CrossingFrame} (signal and all pileup). Bottom: calorimeters, cells with a hit and their energy in, data frames
 and their summed amplitude above pedestal (ADC counts) out.}
@@ -851,7 +858,7 @@ EB & 5521 & 68.0\,GeV & 156 & 1260 & & 1217 & 9.4\,GeV & 43 & 502 & & 964 & 8899
 EE & 6214 & 293.7\,GeV & 384 & 1876 & & 1948 & 43.5\,GeV & 105 & 384 & & 2520 & 12\,194 & 6.5 \\
 ES & 1069 & 0.25\,GeV & 981 & 17\,885 & & 223 & 0.05\,GeV & 360 & 5053 & & 15\,972 & 230\,844 & 12.9 \\
 HB & 173 & 0.22\,GeV & 1722 & 16\,684 & & 21 & 0.02\,GeV & 1700 & 15\,856 & & 2197 & 29\,111 & 1.7 \\
-HE & 648 & 1.66\,GeV & 2249 & 20\,375 & & 101 & 0.22\,GeV & 2036 & 12\,739 & & 3966 & 141\,702 & 7.0 \\
+HE & 648 & 1.66\,GeV & 2249 & 20\,375 & & 122 & 0.22\,GeV & 2036 & 12\,739 & & 3966 & 141\,702 & 7.0 \\
 HO & 1 & $4\times10^{-6}$\,GeV & 0 & 0 & & 0 & 0 & 0 & 0 & & 2 & 63 & -- \\
 HF & 531 & 1849 units & 2270 & 8234 & & 119 & 173 units & 2169 & 4167 & & 1889 & 30\,729 & 3.7 \\
 \midrule
@@ -863,12 +870,14 @@ all digis & & & 44\,172 & & & & & 24\,104 & & & 544\,407 & & \\
 Figure~\ref{fig:11_mixed} is the $\eta$--$\phi$ display of the event at the end of the journey. The tracker region,
 $\abseta<2.5$, is solid with the $350\,718$ blue in-time and $123\,744$ orange early pileup digis; the $23\,765$ black
 signal digis are drawn on top and are visible as a darker patch only inside the $b$-jet circle at $(-1.6,-2.1)$. The
-green ECAL frames show the same thing in energy: the $b$ jet is still the largest cluster of the barrel, but the
-endcaps, $1.5<\abseta<3$, are now a wall of green, 2520 EE frames against 384 for the signal, and the ES ($15\,972$
+green ECAL frames show the same thing in energy: the $b$ jet, at the end of the barrel, is still a dense cluster
+(the largest green block of the barrel is now the $3\times3$ towers read in full around the high-interest tower
+$(-4,4)$ of section~\ref{sec:11_tp}, at $(\eta,\phi)\approx(-0.3,0.3)$), but the endcaps, $1.5<\abseta<3$, are now
+a wall of green, 2520 EE frames against 384 for the signal, and the ES ($15\,972$
 strips) fills the same band. The HF ring, where the $\bar b$ jet of $114\GeV$ fell in chapter~\ref{ch:10_SIM}, has
 the same number of frames as before (every channel is read) with nearly four times the amplitude. Compared with page 6 of
-chapter~\ref{ch:09_G4}, where the event was 571 coloured dots and two circles, the two circles are the only thing
-that is still recognisable.
+chapter~\ref{ch:09_G4}, where the event was 571 coloured dots with the two $b$ systems in red and blue, the two
+jet circles are the only thing that is still recognisable.
 
 \begin{figure}[tb]
 \centering

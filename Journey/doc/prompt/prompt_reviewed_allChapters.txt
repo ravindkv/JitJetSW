@@ -1,0 +1,1 @@
+Can you please CAREFULLY have a look at  the ../doc/chapter/chapter_*.tex files starting from the first chapter to the last one and see if all the numbers are correctly propagated. Find and fix any bug or pitfall on the way. 

@@ -340,7 +340,8 @@ for b, k, z in far:
     print('  outside: bx %+d pileup event %d at z = %.0f cm (%d primary)' % (b, k, z, prims[b][k - 1]))
 for b in sorted(prims):
     p = sorted(prims[b])
-    print('  bx %+d: %d collisions, primaries per collision: min %d, median %d, max %d, sum %d' % (b, len(p), p[0], p[len(p) // 2], p[-1], sum(p)))
+    med = p[len(p) // 2] if len(p) % 2 else 0.5 * (p[len(p) // 2 - 1] + p[len(p) // 2])
+    print('  bx %+d: %d collisions, primaries per collision: min %d, median %g, max %d, sum %d' % (b, len(p), p[0], med, p[-1], sum(p)))
 
 # ---------------------------------------------------------------------------------------------------- (8) far vertices
 print('\n-- (8) the library collisions with a vertex at |z| = 203 m (step2_SIM_pileup_10_SIM.root, library events 12, 124, 179)')

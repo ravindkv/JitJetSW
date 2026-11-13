@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # minBiasGenStats.py: the generator-level catalogue of a minimum-bias GEN file (FWLite, no cmsRun).
-#   python3 minBiasGenStats.py PU_2024/step1_GEN_MinBias_out.root [maxEvents] [--event N ...]
+#   python3 common/minBiasGenStats.py 08_PU/out/step1_GEN_MinBias_08_PU.root [maxEvents] [--event N ...]   (from test/)
 # One line per event: process (Pythia8 signal_process_id: 101 ND, 103/104 SD, 105 DD, 106 CD), number of parton-parton
 # interactions (1 hard + MPI, counted from the status-31 partons), stable particles (HepMC status 1), charged and
 # central (|eta| < 2.5, pT > 0.5 GeV) ones, particles beyond |eta| = 5.5, pT of the hardest stable particle, scalar sum of
 # pT, ak4 gen jets above 10 GeV, number of protons LHCTransport carried to the PPS, smeared vertex z and t;
 # then the summary of the sample: process shares, species of the stable particles, |eta| and pT distributions, the
 # multiplicity against the number of interactions, the diffractive masses. With --event N the stable particles of
-# event N are listed. The chapter doc/pu/2024/PUMinBias.md explains every column.
+# event N are listed. The companion doc/chapter/chapter_08_PU.md (sections 3 and 4.3) explains every column.
 import sys, math, collections, statistics
 from DataFormats.FWLite import Events, Handle
 

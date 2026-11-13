@@ -104,7 +104,7 @@ python3 common/genLedger.py 04_MPI/out/step1_GEN_04_MPI.root --event 1:1:1 > 04_
 
 | file | content |
 |---|---|
-| `genPartAnalyzer_04_MPI.pdf`, `_page-1/2/3.png` | page 1 the hard process (2 partons), page 2 after the parton shower inside the MPI event (57 partons), page 3 the end of the parton level (169 partons: b, bbar, 26 ISR, 67 FSR, 61 MPI, 13 beam remnants; 19 with eta beyond 6 on the border). The plugin `plugins/GenPartAnalyzer.cc` attributes every entry to the stage that produced it from its Pythia8 status code (21-29 hard process, 41-49 ISR, 51-59 FSR, 31-39 MPI, 61-69 primordial kT and remnants) and draws, at stage N, the particles alive at the end of stage N |
+| `genPartAnalyzer_04_MPI.pdf`, `_page-1/2/3.png` | page 1 the hard process (2 partons), page 2 after the parton shower of the hard process (14 partons: b, bbar, 1 ISR, 11 FSR; the initial-state emissions of an MPI, whose mother is an incoming parton, status 41, are produced in stage 3 with their interaction; section 4.6), page 3 the end of the parton level, the final partons with their primordial kT (169 partons: b, bbar, 26 ISR, 67 FSR, 61 MPI, 13 beam remnants; 16 with eta beyond 6 on the border). The plugin `plugins/GenPartAnalyzer.cc` attributes every entry to the stage that produced it from its Pythia8 status code (21-29 hard process, 41-49 ISR, 51-59 FSR, 31-39 MPI, 61-69 primordial kT and remnants) and draws, at stage N, the particles alive at the end of stage N |
 | `genPartAnalyzer_04_MPI.root` | per stage: `etaPhiPt` (TH2, weight pT), `ptB`, `ptBbar`, `ptNet` |
 | `genPartAnalyzer_04_MPI.log` | per stage: number of particles, the b and bbar copy (status, pT, eta, phi, index) and their net pT (section 4, table 4.2) |
 | `ledger_04_MPI.txt` | the record by status group, the hard process, the final state by kind and region (section 4, table 4.1) |
@@ -132,17 +132,16 @@ for ev in Events('04_MPI/out/step1_GEN_04_MPI.root'):
     xs = sorted(p.energy() / 6800. for p in inc); print('x of the MPI initiators: min %.2e median %.2e max %.2e' % (xs[0], xs[len(xs) // 2], xs[-1]))
     k = sorted(p.pt() for p in P if p.status() == 61); print('primordial kT (status 61): n %d mean %.3f median %.3f max %.3f' % (len(k), sum(k) / len(k), k[len(k) // 2], k[-1]))
     F = [p for p in P if p.status() == 1]
-    def origin(p):
+    def origin(p):                                         # the scattering a final parton belongs to
         if p.mother(0).status() == 4: return 'remnant'
-        st = [p]; seen = set()
-        while st:
-            q = st.pop()
-            if q.status() in (31, 33): return 'MPI'
-            if q.status() in (21, 23): return 'hard+shower'
-            for i in range(q.numberOfMothers()):
-                m = q.mother(i); key = (m.pt(), m.pz(), m.pdgId())
-                if key not in seen: seen.add(key); st.append(m)
-        return 'hard+shower'
+        while p.status() not in (21, 23, 31, 33):          # up the outgoing line (copies, radiators, emissions)
+            if p.status() in (41, 42, 53, 61):             # an incoming parton: down to the scattering it initiates
+                p = [p.daughter(i) for i in range(p.numberOfDaughters()) if p.daughter(i).status() in (21, 31, 41, 42, 53, 61)][0]
+            else: p = p.mother(0)
+        return 'MPI' if p.status() in (31, 33) else 'hard+shower'
+    rad = {(q.mother(0).pt(), q.mother(0).pz(), q.mother(0).pdgId()): q.mother(0) for q in P if q.status() == 51}
+    print('ISR emissions (status 43) by scattering', dict(collections.Counter(origin(q) for q in P if q.status() == 43)),
+          '; FSR branchings by scattering', dict(collections.Counter(origin(m) for m in rad.values())))
     for sel, name in ((lambda p: True, 'all'), (lambda p: abs(p.eta()) < 2.5, '|eta|<2.5')):
         c = collections.defaultdict(lambda: [0, 0., 0.])
         for p in F:
@@ -218,8 +217,8 @@ visible +140 / +3069.2 / +232.0.
 ```
 == GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=745 nStatus1=169 hard b idx=5 hard bbar idx=4
   stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
-  stage 2 (partonShower): nParticles=57 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
-  stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  stage 2 (partonShower): nParticles=14 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 1): pt=91.7437 eta=-1.56979 phi=-2.08372 idx=[515] | #bar{b} quark (status 1): pt=116.356 eta=-3.74787 phi=1.01139 idx=[514] | net b+bbar: |sum pT|=25.0768 (px=16.727 py=18.6829) scalar sum pT=208.1
 ```
 
 Chapter 02 (`02_PS/out/genPartAnalyzer_02_PS.log`), for the shower comparison:
@@ -343,19 +342,21 @@ x of the MPI initiators: min 2.87e-07 median 2.96e-03 max 2.39e-01
 primordial kT (status 61): n 64 mean 1.085 median 0.773 max 3.889
 ```
 
-Histogram of the chapter (pT of the pair): < 0.5 GeV: 6; 0.5-1: 12; 1-2: 3; 2-4: 5; > 4: 5 (31 in total; 18 below 1 GeV,
-5 above 4 GeV). Status 31 (incoming) and 33 (outgoing) are 62 each: two per interaction. The 124 entries of the
+Histogram of the chapter (pT of the pair): < 0.5 GeV: 7; 0.5-1: 11; 1-2: 3; 2-4: 5; > 4: 5 (31 in total; 18 below 1 GeV,
+5 above 4 GeV; the pair printed `0.50` above has pT = 0.4975 GeV and is in the first bin). The median x of the 62
+initiators is the mean of the two middle values, 2.94e-03 (the script prints the upper one, 2.96e-03). Status 31 (incoming) and 33 (outgoing) are 62 each: two per interaction. The 124 entries of the
 "MPI (31-39)" line of the ledger are these 62 + 62. Incoming flavours (|pdg|): 39 gluons, 11 u, 7 d, 4 s, 1 c, same
 as the outgoing ones.
 
 ### 4.6 The final state by origin, the remnants, the b jets (FWLite, the script of section 3)
 
 ```
-all        hard+shower  n=  57 E=   4274.7 pT=  326.6
-all        MPI          n=  99 E=   7542.4 pT=  148.1
+ISR emissions (status 43) by scattering {'hard+shower': 2, 'MPI': 26} ; FSR branchings by scattering {'hard+shower': 10, 'MPI': 54}
+all        hard+shower  n=  14 E=   2862.2 pT=  266.8
+all        MPI          n= 142 E=   8954.8 pT=  207.9
 all        remnant      n=  13 E=   1783.0 pT=    6.5
-|eta|<2.5  hard+shower  n=  44 E=    491.6 pT=  190.9
-|eta|<2.5  MPI          n=  35 E=    150.0 pT=   63.3
+|eta|<2.5  hard+shower  n=  13 E=    392.3 pT=  150.5
+|eta|<2.5  MPI          n=  66 E=    249.3 pT=  103.8
 |eta|<2.5  remnant      n=   1 E=      0.5 pT=    0.3
    remnant pdg   2 pt= 0.737 eta=  7.03 E=  416.11
    remnant pdg  -1 pt= 0.565 eta=  4.52 E=   25.93
@@ -370,7 +371,7 @@ all        remnant      n=  13 E=   1783.0 pT=    6.5
    remnant pdg  -2 pt= 0.496 eta= -7.25 E=  350.24
    remnant pdg  -2 pt= 0.518 eta= -5.51 E=   63.96
    remnant pdg   2 pt= 0.169 eta= -2.76 E=    1.39
-dR<0.4 of the b: pT by origin {'hard+shower': 126.6, 'MPI': 0.9}
+dR<0.4 of the b: pT by origin {'hard+shower': 120.6, 'MPI': 6.9}
 dR<0.4 of the bbar: pT by origin {'hard+shower': 116.4, 'MPI': 0.8}
 idx 182 pdg 5 status 52 pt=91.587
 idx 207 pdg -5 status 52 pt=118.574
@@ -378,18 +379,34 @@ final-state b quarks: [(-5, 116.36, -3.75, 1.01), (5, 91.74, -1.57, -2.08)]
 sum E=13600.000 px=-0.000 py=0.000
 ```
 
-The origin of a final-state parton: "remnant" if its mother is a beam proton (status 4); "MPI" if one of its ancestors
-has status 31 or 33 (a copy, radiator or emission of an MPI parton) before any status 21/23 is reached; "hard+shower"
-otherwise (the b, bbar, the ISR of the hard process and all their radiation). 57 + 99 + 13 = 169; 4274.7 + 7542.4 + 1783.0
-= 13600.1 GeV (rounding). The 13 remnants: 11 with |eta| > 3.5, the two hardest (416 and 350 GeV) at eta = 7.03 and
+The origin of a final-state parton is the scattering it belongs to: "remnant" if its mother is a beam proton (status 4);
+otherwise the line of mothers is followed up through copies, radiators and emissions until a parton of a scattering is
+reached (status 21/23: "hard+shower", 31/33: "MPI"). An initial-state emission (status 43) has as mother the new
+incoming parton (status 41), whose ancestors are the beam, not the scattering: from an incoming parton (status 41, 42,
+53, 61) the walk therefore goes down to the incoming parton it branched into, until the status-21 or status-31 parton
+of its scattering. 14 + 142 + 13 = 169; 2862.2 + 8954.8 + 1783.0 = 13600.0 GeV; 266.8 + 207.9 + 6.5 = 481.2 GeV. Of the 28
+ISR emissions and the 64 FSR branchings of the Info Listing, 2 and 10 are in the shower of the hard process. In the cone
+of the b the MPI partons are a ubar of 3.73 GeV and a gluon of 2.25 GeV from the initial-state showers of two MPI and a
+gluon of 0.93 GeV radiated by the cbar of a third (6.91 GeV; 6.9 / (120.6 + 6.9) = 5 %); in |eta| < 2.5 the MPI and
+the remnant carry (103.8 + 0.3) / 254.5 = 41 % of the pT. (An earlier version of this script walked only up the
+mothers, so that every initial-state emission of an MPI and its radiation counted as "hard+shower": 57 / 99 instead
+of 14 / 142.) The 13 remnants: 11 with |eta| > 3.5, the two hardest (416 and 350 GeV) at eta = 7.03 and
 -7.25; no diquark (pdg 2101, 2103, 2203). In `05_Had/out/step1_GEN_05_Had.root` the same 13 partons (same pT, eta, E)
 carry status 63 and the 156 other final partons of this file carry status 62 (156 + 13 = 169). The primordial kT moves
 the b from 91.587 to 91.744 GeV and the bbar from 118.574 to 116.356 GeV (the status-1 copies here, the status-62 copies
 in chapter 05, table 4.2), the net b+bbar from 27.29 to 25.08 GeV.
 
-The legend of page 3 of `genPartAnalyzer_04_MPI.pdf` (the analyzer's attribution, which follows copies and radiators
-to the process that created them): b system (1), bbar system (1), ISR (26), FSR (67), MPI (61), beam remnant (13); 169
-drawn, 19 with |eta| > 6 on the border. Page 2: 57 drawn, ISR (26), FSR (29), 2 on the border.
+The legend of page 3 of `genPartAnalyzer_04_MPI.pdf` (the analyzer's attribution: an emitted parton is labelled by the
+shower that emitted it, ISR or FSR, whatever scattering it belongs to; only copies and radiators inherit the label of
+their mother): b system (1), bbar system (1), ISR (26), FSR (67), MPI (61), beam remnant (13); 169 drawn, 16 with
+|eta| > 6 on the border. Page 2: 14 drawn, b, bbar, ISR (1), FSR (11). By scattering (the `origin` above, applied to
+the entries the plugin draws): page 2 = the 14 of the hard process; page 3 = 14 of the hard process + 142 of the MPI
+(61 MPI, 25 ISR, 56 FSR) + 13 remnants. Since 13 November 2026 the plugin (`classify` and `scatteringStage` in
+`plugins/GenPartAnalyzer.cc`) follows the chain of incoming partons of an initial-state emission down to its
+scattering, so an emission of an MPI is produced in stage 3, and it takes a final parton written with status 1 (no
+hadronisation) for the copy with the primordial kT, produced in stage 3, not for a primary hadron; page 3 shows the
+b at 91.74 GeV (status 1). Before, page 2 drew 57 partons (the 14 above and 43 emissions of the MPI with their
+radiation) and page 3 the copies before the primordial kT (b at 91.59 GeV, status 52).
 
 ### 4.7 The pileup catalogue (`08_PU/out/genstats_08_PU.txt`, the lines quoted)
 

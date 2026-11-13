@@ -96,7 +96,7 @@ What `g4SimHits` does with its defaults (`g4SimHits_cfi.py`), in the order the p
    be tracked, a `G4PrimaryVertex` is made and the particles are converted with the cuts `ApplyPCuts = True`,
    `MinPCut = 0.04` (GeV, total momentum), `MaxPCut = 99999`, `ApplyEtaCuts = True`, `MinEtaCut = -5.5`,
    `MaxEtaCut = 5.5` (geometric: the line from the production vertex is followed to `|z| = RDecLenCut * sinh(5.5)
-   = 2.9 cm * 122.3 = 354.8 cm`, and the particle is dropped if it is still inside `r < RDecLenCut = 2.9 cm` there),
+   = 2.9 cm * 122.34 = 354.8 cm`, and the particle is dropped if it is still inside `r < RDecLenCut = 2.9 cm` there),
    `ApplyPhiCuts = False`, `ApplyPtransCut = False`, `PDGselection.PDGfilterSel = False` with `PDGfilter =
    (21, 1, 2, 3, 4, 5, 6)` (quarks and gluons with status 1 would be filtered out; there are none), `RDecLenCut = 2.9`
    (status-2 particles whose decay vertex has `r >= 2.9 cm` are given to Geant4 undecayed, with their generator
@@ -115,7 +115,7 @@ What `g4SimHits` does with its defaults (`g4SimHits_cfi.py`), in the order the p
    forward detectors), with `TrackerSD` (`ZeroEnergyLoss`, `ElectronicSigmaInNanoSeconds = 12.06`:
    hits with time of flight below 3 sigma = 36.18 ns go to the `LowTof` collections, the others to `HighTof`;
    `EnergyThresholdForPersistencyInGeV = 0.2`, `EnergyThresholdForHistoryInGeV = 0.05`), `CaloSD`
-   (`EminHits = 0.015, 0.010, 0, 0, 0` GeV for EB, EE, ES, HCAL, ZDC; `TmaxHits = 500 ns`, ZDC 2000), `HCalSD` and
+   (`EminHits = 0.015, 0.010, 0, 0, 0` MeV, i.e. 15 and 10 keV, for EB, EE, ES, HCAL, ZDC: `SimG4CMS/Calo/src/CaloSD.cc` multiplies them by `CLHEP::MeV`; `TmaxHits = 500 ns`, ZDC 2000), `HCalSD` and
    `HFShower` (`UseShowerLibrary = True`: in the HF the first step of any particle but a muon calls the shower
    library, `HCalSD::getFromHFLibrary`, which returns the photoelectrons of a stored shower and kills the track;
    each photoelectron is booked as a hit of 1 GeV, so the stored HF "energy" is a photoelectron count), and
@@ -187,12 +187,14 @@ What each run produces in `out/`:
 | `simAnalyzer_signal_09_G4.log` | the per-page counts quoted in the chapter (section 4) |
 | `simAnalyzer_signal_09_G4.root` | `TFileService` histograms per page (eta-phi, multiplicities, kind / process / subdetector, b and bbar sums) |
 | `simAnalyzer_pileup_09_G4.pdf/.png/.log/.root` | the same ten pages for library event 72 (`eventsToProcess=1:1:72`, the first collision of bunch crossing 0) |
-| `ledger_09_G4.txt` | the ledger of `common/g4Ledger.py`: one line per event (status 1 particles with their energy and pT, the primaries, and the dropped particles by reason with their energy), the totals and the fractions handed to Geant4, for the signal and for library events 72 to 139 |
+| `ledger_09_G4.txt` | the ledger of `common/g4Ledger.py`: one line per event (status 1 particles with their energy and pT, the primaries, the dropped particles by reason with their energy, and the forward protons the PPS transport hands to Geant4 at the Roman pots), the totals, the stable particles, primaries and PPS protons by region and by kind, and the fractions handed to Geant4, for the signal and for library events 72 to 139 |
 | `extras_09_G4.txt` | the extra numbers of `test/09_G4/g4Extras_09_G4.py` (FWLite, a few seconds): where the primaries cross into a calorimeter volume, by surface (signal, its b and bbar systems, library event 72); the eta cut as a line for the signal particles near abs(eta) = 5.5; the HF shower-library photoelectrons per GeV; the tracker crossings per primary by abs(eta) (section 4.8) |
 | `step2_G4_signal_09_G4.log`, `step2_G4_pileup_09_G4.log` | the `cmsRun` logs: the Geant4 banner (`geant4-11-02-patch-02 [MT] (21-June-2024)`) and the event records |
 
-`g4Ledger.py` reads `generatorSmeared` and the `SimTrack`s with FWLite: a status 1 particle whose barcode is the
-`genpartIndex()` of a `SimTrack` is a primary; the others are classified as `|eta| > 5.5`, `p < 40 MeV`, neutrino,
+`g4Ledger.py` reads `generatorSmeared`, the `SimTrack`s and the `SimVertex`s with FWLite: a status 1 particle whose
+barcode is the `genpartIndex()` of a `SimTrack` that starts at the collision is a primary; a forward proton that the
+PPS transport hands to Geant4 at the Roman pots (a `SimTrack` with its vertex at |z| > 100 m) is matched by energy
+and counted in the column PPS; the others are classified as `|eta| > 5.5`, `p < 40 MeV`, neutrino,
 or "other", in this order, with the eta of the momentum (the Generator applies the cut to the line from the vertex,
 hence the eight "other" of the pileup and the one border pi+ of the signal).
 
@@ -202,34 +204,68 @@ hence the eight "other" of the pileup and the one border pi+ of the signal).
 
 ```
 == g4Ledger (9a) signal step2_G4_signal_09_G4.root (events 1:1:1)
-event     status1    E[GeV]  pT[GeV] | primary    E[GeV]  pT[GeV] | dropped: |eta|>5.5 (E) / p<40MeV (E) / neutrino (E) / other (E)
-1:1:1         634   13600.0    528.9 |     571    6923.0    471.7 | 56 (6581.3) / 6 (0.2) / 1 (95.5) / 0 (0.0)
-total(1)      634   13600.0    528.9 |     571    6923.0    471.7 | 56 (6581.3) / 6 (0.2) / 1 (95.5) / 0 (0.0)
+event     status1    E[GeV]  pT[GeV] | primary    E[GeV]  pT[GeV] | dropped: |eta|>5.5 (E) / p<40MeV (E) / neutrino (E) / other (E) | PPS (E)
+1:1:1         634   13600.0    528.9 |     571    6923.0    471.7 | 56 (6581.3) / 6 (0.2) / 1 (95.5) / 0 (0.0) | 0 (0.0)
+total(1)      634   13600.0    528.9 |     571    6923.0    471.7 | 56 (6581.3) / 6 (0.2) / 1 (95.5) / 0 (0.0) | 0 (0.0)
+by region and by kind, n / E[GeV] / pT[GeV]: stable                           | primaries (from the vertex)      | PPS (at the Roman pots)
+  abs(eta) < 2.5   316 / 733.8 / 278.7                | 309 / 638.1 / 241.1              | 0 / 0.0 / 0.0
+  2.5 to 3.0       55 / 193.1 / 24.6                  | 55 / 193.1 / 24.6                | 0 / 0.0 / 0.0
+  3.0 to 5.2       189 / 5019.6 / 197.4               | 189 / 5019.6 / 197.4             | 0 / 0.0 / 0.0
+  5.2 to 5.5       16 / 836.4 / 7.8                   | 16 / 836.4 / 7.8                 | 0 / 0.0 / 0.0
+  above 5.5        58 / 6817.1 / 20.3                 | 2 / 235.9 / 0.7                  | 0 / 0.0 / 0.0
+  charged hadrons  303 / 7167.7 / 259.1               | 276 / 3298.6 / 247.8             | 0 / 0.0 / 0.0
+  neutral hadrons  56 / 3449.9 / 84.7                 | 48 / 1869.8 / 81.1               | 0 / 0.0 / 0.0
+  photons          273 / 2875.9 / 142.7               | 246 / 1743.7 / 137.9             | 0 / 0.0 / 0.0
+  electrons        1 / 10.9 / 5.0                     | 1 / 10.9 / 5.0                   | 0 / 0.0 / 0.0
+  neutrinos        1 / 95.5 / 37.5                    | 0 / 0.0 / 0.0                    | 0 / 0.0 / 0.0
 handed to Geant4: 90.1 % of the stable particles, 50.9 % of their energy, 89.2 % of their pT
 
 == g4Ledger (9b) the 68 in-time pileup collisions step2_G4_pileup_09_G4.root (events 1:1:72-1:1:139)
-1:1:72        192   13600.0     56.6 |     164    4558.9     46.7 | 27 (9041.1) / 1 (0.0) / 0 (0.0) / 0 (0.0)     <- the drawn one
-1:1:94        547   13600.0    262.7 |     470    5451.6    240.7 | 75 (8148.3) / 2 (0.1) / 0 (0.0) / 0 (0.0)     <- the largest
-1:1:95        461   13600.0    203.7 |     386    3518.7    178.9 | 69 (10067.2) / 5 (0.1) / 0 (0.0) / 1 (13.9)
-1:1:101       444   13600.0    196.7 |     389    3718.4    173.3 | 49 (9876.9) / 5 (0.1) / 0 (0.0) / 1 (4.6)
-1:1:106       382   13600.0    163.1 |     302    2938.3    135.8 | 73 (10634.3) / 6 (0.1) / 0 (0.0) / 1 (27.3)
-1:1:124         6   13600.0      1.8 |       0       0.0      0.0 | 6 (13600.0) / 0 (0.0) / 0 (0.0) / 0 (0.0)     <- the smallest
-1:1:126       273   13600.0     82.5 |     218    2916.2     66.9 | 52 (10664.1) / 1 (0.0) / 1 (1.3) / 1 (18.4)
-1:1:129       249   13600.0     92.4 |     175    2124.1     71.0 | 73 (11451.2) / 0 (0.0) / 0 (0.0) / 1 (24.7)
-1:1:135       265   13600.0    102.2 |     226    4141.0     87.6 | 37 (9423.3) / 1 (0.0) / 0 (0.0) / 1 (35.7)
-1:1:136        89   13600.0     27.7 |      64     505.7     17.9 | 24 (13066.8) / 0 (0.0) / 0 (0.0) / 1 (27.5)
-1:1:137        98   13600.0     29.5 |      65    5742.5     20.5 | 32 (7843.2) / 0 (0.0) / 0 (0.0) / 1 (14.3)
-total(68)   12993  924800.0   5314.6 |   10388  218552.6   4485.6 | 2492 (706020.8) / 98 (2.7) / 7 (57.5) / 8 (166.4)
-handed to Geant4: 80.0 % of the stable particles, 23.6 % of their energy, 84.4 % of their pT
+1:1:72        192   13600.0     56.6 |     164    4558.9     46.7 | 27 (9041.1) / 1 (0.0) / 0 (0.0) / 0 (0.0) | 0 (0.0)     <- the drawn one
+1:1:94        547   13600.0    262.7 |     470    5451.6    240.7 | 75 (8148.3) / 2 (0.1) / 0 (0.0) / 0 (0.0) | 0 (0.0)     <- the largest
+1:1:95        461   13600.0    203.7 |     386    3518.7    178.9 | 69 (10067.2) / 5 (0.1) / 0 (0.0) / 1 (13.9) | 0 (0.0)
+1:1:101       444   13600.0    196.7 |     389    3718.4    173.3 | 49 (9876.9) / 5 (0.1) / 0 (0.0) / 1 (4.6) | 0 (0.0)
+1:1:106       382   13600.0    163.1 |     302    2938.3    135.8 | 73 (10634.3) / 6 (0.1) / 0 (0.0) / 1 (27.3) | 0 (0.0)
+1:1:124         6   13600.0      1.8 |       0       0.0      0.0 | 4 (1260.7) / 0 (0.0) / 0 (0.0) / 0 (0.0) | 2 (12339.3)  <- the smallest
+1:1:126       273   13600.0     82.5 |     218    2916.2     66.9 | 52 (10664.1) / 1 (0.0) / 1 (1.3) / 1 (18.4) | 0 (0.0)
+1:1:129       249   13600.0     92.4 |     175    2124.1     71.0 | 73 (11451.2) / 0 (0.0) / 0 (0.0) / 1 (24.7) | 0 (0.0)
+1:1:132         3   13600.0      0.5 |       1    6326.6      0.1 | 1 (473.4) / 0 (0.0) / 0 (0.0) / 0 (0.0) | 1 (6800.0)
+1:1:135       265   13600.0    102.2 |     226    4141.0     87.6 | 37 (9423.3) / 1 (0.0) / 0 (0.0) / 1 (35.7) | 0 (0.0)
+1:1:136        89   13600.0     27.7 |      64     505.7     17.9 | 24 (13066.8) / 0 (0.0) / 0 (0.0) / 1 (27.5) | 0 (0.0)
+1:1:137        98   13600.0     29.5 |      65    5742.5     20.5 | 32 (7843.2) / 0 (0.0) / 0 (0.0) / 1 (14.3) | 0 (0.0)
+total(68)   12993  924800.0   5314.6 |   10387  211752.6   4485.5 | 2466 (562762.7) / 98 (2.7) / 7 (57.5) / 8 (166.4) | 27 (150058.2)
+PPS: 27 forward protons with 150058.2 GeV handed to Geant4 at the Roman pots (largest energy difference of a match 2.0e-13)
+by region and by kind, n / E[GeV] / pT[GeV]: stable                           | primaries (from the vertex)      | PPS (at the Roman pots)
+  abs(eta) < 2.5   4864 / 5519.3 / 2179.4             | 4765 / 5505.6 / 2173.6           | 0 / 0.0 / 0.0
+  2.5 to 3.0       1037 / 3597.0 / 449.2              | 1035 / 3597.0 / 449.2            | 0 / 0.0 / 0.0
+  3.0 to 5.2       3996 / 58413.2 / 1674.3            | 3992 / 58366.7 / 1672.7          | 0 / 0.0 / 0.0
+  5.2 to 5.5       436 / 17054.0 / 160.3              | 428 / 16887.6 / 158.9            | 0 / 0.0 / 0.0
+  above 5.5        2660 / 840216.5 / 851.4            | 167 / 127395.7 / 31.0            | 27 / 150058.2 / 11.2
+  charged hadrons  5911 / 572734.9 / 3087.8           | 4676 / 48863.6 / 2596.2          | 27 / 150058.2 / 11.2
+  neutral hadrons  1088 / 179327.8 / 749.7            | 837 / 80592.4 / 627.3            | 0 / 0.0 / 0.0
+  photons          5900 / 171675.6 / 1458.8           | 4808 / 82175.1 / 1251.9          | 0 / 0.0 / 0.0
+  electrons        85 / 998.9 / 10.9                  | 64 / 116.1 / 8.4                 | 0 / 0.0 / 0.0
+  muons            2 / 5.3 / 1.7                      | 2 / 5.3 / 1.7                    | 0 / 0.0 / 0.0
+  neutrinos        7 / 57.5 / 5.6                     | 0 / 0.0 / 0.0                    | 0 / 0.0 / 0.0
+handed to Geant4: 79.9 % of the stable particles, 22.9 % of their energy, 84.4 % of their pT
 ```
 
-(the 57 other per-collision lines are in the file). Per collision: 12993 / 68 = 191.1 stable particles, 10388 / 68 =
-152.8 primaries, 218552.6 / 68 = 3214.0 GeV, 4485.6 / 68 = 66.0 GeV of pT. Signal + 68 collisions: 634 + 12993 = 13627
-stable particles, 13600 + 924800 = 938400 GeV, 528.9 + 5314.6 = 5843.5 GeV pT; 571 + 10388 = 10959 primaries,
-6923.0 + 218552.6 = 225475.6 GeV, 471.7 + 4485.6 = 4957.3 GeV pT (80.4 %, 24.0 %, 84.8 %); dropped 56 + 2492 = 2548
-beyond |eta| 5.5 (6581.3 + 706020.8 = 712602.1 GeV), 6 + 98 = 104 below 40 MeV (0.2 + 2.7 = 2.9 GeV), 1 + 7 = 8 neutrinos
-(95.5 + 57.5 = 153.0 GeV), 8 other (166.4 GeV). Signal share of the bunch crossing: 571 / 10959 = 5.2 % of the
-primaries, 471.7 / 4957.3 = 9.5 % of the pT.
+(the 56 other per-collision lines are in the file). Per collision: 12993 / 68 = 191.1 stable particles, 10387 / 68 =
+152.8 primaries, 211752.6 / 68 = 3114.0 GeV, 4485.5 / 68 = 66.0 GeV of pT. Signal + 68 collisions: 634 + 12993 = 13627
+stable particles, 13600 + 924800 = 938400 GeV, 528.9 + 5314.6 = 5843.5 GeV pT; 571 + 10387 = 10958 primaries,
+6923.0 + 211752.6 = 218675.6 GeV, 471.7 + 4485.5 = 4957.2 GeV pT (80.4 %, 23.3 %, 84.8 %), and the 27 PPS protons
+(150058.2 GeV); dropped 56 + 2466 = 2522 beyond |eta| 5.5 (6581.3 + 562762.7 = 569344.0 GeV), 6 + 98 = 104 below
+40 MeV (0.2 + 2.7 = 2.9 GeV), 1 + 7 = 8 neutrinos (95.5 + 57.5 = 153.0 GeV), 8 other (166.4 GeV). Signal share of the
+bunch crossing: 571 / 10958 = 5.2 % of the primaries, 471.7 / 4957.2 = 9.5 % of the pT.
+
+The PPS column (since 13 November 2026): the forward protons that `LHCTransport` carries along the beam line and hands
+to Geant4 at the Roman pots (|z| = 203 m). Their `SimTrack`s carry the index of the transported HepMC record, not the
+barcode of the generator proton (in event 124 the two point to a status-24 quark and a status-63 diquark of
+`generatorSmeared`), so `g4Ledger.py` recognises them by their vertex (|z| > 100 m) and matches each to the stable
+generator proton of the same side with the nearest energy (the 27 matches agree to 2e-13). Before, the ledger
+counted 26 of them (143258.2 GeV) among the dropped beyond abs(eta) 5.5 and the one of event 132, whose index
+happens to equal its barcode (3), as a primary: 10388 primaries with 218552.6 GeV, 2492 dropped beyond 5.5 with
+706020.8 GeV.
 
 ### 4.2 `simAnalyzer_signal_09_G4.log` (event 1:1:1)
 
@@ -244,8 +280,9 @@ primaries, 471.7 / 4957.3 = 9.5 % of the pT.
   page 5 (calo hits): nHits=746 nCells=459 noGeometry=0 E by subdetector: HF=1511(459) | b system: E_ECAL=0 E_HCAL=0 E_HF=0 nCells=0 | bbar system: E_ECAL=0 E_HCAL=0 E_HF=760 nCells=39
 ```
 
-The page-6 header (`simAnalyzer_signal_09_G4_page-06.png`) adds "38 beyond |eta| = 6 (x)" for the crosses drawn on
-the border of the display, and the GenPartAnalyzer part of the log repeats the generator numbers of chapters 01 to 07
+The page-6 header (`simAnalyzer_signal_09_G4_page-06.png`) adds "38 beyond |eta| = 6 (x)" for the markers drawn on
+the border of the display (`SimAnalyzer::Page::clamp` counts every marker beyond `etaMax`): 37 grey crosses (all 37
+are among the 56 dropped by the eta cut, FWLite) and the forward neutron primary at eta 9.72, and the GenPartAnalyzer part of the log repeats the generator numbers of chapters 01 to 07
 (hard b: pt 113.221, eta -1.43851; status 62 b 91.7437 / bbar 116.356; B- 94.2789 at eta -1.56724, phi -2.09222;
 B*+ 114.174 at eta -3.74697, phi 1.01039; net b+bbar at hadron level 20.302 GeV).
 
@@ -272,7 +309,7 @@ Stable particles (status 1) and primaries by region and by kind, n / E [GeV] / p
 | abs(eta) < 2.5 | 316 / 733.8 / 278.7 | 309 / 638.1 / 241.1 | 6 photons below 40 MeV (0.2 GeV), the neutrino (95.5) |
 | 2.5 to 3.0 | 55 / 193.1 / 24.6 | 55 / 193.1 / 24.6 | |
 | 3.0 to 5.2 | 189 / 5019.6 / 197.4 | 189 / 5019.6 / 197.4 | |
-| 5.2 to 5.5 | 16 / 836.4 / 7.8 | 16 / 836.4 / 7.8 | (13 of the 16 never enter the CALO volume) |
+| 5.2 to 5.5 | 16 / 836.4 / 7.8 | 16 / 836.4 / 7.8 | (12 of the 16 never enter a calorimeter volume; the 4 that do: pi- eta +5.25, neutron +5.30, pi+ -5.32, photon -5.32) |
 | above 5.5 | 58 / 6817.1 / 20.3 | 2 / 235.9 / 0.7 | 56 dropped by the eta cut (6581.3 GeV) |
 | charged hadrons | 303 / 7167.7 / 259.1 | 276 / 3298.6 / 247.8 | 27 beyond 5.5 (3869.2 GeV, 4 protons with 1276.6) |
 | neutral hadrons | 56 / 3449.9 / 84.7 | 48 / 1869.8 / 81.1 | 8 beyond 5.5 (1580.1 GeV; the most energetic an antineutron of 998.3 GeV at eta -7.47) |
@@ -287,7 +324,9 @@ Stable particles (status 1) and primaries by region and by kind, n / E [GeV] / p
   neutral rule) and a pi+ (E 84.6 GeV, pT 0.692, eta -5.50; the geometric eta cut from a vertex at z = +3.1 cm).
 - Generator decay vertices among the 29 SimVertices (all with `noParent()`, `processType() = 0`; distance from the
   primary vertex, position): B- (pdg -521, E 235.9, pT 94.3, eta -1.57) at 0.78 cm, (r, z) = (0.32, 2.39) cm,
-  daughters anti-nu_e (pT 37.5), e- (5.0), D_0*(2300)0 (pdg 10421, 51.9, status 2; it decays to a D0 of 84.7 GeV); B+ (521, E 2388.2, pT 112.6, eta -3.75) at 11.73 cm,
+  daughters anti-nu_e (pT 37.5), e- (5.0), D_0*(2300)0 (pdg 10421, 51.9, status 2; it decays to a D0 of 84.7 GeV,
+  pT 34.0, which decays weakly 0.10 mm further, at 0.79 cm from the primary vertex, (0.32, 2.39), to K*- (19.0) and
+  rho+ (15.1): the fourth weak decay of the two b systems, not in the table of the chapter); B+ (521, E 2388.2, pT 112.6, eta -3.75) at 11.73 cm,
   (0.55, -8.60), daughters D*0bar (48.1), pi+ (30.6), pi0 (5.5), K0 (15.7), K*0bar (12.8); D0bar (-421, E 911.9,
   pT 42.4, eta -3.76) at 25.80 cm, (1.21, -22.66), daughters K0bar (12.9), pi- (4.3), pi+ (7.5), pi0 (9.1), pi0 (8.7).
 - Boundary: 557 primaries have `crossedBoundary()`; their `trackerSurfaceMomentum()` equals their production
@@ -296,7 +335,8 @@ Stable particles (status 1) and primaries by region and by kind, n / E [GeV] / p
   photons (0.281, 5.45), (0.247, 5.44), (0.749, 5.47), (0.178, 5.34), (0.050, -5.37).
 - Tracker hits: 6734, all in the `LowTof` collections (0 `HighTof`), time of flight 0.21 to 13.95 ns, `energyLoss()`
   sum 0; from 375 distinct primaries (193 charged, 182 neutral; abs(eta) from 0.01 to 3.11, pT down to 7 MeV), at most
-  32 hits for one track; by kind of the primary: charged hadrons 3433, photons 2907, neutral hadrons 376,
+  32 hits for one track (two tracks have 32: a photon at eta -1.96, the one `extras_09_G4.txt` prints, and a pi- at
+  eta +1.83, the maximum of the charged primaries with 1 < abs(eta) < 2); by kind of the primary: charged hadrons 3433, photons 2907, neutral hadrons 376,
   electrons 18. Charged primaries with abs(eta) < 2.5: 159.
 - `LHCTransport` HepMC product of the signal event: 0 particles.
 
@@ -309,33 +349,41 @@ with 3749.2 GeV (the very-forward neutral rule). By region (stable -> primaries)
 25.7 pT); 2.5 to 3.0: 18 -> 17 (34.8 GeV); 3.0 to 5.2: 43 -> 43 (493.5 GeV); 5.2 to 5.5: 8 -> 8 (215.0 GeV); above 5.5:
 31 -> 4. By kind: charged hadrons 84 -> 70, neutral hadrons 15 -> 11, photons 93 -> 83.
 
-The 68 collisions (library events 72 to 139), n / E [GeV] / pT [GeV]:
+The 68 collisions (library events 72 to 139), n / E [GeV] / pT [GeV] (the region and kind rows of `ledger_09_G4.txt`,
+4.1; the same as an independent FWLite read):
 
-| | stable | primaries |
-|---|---|---|
-| abs(eta) < 2.5 | 4864 / 5519.3 / 2179.4 | 4765 / 5505.6 / 2173.6 |
-| 2.5 to 3.0 | 1037 / 3597.0 / 449.2 | 1035 / 3597.0 / 449.2 |
-| 3.0 to 5.2 | 3996 / 58413.2 / 1674.3 | 3992 / 58366.7 / 1672.7 |
-| 5.2 to 5.5 | 436 / 17054.0 / 160.3 | 428 / 16887.6 / 158.9 |
-| above 5.5 | 2660 / 840216.5 / 851.4 | 168 / 134195.7 / 31.1 |
-| charged hadrons | 5911 / 572734.9 / 3087.8 | 4677 / 55663.6 / 2596.3 |
-| neutral hadrons | 1088 / 179327.8 / 749.7 | 837 / 80592.4 / 627.3 |
-| photons | 5900 / 171675.6 / 1458.8 | 4808 / 82175.1 / 1251.9 |
-| electrons | 85 / 998.9 / 10.9 | 64 / 116.1 / 8.4 |
-| muons | 2 / 5.3 / 1.7 | 2 / 5.3 / 1.7 |
-| neutrinos | 7 / 57.5 / 5.6 | 0 |
-| all | 12993 / 924800.0 / 5314.6 | 10388 / 218552.6 / 4485.6 |
+| | stable | primaries (from the vertex) | PPS (at the Roman pots) |
+|---|---|---|---|
+| abs(eta) < 2.5 | 4864 / 5519.3 / 2179.4 | 4765 / 5505.6 / 2173.6 | |
+| 2.5 to 3.0 | 1037 / 3597.0 / 449.2 | 1035 / 3597.0 / 449.2 | |
+| 3.0 to 5.2 | 3996 / 58413.2 / 1674.3 | 3992 / 58366.7 / 1672.7 | |
+| 5.2 to 5.5 | 436 / 17054.0 / 160.3 | 428 / 16887.6 / 158.9 | |
+| above 5.5 | 2660 / 840216.5 / 851.4 | 167 / 127395.7 / 31.0 | 27 / 150058.2 / 11.2 |
+| charged hadrons | 5911 / 572734.9 / 3087.8 | 4676 / 48863.6 / 2596.2 | 27 / 150058.2 / 11.2 (protons) |
+| neutral hadrons | 1088 / 179327.8 / 749.7 | 837 / 80592.4 / 627.3 | |
+| photons | 5900 / 171675.6 / 1458.8 | 4808 / 82175.1 / 1251.9 | |
+| electrons | 85 / 998.9 / 10.9 | 64 / 116.1 / 8.4 | |
+| muons | 2 / 5.3 / 1.7 | 2 / 5.3 / 1.7 | |
+| neutrinos | 7 / 57.5 / 5.6 | 0 | |
+| all | 12993 / 924800.0 / 5314.6 | 10387 / 211752.6 / 4485.5 | 27 / 150058.2 / 11.2 |
 
-Dropped by cut and kind: eta cut 2492 = 1228 charged hadrons (516966.3 GeV, of which 132 protons with 226157.3 GeV),
-251 neutral hadrons (98735.3), 994 photons (89436.6), 19 electrons (882.7); abs(eta) from 5.50 to 11.35, the most
-energetic a beam proton of 6800.0 GeV at abs(eta) 10.57; 211 of them beyond abs(eta) = 8.2 (364865.4 GeV). Momentum
+Dropped by cut and kind (FWLite, the logic of `g4Ledger.py`): eta cut 2466 (562762.7 GeV, pT 809.2 GeV = 851.4 - 31.0
+- 11.2 of the table) = 1202 charged hadrons (373708.1 GeV, of which 106 protons with 82899.1 GeV), 251 neutral hadrons
+(98735.3), 994 photons (89436.6), 19 electrons (882.7); abs(eta) from 5.50 to 11.35, the most energetic a pi+ of
+4212.1 GeV at abs(eta) 9.98 (event 115); 185 of them beyond abs(eta) = 8.2 (221607.2 GeV). Momentum
 cut 98 = 94 photons (2.4 GeV), 2 charged hadrons (0.3), 2 electrons (0.1). Neutrinos 7 (57.5 GeV). Other 8 (166.4 GeV):
 photons in events 95 (E 13.9, eta 5.50, vertex z = 3.49 cm), 101 (4.6, -5.49, -2.87 cm), 126 (18.4, -5.49, -1.06 cm),
 129 (24.7, -5.49, -6.03 cm) and charged hadrons in events 106 (pi+ 27.3, 5.48, 2.88 cm), 135 (K+ 35.7, -5.48,
 -4.16 cm), 136 (pi+ 27.5, 5.49, 4.76 cm), 137 (pi- 14.3, 5.49, 5.01 cm): particles at the border of the eta cut whose
-line from a displaced vertex is still inside r = 2.9 cm at |z| = 354.8 cm. Primaries per collision: from 0 (event 124,
-6 stable particles, all beyond 5.5; its 2 SimTracks with a generator link are status-2 particles handed over with a
-predefined decay, which the ledger does not count) to 470 (event 94). Per collision in the tracker region:
+line from a displaced vertex is still inside r = 2.9 cm at |z| = 354.8 cm. The 167 primaries beyond abs(eta) 5.5
+(127395.7 GeV): 160 neutrons, antineutrons and photons whose line is inside r = 2.9 cm at |z| = 52.8 m (the
+very-forward rule, 127268.7 GeV: 125 photons, 29 neutrons, 6 antineutrons; abs(eta) from 8.19) and 7 border particles
+at abs(eta) 5.50 to 5.52 whose line from a displaced vertex is outside 2.9 cm at 354.8 cm (126.9 GeV: events 73, 92,
+107, 126, 129 (two), 134). PPS: the transport of `LHCTransport` (switched on by `run3_common`) hands 27 protons to
+Geant4 at |z| = 203 m in the 68 collisions (150058.2 GeV, pT 11.2 GeV; generator abs(eta) 8.48, event 84, to 11.55,
+event 132). Primaries per collision: from 0 (event 124, 6 stable particles, all beyond 5.5: 4 dropped, 1260.7 GeV,
+and its two protons, 12339.3 GeV, handed over at the Roman pots at z = -203 m and +203 m) to 470 (event 94).
+Per collision in the tracker region:
 4765 / 68 = 70.1 primaries, 2173.6 / 68 = 32.0 GeV pT; pileup pT per unit of eta-phi area in abs(eta) < 2.5:
 2173.6 / (5 x 2 pi) = 69.2 GeV (about 200 GeV for 200 collisions).
 
@@ -535,7 +583,9 @@ barrel cylinder); photon 1.5, -1.68 through the endcap disk at r = 114.2 cm; the
 `sinh(8.2) = 1820.5`, `2.9 cm x 1820.5 = 5279 cm = 52.8 m`; the pi+ at eta -5.5002: `354.8 / sinh(5.5002) = 2.899 cm`
 from the nominal point, 2.940 cm from the vertex at z = +3.11 cm (flight 354.8 + 3.1 = 357.9 cm), kept; the photon at
 -5.5240: 2.887 cm, dropped; the K0S at +5.4824: 2.951 cm nominal, 2.903 cm from the vertex, kept (all from
-`extras_09_G4.txt`, section (2)).
+`extras_09_G4.txt`, section (2)). With more digits (FWLite, the same construction): the pi+ at eta -5.500201 reaches
+r = 2.89942 cm from the nominal point, 5.8 um inside the 2.9 cm ("6 um" in the chapter), and 2.94031 cm from the
+vertex; the K0S at +5.482419 reaches 2.90257 cm from the vertex, 25.7 um outside ("30 um").
 
 **Worked examples of part D**: the corner of the tracker volume seen from the vertex, `asinh((293.2 + 3.11) / 123.3) =
 asinh(2.403) = 1.611`; the hole of the HF, `asinh(1280.05 / 12.495) = asinh(102.4) = 5.32` (the HF, `VCAL`, from

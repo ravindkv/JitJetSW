@@ -12,12 +12,11 @@
 # stages 1..maxStage (its PDFs / pages, histograms and printout are added to the same outputs).
 #
 # The jet collections are read from the most recent process that produced them: the GEN step
-# (pgen runs the same anti-kT clustering) or the GENJET step of the ME_PS_MPI_Had_Decay_GenJet stage
-# of runCMSDrivers_mc2024_BBbar_GEN.sh. The radius, input and pT threshold of every collection
-# are taken from the producer configuration stored in the file. For the stage samples of that
-# script, collect the pages in one PDF, e.g. for the parton-level ME_PS sample (parton jets):
-#   cmsRun genJetAnalyzer_cfg.py inputFiles=file:GEN/step1_GEN_ME_PS_out.root maxEvents=1 \
-#          pdfFile=GEN/genJetAnalyzer_ME_PS_out.pdf sampleLabel="sample ME_PS|ISR on, FSR on|MPI off, Had off"
+# (pgen runs the same anti-kT clustering) or the GENJET step of chapter 07 (test/07_GenJet/run_07_GenJet.sh). The
+# radius, input and pT threshold of every collection are taken from the producer configuration stored in the file.
+# The GEN files of the generator chapters can be drawn the same way, e.g. the parton-level jets of chapter 02:
+#   cd test/02_PS/out && cmsRun ../../common/genJetAnalyzer_cfg.py inputFiles=file:step1_GEN_02_PS.root maxEvents=1 \
+#          maxStage=2 pdfFile=genJetAnalyzer_02_PS.pdf sampleLabel="chapter 02_PS|ISR on, FSR on|MPI off, Had off"
 import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 

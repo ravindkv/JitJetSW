@@ -283,8 +283,10 @@ ND: mean stable particles against the number of interactions: 1: 85 (44 ev), 2: 
 SD: diffractive mass M_X median 166.8 GeV (min 1.2, max 6754), xi = 1 - E_p/E_beam median 1.5e-04 (min 3.7e-09, max 0.25)
 ```
 
-Derived from the per-event lines (columns z[cm], t[ns], jet10): vertex z mean 0.08 cm, median -0.06, r.m.s.
-3.56 cm, min -9.52, max 10.08; t mean -0.007 ns, median -0.016, r.m.s. 0.122 ns, min -0.392, max 0.365;
+Derived from the per-event lines (columns z[cm], t[ns], jet10): vertex z mean 0.08 cm, median -0.05, r.m.s.
+3.56 cm, min -9.52, max 10.08; t mean -0.007 ns, median -0.015, r.m.s. 0.122 ns, min -0.392, max 0.365
+(the medians at full precision, FWLite on the `generatorSmeared` vertex of `step1_GEN_MinBias_08_PU.root`:
+-0.0506 cm and -0.0153 ns; the sum-pT mean is 79.245 GeV, 79.2 in the chapter);
 21 of the 250 collisions have a jet above 10 GeV; total stable particles 250 x 193.75 = 48 437, of which
 18209 + 17452 = 35 661 below 0.5 GeV; beyond |eta| = 5.5: 38.92 / 193.75 = 20 %.
 
@@ -363,7 +365,7 @@ event proc nInt stable  charg  centr |eta|>5.5  leadpT   sumpT jet10  PPS   z[cm
 ```
 
 Sums over the 68 lines: 49 ND, 15 SD, 4 DD, 0 CD; 467 interactions; 12 993 stable particles (mean 191.1,
-median 149, min 3 = event 132 (SD), max 547 = event 94 (ND)); 5998 charged; 1414 central; 11 jets above 10 GeV.
+median 150.5 = (149 + 152) / 2, min 3 = event 132 (SD), max 547 = event 94 (ND)); 5998 charged; 1414 central; 11 jets above 10 GeV.
 The neighbouring draws of the mixing of chapter 10 (seed 12345, Poisson(60) per bunch crossing, the library
 read in sequence): bunch crossing -1 = library events 1-71, bunch crossing +1 = events 140-193.
 
@@ -372,7 +374,7 @@ read in sequence): bunch crossing -1 = library events 1-71, bunch crossing +1 = 
 ```
 == GenPartAnalyzer run:lumi:event 1:1:72 nGenParticles=406 nStatus1=192 hard b idx=hard bbar idx=
   stage 1 (hardProcess): nParticles=2 | b: none | #bar{b}: none
-  stage 2 (partonShower): nParticles=13
+  stage 2 (partonShower): nParticles=10
   stage 3 (mpiBeamRemnants): nParticles=26
   stage 4 (hadronisation): nParticles=102
   stage 5 (hadronDecays): nParticles=192
@@ -527,8 +529,15 @@ SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py: minBun
 SimGeneral/MixingModule/python/mix_Run3_Flat55To75_PoissonOOTPU_cfi.py: probValue 0 for 0-54, 1/21 = 0.047619 for 55-75
 Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py: comEnergy = 14000.0, crossSection = 71.39e+09, SoftQCD:inelastic = on
 Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py: SigmaTotal:mode = 0, SigmaTotal:sigmaEl = 21.89, SigmaTotal:sigmaTot = 100.309, MultipartonInteractions:pT0Ref=1.41, ecmPow=0.03344
-Configuration/Generator/python/: MinBias_13TeV_pythia8_TuneCUETP8M1_cfi, MinBias_14TeV_pythia8_TuneCUETP8M1_cfi, MinBias_TuneZ2star_*_pythia6_cff, Hydjet_*_MinBias_* (no 13.6 TeV CP5 fragment)
-Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py (3207-3218, 'Run4D110'): 'Geom': 'ExtendedRun4D110', 'BeamSpot': 'DBrealisticHLLHC', 'GT': 'auto:phase2_realistic_T33', 'Era': 'Phase2C17I13M9'
+Configuration/Generator/python/: MinBias_13TeV_pythia8_TuneCUETP8M1_cfi, MinBias_14TeV_pythia8_TuneCUETP8M1_cfi, MinBias_TuneZ2star_*_pythia6_cff, MinBias_13TeV_cfi / MinBias_cfi / MinBiasP0_cfi / PythiaMinBias_cfi (Pythia6), Hydjet_*_MinBias_* (no 13.6 TeV CP5 fragment)
+    CP5 at 13 TeV: MinBias_13TeV_pythia8_cff.py and SoftQCDinelastic_13TeV_pythia8_cff.py (PythiaCP5Settings_cfi, SoftQCD:inelastic = on, comEnergy = 13000.0),
+    used by the GEN validation steps of relval_steps.py (1697, 1706: genvalid('MinBias_13TeV_pythia8_cff'), genvalid('SoftQCDinelastic_13TeV_pythia8_cff'))
+Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py (3171-3177, 'Run4D110'): 'Geom': 'ExtendedRun4D110', 'GT': 'auto:phase2_realistic_T33', 'Era': 'Phase2C17I13M9', 'ScenToRun': ['GenSimHLBeamSpot', ...]
+    relval_upgrade.py (40-42): a 14TeV fragment runs 'GenSimHLBeamSpot14', whose '--beamspot' is 'DBrealisticHLLHC' (relval_steps.py 4674-4677; 'GenSimHLBeamSpot' 4665-4668 uses gt + '_13TeV');
+    'Run4D110GenOnly' / 'Run4D110SimOnGen' (3206-3220) carry 'BeamSpot': 'DBrealisticHLLHC' explicitly
+Configuration/AlCa/python/autoCondPhase2.py (162): 'phase2_realistic_T33' = 'phase2_realistic' + the T33 tracker tags (the SimBeamSpotHLLHCObjectsRcd tag comes from 150X_mcRun4_realistic_v1;
+    conddb list 150X_mcRun4_realistic_v1: SimBeamSpotHLLHCObjectsRcd SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1);
+    autoCondModifiers.py (128-143): the '_13TeV' variants add SimBeamSpotHLLHCObjects_z4p3cm_t193ns_13TeV_nominal_mc_v1
 Configuration/AlCa/python/autoCond.py (111): 'phase2_realistic' : '150X_mcRun4_realistic_v1'; (95): 'phase1_2024_realistic' : '150X_mcRun3_2024_realistic_v2'; (107): 'phase1_2025_realistic' : '150X_mcRun3_2025_realistic_v1'
 IOMC/EventVertexGenerators/python/VtxSmearedRealisticHLLHC_cfi.py: VtxSmeared = HLLHCEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)   # SimBeamSpotHLLHCObjectsRcd
 IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py: VtxSmeared = BetafuncEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)    # SimBeamSpotObjectsRcd

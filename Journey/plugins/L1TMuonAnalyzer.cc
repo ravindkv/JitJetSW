@@ -157,9 +157,16 @@ void L1TMuonAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
   int nAlct = countDigis(ev.get(alct_)), nClct = countDigis(ev.get(clct_)), nLct = countDigis(ev.get(lct_)), nMpc = countDigis(ev.get(lctMpc_));
   int nPads = countDigis(ev.get(gemPads_)), nPadClusters = countDigis(ev.get(gemClusters_));
   // the stubs the EMTF received (CSC LCTs, RPC hits, GEM clusters), with their position; a stub of a chamber at a
-  // sector edge is also given to the neighbouring sector (Neighbor = 1): counted once
+  // sector edge is also given to the neighbouring sector (Neighbor = 1). A copy is counted once: it is skipped when the
+  // same stub (same chamber, bunch crossing and position) also arrives in its own sector, and counted and drawn when it
+  // arrives only as a copy (its own sector did not report it in the read-out window)
   const auto& hits = ev.get(emtfHits_);
-  int nNeighbour = 0;
+  auto sameStub = [](const l1t::EMTFHit& a, const l1t::EMTFHit& b) {
+    return a.Subsystem() == b.Subsystem() && a.Endcap() == b.Endcap() && a.Station() == b.Station() && a.Ring() == b.Ring() &&
+           a.Chamber() == b.Chamber() && a.BX() == b.BX() && std::abs(a.Eta_sim() - b.Eta_sim()) < 1e-4 &&
+           std::abs(a.Phi_sim() - b.Phi_sim()) < 1e-3;
+  };
+  int nNeighbour = 0, nNoTwin = 0;
   for (auto const& h : hits) {
     std::cout << "  EMTFHit: subsystem=" << (h.Subsystem() >= 0 && h.Subsystem() < 4 ? kindName(h.Subsystem()) : "?") << " endcap=" << h.Endcap()
               << " station=" << h.Station() << " ring=" << h.Ring() << " sector=" << h.Sector() << " chamber=" << h.Chamber() << " bx=" << h.BX()
@@ -167,7 +174,13 @@ void L1TMuonAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
               << " z=" << h.Z_sim() << " quality=" << h.Quality() << " pattern=" << h.Pattern() << "\n";
     if (h.Neighbor()) {
       ++nNeighbour;
-      continue;
+      bool twin = false;
+      for (auto const& o : hits)
+        if (!o.Neighbor() && sameStub(h, o))
+          twin = true;
+      if (twin)
+        continue;
+      ++nNoTwin;
     }
     if (h.Subsystem() < 1 || h.Subsystem() > 3)
       continue;
@@ -180,7 +193,8 @@ void L1TMuonAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup& es) {
   }
   std::cout << "  TP counts: DTphi=" << dtPh.size() << " DTtheta=" << dtTh.size() << " CSC_ALCT=" << nAlct << " CSC_CLCT=" << nClct << " CSC_LCT=" << nLct
             << " CSC_LCT_MPC=" << nMpc << " GEMpads=" << nPads << " GEMpadClusters=" << nPadClusters << "\n";
-  std::cout << "  EMTF input stubs: all=" << hits.size() << " neighbourCopies=" << nNeighbour << " CSC=" << nByKind[1] << " (bx0 " << nByKindBx0[1] << ") RPC="
+  std::cout << "  EMTF input stubs: all=" << hits.size() << " neighbourCopies=" << nNeighbour << " copiesWithoutTwin=" << nNoTwin
+            << " distinct=" << hits.size() - nNeighbour + nNoTwin << " CSC=" << nByKind[1] << " (bx0 " << nByKindBx0[1] << ") RPC="
             << nByKind[2] << " (bx0 " << nByKindBx0[2] << ") GEM=" << nByKind[3] << " (bx0 " << nByKindBx0[3] << ")\n";
 
   // ------------------------------------------------------------------ step 4b: the track finders

@@ -2,7 +2,7 @@
 #
 # Scheduled by cmsDriver.py as a USER step on the output of the GEN step:
 #   cmsDriver.py step2 --filein file:step1_GEN_out.root -s USER:JitJetSW/Journey/genJet_cff.genJetSequence ...
-# (runCMSDrivers_mc2024_BBbar_GEN.sh does this for every generator stage).
+# (test/07_GenJet/run_07_GenJet.sh does this on the full generator event of chapter 06).
 #
 # The modules are the standard ones of Configuration/StandardSequences/Generator_cff.py (pgen
 # already runs them inside the GEN step, so step 1 contains the same collections): the input

@@ -238,7 +238,8 @@ cd -
 ```
 
 The dijet masses quoted in the .tex (386.8, 319.7, 439.5 GeV) are in the header line of pages 6, 7, 8 of the PDF / PNG
-("b jet + bbar jet: ... m = 386.8 GeV"), together with "38 beyond |eta| = 6 on the border" and "status 1, not in a jet (395 /
+("b jet + bbar jet: ... m = 386.8 GeV"), together with "38 beyond |eta| = 6 on the border" (39 on page 8: `addPoint` of
+`plugins/GenJetAnalyzer.cc` also counts the axis of the ak8 jet [24] at eta = 6.12) and "status 1, not in a jet (395 /
 396 / 146)".
 
 ### 4.2 genJetAnalyzer_07_GenJet.log (the generator stages, GenPartAnalyzer, same as chapter 06)
@@ -246,7 +247,7 @@ The dijet masses quoted in the .tex (386.8, 319.7, 439.5 GeV) are in the header 
 ```
 == GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=1846 nStatus1=634 hard b idx=5 hard bbar idx=4
   stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
-  stage 2 (partonShower): nParticles=57 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  stage 2 (partonShower): nParticles=14 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
   stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 62): pt=91.7437 eta=-1.56979 phi=-2.08372 idx=[515] | #bar{b} quark (status 62): pt=116.356 eta=-3.74787 phi=1.01139 idx=[514] | net b+bbar: |sum pT|=25.0768 (px=16.727 py=18.6829) scalar sum pT=208.1
   stage 4: b quark [824] pt=91.7437 -> primary hadron [829] pdg=-521 pt=94.2789 dR=0.00887172
   stage 4: bbar quark [964] pt=116.356 -> primary hadron [968] pdg=523 pt=114.174 dR=0.00134803
@@ -379,7 +380,7 @@ Its results (the values quoted in the .tex):
 | ak4GenJetsNoNu b jet [1], 79.82 GeV, 22 constituents | B- decay products: 8, 56.87 GeV (the neutrino removed); the pi- [1359] (pt 0.52) of the ak4GenJets b jet is now in jet [4] (11.89 -> 12.40 GeV, 11 -> 12 constituents) |
 | ak8GenJets b jet [0], 141.10 GeV, 55 constituents | B- decay products: 9, 94.33 GeV; b string: 17 particles 114.17 GeV (8 non-B hadrons, 19.84 GeV); other strings: 38 particles 28.54 GeV (15.56 beam-remnant string, 3.48 + 3.16 + 1.76 + 1.32 + 0.90 + 0.90 + 0.43 + 0.37 + 0.29 + 0.19 + 0.10 + 0.08 MPI / remnant strings). Scalar sum 142.71 GeV |
 | ak8GenJets bbar jet [1], 121.01 GeV, 32 constituents | bbar string: 17 particles 115.86 GeV; other strings: 15 particles 5.92 GeV |
-| unclustered, ak4GenJets | 395 particles, scalar pT 144.6 GeV, E 9614.8 GeV, hardest 2.34 GeV; 298 below 0.5 GeV, 78 in 0.5-1, 17 in 1-2, 2 above 2 GeV; within abs(eta) < 5.2: 322 particles, 116.5 GeV pT, 1967.6 GeV E; 38 stable particles beyond abs(eta) = 6 |
+| unclustered, ak4GenJets | 395 particles, scalar pT 144.6 GeV, E 9614.8 GeV, hardest 2.34 GeV; 298 below 0.5 GeV, 78 in 0.5-1, 17 in 1-2, 2 above 2 GeV; within abs(eta) < 5.2: 322 particles, 116.5 GeV pT, 1967.6 GeV E; 38 stable particles beyond abs(eta) = 6, 37 of them unclustered (the 38th, a neutron of pT 0.017 GeV at eta 6.63, rapidity 2.59, is a constituent of ak4 jet [12], eta 2.66, rapidity 2.33: FastJet clusters in rapidity) |
 | ak4GenJets by region | abs(eta) < 2.5: 17 jets, 217.9 GeV; 2.5-3.0: 4 jets, 18.5 GeV; 3.0-5.2: 6 jets, 146.3 GeV; > 5.2: none |
 | ak8GenJets by region | abs(eta) < 2.5: 10 jets, 249.4 GeV; 2.5-3.0: 5 jets, 33.3 GeV; 3.0-5.2: 10 jets, 174.4 GeV; > 5.2: 3 jets, 16.1 GeV |
 

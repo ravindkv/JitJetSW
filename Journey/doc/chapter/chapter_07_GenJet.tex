@@ -18,7 +18,8 @@ event and produces four collections of \emph{generator jets} (\code{reco::GenJet
 $R=0.8$, each once with all stable particles and once without the neutrinos. The clustering is done as a
 separate \code{cmsRun} step, process \code{GENJET}, scheduled by \code{cmsDriver.py} as a \code{USER} step
 with the sequence \code{genJetSequence} of \path{JitJetSW/Journey/python/genJet_cff.py}, with the jet
-\pt{} threshold lowered to $3\GeV$ so that even the soft jets of the underlying event are visible.
+\pt{} threshold at the $3\GeV$ of the standard configuration (set explicitly by the script), low enough that
+even the soft jets of the underlying event are visible.
 The chapter explains the algorithm, the input selection, and reads the result for the one event: the $b$ jet
 of $117.8\GeV$, the $\bar b$ jet of $115.9\GeV$, their balance, and why the $b$ jet is 28\,\% above
 the quark it came from but 13\,\% below it once the neutrinos are left out.
@@ -63,7 +64,8 @@ hard process. Jets exist to recover what the radiation took away.
 
 \begin{plainwords}[The \antikt{} algorithm]
 FastJet computes for every pair of particles $d_{ij}=\min(1/p_{\mathrm{T}i}^2,\,1/p_{\mathrm{T}j}^2)\,
-\Delta R_{ij}^2/R^2$ with $\Delta R_{ij}^2=(\eta_i-\eta_j)^2+(\phi_i-\phi_j)^2$, and for every particle
+\Delta R_{ij}^2/R^2$ with $\Delta R_{ij}^2=(y_i-y_j)^2+(\phi_i-\phi_j)^2$ (the rapidity $y$, equal to $\eta$ for a
+massless particle), and for every particle
 $d_{iB}=1/p_{\mathrm{T}i}^2$ (the distance to the beam). The smallest of all these numbers decides: if it is a
 $d_{ij}$, $i$ and $j$ are merged (four-momenta added) and the list is recomputed; if it is a $d_{iB}$, $i$ is
 declared a jet and removed. The inverse powers of \pt{} make the hardest particle the first to act: it
@@ -147,9 +149,10 @@ jet energy corrections; the full jets are the parton-level truth.
 
 \textbf{$R=0.4$ against $R=0.8$.} Doubling the radius quadruples the area. The $b$ jet of \code{ak8GenJets}
 has $141.10\GeV$ and 55 constituents, response $1.538$ (1.25 against the hard-process quark), mass
-$47.3\GeV$ instead of $16.7$; its axis is $0.088$ from the quark. The additions are $19.8\GeV$ of further
-hadrons of the $b$ string (8 particles, in all 17 of the 55 constituents and $114.2\GeV$ belong to the $b$
-string) and $28.5\GeV$ from 38 particles of other strings. The $\bar b$ jet gains $5.1\GeV$ ($121.01\GeV$,
+$47.3\GeV$ instead of $16.7$; its axis is $0.088$ from the quark. Besides the nine $B^-$ products it holds
+$19.8\GeV$ of further hadrons of the $b$ string (8 particles, one more than with $R=0.4$; in all 17 of the 55
+constituents and $114.2\GeV$ belong to the $b$ string) and $28.5\GeV$ from 38 particles of other strings
+(8 and $6.4\GeV$ with $R=0.4$). The $\bar b$ jet gains $5.1\GeV$ ($121.01\GeV$,
 32 constituents). The pair is now less balanced, net $\pt=24.0\GeV$, $\Delta\phi=3.04$: the large cone
 collects the underlying event unevenly. In \code{ak8GenJets} 488 of the 634 stable particles are in a jet and
 28 jets are found; jets [2] to [7] have $10$ to $29\GeV$ and 17 to 37 constituents each, merged soft activity
@@ -161,8 +164,9 @@ the two $b$ jets, jets~[2] to [5] ($13.8$, $13.3$, $11.9$, $11.4\GeV$, 10 to 12 
 hadronised radiation and multiparton interactions of chapters~\ref{ch:02_PS} and \ref{ch:04_MPI}; the
 remaining 21 have $3.2$ to $7.1\GeV$. In all, 239 of the 634 stable particles are inside a jet and the jets
 sum to $382.8\GeV$ of \pt{}. The 395 unclustered particles carry $144.6\GeV$ of scalar \pt{}: 298 of them are
-below $0.5\GeV$, 78 between $0.5$ and $1\GeV$, only two above $2\GeV$ (the hardest $2.3\GeV$), and 38 sit
-beyond $|\eta|=6$, on the border of the display. They carry, however, $9615\GeV$ of energy, almost all of it
+below $0.5\GeV$, 78 between $0.5$ and $1\GeV$, only two above $2\GeV$ (the hardest $2.3\GeV$), and 37 sit
+beyond $|\eta|=6$, on the border of the display (the 38th cross there, a $17\MeV$ neutron at $\eta=6.63$ but
+rapidity $y=2.59$, is a constituent of jet~[12]). They carry, however, $9615\GeV$ of energy, almost all of it
 beam remnants along the beam pipe, which is why the jet energy ($3985\GeV$) is a small part of the event
 energy. By region, the 27 \code{ak4GenJets} are 17 at $\abseta<2.5$ ($217.9\GeV$), 4 at $2.5<\abseta<3.0$
 ($18.5\GeV$) and 6 at $3.0<\abseta<5.2$ ($146.3\GeV$, among them the $\bar b$ jet); none is beyond $5.2$,
@@ -176,7 +180,7 @@ limit; the detector will set one.
 \caption{Ledger of the GenJet stage (\code{ledger\_07\_GenJet.txt}; the unclustered and per-region lines from
 the FWLite extras of the companion). The stage adds nothing to and removes nothing from the event: it
 partitions the 634 stable particles into jets and a remainder. The jet \pt{} is the vector sum per jet, the
-particle sums are scalar.}
+particle sums are scalar. The neutrino is counted in the $\abseta<2.5$ row and again in its own row.}
 \label{tab:07_ledger}
 \begin{tabular}{lrrrrrr}
 \toprule
@@ -224,7 +228,7 @@ Figure~\ref{fig:07_ak4} is the $\eta$--$\phi$ display of the event at this stage
 radius $R$ around its axis, its constituents in the jet colour, the unclustered stable particles in grey, the
 $b$ and $\bar b$ jets in red and blue with the quark direction as an open star. The two $b$ jets are
 back-to-back in $\phi$ ($\Delta\phi=3.09$) and far apart in $\eta$ ($-1.59$ and $-3.75$), the picture of a
-$\qqbar\to\bbbar$ event with a very asymmetric $x_1=0.39$, $x_2=0.0022$ of chapter~\ref{ch:01_ME}. The
+$\qqbar\to\bbbar$ event with a very asymmetric $x_1=0.0022$, $x_2=0.39$ of chapter~\ref{ch:01_ME}. The
 circles of the 25 other jets, mostly in the central region, are the hadronised shower and MPI. The grey
 particles between the circles and the 38 crosses on the $|\eta|=6$ border are the beam remnants.
 Figure~\ref{fig:07_nonu_ak8} shows the same event without neutrinos (the $b$ jet shrinks to $79.8\GeV$,

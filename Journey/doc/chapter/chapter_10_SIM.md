@@ -359,8 +359,9 @@ cells (attributed to the kind of the primary that deposited most of the cell's e
 parentheses; `ALL` adds the two. The HCAL "GeV" add the visible energy of HB, HE, HO (GeV) and the HF shower-library units
 (photoelectrons), as the analyzer sums them. In the chapter: the mixed-event ECAL energies 236 GeV (signal, 69.3 + 32.4 +
 129 + 5.64) and 12 130 GeV (pileup, 3950 + 3860 + 4320), total 12 366; the HCAL 1072 (signal) and 52 900 (pileup), total
-54 000 (rounded); the tracker pileup hits 139 551 + 146 028 + 152 464 = 438 043; per collision 139 551 / 71 = 1965,
-146 028 / 68 = 2147, 152 464 / 54 = 2823; the signal's share 10 272 / 448 315 = 2.3 %; the signal cells lost to the pileup
+54 000 (rounded); the tracker pileup hits 139 551 + 146 028 + 152 464 = 438 043; per collision 139 551 / 71 = 1966 (1965.5),
+146 028 / 68 = 2147, 152 464 / 54 = 2823; the signal's share 10 272 / 448 315 = 2.3 % (of its own bunch crossing
+10 272 / (10 272 + 146 028) = 6.6 %); the signal cells lost to the pileup
 12 804 - 2362 = 10 442; 3860 / 68 = 57 GeV of ECAL energy per in-time collision.
 
 ### 4.2 The SimAnalyzer logs, page lines (`simAnalyzer_<stage>_10_SIM.log`)
@@ -396,7 +397,10 @@ Stage `signal` (`nSimTracks=1926 nSimVertices=768`; pages 6 to 10 of the PDF):
   page 5 (calo hits): nHits=26793 nCells=14157 noGeometry=0 E by subdetector: EB=67.989(5521) EE=293.66(6214) ES=0.245266(1069) HB=0.217328(173) HE=1.66239(648) HO=3.73269e-06(1) HF=1849(531) | b system: E_ECAL=63.5766 E_HCAL=0.385802 E_HF=0 nCells=1452 | bbar system: E_ECAL=9.90505 E_HCAL=0.0251385 E_HF=987 nCells=671
 ```
 Page 1 is identical in all four stages (the hand-over does not change). In the chapter: the secondaries of the B_Decay
-stage sit in 70 - 29 = 41 new vertices; 10 272 - 7339 = 2933 tracker hits more than the EM stage; the ECAL energy of the
+stage sit in 70 - 29 = 41 new vertices, those of the signal stage in 768 - 29 = 739 (FWLite: 739 `SimVertex`s with a
+stored secondary, by `processType()`: 201 decay 130, 14 conversion 268, 3 bremsstrahlung 189, 2 ionisation 3, 13 Compton 4,
+5 annihilation 3, 121 hadron inelastic 141, 111 hadron elastic 1); the 385 / 1 of `hadron inelastic` / `hadron elastic` are
+secondaries, from 141 + 1 = 142 vertices (section 4.8, (4)); 10 272 - 7339 = 2933 tracker hits more than the EM stage; the ECAL energy of the
 signal 67.989 + 293.66 + 0.245 = 361.9 GeV; the HCAL 0.217 + 1.662 + 0.000 + 1849 = 1851 (GeV of HB, HE, HO plus the HF
 units; the sum of the three-digit by-kind energies of the SimHitAnalyzer, 1280 + 314 + 206 + 0.0007 + 53 = 1853, is the
 same number up to rounding); the looper threshold 0.3 x 3.8 T x 1.29 m / 2 = 0.735 GeV.
@@ -457,7 +461,8 @@ companion's scratch, reproduced by the loop of chapter 09 section 4 with `timeOf
 `SimTracks 1926, genpartIndex > 0: 571, noVertex: 0, SimVertices 768`; muon collections all empty; `EcalHitsEB: 7273 hits,
 E sum 67.989, tmax 481.5 ns; EcalHitsEE: 15867 hits, E 293.660, tmax 497.0 ns; EcalHitsES: 1122 hits, E 0.245, tmax 25.5 ns;
 HcalHits: 2531 hits, E sum 1850.880 (GeV + HF units), tmax 498.9 ns; ZDCHITS, CaloHitsTk: 0 hits`. 1862 of the 7273 EB
-hits (3.34 GeV of the 68.0) are later than 25 ns. The ECAL hit counts (7273 + 15 867 + 1122 = 24 262) and the cell counts
+hits (3.34 GeV of the 68.0) are later than 25 ns. The smallest hit energies, EB 1.52e-05 GeV and EE 1.00e-05 GeV (6562 of
+the 7273 EB hits are below 15 MeV), show the `CaloSD.EminHits` thresholds of 15 keV and 10 keV (section 4.8, last table). The ECAL hit counts (7273 + 15 867 + 1122 = 24 262) and the cell counts
 (5521 + 6214 + 1069 = 12 804) agree with the SimHitAnalyzer.
 
 ### 4.5 FWLite extras: the library and the reconciliation with chapter 09
@@ -469,13 +474,22 @@ crossings`. For library events 72 to 139: `68 events, 10414 primaries, 32406 Sim
 physics; 10 414 primaries, 10 414 SimTracks and 102 018 crossings transport-only); the smallest and largest events of the
 library have 1 (event 12) and 1897 (event 247) SimTracks.
 
-Reconciliation of the 10 414 with the 10 388 primaries of chapter 09 (events 72 to 139): `SimTracks with link 10414,
-duplicate links 1, distinct status-1 particles with a SimTrack 10388, other 25`. The 25 links to a non-status-1 particle
-of `generatorSmeared` are, by PDG id, `{21: 14, -1: 2, -2: 2, 2: 2, 1: 1, 213: 1, 2101: 1, 113: 1, 313: 1}` (gluons,
-quarks, a diquark, a rho+, a rho0, a K*0), all with a production vertex at r = 0.03 cm; e.g. event 78 a gluon of 495 GeV,
-event 111 a u quark of 4787 GeV, event 124 a ud diquark of 6629 GeV, event 139 a K* of 245 GeV. The `g4Ledger.py` of
-chapter 09 counts status-1 particles whose barcode is a `genpartIndex()`; the `SimHitAnalyzer` counts `SimTrack`s with
-`genpartIndex() > 0`: 10 388 + 25 + 1 = 10 414. For the signal both give 571.
+Reconciliation of the 10 414 with the 10 387 primaries and 27 PPS protons of chapter 09 (events 72 to 139): FWLite
+gives `SimTracks with link 10414, duplicate links 1, distinct status-1 particles with a SimTrack 10388, other 25`. The 25 `SimTrack`s whose
+link is the barcode of a non-status-1 particle of `generatorSmeared` are all protons (`type() = 2212`) of 3040 to 6800 GeV
+with their vertex at z = +-20300 cm, r = 0.03 cm: the forward protons that `LHCTransport` delivers to the PPS region
+(section 4.8, (8)), not particles of the minimum-bias record. The `generatorSmeared` particle that happens to carry the
+same barcode is, by PDG id, `{21: 14, -1: 2, -2: 2, 2: 2, 1: 1, 213: 1, 2101: 1, 113: 1, 313: 1}` (e.g. event 78: a proton of
+4132 GeV, the barcode of a gluon of 495 GeV; event 124: protons of 6800 and 5539 GeV, the barcodes of a u quark of 171 GeV and
+a ud diquark of 6629 GeV); FWLite on events 72-139 of `step2_SIM_pileup_10_SIM.root`, `SimTrack::type()`, the vertex z and
+`HepMC::GenEvent::barcode_to_particle` of `generatorSmeared`. The `g4Ledger.py` of
+chapter 09 counts, since 13 November 2026, the PPS protons apart: it finds the `SimTrack`s with their vertex at
+|z| > 100 m and matches them to their generator protons by energy (27 protons, 150058.2 GeV), and counts as primaries
+the status-1 particles whose barcode is the `genpartIndex()` of a `SimTrack` from the collision (10 387; before the
+fix 10 388, the proton of event 132, whose link happens to equal its barcode, being counted as a primary). The
+`SimHitAnalyzer` counts all `SimTrack`s with `genpartIndex() > 0`: 10 387 + 27 = 10 414 (the 25 links above, the one
+of event 132, and the one of event 75 that coincides with the barcode of a stable proton of 6.0 GeV that is a primary
+as well, hence the "duplicate link"). For the signal both give 571.
 
 ### 4.6 The release parameters quoted in "Open problems for Phase-2"
 
@@ -484,12 +498,13 @@ All under `$CMSSW_RELEASE_BASE/src` (`/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cms
 | parameter | value | file (line) |
 |---|---|---|
 | `CaloSD.EminTrack`, `TmaxHit` | `1.0` GeV, `1000.0` ns | `SimG4Core/Application/python/g4SimHits_cfi.py` (382-383) |
-| `CaloSD.HCNames`, `EminHits`, `TmaxHits` | `('EcalHitsEB','EcalHitsEE','EcalHitsES','HcalHits','ZDCHITS')`, `(0.015,0.010,0.0,0.0,0.0)`, `(500,500,500,500,2000)` | same (384-387) |
+| `CaloSD.HCNames`, `EminHits`, `TmaxHits` | `('EcalHitsEB','EcalHitsEE','EcalHitsES','HcalHits','ZDCHITS')`, `(0.015,0.010,0.0,0.0,0.0)` MeV (`SimG4CMS/Calo/src/CaloSD.cc` line 90: `eminHits[k] * CLHEP::MeV`, i.e. 15 keV and 10 keV), `(500,500,500,500,2000)` | same (384-387) |
 | `HGCSD.EminHit`, `TimeSliceUnit` | `0.0`, `0.001` ns | same (547-549) |
 | `HGCScintSD.EminHit`, `UseBirkLaw`, `BirkC3`, `BirkC2`, `BirkC1` | `0.0`, `True`, `1.75`, `0.142`, `0.0060` | same (567-574) |
+| `TotemT2ScintSD.BirkC3`, `BirkC2`, `BirkC1`; `AHCalSD.BirkC3`, `BirkC2`, `BirkC1` | `1.75`, `0.142`, `0.006`; `1.75`, `0.142`, `0.0052` | same (601-605, 664-668) |
 | `HCalSD.UseBirkLaw`, `BirkC3`, `BirkC2`, `BirkC1`, comment | `True`, `1.75`, `0.142`, `0.0060`, "Values of Birks constants from NIM 80 (1970) 239-244: as implemented in Geant3 required correction due to biased computation of enery deposition" | same (426-432) |
 | `HCalSD.UseShowerLibrary`, `HBDarkening`, `HEDarkening`, `HFDarkening` | `True`, `False`, `False`, `False` | same (433, 446-448) |
-| `ECalSD.UseBirkLaw`, `BirkL3Parametrization`, `BirkSlope`, `BirkCut`, `BirkC1`, `BirkC3`, `BirkC2` | `True`, `True`, `0.253694`, `0.1`, `0.03333`, `1.0`, `0.0` | same (403-409) |
+| `ECalSD.UseBirkLaw`, `BirkL3Parametrization`, `BirkSlope`, `BirkCut`, `BirkC1`, `BirkC3`, `BirkC2` | `True`, `True`, `0.253694`, `0.1`, `0.03333`, `1.0`, `0.0` (applied to the EB and the EE crystals, `useWeight`; not to the ES: `SimG4CMS/Calo/src/ECalSD.cc` lines 121, 205-210) | same (403-409) |
 | `common_UseLuminosity.InstLuminosity`, `DelivLuminosity` | `0.`, `5000.` | same (50-53), used by `ECalSD` (402) and `HCalSD` (425) |
 | `HFDarkeningParameterBlock` | the dose table | `SimG4CMS/Calo/python/HFDarkeningParams_cff.py`, loaded at line 6 of `g4SimHits_cfi.py`, passed at line 456 |
 | `HFShower.UseShowerLibrary`, `ApplyFiducialCut` | `True`, `True` | `g4SimHits_cfi.py` (469, 473) |
@@ -644,8 +659,8 @@ reproduces the HB, HE and HF sums of the SimAnalyzer.
   outside: bx +0 pileup event 53 at z = -20300 cm (2 primary)
   outside: bx +1 pileup event 40 at z = 20300 cm (1 primary)
   bx -1: 71 collisions, primaries per collision: min 1, median 69, max 537, sum 10012
-  bx +0: 68 collisions, primaries per collision: min 2, median 126, max 470, sum 10414
-  bx +1: 54 collisions, primaries per collision: min 1, median 154, max 574, sum 10634
+  bx +0: 68 collisions, primaries per collision: min 2, median 114.5, max 470, sum 10414
+  bx +1: 54 collisions, primaries per collision: min 1, median 148.5, max 574, sum 10634
 
 -- (8) the library collisions with a vertex at |z| = 203 m (step2_SIM_pileup_10_SIM.root, library events 12, 124, 179)
   library event 12: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
@@ -670,19 +685,20 @@ The arithmetic of the chapter on these numbers:
 | 0.15 MeV per crossing (0.23 in the full simulation) | 1.16607 GeV / 7861 hits; 2.33358 GeV / 10 272 hits |
 | 0.12 MeV for a MIP in 300 um of silicon | (dE/dx)min = 1.664 MeV cm2/g x 2.329 g/cm3 (PDG) x 0.03 cm = 0.116 MeV |
 | X0 = 0.89 cm, R_M ~ 2 cm, E_c ~ 9 MeV of PbWO4; lambda_I ~ 20 cm (PbWO4), ~ 16 cm (brass) | PDG tables of material properties |
-| shower maximum 8.5 X0, 7.5 cm for 44 GeV | ln(44 000 / 9) = 8.5; 8.5 x 0.89 cm = 7.5 cm |
+| shower maximum 8.5 X0, 7.6 cm for 44 GeV | ln(44 000 / 9) = 8.49; 8.49 x 0.89 cm = 7.56 cm |
 | crystals 22-23 cm (about 25 X0), 2.2 cm (EB) and 2.9 cm (EE) wide | the CMS ECAL crystal dimensions (barrel 23 cm, front face 2.2 cm; endcap 22 cm, 2.86 cm) |
 | photon: 97 %, two thirds, 89 %, 90 % in 6 (B_Decay_EM); 89 %, a fifth, 47 %, 90 % in 38, 11 % lost (full) | section (6) |
 | two hadrons in three start their shower in an ECAL crystal | 1 - exp(-23 / 20.3) = 0.68 |
 | 26 % of the charged hadrons interact in the tracker, 0.3 lambda_I | 19 / 73; -ln(1 - 19/73) = 0.30 |
 | 142 nuclear-interaction vertices: 4 + 13 + 85 + 26 + 14 | the location line of section (4); 14 = 9 (calorimeters) + 5 (preshower) |
-| b system: ECAL 63.58 GeV, HCAL 0.386 GeV in 122 cells, x sampling = 72 GeV | 6.229 + 57.323 + 0.024; 0.010 + 0.376; 17 + 105; 0.010 x 125 + 0.376 x 190 = 72.7 (HB and HE sampling factors of `test/11_DIGI/out/thresholds_11_DIGI.txt`: `hb.samplingFactors` 124.5-143.5, `he.samplingFactors` 186.1-210.6) |
+| b system: ECAL 63.58 GeV, HCAL 0.386 GeV in 122 cells, x sampling = 73 GeV | 6.229 + 57.323 + 0.024; 0.010 + 0.376; 17 + 105; 0.010 x 125 + 0.376 x 190 = 72.7 (HB and HE sampling factors of `test/11_DIGI/out/thresholds_11_DIGI.txt`: `hb.samplingFactors` 124.5-143.5, `he.samplingFactors` 186.1-210.6) |
 | bbar system: 9.9 GeV in the ECAL (9.4 in the EE) | 0.540 + 9.353 + 0.012 = 9.905 (the SimAnalyzer: 9.90505) |
 | the followed photon and pi+ in the mixed event: 80 crystals with 42.6 GeV, 8 with 3.9 GeV | the header of `mixed/ECAL/simHits_mixed_10_SIM_ECAL_run1_event1.pdf` (`pdftotext`): `π+ 13.3 GeV (η -1.54), 3.91 GeV in 8 cells; KS 15.7 GeV (η -3.77), 4.56 GeV in 63 cells; γ 17.7 GeV (η -1.57), 42.57 GeV in 80 cells` |
 | the followed primaries of the signal: photon 270 cells with 42.0 GeV, pi+ 35 cells with 3.4 GeV, 171 tracker hits of the photon, 809 HF units in 19 cells of the HF pi+, K0S 203 hits | the headers of `signal/{TRK,ECAL,HCAL}/simHits_signal_10_SIM_<station>_run1_event1.pdf`: `π+ 13.3 GeV (η -1.54), 29 hits; KS 15.7 GeV (η -3.77), 203 hits; γ 17.7 GeV (η -1.57), 171 hits; e 5.0 GeV (η -1.43), 138 hits`; `π+ 13.3 GeV (η -1.54), 3.43 GeV in 35 cells; ...; γ 17.7 GeV (η -1.57), 42.03 GeV in 270 cells`; `π+ 30.6 GeV (η -3.74), 809 (HF units) in 19 HF cells`; the "GeV" of these labels is the pT of the primary (`plugins/SimHitAnalyzer.cc`, `highlightLine`) |
 | 98 % of the barrel crystals hit; EE 14 619 of 14 648; ES 31 654 of 137 216; HB 3624 of 9072; HF 3212 of 3456 | `simHits_mixed_10_SIM.log` (cells per subdetector) against the detector elements of `simHits_signal_10_SIM.log` (`EB=61200 EE=14648 ES=137216 HB=9072 HE=6768 HO=2160 HF=3456`); 59 897 / 61 200 = 97.9 % |
 | EE 9720 GeV, 33 times the signal | the header of `mixed/ECAL/...`: `EE 14619 cells (9.72e+03 GeV)`; 9720 / 293.66 = 33.1 |
 | PU vertices: r.m.s. 3.76 cm, -9.5 to +10.1 cm, 2 within 1 mm of z = 3.11 cm | section (7); the three collisions at z = +-203 m left out |
+| primaries per collision: median 69, 114.5, 148.5 in bx -1, 0, +1 | section (7) of `extras_10_SIM.txt`: for the even counts 68 and 54 the mean of the two middle values, (103 + 126) / 2 and (143 + 154) / 2 (the script printed the upper middle value, 126 and 154, until it was fixed; the same from the `pileup event` lines of `simHits_mixed_10_SIM.log`) |
 | the PPS protons, `LHCTransport`, 203 m | section (8); `g4SimHits_cfi.py` line 694 `run3_common.toModify( g4SimHits, LHCTransport = True )`; `SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py` lines 10-11 `PPSRegionStart_45/56 = 203` |
 
 The release parameters quoted in the subsections (all under `$CMSSW_RELEASE_BASE/src`):
@@ -695,5 +711,5 @@ The release parameters quoted in the subsections (all under `$CMSSW_RELEASE_BASE
 | `Physics.EminFTFP`, `EmaxBERT`, `EmaxBERTpi` | `3.`, `6.`, `12.` GeV | same (217-221) |
 | `StackingAction.TrackNeutrino`, `SaveAllPrimaryDecayProductsAndConversions` | `False`, `True` | same (308, 316) |
 | `TrackerSD.EnergyThresholdForPersistencyInGeV` | `0.2` (compared with the kinetic energy, `SimG4CMS/Tracker/src/TkAccumulatingSensitiveDetector.cc` line 153) | same (367) |
-| `CaloSD.EminTrack`, `EminHits` | `1.0` GeV ("Minimum energy of track for saving it", `SimG4CMS/Calo/src/CaloSD.cc` lines 58, 124, 678), `(0.015, 0.010, 0.0, 0.0, 0.0)` | same (382, 385) |
+| `CaloSD.EminTrack`, `EminHits` | `1.0` GeV ("Minimum energy of track for saving it", `SimG4CMS/Calo/src/CaloSD.cc` lines 58, 124, 678), `(0.015, 0.010, 0.0, 0.0, 0.0)` MeV (`CaloSD.cc` line 90, applied per hit in `CaloSD::filterHit`, line 928) | same (382, 385) |
 | production cuts | `TrackerDeadRegion` 1 mm, `TrackerSensRegion` 0.1 mm, `TrackerPixelDeadRegion` 1 mm, `TrackerPixelSensRegion` 0.01 mm; `EcalRegion` 1 mm, `APDRegion` 0.005 mm; `HcalRegion` 1 mm | `Geometry/TrackerSimData/data/PhaseI/trackerProdCuts.xml` (13-16, 63-66, 72-75, 86-89), `Geometry/EcalSimData/data/EcalProdCuts.xml` (6-17), `Geometry/HcalSimData/data/HcalProdCuts/2021/v2/HcalProdCuts.xml`, included by `Geometry/CMSCommonData/data/dd4hep/cmsExtendedGeometry2024.xml` (213, 373-375) |

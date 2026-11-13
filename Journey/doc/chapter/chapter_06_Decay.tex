@@ -22,7 +22,7 @@ by region, once everything that can decay has decayed? The ``Open problems'' sec
 release uses for the decay tables and the lifetime boundary, and at the age of the common Pythia8 settings.
 
 \begin{plainwords}[Stable is a decision, not a fact]
-A particle that lives $10^{-8}$~s before decaying travels centimetres in the detector; a particle that lives
+A particle that lives $10^{-10}$~s before decaying travels centimetres in the detector; a particle that lives
 $10^{-16}$~s decays before it has moved a micron. The generator and the detector simulation share the work: Pythia8
 decays the short-lived ones, Geant4 decays the long-lived ones on their way through the material, because
 for those it matters where they decay. The boundary is a number in the configuration, a proper lifetime
@@ -94,7 +94,7 @@ the group. From an FWLite read of \code{test/06\_Decay/out/step1\_GEN\_06\_Decay
  & $K^0_L$ & 22 & $15\,330\mm$ \\
  & $K^0_S$ & 13 & $26.8\mm$ \\
  & $n$, $\bar{n}$; $p$, $\bar{p}$ & 13; 11 & stable in practice \\
- & $\Lambda$, $\bar{\Lambda}$; $\bar{\Sigma}^-$ & 8; 2 & $78.9\mm$; $24.0\mm$ \\
+ & $\Lambda$, $\bar{\Lambda}$; $\bar{\Sigma}^+$ & 8; 2 & $78.9\mm$; $44.3\mm$ \\
  & $e^-$; $\bar{\nu}_e$ & 1; 1 & stable; invisible \\
 \bottomrule
 \end{tabular}
@@ -112,7 +112,7 @@ the two primary $b$ hadrons.
 \paragraph{The decay of the $b$ hadrons.}
 The $B^-$ (index 829 in \code{genParticles}) decays semileptonically: $B^- \to e^-\,\bar{\nu}_e\,D^{*0}_0(2300)$,
 followed by $D^{*0}_0 \to D^0\pi^0$, $D^0 \to K^{*-}\rho^+$, $K^{*-} \to \bar{K}^0\pi^-$ with $\bar{K}^0 \to K^0_S$,
-$\rho^+ \to \pi^+\pi^0$ and three $\pi^0 \to \gamma\gamma$. Its 9 stable products are the antineutrino
+$\rho^+ \to \pi^+\pi^0$ and two $\pi^0 \to \gamma\gamma$. Its 9 stable products are the antineutrino
 ($E = 95.5\GeV$, $\pt = 37.5\GeV$, $\eta = -1.59$), the electron ($10.9\GeV$), a $K^0_S$ ($20.6\GeV$), a $\pi^-$
 ($26.6\GeV$), a $\pi^+$ ($32.6\GeV$) and four photons ($44.3$, $4.1$, $0.8$ and $0.4\GeV$), and they sum to the
 $235.9\GeV$ of the $B^-$. The neutrino alone takes 40\% of the $B^-$ energy and 40\% of its \pt. It is the
@@ -121,7 +121,7 @@ only neutrino of the event, and it is exactly the generator missing transverse m
 chapter~\ref{ch:09_G4} loses at the hand-over: Geant4 is not given neutrinos, and the $b$ jet of
 chapter~\ref{ch:07_GenJet} will be measured without it.
 
-The $B^{*+}$ (index 968) first radiates a $33.2\GeV$ photon, $B^{*+} \to B^+\gamma$ (a strong decay, at the
+The $B^{*+}$ (index 968) first radiates a $33.2\GeV$ photon, $B^{*+} \to B^+\gamma$ (an electromagnetic decay, at the
 production vertex), and the $B^+$ decays hadronically into five bodies, $B^+ \to \bar{D}^{*0}\,\pi^+\,\pi^0\,K^0\,\bar{K}^{*0}$,
 with $\bar{D}^{*0} \to \bar{D}^0\gamma$ and $\bar{D}^0 \to \bar{K}^0\pi^-\pi^+\pi^0\pi^0$. Its 16 stable products
 are 10 photons, two $K^0_S$, one $K^0_L$, two $\pi^+$ and one $\pi^-$, with the full $2421.4\GeV$ of the
@@ -142,7 +142,7 @@ they are in the file, and chapter~\ref{ch:09_G4} shows which of them Geant4 acce
 Photons are the largest group by number, 273 of the 634 stable particles, and 262 of them come from the 131
 $\pi^0$ (8 more from $\eta$ decays, one each from the $B^{*+}$, a $\bar{D}^{*0}$ and a $\bar{\Sigma}^0$); they
 carry $2876\GeV$, of which $2703\GeV$ from the $\pi^0$. Charged hadrons are 303 (261 charged pions, 29
-charged kaons, 11 protons and antiprotons, two $\bar{\Sigma}^-$) with $7168\GeV$; neutral hadrons are only 56
+charged kaons, 11 protons and antiprotons, two $\bar{\Sigma}^+$) with $7168\GeV$; neutral hadrons are only 56
 (22 $K^0_L$, 13 $K^0_S$, 13 neutrons, 8 $\Lambda$) with $3450\GeV$; and there is one electron and one
 neutrino.\footnote{\path{test/06_Decay/out/ledger_06_Decay.txt}, ``by kind'', and the FWLite species counts of the
 companion.} In chapter~\ref{ch:05_Had} the 320 primary hadrons were 169 charged and 151 neutral: the decays turn
@@ -159,7 +159,7 @@ Figure~\ref{fig:06_species} shows the stable species.
 \foreach \y in {0,100,200,300} {\draw (0.1,\y) -- (-0.1,\y) node[left,font=\tiny] {\y};}
 \histbar{0}{273} \histbar{1}{261} \histbar{2}{29} \histbar{3}{22} \histbar{4}{13} \histbar{5}{13}
 \histbar{6}{11} \histbar{7}{8} \histbar{8}{2} \histbar{9}{1} \histbar{10}{1}
-\foreach \x/\l in {0/$\gamma$, 1/$\pi^\pm$, 2/$K^\pm$, 3/$K^0_L$, 4/$K^0_S$, 5/$n\,\bar{n}$, 6/$p\,\bar{p}$, 7/$\Lambda\,\bar\Lambda$, 8/$\bar\Sigma^-$, 9/$e^-$, 10/$\bar\nu_e$}
+\foreach \x/\l in {0/$\gamma$, 1/$\pi^\pm$, 2/$K^\pm$, 3/$K^0_L$, 4/$K^0_S$, 5/$n\,\bar{n}$, 6/$p\,\bar{p}$, 7/$\Lambda\,\bar\Lambda$, 8/$\bar\Sigma^+$, 9/$e^-$, 10/$\bar\nu_e$}
   {\node[below, font=\scriptsize] at (\x+0.5,0) {\l};}
 \node[font=\scriptsize, anchor=north east] at (11.3,290) {634 stable particles of the event, by species};
 \end{tikzpicture}
@@ -191,7 +191,8 @@ is the semileptonic $B^-$ decay.
 \centering\small
 \caption{Ledger of the decay stage: the stable (status 1) particles before (chapter~\ref{ch:05_Had},
 \code{test/05\_Had/out/ledger\_05\_Had.txt}) and after the hadron decays (\code{test/06\_Decay/out/ledger\_06\_Decay.txt}).
-$n$ is the number of particles, $E$ the energy and \pt{} the scalar sum of transverse momenta, in GeV.}
+$n$ is the number of particles, $E$ the energy and \pt{} the scalar sum of transverse momenta, in GeV.
+The rows by region count every stable particle, the neutrino (at $\eta=-1.59$) included.}
 \label{tab:06_ledger}
 \begin{tabular}{@{}lrrrrrrrrr@{}}
 \toprule
@@ -224,7 +225,7 @@ invisible (neutrinos)               &   0 &    0.0 &   0.0 &   1 &   95.5 &  37.
 Figure~\ref{fig:06_display} is the $\eta$--$\phi$ display of the complete event. Compared with the stage-4
 display of chapter~\ref{ch:05_Had}, where the $B^-$ and the $B^{*+}$ were two single large markers, the two
 $b$ systems are now clusters of 9 (red) and 16 (blue) small markers around the same positions, $(\eta, \phi) =
-(-1.57, -2.09)$ and $(-3.75, 1.01)$: the decay products of a $235\GeV$ and a $2421\GeV$ hadron stay within a
+(-1.57, -2.09)$ and $(-3.75, 1.01)$: the decay products of a $236\GeV$ and a $2421\GeV$ hadron stay within a
 few tenths of a unit of their parent. This is the picture a jet algorithm will see in the next chapter. The
 grey points are the 477 other decay products, the violet ones the 132 primary hadrons that did not decay; 38
 particles beyond $\abseta = 6$ are drawn on the border.
@@ -288,7 +289,7 @@ extracted here.
 \code{Tune:preferLHAPDF = 2} is the Pythia8 default (\code{Tunes.xml}) and does nothing;
 \code{Main:timesAllowErrors = 10000} raises the number of flawed events Pythia8 may skip before it aborts from the
 default 10, so that a sick configuration is not noticed; \code{Check:epTolErr = 0.01} loosens the
-energy-momentum conservation check from the default $10^{-4}$ to 1\% of the beam energy, i.e. $136\GeV$ at
+energy-momentum conservation check from the default $10^{-4}$ to 1\% of the collision energy, i.e. $136\GeV$ at
 13.6~TeV; \code{SLHA:minMassSM = 1000} and \code{Beams:setProductionScalesFromLHEF = off} concern SUSY and
 Les Houches input; \code{ParticleDecays:allowPhotonRadiation = on} adds QED radiation in decays to lepton pairs,
 which the Pythia8 manual leaves off by default to avoid double counting with an external QED program such as

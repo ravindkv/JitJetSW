@@ -130,7 +130,7 @@ cd ../..
 
 - `common/genPartAnalyzer_cfg.py` (plugin `GenPartAnalyzer`, `plugins/GenPartAnalyzer.cc`): one eta-phi page per
   generation stage up to `maxStage=4`: page 1 the hard process (the two b quarks, status 23), page 2 the parton shower
-  (57 particles), page 3 MPI and beam remnants (169 partons, status 62/63, the b quarks with primordial kT), page 4 the
+  (14 particles: the hard process and its shower), page 3 MPI and beam remnants (169 partons, status 62/63, the b quarks with primordial kT), page 4 the
   hadronisation (the 320 primary hadrons, the B- and B*+ matched to the b and bbar chains). Marker size ~ log pT, labels
   for pT > 5 GeV, particles beyond |eta| = 6 on the border. Outputs: `genPartAnalyzer_05_Had.pdf` (4 pages),
   `genPartAnalyzer_05_Had_page-1..4.png` (110 dpi, cropbox), `genPartAnalyzer_05_Had.root` (the TH2 per stage) and
@@ -205,7 +205,7 @@ sum of masses 30.8 -> 176.7 (+145.9); 24.5 GeV / 151 particles = 0.16 GeV per ad
 ```
 == GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=1230 nStatus1=320 hard b idx=5 hard bbar idx=4
   stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
-  stage 2 (partonShower): nParticles=57 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  stage 2 (partonShower): nParticles=14 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
   stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 62): pt=91.7437 eta=-1.56979 phi=-2.08372 idx=[515] | #bar{b} quark (status 62): pt=116.356 eta=-3.74787 phi=1.01139 idx=[514] | net b+bbar: |sum pT|=25.0768 (px=16.727 py=18.6829) scalar sum pT=208.1
   stage 4: b quark [824] pt=91.7437 -> primary hadron [829] pdg=-521 pt=94.2789 dR=0.00887172
   stage 4: bbar quark [964] pt=116.356 -> primary hadron [968] pdg=523 pt=114.174 dR=0.00134803
@@ -214,7 +214,8 @@ sum of masses 30.8 -> 176.7 (+145.9); 24.5 GeV / 151 particles = 0.16 GeV per ad
 
 Derived: pT(B-)/pT(b) = 94.2789/91.7437 = 1.028; pT(B*+)/pT(bbar) = 114.174/116.356 = 0.981;
 E(B-)/E(b) = 235.85/230.04 = 1.025 (x_E of the .tex); E(B*+)/E(bbar) = 2421.40/2469.92 = 0.980;
-E(B-)/E(b string) = 235.85/285.1 = 0.827; |pT(b)+pT(bbar)|: 25.08 -> 20.30 (-4.78).
+E(B-)/E(b string) = 235.85/285.1 = 0.827; pT: b -> B- 94.2789 - 91.7437 = +2.54, bbar -> B*+ 114.174 - 116.356 = -2.18;
+|pT(b)+pT(bbar)|: 25.0768 -> 20.302 (-4.77).
 
 ### 4.4 `05_Had/out/step1_GEN_05_Had.log`: the Pythia8 settings that differ from the default ("changes only")
 
@@ -284,6 +285,8 @@ for ev in Events('step1_GEN_05_Had.root'):
     for s in (61,62,63):
         q = [p for p in P if p.status()==s]
         print('status %d: n=%d E=%.1f pt=%.1f summass=%.2f' % (s, len(q), sum(p.energy() for p in q), sum(p.pt() for p in q), sum(p.mass() for p in q)))
+    q62 = [p for p in P if p.status()==62]
+    print('status 62 masses: b quarks %.2f, %d other quarks %.2f' % (sum(p.mass() for p in q62 if abs(p.pdgId())==5), sum(0<abs(p.pdgId())<5 for p in q62), sum(p.mass() for p in q62 if 0<abs(p.pdgId())<5)))
     fin = [p for p in P if p.status()==1]
     cnt = collections.Counter(names.get(abs(p.pdgId()), str(abs(p.pdgId()))) for p in fin)
     print('final n=%d sumE=%.2f sumPt=%.2f summass=%.2f charged=%d' % (len(fin), sum(p.energy() for p in fin), sum(p.pt() for p in fin), sum(p.mass() for p in fin), sum(p.charge()!=0 for p in fin)))
@@ -301,7 +304,7 @@ for ev in Events('step1_GEN_05_Had.root'):
                   [(p.mother(i).pdgId(), p.mother(i).status(), round(p.mother(i).pt(), 3), round(p.mother(i).energy(), 2)) for i in range(p.numberOfMothers())]))
     for p in P:
         if abs(p.pdgId()) == 5 and p.status() in (62, 71):
-            print('b quark pdg=%d status=%d pt=%.3f E=%.2f daughters=%s' % (p.pdgId(), p.status(), p.pt(), p.energy(), [(p.daughter(i).pdgId(), p.daughter(i).status()) for i in range(p.numberOfDaughters())]))
+            print('b quark pdg=%d status=%d pt=%.3f E=%.2f daughters=%s' % (p.pdgId(), p.status(), p.pt(), p.energy(), [(p.daughter(i).pdgId(), p.daughter(i).status(), round(p.daughter(i).pt(), 2)) for i in range(p.numberOfDaughters())]))
     for bh in [p for p in fin if abs(p.pdgId()) in (521, 523)]:
         near = []
         for p in fin:
@@ -321,6 +324,7 @@ status counts: [(1, 320), (4, 2), (21, 2), (23, 2), (31, 62), (33, 62), (41, 28)
 status 61: n=64 E=11817.0 pt=69.5 summass=0.00
 status 62: n=156 E=11817.0 pt=474.7 summass=26.34
 status 63: n=13 E=1783.0 pt=6.5 summass=4.46
+status 62 masses: b quarks 9.60, 39 other quarks 16.74
 final n=320 sumE=13600.00 sumPt=505.73 summass=176.72 charged=169
   pi+-       86
   pi0        46
@@ -361,19 +365,23 @@ heavy hadron pdg=-521 pt=94.279 eta=-1.567 phi=-2.092 E=235.85 m=5.279 mothers=[
 heavy hadron pdg=-421 pt=2.045 eta=-2.782 phi=1.305 E=16.69 m=1.865 mothers=[(3, 71, 1.34, 2.0), (21, 71, ...) x 10, (-4, 71, 0.771, 16.0)]
 heavy hadron pdg=413 pt=1.885 eta=-3.023 phi=1.813 E=19.52 m=2.010 mothers=[(4, 71, 2.619, 18.96), (21, 71, ...) x 10, (-2, 71, 0.518, 63.96)]
 heavy hadron pdg=523 pt=114.174 eta=-3.747 phi=1.010 E=2421.40 m=5.325 mothers=[(1, 71, 0.908, 1.24), (-5, 71, 116.356, 2469.92)]
-b quark pdg=-5 status=62 pt=116.356 E=2469.92 daughters=[(-5, 71)]
-b quark pdg=5 status=62 pt=91.744 E=230.04 daughters=[(5, 71)]
-b quark pdg=5 status=71 pt=91.744 E=230.04 daughters=[(-521, 1), (111, 1), (211, 1), (111, 1), (111, 1), (311, 1)]
-b quark pdg=-5 status=71 pt=116.356 E=2469.92 daughters=[(-211, 1), (321, 1), (-323, 1), (523, 1)]
-within dR<0.4 of pdg -521 (pt 94.28): n=8 sumpt=20.38 : [('pi0', 7.17), ('pi0', 6.55), ('pi0', 2.83), ('pi0', 1.98), ('K0', 0.91), ('pi0', 0.5), ('K*0', 0.35), ('pi+-', 0.1)]
+b quark pdg=-5 status=62 pt=116.356 E=2469.92 daughters=[(-5, 71, 116.36)]
+b quark pdg=5 status=62 pt=91.744 E=230.04 daughters=[(5, 71, 91.74)]
+b quark pdg=5 status=71 pt=91.744 E=230.04 daughters=[(-521, 1, 94.28), (111, 1, 7.17), (211, 1, 2.39), (111, 1, 6.55), (111, 1, 2.83), (311, 1, 0.91)]
+b quark pdg=-5 status=71 pt=116.356 E=2469.92 daughters=[(-211, 1, 0.96), (321, 1, 0.52), (-323, 1, 1.82), (523, 1, 114.17)]
+within dR<0.4 of pdg -521 (pt 94.28): n=8 sumpt=20.39 : [('pi0', 7.17), ('pi0', 6.55), ('pi0', 2.83), ('pi0', 1.98), ('K0', 0.91), ('pi0', 0.5), ('K*0', 0.35), ('pi+-', 0.1)]
 within dR<0.4 of pdg 523 (pt 114.17): n=1 sumpt=1.82 : [('K*+-', 1.82)]
 ```
 
 Totals used in the .tex: mesons 132 + 94 + 39 + 17 + 2 + 2 = 286, baryons 19 + 15 = 34; pions 132; rho and omega
-34 + 25 + 18 = 77; kaons and K* 39 + 17 = 56; "other light baryons" = Lambda 3, Sigma (Sigma-, Sigma0) 3, Sigma* 4,
+34 + 25 + 18 = 77, against 132 + 14 + 3 = 149 light pseudoscalars (pi, eta, eta'): 77/149 = 0.52; kaons and K* 39 + 17 = 56; "other light baryons" = Lambda 3, Sigma (Sigma-, Sigma0) 3, Sigma* 4,
 Delta 5; pT < 0.5 GeV: 124, pT < 1 GeV: 226, pT > 5 GeV: 8, pT > 10 GeV: 2. The two charm hadrons are a Dbar0
 (pdg -421) and a D*+ (413), from a c cbar pair of the shower (mothers c, status 71). Vector/pseudoscalar for b
-mesons: `StringFlav:mesonBvector = 2.20` gives a vector probability 2.2/3.2 = 69%.
+mesons: `StringFlav:mesonBvector = 2.20` gives a vector probability 2.2/3.2 = 69%. The five light hadrons of the b
+string (daughters of the status-71 b) have pT 0.91 to 7.17 GeV. Masses of the parton level (status 62 + 63):
+9.60 (two b) + 16.74 (39 other quarks) + 4.46 (13 remnants) = 30.80 GeV. The Lund function of the .tex with the Bowler
+term for the B, f(z) ~ z^-(1 + 0.855 x 0.98 x 4.8^2) (1 - z)^0.68 exp(-0.98 x 5.279^2 / z), peaks at z = 0.93, mean 0.89
+(numerical scan in z).
 
 The strings: grouping the status-1 hadrons by the set of their mothers (each string's partons are the mothers of all
 its hadrons):
@@ -405,15 +413,15 @@ PYEOF
 cd ../..
 ```
 
-Output, sorted by mass (the ends are the pdg ids of the quarks; a third quark end is a junction):
+Output, in the order of the record (the ends are the pdg ids of the quarks; a third quark end is a junction):
 
 ```
 strings: 26
-npartons= 2 gluons= 0 status={71: 2} ends=[2, -1]    M=    1.0 E=   38.1 -> nhadrons= 2 dE=0.0000
-npartons= 2 gluons= 0 status={71: 2} ends=[1, -3]    M=    1.5 E=  274.8 -> nhadrons= 2 dE=0.0001
+npartons= 2 gluons= 0 status={71: 2} ends=[2, -1]    M=    1.0 E=   38.1 -> nhadrons= 2 dE=0.0000    (ministring)
+npartons= 2 gluons= 0 status={71: 2} ends=[1, -3]    M=    1.5 E=  274.8 -> nhadrons= 2 dE=0.0001    (ministring)
 npartons= 2 gluons= 0 status={62: 2} ends=[1, -2]    M=    1.3 E=    5.4 -> nhadrons= 2 dE=-0.0000   (ministring)
 npartons= 2 gluons= 0 status={71: 2} ends=[2, -2]    M=    2.1 E=   16.8 -> nhadrons= 3 dE=-0.0000
-npartons= 2 gluons= 0 status={63: 2} ends=[1, -2]    M=    2.2 E=    8.6 -> nhadrons= 2 dE=-0.0000   (ministring)
+npartons= 2 gluons= 0 status={63: 2} ends=[1, -2]    M=    2.2 E=    8.6 -> nhadrons= 2 dE=-0.0000
 npartons= 2 gluons= 0 status={71: 2} ends=[2, -3]    M=    2.6 E=  134.3 -> nhadrons= 3 dE=0.0000
 npartons= 3 gluons= 1 status={71: 3} ends=[2, -2]    M=    3.7 E=    5.4 -> nhadrons= 4 dE=-0.0000
 npartons= 2 gluons= 0 status={71: 2} ends=[1, -1]    M=    5.8 E=   18.2 -> nhadrons= 3 dE=0.0000
@@ -438,11 +446,17 @@ npartons= 9 gluons= 7 status={71: 9} ends=[2, -2]    M= 1083.9 E= 1363.7 -> nhad
 hadrons per string: mean 12.3
 ```
 
-So: 26 strings (22 ordinary q-qbar strings, 2 junction strings, 2 ministrings made directly of status 62/63 partons),
-from 2 to 42 hadrons; |dE| < 0.5 MeV for every string (energy conservation string by string). The 165 partons with
-status 71-79 are the 169 partons minus the 4 of the two ministrings: 120 with status 71 (copied unchanged into the
-colour-ordered string), 45 with status 73 (touched by the joining of very nearby partons); no status 79 (colour
-reconnection copies exist only for the other CR models).
+So: 26 strings (21 ordinary q-qbar strings, 2 junction strings, 3 ministrings), from 2 to 42 hadrons; |dE| < 0.5 MeV
+for every string (energy conservation string by string). A ministring is a system whose mass is less than
+`HadronLevel:mStringMin` = 1 GeV above the constituent masses of its ends (`ParticleData::constituentMass`: u, d 0.325,
+s 0.50 GeV; `Fragmentation.xml`, `ParticleDataScheme.xml` of the xmldoc; status 71 and 73 in `ParticleProperties.xml`): M - m_ends = 1.0 - 0.65, 1.3 - 0.65 and
+1.5 - 0.825 GeV are below 1 GeV, the 2.2 GeV d-ubar pair (2.2 - 0.65 = 1.55 GeV) is an ordinary string that happens to
+end in two hadrons. The status 62/63 of the partons of two strings does not mark a ministring: Pythia8 copies the partons
+of a colour singlet (status 71) only when they are not already adjacent in the record, and these two pairs are (indices
+consecutive). The 165 entries with status 71-79 are 120 copies with status 71 (one mother each: 81 of the 169 partons
+and 39 joined partons) and 45 joins with status 73 (two mothers each, "combination of very nearby partons into one":
+84 status-62 partons and 6 earlier joins, which leaves 39); the 26 strings are made of 120 + 4 = 124 partons. No status
+79 (colour reconnection copies exist only for the other CR models).
 
 ### 4.6 The release files quoted in "Open problems for Phase-2"
 

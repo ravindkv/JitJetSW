@@ -119,7 +119,8 @@ chapter~\ref{ch:11_DIGI}.}
 The job runs with the 2025 settings of the release: the menu of the global tag is
 \path{L1Menu_Collisions2025_v1_0_0}, the ECAL primitives of chapter~\ref{ch:11_DIGI} were made with the payloads of 2025, and the era \code{Run3\_2025}
 brings the CICADA model of 2025; the calorimeter-trigger parameters of Layer-1 and Layer-2 and the muon payloads are
-those of 2024. The first version of this chapter ran with the 2024 settings; what the
+those of 2024. The first version of this chapter ran with the 2024 settings, and
+\path{test/12_L1T/run_12_L1T_2024.sh} remakes that run next to this one (\path{test/12_L1T/out2024/}); what the
 change did to the decision is told in the ledger section.
 
 What is kept: everything. The \code{L1} process copies its input and adds its products under the process name
@@ -130,7 +131,7 @@ granularity at which the event is looked at: half a million digis become, for th
 
 \textbf{What the step does.} Every 25\,ns each calorimeter front-end sends one transverse energy per trigger tower
 to Layer-1 on optical links: 4032 from the ECAL, 4032 from HB and HE, 792 from the HF. The primitive of a tower is
-a small time series (five consecutive crossings for the ECAL, four for the HCAL), and the trigger takes one value
+a small time series (five consecutive crossings for the ECAL, four for HB and HE, two for the HF), and the trigger takes one value
 per crossing: for our event the one of bunch crossing 0, the \emph{sample of interest}. The emulator of the
 calorimeter trigger processes this crossing only (\path{L1Trigger/L1TCaloLayer1/plugins/L1TCaloLayer1.cc}: ``Currently
 we only read and process the `hit' BX only''); in the detector the crossings $-1$ and $+1$, with their 71 and 54
@@ -253,11 +254,12 @@ receives $68\GeV$ of ECAL and $36\GeV$ of HCAL primitives and keeps $36\GeV$). T
 to the rounding. The barrel and the rest of the endcap are hardly touched: the barrel rings receive $655\GeV$ and
 keep $576.5\GeV$. After the step the event is 2561 towers and $2181\GeV$, and the bright bands of
 figure~\ref{fig:12_l1} are the HF. With the 2024 conditions they were not alone: the ECAL primitives of ring~28 were
-four times larger ($315\GeV$ in ring $+28$, up to $11.5\GeV$ each), many survived the $9\GeV$ cut, the ring kept
+four times larger ($315\GeV$ in ring $+28$, up to $11.0\GeV$ each), many survived the $9\GeV$ cut, the ring kept
 $181\GeV$, and step~3 seeded six pileup jets in it. The crystals of ring~28 have lost transparency: the 2025
-digitiser scales their light by 0.025 instead of 0.096 (chapter~\ref{ch:11_DIGI}), and the larger linearisation
-constants of the 2025 primitives ($\times1.37$ there) give back only part of it: per GeV deposited, a ring-28
-primitive is 0.36 of what it was in 2024 (0.94 to 0.99 up to ring 23; companion, last section).
+digitiser scales their light by 0.022 instead of 0.094 (chapter~\ref{ch:11_DIGI}), and the larger linearisation
+constants of the 2025 primitives ($\times1.39$ there) give back only part of it: per GeV deposited, a ring-28
+primitive is 0.34 of what it was in 2024 (0.94 to 0.99 up to ring 23; \path{out2024/compare_12_L1T.txt}, companion,
+last section).
 
 \begin{table}[!htb]
 \centering\small
@@ -712,9 +714,10 @@ module & \code{simKBmtfDigis} & \code{simOmtfDigis} & \code{simEmtfDigis} \\
 chapter~\ref{ch:06_Decay} has no muon above $1\GeV$, and chapter~\ref{ch:10_SIM} found no hit of the signal in any
 muon chamber. The event has a muon trigger story all the same (figure~\ref{fig:12_muon}). The 2016 muon digis of
 chapter~\ref{ch:11_DIGI} give 11 ALCTs and 8 CLCTs in the CSCs, correlated into 8 LCTs, and 11 GEM pads in 7
-clusters; no DT segment. The EMTF receives 12 stubs, 8 CSC and 4 RPC, of which 8 are in bunch crossing 0 (and four
-of them a second time: a chamber at the edge of a sector is also given to the neighbouring sector). Four of the
-CSC stubs line up:
+clusters; no DT segment. The EMTF receives 16 stubs, four of them copies (a chamber at the edge of a sector is also
+given to the neighbouring sector): three repeat stubs that arrive in their own sector as well, and one RPC hit
+arrives only as a copy. That makes 13 distinct stubs, 8 CSC and 5 RPC, of which 9 are in bunch crossing 0 (the
+stubs drawn in figure~\ref{fig:12_muon}). Four of the CSC stubs line up:
 
 \begin{center}\small
 \begin{tabular}{lcccccc}
@@ -883,12 +886,12 @@ The other 33 algorithms need something that the hard collision did not make: sev
 muon+jet one need the kaon decay of step~4; five barrel-jet and fourteen e/$\gamma$ algorithms with low thresholds
 need the pileup jets and clusters of the barrel; two missing-energy algorithms need an ETMHF twice the neutrino; and
 the four looser CICADA algorithms an anomaly score of 88.3, between the 80 of \code{L1\_CICADA\_Tight} and the 90 of
-\code{L1\_CICADA\_VTight}. Nothing that the 2024 version of this chapter found fires any more on a fake: with no jet
+\code{L1\_CICADA\_VTight}. Nothing that the 2024 version of this chapter found firing on the jets of ring~28 fires any more: with no jet
 in tower ring 28, none of the vector-boson-fusion algorithms (two jets far apart in $\eta$ with a large invariant
 mass) and none of the $H_{\mathrm T}$-imbalance algorithms fires, and of the thirteen missing-energy algorithms of 2024
 two are left. The anomaly score was 181.7 in 2024, against thresholds of 113 to 131; the model of 2025 (\code{v2p2p0},
 from the era) on the 2024 towers gives 126.4, the model of 2024 on the 2025 towers 127.7: each change alone lowers
-the score by a third (companion).
+the score by 30\,\% (companion).
 
 \begin{plainwords}[One algorithm, evaluated by hand]
 \code{L1\_DoubleJet\_110\_35\_DoubleJet35\_Mass\_Min800} is the expression \code{comb\{JET110,JET35\} AND
@@ -897,9 +900,9 @@ of at least $35\GeV$: the $\bar b$ jet ($136.0\GeV$) and the $b$ jet ($108.5\GeV
 The second asks for two jets above $35\GeV$ with
 $M^2/2=E_{\mathrm T1}E_{\mathrm T2}(\cosh\Delta\eta-\cos\Delta\phi)\geq800^2/2=320\,000\GeV^2$ (the menu
 stores the cut in this form; the firmware takes $\cosh$ and $\cos$ from lookup tables). For the two signal jets,
-$\Delta\eta=2.2$ and $\Delta\phi=2.98$: $136.0\times108.5\times5.65=83\,000$, a mass of $408\GeV$: fails, and
-there is no other pair. With the 2024 conditions it fired: a ring-28 jet of $56\GeV$ at $\eta=+2.74$, two thirds of
-it calibration factor, six units of rapidity from the $\bar b$ jet, made a ``vector-boson-fusion'' pair of
+$\Delta\eta=2.22$ and $\Delta\phi=2.98$: $136.0\times108.5\times5.64=83\,200$, a mass of $408\GeV$: fails, and
+there is no other pair. With the 2024 conditions it fired: a ring-28 jet of $56\GeV$ at $\eta=+2.74$, more than half of
+it calibration factor, six and a half units of rapidity from the $\bar b$ jet, made a ``vector-boson-fusion'' pair of
 $2.2\TeV$. The transparency of the crystals at the edge of the endcap decided a VBF trigger.
 \end{plainwords}
 
@@ -985,7 +988,7 @@ step 2: towers with $E_{\mathrm T}>0$ & 2561 & of 5760 \\
 step 3: jets / e/$\gamma$ / $\tau$ sent to the $\mu$GT & 9 / 12 / 12 & of at most 12 each \\
 \quad L1 jet of the $b$ jet & 108.5 & generator 117.8 (79.8 visible) \\
 \quad L1 jet of the $\bar b$ jet & 136.0 & generator jet 115.9 \\
-step 4: CSC stubs (LCT) / stubs given to the EMTF & 8 / 12 & \\
+step 4: CSC stubs (LCT) / stubs given to the EMTF & 8 / 16 & 13 distinct \\
 step 4: candidates of BMTF / OMTF / EMTF & 0 / 0 / 2 & \\
 step 5: muons sent to the $\mu$GT & 1 & 3.0 GeV, a pileup kaon decay \\
 \midrule
@@ -1008,8 +1011,8 @@ of Layer-2 another $229.5\GeV$ from the jet windows; what is left is nine jets a
 real jets are $244.5\GeV$. The global trigger then says yes 63 times, 22 of them for the two jets the journey has
 followed since chapter~\ref{ch:01_ME}. The one algorithm the journey needs is among those 22.
 
-\paragraph{What the year changed.} The same event on the 2024 settings (the first version of this chapter; the
-companion compares the two step by step) gave $3411.5\GeV$ of primitives, twelve jets, six of them seeded in tower
+\paragraph{What the year changed.} The same event on the 2024 settings (the first version of this chapter, remade
+by \path{run_12_L1T_2024.sh} in \path{test/12_L1T/out2024/}; the companion compares the two step by step) gave $3411.5\GeV$ of primitives, twelve jets, six of them seeded in tower
 ring 28, and 57 of 408 algorithms, among them eight VBF and five $H_{\mathrm T}$-imbalance algorithms fired by those
 jets. The 2025 crystals at the edge of the endcap give a quarter of the light, the ring-28 jets are gone, and with
 them every algorithm they fired. The two signal jets moved by $+2$ and $-1\GeV$, the muon not at all, and

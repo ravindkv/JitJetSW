@@ -103,7 +103,9 @@ print('\n-- 5. Steps 4 and 5: the muon trigger')
 for label, pre, k in (('DT phi segments', '  TP counts:', 'DTphi'), ('DT theta segments', '  TP counts:', 'DTtheta'), ('CSC anode patterns (ALCT)', '  TP counts:', 'CSC_ALCT'),
                       ('CSC cathode patterns (CLCT)', '  TP counts:', 'CSC_CLCT'), ('CSC stubs (LCT)', '  TP counts:', 'CSC_LCT'), ('GEM pads', '  TP counts:', 'GEMpads'),
                       ('GEM pad clusters', '  TP counts:', 'GEMpadClusters'), ('stubs given to the EMTF', '  EMTF input stubs:', 'all'),
-                      ('   of which neighbour copies', '  EMTF input stubs:', 'neighbourCopies'), ('EMTF tracks', '  TF counts', 'EMTFtracks'),
+                      ('   of which neighbour copies', '  EMTF input stubs:', 'neighbourCopies'),
+                      ('   of which copies with no own-sector twin', '  EMTF input stubs:', 'copiesWithoutTwin'),
+                      ('distinct stubs (drawn)', '  EMTF input stubs:', 'distinct'), ('EMTF tracks', '  TF counts', 'EMTFtracks'),
                       ('BMTF (Kalman) candidates, all bx / bx 0', '  TF counts', 'kBMTF'), ('OMTF candidates', '  TF counts', 'OMTF'), ('EMTF candidates', '  TF counts', 'EMTF'),
                       ('uGMT muons', '  uGMT counts:', 'muons'), ('muon showers', '  uGMT counts:', 'muonShowers')):
     print('%-42s %8s' % (label, first(pre).get(k, '-')))

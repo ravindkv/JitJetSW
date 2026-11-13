@@ -43,9 +43,9 @@ the merging scale; the residual dependence is a standard systematic uncertainty.
 
 The input of this chapter is \path{test/02_PS/out/step1_GEN_02_PS.root}: the event with ISR and FSR on, MPI,
 hadronisation and decays off.\footnote{The numbers of this paragraph are from \path{test/02_PS/out/ledger_02_PS.txt}
-and \path{test/02_PS/out/genPartAnalyzer_02_PS.log}.} Its generator record (\code{genParticles}) has 34 entries: 4 of
-the hard process (two incoming, two outgoing), 15 FSR entries, 2 beam remnants and 11 final-state partons (status 1)
-that carry the full $13600.0\GeV$ of the collision, $230.7\GeV$ of scalar \pt, of which $227.8\GeV$ in the visible
+and \path{test/02_PS/out/genPartAnalyzer_02_PS.log}.} Its generator record (\code{genParticles}) has 34 entries: the 2
+beam protons, 4 of the hard process (two incoming, two outgoing), 15 FSR entries, 2 beam remnants and 11 final-state
+partons (status 1) that carry the full $13600.0\GeV$ of the collision, $230.7\GeV$ of scalar \pt, of which $227.8\GeV$ in the visible
 region $\abseta<5.2$. The hard process is unchanged from chapter~\ref{ch:01_ME}: $\bar{u}u\to b\bar{b}$ with
 $\sqrt{\hat{s}}=396.1\GeV$ and two outgoing quarks of $\pt=113.2\GeV$ each, back to back in $\phi$.
 
@@ -214,12 +214,14 @@ under \path{*/*/python/}: the \code{amcnlo\_unitarised\_interface} branch of \pa
 exercised by any configuration of the release.
 
 \paragraph{The Phase-2 validation workflows contain no merged sample.}
-The 153 generator fragments of \path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}, which
-define the \code{Run4} (Phase-2) relval workflows, are all standalone Pythia8 processes (\path{TTbar_14TeV_TuneCP5_cfi}, \path{QCD_Pt_80_120_14TeV_TuneCP5_cfi},
-\path{MinBias_14TeV_pythia8_TuneCP5_cfi}, \dots): none has
-\code{LHE}, \code{MLM} or \code{FXFX} in its name. The only LHE workflows of \path{relval_steps.py}
+The 152 generator fragments of \path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}, which
+define the \code{Run4} (Phase-2) relval workflows, are all standalone generators: Pythia8 processes (\path{TTbar_14TeV_TuneCP5_cfi}, \path{QCD_Pt_80_120_14TeV_TuneCP5_cfi},
+\path{MinBias_14TeV_pythia8_TuneCP5_cfi}, \dots), particle guns, Hydjet, ExHuME and cosmics; none has
+\code{LHE}, \code{MLM} or \code{FXFX} in its name. The $pp$ LHE workflows of \path{relval_steps.py}
 (\code{step1LHEGenSimDefault}) run with \code{--conditions auto:run2\_mc}, \code{--era Run2\_2016} and
-\code{--beamspot Realistic25ns13TeV2016Collision}, i.e.\ the Run~2 detector. The Phase-2 production of multi-jet
+\code{--beamspot Realistic25ns13TeV2016Collision}, i.e.\ the Run~2 detector, and their 2017 and 2018
+variants use the Run~2 detector of those years; the only LHE workflows with Run~3 settings are three Starlight samples of heavy-ion and ultra-peripheral
+collisions. The Phase-2 production of multi-jet
 samples (MadGraph5\_aMC@NLO + Pythia8 with FxFx or MLM) is therefore configured entirely outside the release, in the
 gridpacks and fragments of the \code{genproductions} repository, and I could not verify in the release which merging
 scales it uses at $14\TeV$.
@@ -247,8 +249,8 @@ for $W/Z$ + jets at high rapidity, has been validated against the Phase-2 jet re
 no merged sample (previous paragraph), so no such comparison exists in the release.
 
 \paragraph{Parameters that say they were not retuned.}
-The shower-weight file imported by every merged fragment above, \path{PythiaPSweightsSettings_cfi.py} in
-\path{Configuration/Generator/python/PSweightsPythia/}, ends with \code{UncertaintyBands:ISRpTmin2Fac = 20} and the comment ``for consistency with UL and
+The two fragments of table~\ref{tab:mnm_settings} (2 of the 22 matching fragments) import the shower weights of
+\path{PythiaPSweightsSettings_cfi.py} in \path{Configuration/Generator/python/PSweightsPythia/}, a file that ends with \code{UncertaintyBands:ISRpTmin2Fac = 20} and the comment ``for consistency with UL and
 P8.240 set to 20, to be optimized and changed for Run 3 re-MC'': the shower-variation weights that accompany the
 merging-scale systematics are explicitly marked as a Run~2 (UL, Pythia 8.240) choice, in a release that ships
 Pythia~8.311. The EWK FxFx plugin \code{JetMatchingEWKFxFx} of

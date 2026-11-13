@@ -49,7 +49,7 @@ cmsDriver.py step3 --filein file:$J/test/10_SIM/out/step3_MIX_10_SIM.root \
 | `--filein file:...` | the input (Rule E): the SIM file of the signal (11a), the 250-event library (11b), or the chapter-10 mixing output `step3_MIX_10_SIM.root`, which is the signal plus the `CrossingFramePlaybackInfoNew` of its mixing (11a+11b) |
 | `--pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)}"` | the mixing scenario: `mix_POISSON_average_cfi` (`Configuration/StandardSequences/python/Mixing.py`), Poisson with mean `N = 60` collisions per bunch crossing, bunch crossings `B = (-1, 1)`, 25 ns spacing. Only for (11a+11b); without `--pileup` cmsDriver loads `mixNoPU_cfi`, the same module with no secondary source |
 | `--pileup_input file:...` | the library the secondary source reads: `step2_SIM_pileup_10_SIM.root` of chapter 10 |
-| `--conditions auto:phase1_2025_realistic` | the global tag of the CMS chapters of the book (Rule I of the Constitution: CMSSW_15_0_5 is a release of 2025), `150X_mcRun3_2025_realistic_v1` (`Configuration/AlCa/python/autoCond.py`): the pedestals, noise, gains, thresholds, laser transparencies and dead channels that the digitisers read from the database. Against the 2024 global tag of the first version of this chapter (`150X_mcRun3_2024_realistic_v2`) it changes, for this step: `EcalPedestals_2025_at80fb_corrected_mc` (noisier barrel crystals), `EcalLaserAPDPNRatios_TL470fb_moy_2025_outliers_cleaned_3sigma_mc` (darker crystals), `EcalSRSettings_2024_EBZS9.5_EEZS6.0_DCC2_mc` (higher barrel zero suppression), `EcalChannelStatus_2025_mc`, nine `EcalTPG*` payloads (the trigger primitives), `HcalPedestals` / `HcalPedestalWidths` / `HcalRespCorrs` / `HcalSiPMParameters` / `HcalZSThresholds` `2025_MOY`, `HcalTPChannelParameters_2024_v2.0_mc`, `SiPixelLorentzAngleSim_phase1_EoR3_HV800_Tr2000` and the pixel templates of the charge reweighting (`SiPixel2DTemplateDBObject` `numerator` / `denominator`, `phase1_EoR3_HV800_Tr2000`), `SiStripBadComponents_realisticMC_for2025_v1_mc`; section 4.9 |
+| `--conditions auto:phase1_2025_realistic` | the global tag of the CMS chapters of the book (Rule I of the Constitution: CMSSW_15_0_5 is a release of 2025), `150X_mcRun3_2025_realistic_v1` (`Configuration/AlCa/python/autoCond.py`): the pedestals, noise, gains, thresholds, laser transparencies and dead channels that the digitisers read from the database. Against the 2024 global tag of the first version of this chapter (`150X_mcRun3_2024_realistic_v2`) it changes, for this step: `EcalPedestals_2025_at80fb_corrected_mc` (noisier barrel crystals), `EcalLaserAPDPNRatios_TL470fb_moy_2025_outliers_cleaned_3sigma_mc` (darker crystals), `EcalSRSettings_2024_EBZS9.5_EEZS6.0_DCC2_mc` (higher barrel zero suppression), nine `EcalTPG*` payloads (the trigger primitives), `HcalPedestals` / `HcalPedestalWidths` / `HcalRespCorrs` / `HcalSiPMParameters` / `HcalZSThresholds` `2025_MOY`, `HcalTPChannelParameters_2024_v2.0_mc`, `SiPixelLorentzAngleSim_phase1_EoR3_HV800_Tr2000` and the pixel templates of the charge reweighting (`SiPixel2DTemplateDBObject` `numerator` / `denominator`, `phase1_EoR3_HV800_Tr2000`), `SiStripBadComponents_realisticMC_for2025_v1_mc`; section 4.9 |
 | `--era Run3_2025` | the era modifiers of the 2025 detector: they set the Run-3 pixel thresholds (`run3_common`), the HB SiPM parameters (`run3_HB`), the 10-time-slice HB/HE readout and the one-slice zero suppression (`run3_common`), the GEM luminosity, the Run-2 CSC timing offsets (`run2_common`). `Run3_2025` is `Run3_2024` plus `run3_GEM_2025`, `run3_CSC_2025`, `run3_SiPixel_2025`, `stage2L1Trigger_2025` and `ecal_cctiming` (`Configuration/Eras/python/Era_Run3_2025_cff.py`); none of them touches the DIGI step (they change the GEM rec-hits, the CSC trigger primitives of the L1 step, the pixel clusteriser, the CICADA model of the L1 step and the ECAL rec-hit timing): the `dumpPython()` of the mixed configuration is the same with both eras except for the name of the global tag |
 | `--geometry DB:Extended` | the reconstruction geometry from the database (`GeometryRecoDB_cff`): the digitisers need the module and cell positions |
 | `-n -1` with `eventsToProcess` | all events of the input, restricted by the customise line to run:lumi:event 1:1:1 (the signal) or 1:1:72 (library event 72) |
@@ -455,6 +455,11 @@ ECAL 24 262 PCaloHits in 12 804 cells (EB 5521, EE 6214, ES 1069; `E by subdetec
 GeV); HCAL 2531 PCaloHits in 1353 cells (HB 173, HE 648, HO 1, HF 531; `HB=0.217328 HE=1.66239 HO=3.73269e-06
 HF=1849`, the HF in photoelectrons of the shower library); MUON 0.
 
+Library event 72, `test/10_SIM/out/simHits_pileup_10_SIM.log`: 534 SimTracks, 164 primaries; TRK 2097 PSimHits (PXB 277,
+PXF 176, TIB 187, TID 172, TOB 209, TEC 1076); ECAL 4742 PCaloHits in 3388 cells (EB 1217, EE 1948, ES 223); HCAL 392
+PCaloHits in 262 cells (HB 21, HE 122, HF 119); MUON 11 PSimHits (CSC station 1). The energies of event 72 are the FWLite
+ones of section 4.5.
+
 The bunch crossing, `test/10_SIM/out/step3_MIX_10_SIM.log`:
 
 ```
@@ -469,8 +474,8 @@ Per subdetector (the layers summed): PXB 50 953, PXF 36 700, TIB 71 941, TID 37 
 ### 4.5 FWLite extras
 
 Read from the ROOT files with `python3` and `DataFormats.FWLite` (`Events`, `Handle`), after `cmsenv`. The scripts
-are short enough to be retyped; they are the source of the library-event-72 numbers, of the HCAL cell counts and of
-the zero-suppression and truth counts of the chapter.
+are short enough to be retyped; they are the source of the energies of library event 72 and of the zero-suppression
+and truth counts of the chapter (the cell counts of the chapter are those of the SimHitAnalyzer of chapter 10, section 4.4).
 
 SimHits of one event (`simHitCounts.py <file> <run:lumi:event>`: loops over the `g4SimHits` `TrackerHits*LowTof/HighTof`,
 `Muon*Hits`, `EcalHits*` and `HcalHits` collections; HCAL cells are the distinct (subdetector, side, depth, ieta,
@@ -712,8 +717,8 @@ How the chapter reads it.
 - Section 4, signal alone: 120.7 GeV of ET deposited in 2799 ECAL towers; 32 towers with at least 0.25 GeV and a
   primitive (deposit 49.8 GeV, primitives 48.0 GeV); 41 towers with at least 0.25 GeV (18.3 GeV) and no primitive;
   52.6 GeV in towers below 0.25 GeV; 467 of the 499 primitives (280.5 GeV) without such a deposit. 49.8 + 18.3 + 52.6 =
-  120.7. Library event 72: 14.6 GeV deposited, 4 towers with 0.25 GeV, 445 primitives (254.0 GeV): 445 / 4032 = one
-  tower in 9.1.
+  120.7. Library event 72: 14.6 GeV deposited, 4 towers with 0.25 GeV, 445 primitives (254.0 GeV): 4032 / 445 = one
+  tower in 9.1 (2024: 157 + 72 = 229 ECAL primitives, section 4.9: one tower in 4032 / 229 = 17.6, "eighteen").
 - Section 5, the 9 x 9 towers around the jet axes: the b jet 29.0 (ECAL) + 22.5 (HCAL) = 51.5 GeV alone, 48.0 + 30.5 =
   78.5 GeV with the pileup (+27.0); the bbar jet 123.75 and 199.75 GeV (+76.0; the quarter GeV: an HF primitive is two
   towers wide in phi, and one that lies half inside the window is counted half, `TrigPrimAnalyzer.cc`). Chapter 12 centres its window on
@@ -828,7 +833,7 @@ The numbers, 2024 -> 2025 (the 2024 values from the outputs of 11 November 2026;
 | EB towers / EE supercrystals read in full | 2 / 0 / 23 and 15 / 1 / 175 | 4 / 0 / 23 and 16 / 3 / 100 | follow the primitives (flags 2 and 4 GeV) |
 | ES frames | 981 / 360 / 15 907 | 981 / 360 / 15 972 | ES payloads unchanged; noise draw |
 | HB / HE frames kept by the zero suppression (HBHE) | 3285 / 2972 / 5839 | 4459 / 4310 / 6545 | SiPM dark current x1.9 (HB) and x2.9 (HE), zero-suppression levels x1.3 |
-| HF frames with a positive amplitude | 2251 / 2115 / 1889 | 2270 / 2169 / 1889 | HF payloads unchanged (pedestal 14.9 fC, width 2.97 fC in both); noise draw |
+| HF frames with a non-negative amplitude | 2251 / 2115 / 1889 | 2270 / 2169 / 1889 | HF payloads unchanged (pedestal 14.9 fC, width 2.97 fC in both); noise draw |
 | all digis | 43 762 / 23 363 / 551 889 | 44 172 / 24 104 / 544 407 | |
 | ECAL primitives EB (> 0, sum ET) | 200, 114.5 / 157, 83.5 / 594, 408.0 GeV | 368, 215.0 / 340, 185.0 / 683, 468.0 GeV | noisier barrel crystals; the TPG payloads changed too (the share not established) |
 | ECAL primitives EE | 98, 85.5 / 72, 44.0 / 594, 1273.5 GeV | 131, 113.5 / 105, 69.0 / 494, 579.5 GeV | (11a+11b): the pileup of 2.5 < abs(eta) < 3 in darker crystals (APD/PN 0.041 -> 0.013), not compensated by the linearisation |
@@ -1009,7 +1014,8 @@ How the chapter reads it.
   of `HcalTDCParameters.h`); the HF frame (figure 11.4, right) is (-34, 11), depth 1: 2 122 20; the median kept HB/HE
   frame is HE (-16, 31), depth 4: 4 4 5 7 6 15 12 12 15 12. 4459 HB/HE frames kept for 173 + 648 = 821 HB and HE cells
   with a hit (`simHits_signal_10_SIM.log`): at least 4459 - 821 = 3638 ("at least 3600") frames have no hit; library
-  event 72: 4310 frames for 21 + 101 = 122 cells.
+  event 72: 4310 frames for 21 + 122 = 143 HB and HE cells with a hit (`simHits_pileup_10_SIM.log`, the same counting as
+  the signal's; the FWLite count of section 4.5, 21 + 101, merges the HE layers differently).
 - Section 5, the muon chambers ("The muon chambers"): 12 DT digis between 564.062 and 921.875 ns, minus the offset of
   500 ns (`muonDTDigis_cfi.py`, `pset.offset = 500`): 64 to 422 ns; 422 / 25 = 17 crossings (last paragraph of the
   chapter). 1888 CSC strip digis in 13 chambers, 96 to 256 strips each (multiples of 16: 6 to 16 boards); the chambers

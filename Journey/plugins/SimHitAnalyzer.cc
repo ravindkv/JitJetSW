@@ -30,7 +30,7 @@
 // drawn underneath, coloured by their bunch crossing (early bx < 0, in-time bx 0, late bx > 0); a calorimeter
 // cell whose energy is dominated by pileup takes the pileup colour. The pileup events are counted per bunch
 // crossing from the EncodedEventId of their SimTracks. CrossingFrames are transient, so this mode only works
-// in the mixing job itself (JitJetSW.Journey.simHitAnalyzer_cff.addSimHitAnalyzer, runPileup_mcPhase2_BBbar.sh).
+// in the mixing job itself (JitJetSW.Journey.simHitAnalyzer_cff.addSimHitAnalyzer, the mixing of chapter 10).
 #include <algorithm>
 #include <array>
 #include <cmath>

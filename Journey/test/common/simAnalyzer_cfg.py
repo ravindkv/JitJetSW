@@ -11,12 +11,12 @@
 # for DB:Extended, otherwise Configuration.Geometry.Geometry<geometry>Reco_cff, e.g. ExtendedRun4D110 for Phase2).
 # With a Phase2 era the Phase2 hit collections are read: the inner and outer tracker both write
 # TrackerHitsPixelBarrel/Endcap, the endcap calorimeters are the HGCal (HGCHitsEE, HGCHitsHEfront, HGCHitsHEback),
-# EcalHitsEE/ES and the HE of HcalHits do not exist (runCMSDrivers_mcPhase2_BBbar_SIM.sh).
+# EcalHitsEE/ES and the HE of HcalHits do not exist (no chapter of the book runs a Phase2 era).
 #
-# For the stage samples of runCMSDrivers_mc2024_BBbar_SIM.sh, collect the pages in one PDF and mark the
-# stage, e.g. for the Transport_B sample (B field on, no decays, no EM or hadronic physics):
-#   cmsRun simAnalyzer_cfg.py inputFiles=file:SIM/step2_SIM_Transport_B_out.root maxEvents=1 simStage=2 \
-#          pdfFile=SIM/simAnalyzer_Transport_B_out.pdf sampleLabel="sample Transport_B|B on, Decay off|EM off, Had off"
+# For the stage samples of chapter 10 (test/10_SIM/run_10_SIM.sh: B, B_Decay, B_Decay_EM, signal), collect the pages
+# in one PDF and mark the stage, e.g. for the stage B (B field on, no decays, no EM or hadronic physics):
+#   cd test/10_SIM/out && cmsRun ../../common/simAnalyzer_cfg.py inputFiles=file:step2_SIM_B_10_SIM.root maxEvents=1 \
+#          simStage=2 genStages=0 pdfFile=simAnalyzer_B_10_SIM.pdf sampleLabel="chapter 10_SIM: stage B|B field on, Decay off|EM off, Had off"
 # With genStages > 0 (default 5) GenPartAnalyzer runs first in the same job, so that every event starts
 # with the eta-phi maps of the generator-record stages 1..genStages (as in genJetAnalyzer_cfg.py).
 import importlib

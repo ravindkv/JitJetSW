@@ -8,10 +8,10 @@
 # genPartAnalyzer.root with the TH2 (eta, phi, weight pT) per stage, and prints the
 # per-stage b / bbar / net b+bbar pT to stdout.
 #
-# For a sample generated with later Pythia8 levels off (runCMSDrivers_mc2024_BBbar_GEN.sh)
-# limit the stages and collect the pages in one PDF, e.g. for the ME_PS sample:
-#   cmsRun genPartAnalyzer_cfg.py inputFiles=file:GEN/step1_GEN_ME_PS_out.root maxEvents=1 \
-#          maxStage=2 pdfFile=GEN/genPartAnalyzer_ME_PS_out.pdf sampleLabel="sample ME_PS|ISR on, FSR on|MPI off, Had off"
+# For a sample generated with later Pythia8 levels off (the generator chapters 01-06, gen_stage of
+# test/common/jitjet_common.sh) limit the stages and collect the pages in one PDF, e.g. for chapter 02:
+#   cd test/02_PS/out && cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_02_PS.root maxEvents=1 \
+#          maxStage=2 pdfFile=genPartAnalyzer_02_PS.pdf sampleLabel="chapter 02_PS|ISR on, FSR on|MPI off, Had off"
 import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 

@@ -94,13 +94,13 @@ are back to back in $\phi$ ($\Delta\phi = 3.14$, \path{genPartAnalyzer_01_ME.log
 $2\to2$ process with no radiation. Everything else about them is different: the $b$ carries $252\GeV$
 at $\eta = -1.44$, the $\bar b$ carries $2416\GeV$ at $\eta = -3.75$. Two things add up. First, the
 parton--parton system is not at rest in the laboratory: its rapidity is
-$y = \tfrac12\ln(x_1/x_2) = -2.59$, so the whole \bbbar{} pair is boosted towards $-z$, the direction of
+$y = \tfrac12\ln(x_1/x_2) = -2.595$, so the whole \bbbar{} pair is boosted towards $-z$, the direction of
 the valence $u$ quark that brought almost all the energy. Second, in the rest frame of the two partons the
 scattering angle is $\hat\theta = 145^\circ$ (Pythia8 quotes it for the $\bar b$), which gives the $\bar b$
-a rapidity of $-1.13$ in that frame and the $b$ one of $+1.13$. Adding the two,
-$-2.59 - 1.13 = -3.72$ and $-2.59 + 1.13 = -1.46$, reproduces the two pseudorapidities of the table (the
-$b$ mass accounts for the last decimals). The energies follow from $E \simeq \pt\cosh\eta$:
-$113.2\cosh(1.44) = 252\GeV$ and $113.2\cosh(3.75) = 2413\GeV$. In the 2024 detector the $b$ points at the barrel--endcap transition of the calorimeters and the
+a rapidity of $-1.157$ in that frame and the $b$ one of $+1.157$. Adding the two,
+$-2.595 - 1.157 = -3.752$ and $-2.595 + 1.157 = -1.438$, reproduces the two pseudorapidities of the table (the
+$b$ mass makes rapidity and pseudorapidity differ by only $0.001$). The energies follow from $E \simeq \pt\cosh\eta$:
+$113.2\cosh(1.44) = 252\GeV$ and $113.2\cosh(3.753) = 2415\GeV$. In the 2024 detector the $b$ points at the barrel--endcap transition of the calorimeters and the
 $\bar b$ at the forward hadron calorimeter, outside the tracker: two identical quarks that the detector
 will see in two very different ways.
 
@@ -301,7 +301,7 @@ vertices of a bunch crossing, and the generator stage is where it is drawn. The
 non-database block \code{HLLHCVtxSmearingParameters} of \path{VtxSmearedParameters_cfi.py} is still
 labelled "for HL-LHC operation at 13TeV" (\code{EprotonInGeV = 6500}); \code{HLLHC14TeV} clones it with $7000$.
 
-\paragraph{Run-2 vintage inside the GEN step.} Two settings have not moved since Run 2, one is wrong for 2024:
+\paragraph{Run-2 vintage inside the GEN step.} Of three settings, one is wrong for 2024 and two have not moved since Run 2:
 \begin{itemize}
 \item \code{LHCTransport} (\code{PPSSimTrackProducer}, added by the \code{ctpps\_2022} modifier of the
   Run-3 era) carries \code{BeamEnergy = 7000}, set in the block

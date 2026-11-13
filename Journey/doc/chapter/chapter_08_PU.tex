@@ -42,7 +42,7 @@ signal (vertex smearing from the database, energy) but with its own random seeds
 those of the signal. It is the first job of the book with the 2025 settings of the release, global tag
 \code{auto:phase1\_2025\_realistic} and era \code{Run3\_2025}, as all the CMS chapters 08--13,
 where the generator chapters 01--07 keep those of 2024; at generator level the two are the
-same (section~3). The overlay (sample 8a+8b) takes library events 72 to 139 (\code{SKIP = 71}, \code{NPU = 68} in
+same (section~\ref{sec:08_numbers}). The overlay (sample 8a+8b) takes library events 72 to 139 (\code{SKIP = 71}, \code{NPU = 68} in
 \path{test/common/jitjet_common.sh}). Why these: the \code{MixingModule} of chapter~\ref{ch:10_SIM} (seed
 12345, a Poisson draw with mean 60 per bunch crossing) reads the library in sequence, bunch crossing by bunch
 crossing, early crossings first; for this signal event it draws 71 collisions for bunch crossing $-1$
@@ -55,6 +55,7 @@ collisions matter at generator level: a list of particles has no time axis, so t
 can only act through the time response of the detector.
 
 \section{The numbers of the event}
+\label{sec:08_numbers}
 
 \paragraph{The inelastic cross section.} Pythia8 prints, at the initialisation of the job, what it is
 about to generate (table~\ref{tab:xsec}): ``We collide p+ with p+ at a CM energy of 1.360e+04 GeV'' and the
@@ -113,7 +114,7 @@ section of $55.42\mb$, so on average nine parton pairs interact per ND collision
 counting the hardest scattering plus one interaction per pair of status-31 partons, the 183 ND collisions
 have between 1 and 39 interactions, mean 9.0, and the number of stable particles follows them almost
 linearly, from 85 for one interaction (44 collisions) to 723 for 39 (the largest collision of the file,
-event 247). The diffractive collisions have 1 or 2 interactions and are nearly empty for the central
+event 247). The diffractive collisions have on average 1.2 to 2.0 interactions and are nearly empty for the central
 detector: 70 stable particles and 7 central ones for SD, 57 and 2 for DD, 35 and 2 for CD, against 241 and
 27 for ND (table~\ref{tab:cat}).
 
@@ -136,10 +137,10 @@ charged stable particles & 89.0 & 59 & 2 & 320 \\
 central ($\abseta<2.5$, $\pt>0.5\GeV$) & 21.2 & 9.5 & 0 & 126 \\
 beyond $\abseta=5.5$ & 38.9 & 36.5 & 3 & 93 \\
 \pt{} of the hardest particle [GeV] & 2.20 & 1.81 & 0.23 & 8.08 \\
-scalar sum of \pt{} [GeV] & 79.3 & 44.7 & 0.5 & 376.1 \\
+scalar sum of \pt{} [GeV] & 79.2 & 44.7 & 0.5 & 376.1 \\
 jets above $10\GeV$ & 0.15 & 0 & 0 & 3 \\
-vertex $z$ [cm] (r.m.s.\ 3.56) & 0.08 & $-0.06$ & $-9.5$ & 10.1 \\
-vertex $t$ [ns] (r.m.s.\ 0.122) & $-0.007$ & $-0.016$ & $-0.39$ & 0.37 \\
+vertex $z$ [cm] (r.m.s.\ 3.56) & 0.08 & $-0.05$ & $-9.5$ & 10.1 \\
+vertex $t$ [ns] (r.m.s.\ 0.122) & $-0.007$ & $-0.015$ & $-0.39$ & 0.37 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -148,18 +149,18 @@ vertex $t$ [ns] (r.m.s.\ 0.122) & $-0.007$ & $-0.016$ & $-0.39$ & 0.37 \\
 collisions, 45.9\,\% are photons (almost all from $\pi^0\to\gamma\gamma$, decayed by Pythia because
 $c\tau(\pi^0)$ is far below the 10\,mm of \code{ParticleDecays:tau0Max = 10}), 37.1\,\% charged pions,
 4.8\,\% charged kaons, 2.7\,\% protons, 2.5\,\% neutrons, 2.4\,\% $K^0_L$, 2.2\,\% $K^0_S$ and 0.9\,\%
-$\Lambda$ (both left to Geant4). They are soft and forward: 36\,000 of them have $\pt<0.5\GeV$ and 17 have
+$\Lambda$ (all three left to Geant4). They are soft and forward: 36\,000 of them have $\pt<0.5\GeV$ and 17 have
 $\pt>5\GeV$; the density per unit of $\eta$ is flat out to $\abseta=4$ and 20\,\% of the particles are
 beyond $\abseta=5.5$. The signal event has two partons at $\pt=113\GeV$; a minimum-bias collision has
 nothing above a few GeV and 0.15 jets above $10\GeV$.
 
 \paragraph{The one collision drawn.} Figure~\ref{fig:mb} is library event 72, the first of the 68 in-time
 collisions, at the end of the five generator pages of \code{genPartAnalyzer\_cfg.py}: 2 particles on the
-hard-process page (a $2\to2$ scattering below $5\GeV$, not the $113\GeV$ of the signal), 13 after the
-showers, 26 with the MPI and beam remnants, 102 after hadronisation, 192 stable after the decays
+hard-process page (a $2\to2$ scattering below $5\GeV$, not the $113\GeV$ of the signal), 10 after its
+showers, 26 with the MPI, their showers and the beam remnants, 102 after hadronisation, 192 stable after the decays
 (\code{genPartAnalyzer\_MinBias\_08\_PU.log}); a smaller than average ND collision, with 3 interactions. The
-68 in-time collisions together (lines 72--139 of the catalogue) are 49 ND, 15 SD and 4 DD with 467
-interactions and 12\,993 stable particles, from 3 (event 132, SD) to 547 (event 94, ND), median 149: a sum
+68 in-time collisions together (events 72--139 of the catalogue) are 49 ND, 15 SD and 4 DD with 467
+interactions and 12\,993 stable particles, from 3 (event 132, SD) to 547 (event 94, ND), median 150.5: a sum
 of very unequal terms.
 
 \begin{figure}[htbp]
@@ -168,7 +169,7 @@ of very unequal terms.
 \caption{One pileup collision at the end of the generator chain: library event 72, the first in-time
 collision of the mixing, drawn like page 5 of chapters 01--06 (\code{genPartAnalyzer\_MinBias\_08\_PU\_page-5.png}).
 A non-diffractive collision with 3 parton--parton interactions, 192 stable particles (84 charged, 13
-central, 31 beyond $\abseta=5.5$, drawn on the border), the hardest at $2.2\GeV$, $\sum\pt = 56.6\GeV$,
+central, 31 beyond $\abseta=5.5$, the 18 beyond $\abseta=6$ drawn on the border), the hardest at $2.2\GeV$, $\sum\pt = 56.6\GeV$,
 vertex at $z=-0.48\cm$, $t=-0.092\ns$. No $b$, no $\bar b$, no hard process.}
 \label{fig:mb}
 \end{figure}
@@ -271,9 +272,9 @@ jets without a single signal particle & -- & 87 of 266 & \\
 \includegraphics[width=0.84\textwidth]{08_PU/out/genJetAnalyzer_08_PU_page-9.png}
 \caption{The signal event with its 68 in-time pileup collisions, re-clustered
 (\code{genJetAnalyzer\_08\_PU\_page-9.png}): signal particles are circles, pileup particles triangles
-(filled in the jet colour when clustered, light grey when not); the jets above $30\GeV$ and the $b$ and
+(filled in the jet colour when clustered, grey beyond the eight leading jets; open and light grey when not); the jets above $30\GeV$ and the $b$ and
 $\bar b$ jets are drawn with their circle of radius $R$ and their \pt{}, the other 190 only through their
-constituents. The right-hand list gives, for every jet, the share of its \pt{} that comes from pileup. Page 6
+constituents. The right-hand list gives, for the 11 leading jets, the share of their \pt{} that comes from pileup. Page 6
 of the same PDF is the signal alone (chapter~\ref{ch:07_GenJet}).}
 \label{fig:overlay}
 \end{figure}
@@ -327,16 +328,18 @@ random, and only the \code{sequential = True} of the overlay makes ``library eve
 statement.
 
 \paragraph{The minimum-bias fragment.} \path{Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py}
-is the only CP5 minimum-bias fragment of the release (the others are CUETP8M1, Pythia6 Z2* or heavy-ion);
+is the only $14\TeV$ CP5 minimum-bias fragment of the release (\path{MinBias_13TeV_pythia8_cff} and
+\path{SoftQCDinelastic_13TeV_pythia8_cff} are CP5 at $13\TeV$, for the generator validation; the others are
+CUETP8M1, Pythia6 or heavy-ion);
 it is the library of the 2022--2025 RelVals (\code{RelValMinBias\_14TeV}, without the energy override of
 this chapter) and will be used as is at the HL-LHC. Its tune lives in
 \path{MCTunes2017/PythiaCP5Settings_cfi.py}: CP5 was fitted in 2017 to $13\TeV$ underlying-event and
 minimum-bias data, and its \code{SigmaTotal:mode = 0} with \code{sigmaTot = 100.309} and \code{sigmaEl =
 21.89} freezes the total and elastic cross sections at every energy: a $14\TeV$ library has the same
-$78.42\mb$ and the same ND / SD / DD / CD shares as this one. Nothing in the fragment touches diffraction:
+$78.42\mb$ and almost the same ND / SD / DD / CD shares as this one. Nothing in the fragment touches diffraction:
 the SD / DD / CD pieces are Pythia's default parametrisation, not part of the tune, and have not been
-retuned since CP5 was made; the 3\,\% between 13.6 and $14\TeV$ enters only through \code{ecmPow} and the
-PDFs, and \code{crossSection = 71.39e+09} is stale metadata. Whether a Phase-2 tune, or a retune of the
+retuned since CP5 was made; the 3\,\% between 13.6 and $14\TeV$ enters through \code{ecmPow}, the
+PDFs and the slow rise of those diffractive pieces with the energy, and \code{crossSection = 71.39e+09} is stale metadata. Whether a Phase-2 tune, or a retune of the
 diffractive fractions to Run-3 data, is planned could not be established from the release.
 
 \begingroup\sloppy
@@ -346,7 +349,8 @@ diffractive fractions to Run-3 data, is planned could not be established from th
 with \code{readDB = True} on the \code{SimBeamSpotHLLHCObjectsRcd} payload of the global tag
 \code{150X\_mcRun4\_realistic\_v1} (\code{auto:phase2\_realistic}). The model is different in kind from the
 Run-3 one: instead of a Gaussian in $z$ and $t$ (the Run-3 module, \path{BetafuncEvtVtxGenerator.cc}, draws
-$t$ with the same width as $z$, line 97, hence the $122\ps$ of table~\ref{tab:cat} for $\sigma_z = 3.56\cm$), it samples
+$t$ with the same width as $z$, line 97: $3.6\cm/c = 120\ps$, which the 250 vertices of table~\ref{tab:cat}
+sample as $3.56\cm$ and $122\ps$), it samples
 $(x,y,z,t)$ by accept--reject from the 4D overlap density of two crossing, crab-rotated bunches
 (\path{HLLHCEvtVtxGenerator.cc}, lines 131--132). The nominal parameters of the non-DB variant
 (\code{HLLHCVtxSmearingParameters} in \path{VtxSmearedParameters_cfi.py}) are a crossing angle of

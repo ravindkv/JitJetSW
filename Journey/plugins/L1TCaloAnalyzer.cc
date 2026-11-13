@@ -10,7 +10,7 @@
 //           one tower of 9 bits, 0.5 GeV per count, with the E/H ratio code and the flag bits
 //   step 3  calorimeter Layer-2 (simCaloStage2Digis): the jets, 9 x 9 towers around a seed, with the pileup
 //           estimate and the calibration; the e/gamma and tau candidates and the energy sums. The pileup estimate
-//           is what the conditions ask for: the "phi ring" of the 2024 trigger (the 9 eta rings of the window
+//           is what the conditions ask for: the "phi ring" of the 2024 and 2025 trigger (the 9 eta rings of the window
 //           summed over all 72 towers in phi, scaled to the 9 towers of the window: jetPUSUsePhiRing = 1) or the
 //           "chunky donut" of 2016-2022 (the three quietest of the four 3 x 9 strips around the window)
 // Pages (one PDF per event, one PNG per page with savePNG): the ECAL primitives, the HCAL primitives, the Layer-1

@@ -195,6 +195,11 @@ print('b system + bbar vector pT = %.2f' % math.hypot(px + ps[23].px(), py + ps[
 print('first branching: pT(6)=%.2f pT(7)=%.2f |sum|=%.2f m=%.2f dR=%.3f' % (ps[6].pt(), ps[7].pt(), math.hypot(ps[6].px()+ps[7].px(), ps[6].py()+ps[7].py()),
       math.sqrt((ps[6].energy()+ps[7].energy())**2-(ps[6].px()+ps[7].px())**2-(ps[6].py()+ps[7].py())**2-(ps[6].pz()+ps[7].pz())**2), dr(ps[6], ps[7])))
 print('incoming u: E %.2f -> %.2f -> %.2f, x %.5f -> %.5f' % (ps[3].energy(), ps[8].energy(), ps[11].energy(), ps[3].energy()/6800., ps[11].energy()/6800.))
+for r, d1, d2 in [(5, 6, 7), (7, 9, 10), (10, 12, 13), (14, 15, 16), (15, 18, 19)]:
+    print('branching %d -> %d, %d: pT %.2f -> %.2f, %.2f |sum|=%.2f' % (r, d1, d2, ps[r].pt(), ps[d1].pt(), ps[d2].pt(), math.hypot(ps[d1].px()+ps[d2].px(), ps[d1].py()+ps[d2].py())))
+def vpt(idx): return math.hypot(sum(ps[i].px() for i in idx), sum(ps[i].py() for i in idx))
+shw = [12, 16, 17, 18, 19, 20]
+print('shower copies %s: vector pT=%.2f, with the bbar (4): %.5f; status-1 remnants [30..33]: vector pT=%.2f' % (shw, vpt(shw), vpt(shw + [4]), vpt([30, 31, 32, 33])))
 EOF
 ```
 
@@ -269,8 +274,8 @@ No ISR group is printed for 02_PS because the record has no status 41-49 entry (
 ```
 == GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=745 nStatus1=169 hard b idx=5 hard bbar idx=4
   stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
-  stage 2 (partonShower): nParticles=57 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
-  stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  stage 2 (partonShower): nParticles=14 | b quark (status 52): pt=91.5874 eta=-1.57249 phi=-2.08354 idx=[182] | #bar{b} quark (status 52): pt=118.574 eta=-3.72888 phi=1.01942 idx=[207] | net b+bbar: |sum pT|=27.2853 (px=17.1858 py=21.1929) scalar sum pT=210.162
+  stage 3 (mpiBeamRemnants): nParticles=169 | b quark (status 1): pt=91.7437 eta=-1.56979 phi=-2.08372 idx=[515] | #bar{b} quark (status 1): pt=116.356 eta=-3.74787 phi=1.01139 idx=[514] | net b+bbar: |sum pT|=25.0768 (px=16.727 py=18.6829) scalar sum pT=208.1
 ```
 
 ### 4.3 The Pythia8 log (`test/02_PS/out/step1_GEN_02_PS.log`)
@@ -395,7 +400,7 @@ The colour columns show the dipoles of the shower: the b (colour 102) is connect
 Status counts: 1: 11, 4: 2, 21: 2, 23: 2, 51: 10, 52: 3, 53: 2, 61: 2 (34 entries; the ledger group "FSR (51-59)" = 10 + 3 + 2 = 15).
 The five branchings of table 2.2 are read off the mother/daughter links: 5 -> 6, 7 (recoiler 3 -> 8); 7 -> 9, 10
 (recoiler 8 -> 11); 10 -> 12, 13 (recoiler 9 -> 14); 14 -> 15, 16 (recoiler 13 -> 17); 15 -> 18, 19 (recoiler 6 -> 20).
-The vector sums of the daughters' pT: 113.22, 65.68, 10.10, 56.95, 52.76 GeV.
+The vector sums of the daughters' pT: 113.22, 65.58, 10.07, 56.95, 52.76 GeV (section 4.5).
 
 The record of `step1_GEN_01_ME.root` for comparison (14 entries):
 
@@ -429,6 +434,12 @@ b system [24, 25, 26, 27, 28, 29]: vector pT=113.56 scalar pT=113.75 E=256.94 ma
 b system + bbar vector pT = 0.60
 first branching: pT(6)=47.70 pT(7)=65.58 |sum|=113.22 m=11.64 dR=0.156
 incoming u: E 2652.93 -> 2655.02 -> 2656.06, x 0.39014 -> 0.39060
+branching 5 -> 6, 7: pT 113.22 -> 47.70, 65.58 |sum|=113.22
+branching 7 -> 9, 10: pT 65.58 -> 61.70, 4.11 |sum|=65.58
+branching 10 -> 12, 13: pT 4.11 -> 2.46, 7.66 |sum|=10.07
+branching 14 -> 15, 16: pT 55.60 -> 51.94, 5.02 |sum|=56.95
+branching 15 -> 18, 19: pT 51.94 -> 43.12, 9.65 |sum|=52.76
+shower copies [12, 16, 17, 18, 19, 20]: vector pT=113.22, with the bbar (4): 0.00000; status-1 remnants [30..33]: vector pT=0.60
 ```
 
 The b system (eta = -1.455, phi = -2.151) is back to back with the bbar: delta phi = 3.139. The sum of all 11
@@ -440,6 +451,7 @@ status-1 particles has vector pT = 0.000, sum pz = 0.00 and sum E = 13600.00 GeV
 |---|---|---|---|
 | entries in genParticles | 14 | 34 | ledger_*.txt, first line |
 | hard process / FSR / ISR / remnants / final state | 4 / 0 / 0 / 2 / 6 | 4 / 15 / 0 / 2 / 11 | ledger_*.txt, "record by status group" |
+| beam protons (status 4) | 2 | 2 | 4.4, the records (not printed by the ledger) |
 | final-state E / scalar pT [GeV] | 13600.0 / 228.6 | 13600.0 / 230.7 | ledger_*.txt, "final state (status 1)" |
 | abs(eta) < 2.5: n / E / pT | 1 / 253.1 / 113.6 | 6 / 256.9 / 113.7 | ledger_*.txt, "by region" |
 | 3.0 < abs(eta) < 5.2: n / E / pT | 2 / 2423.7 / 113.0 | 1 / 2413.9 / 114.0 | ledger_*.txt |
@@ -447,9 +459,17 @@ status-1 particles has vector pT = 0.000, sum pz = 0.00 and sum E = 13600.00 GeV
 | visible: n / E | 3 / 2676.9 | 7 / 2670.8 | ledger_*.txt, "visible" |
 | b quark pT [GeV] | 113.221 (status 23) | 46.8792 (status 52) | genPartAnalyzer_*.log |
 | bbar quark pT [GeV] | 113.221 (status 23) | 113.221 (status 23) | genPartAnalyzer_*.log |
-| b system vector pT [GeV] | 113.221 (the b alone) | 113.56 | 4.5 |
+| b system vector pT [GeV], status 1 | 113.560 (the b alone, index 9 of the 01_ME record) | 113.56 | 4.4, 4.5 |
 | net b+bbar [GeV] | 9.9e-06 | 66.4005 | genPartAnalyzer_*.log |
 | scalar pT(b) + pT(bbar) [GeV] | 226.442 | 160.1 | genPartAnalyzer_*.log |
+
+The difference column of table 2.3 is computed before rounding, from the same sums with three decimals (FWLite on
+the status-1 particles of the two records, with the regions of `genLedger.py`): scalar pT of the final state
+228.637 -> 230.662 (+2.024); |eta| < 2.5: E 253.145 -> 256.940 (+3.795), pT 113.560 -> 113.749 (+0.188);
+3.0-5.2: E 2423.707 -> 2413.905 (-9.802), pT 112.963 -> 114.048 (+1.085); > 5.5: E 10923.144 -> 10929.153 (+6.009),
+pT 2.114 -> 2.865 (+0.751); visible E 2676.852 -> 2670.845 (-6.007); b system 113.560 -> 113.555 (-0.005). The
+vector sum of the b system before the beam remnants (the shower copies, 113.22 GeV, section 4.5) equals the pT of
+the hard b: the 0.6 GeV of the status-1 system against the bbar is the primordial kT, balanced by the remnants.
 
 ### 4.7 The release files of "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`)
 
