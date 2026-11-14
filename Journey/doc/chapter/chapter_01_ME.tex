@@ -248,9 +248,9 @@ units of $\eta$ apart. The following chapters redraw this page with more and mor
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.84\textwidth]{01_ME/out/genPartAnalyzer_01_ME_page-1.png}
+\includegraphics[width=0.84\textwidth]{01_ME/out/genPartAnalyzer_01_ME.pdf}
 \caption{The event after the matrix element: the outgoing $b$ (red) and $\bar b$ (blue) of the hard
-process in the $\eta$--$\phi$ plane, with their \pt{} (\code{test/01\_ME/out/genPartAnalyzer\_01\_ME\_page-1.png}).
+process in the $\eta$--$\phi$ plane, with their \pt{} (\code{test/01\_ME/out/genPartAnalyzer\_01\_ME.pdf}).
 The right panel lists the Pythia8 switches of the stage; stages 2 to 5 do not exist in this file.}
 \label{fig:01_display}
 \end{figure}
@@ -259,84 +259,88 @@ The right panel lists the Pythia8 switches of the stage; stages 2 to 5 do not ex
 \section{Open problems for Phase-2}
 
 The generator stage does not know which detector follows it, which is exactly why its settings are the
-easiest to leave untouched. A look into \code{\$CMSSW\_RELEASE\_BASE/src} of CMSSW\_15\_0\_5 gives this list.
+easiest to leave untouched. The list below is the state of CMSSW\_15\_0\_5, the release of this book, as read
+in \code{\$CMSSW\_RELEASE\_BASE/src} and in its externals (Pythia8 8.311), not in the development branch of CMSSW.
 
-\paragraph{The beam energy: 14 TeV in the fragment, 13.6 TeV here, and a 13 TeV luminous region in the
-Phase-2 workflows.} The fragment is modelled on \path{Configuration/Generator/python/TTbar_14TeV_TuneCP5_cfi.py}
-and carries \code{comEnergy = 14000}; the script overrides it to $13600$ (\code{Beams:eCM} in the log). The Phase-2 relval workflows of the release use the 14 TeV fragments with the
-scenario \code{GenSimHLBeamSpot}, defined for every \code{Run4} key in
-\path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}; the key \code{Run4D110},
-for instance, sets the geometry to \code{ExtendedRun4D110}, the global tag to
-\code{auto:phase2\_realistic\_T33} and the era to \code{Phase2C17I13M9}. That scenario (\code{upgradeStepDict['GenSimHLBeamSpot']} in \path{relval_steps.py})
-runs \code{-{}-beamspot DBrealisticHLLHC} with the conditions \code{gt + '\_13TeV'}, and
-\path{Configuration/AlCa/python/autoCondModifiers.py} (\code{autoCondBSHLLHC13TeV}) resolves the suffix by
-appending the payload \path{SimBeamSpotHLLHCObjects_z4p3cm_t193ns_13TeV_nominal_mc_v1}, whose proton
-energy is $6500\GeV$, to a job that generates $7000\GeV$ beams: the transverse size of the luminous
-region, which scales as $1/\sqrt{\beta\gamma}$, comes out 4\% too wide. The 14 TeV payload
-(\path{..._14TeV_nominal_mc_v1}, $E_p = 7000\GeV$) is only used by the variant \code{GenSimHLBeamSpot14},
-which no \code{Run4} key runs by default.
+\paragraph{The beam energy: 14 TeV in the fragment, 13.6 TeV here, and a Phase-2 luminous region chosen by a
+file name.} The fragment is modelled on \path{Configuration/Generator/python/TTbar_14TeV_TuneCP5_cfi.py}
+and carries \code{comEnergy = 14000}; the script overrides it to $13600$ (\code{Beams:eCM} in the log). The
+Phase-2 release-validation (relval) workflows are the \code{Run4} keys of
+\path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}; the key \code{Run4D110}, for
+instance, sets the geometry \code{ExtendedRun4D110}, the global tag \code{auto:phase2\_realistic\_T33} and the
+era \code{Phase2C17I13M9}. Their first step is the scenario \code{GenSimHLBeamSpot}, which \path{relval_steps.py}
+(line 4665) runs with \code{-{}-beamspot DBrealisticHLLHC} and the conditions \code{gt + '\_13TeV'}: the
+function \code{autoCondBSHLLHC13TeV} of \path{Configuration/AlCa/python/autoCondModifiers.py} resolves the
+suffix by appending the payload \path{SimBeamSpotHLLHCObjects_z4p3cm_t193ns_13TeV_nominal_mc_v1}, whose proton energy
+is $6500\GeV$. Only \path{relval_upgrade.py} (lines 40--42) swaps it for \code{GenSimHLBeamSpot14}, the plain
+global tag with the payload \path{..._14TeV_nominal_mc_v1} ($E_p = 7000\GeV$), and it does so when the name of
+the fragment contains the string \code{14TeV}. A 14 TeV fragment thus gets the right luminous region from its
+file name; every other generator of the Phase-2 workflows (the particle guns, the 13 and 13.6 TeV fragments)
+runs with $6500\GeV$ beams, whose vertical size, $\propto 1/\sqrt{\beta\gamma}$
+(\code{HLLHCEvtVtxGenerator::sigma}), is 4\% larger.
 
-\paragraph{The tune and its PDF are from 2017 and 13 TeV.} \code{pythia8CP5Settings}
-(\path{MCTunes2017/PythiaCP5Settings_cfi.py}) is the CP5 tune of 2017 on \code{NNPDF31\_nnlo\_as\_0118},
+\paragraph{The tune and its PDF are those of the directory \code{MCTunes2017}.} \code{pythia8CP5Settings}
+(\path{MCTunes2017/PythiaCP5Settings_cfi.py}) is the CP5 tune on \code{NNPDF31\_nnlo\_as\_0118},
 $\alpha_s = 0.118$ at second order, with fixed total and elastic cross sections
 \code{SigmaTotal:sigmaTot = 100.309}, \code{sigmaEl = 21.89} (\code{SigmaTotal:mode = 0}). The release
-holds a Run-3 copy, \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py}, which differs in exactly two
+holds a Run-3 copy of the file in the directory \code{MCTunesRun3ECM13p6TeV}, which differs in exactly two
 numbers, \code{sigmaTot = 101.037} and \code{sigmaEl = 22.08}, the 13.6 TeV values; the fragment imports
 the 2017 file, and there is no 14 TeV directory at all. For the matrix element (PDF, $\alpha_s$, process
-switches) it makes no difference; it matters from chapter 04 on (the multiparton interactions use
-\code{sigmaTot}) and for the minimum-bias library of chapter 08. The one energy-dependent tune parameter, $p_{\mathrm T0} = 1.41\,(\sqrt s/7\TeV)^{0.03344}\GeV$,
-moves from $1.442$ to $1.443\GeV$ between 13.6 and 14 TeV. No newer tune or PDF set is wired into
-\path{Configuration/Generator} of this release.
-
-\paragraph{The \ptHat{} choice and the process selection are ours, not the release's.} The fragment asks
-for $\ptHat > 30\GeV$ ("so that the b quarks produce jets reconstructable for JME studies", its own
-comment) and switches \code{HardQCD:gg2bbbar} off; the script raises the cut to $100\GeV$. Both are
-choices of the book: the gluon channel, which dominates inclusive \bbbar{} production, is excluded to
-keep one clean $2\to2$ history, and \ptHat{} is a cut on the hard scattering before any radiation. At
-14 TeV and $\mathrm{PU} = 200$ the Phase-2 trigger thresholds decide what \ptHat{} is useful; nothing in
-the release ties the two together.
+switches) it makes no difference; it matters from chapter 04 on (the multiparton interactions are tied to the
+non-diffractive part of the cross section, \path{MultipartonInteractions.xml} of Pythia8) and for the
+minimum-bias library of chapter 08. The one energy-dependent tune parameter,
+$p_{\mathrm T0} = 1.41\,(\sqrt s/7\TeV)^{0.03344}\GeV$, moves from $1.442$ to $1.443\GeV$ between 13.6 and
+14 TeV. Not every 14 TeV sample of the upgrade workflows uses CP5: of the 152 fragments of
+\code{upgradeFragments} (\path{upgradeWorkflowComponents.py}), 52 carry \code{14TeV} in their name; 37 import
+this file, 12 the block \path{Pythia8CUEP8M1Settings_cfi.py} (tune CUETP8M1: three MPI numbers on top of
+Monash 2013, the default tune of Pythia8, and no PDF), 2 a Pythia6 tune and 1 is Exhume. Those twelve run with the Pythia8 defaults that the
+settings table of our log lists next to the CP5 values, \code{PDF:pSet = 13} (NNPDF2.3 QCD+QED LO,
+\path{PDFSelection.xml}) and \code{SigmaProcess:alphaSvalue = 0.130}. The PDF sets named through LHAPDF6 in
+\path{Configuration/Generator/python} are NNPDF3.0 and NNPDF3.1 ones only.
 
 \paragraph{The vertex smearing is a GEN-step decision, and the time of the vertex is where 2024 and
 HL-LHC differ most.} \code{cmsDriver.py} requires \code{-{}-beamspot} at the GEN step
-(\path{Configuration/Applications/python/ConfigBuilder.py}, "GEN step always requires to have a
-VtxSmearing scenario") and ignores it in a SIM step: a Phase-2 chain cannot re-use this chapter's file,
-it has to regenerate. The two models are different programs:
+(\path{Configuration/Applications/python/ConfigBuilder.py}, line 1069: "GEN step always requires to have a
+VtxSmearing scenario") and loads the smearing only in \code{prepare\_GEN}, so a SIM step cannot change it: a
+Phase-2 chain cannot re-use this chapter's file, it has to regenerate. The two models are different programs:
 \begin{itemize}
-\item 2024, \code{DBrealistic}: \code{BetafuncEvtVtxGenerator} with the payload quoted above; in
-  \path{IOMC/EventVertexGenerators/src/BetafuncEvtVtxGenerator.cc} $z$ is a Gaussian of
-  $\sigma_z = 3.6\cm$, $x$ and $y$ follow the $\beta$ function around $\beta^* = 30\cm$, and the time
-  is a second, independent Gaussian of the same width, $\sigma_t = 3.6\cm/c = 120\ps$, around
-  \code{TimeOffset = 0}.
+\item 2024, \code{DBrealistic}: \code{BetafuncEvtVtxGenerator} with the 2024 payload quoted in the
+  numbers section; in \path{IOMC/EventVertexGenerators/src/BetafuncEvtVtxGenerator.cc}
+  (lines 84--98) $z$ is a Gaussian of $\sigma_z = 3.6\cm$, $x$ and $y$ follow the $\beta$ function around
+  $\beta^* = 30\cm$, and the time is a second, independent Gaussian of the same width,
+  $\sigma_t = 3.6\cm/c = 120\ps$, around \code{TimeOffset = 0}.
 \item HL-LHC, \code{DBrealisticHLLHC}: \code{HLLHCEvtVtxGenerator}
   (\path{VtxSmearedRealisticHLLHC_cfi.py}, record \code{SimBeamSpotHLLHCObjectsRcd}, payload
   \path{SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1}: $E_p = 7000\GeV$, crossing angle
   $510\,\mu$rad, crab angle $380\,\mu$rad at 400 MHz, $\beta^* = 0.20\,$m, bunch length $9\cm$)
-  computes the overlap density of two crabbed bunches in $(x, y, z, t)$ (\code{integrandCC} in
-  \path{HLLHCEvtVtxGenerator.cc}): $\sigma_z = 4.3\cm$ and $\sigma_t = 193\ps$, $z$ and $t$ correlated.
+  draws $(x, y, z, t)$ together from the overlap density of two crabbed bunches (\code{integrandCC} in
+  \path{HLLHCEvtVtxGenerator.cc}): $\sigma_z = 4.3\cm$ and $\sigma_t = 193\ps$, the numbers of the payload
+  name (which writes ``ns'', but $193\,$ns would be $58\,$m for bunches of $9\cm$).
 \end{itemize}
-This is the number the MTD timing layers of Phase-2 are built against: with a vertex spread of $193\ps$
-and a per-track resolution of a few tens of ps, the collision time is what separates the 200 pileup
-vertices of a bunch crossing, and the generator stage is where it is drawn. The
-non-database block \code{HLLHCVtxSmearingParameters} of \path{VtxSmearedParameters_cfi.py} is still
-labelled "for HL-LHC operation at 13TeV" (\code{EprotonInGeV = 6500}); \code{HLLHC14TeV} clones it with $7000$.
+In Phase-2 this time is measured: the endcap layer of the MTD (MIP Timing Detector) is simulated with a hit resolution of
+$37\ps$ (\code{timeResolutionInNs = "0.0370"} in
+\path{RecoLocalFastTime/FTLRecProducers/python/mtdUncalibratedRecHits_cfi.py}), well below the spread of
+$193\ps$, so that two of the 200 pileup vertices that overlap in $z$ can be told apart in $t$; the generator
+stage is where that time is drawn. The HL-LHC payload is also \emph{nominal}, as its name says:
+\code{MeanX = MeanY = MeanZ = 0} and \code{TimeOffset = 0}, a luminous region centred on the detector, where
+the 2024 one sits at $(0.0285, -0.0166, 0.416)\cm$. The non-database block \code{HLLHCVtxSmearingParameters}
+of \path{VtxSmearedParameters_cfi.py} is still labelled "for HL-LHC operation at 13TeV"
+(\code{EprotonInGeV = 6500}); \code{HLLHC14TeV} clones it with $7000$.
 
-\paragraph{Run-2 vintage inside the GEN step.} Of three settings, one is wrong for 2024 and two have not moved since Run 2:
+\paragraph{Two GEN-step settings with no Phase-2 version.}
 \begin{itemize}
-\item \code{LHCTransport} (\code{PPSSimTrackProducer}, added by the \code{ctpps\_2022} modifier of the
-  Run-3 era) carries \code{BeamEnergy = 7000}, set in the block
-  \code{opticalfunctionsTransportSetup\_2021} of
-  \path{SimTransport/PPSProtonTransport/python/OpticalFunctionsConfig_cfi.py}, in a job with
-  $6800\GeV$ beams: a 3\% error in the proton optics of the 2024 PPS simulation. For Phase-2 the module
-  disappears (\path{Configuration/Eras/python/Era_Phase2_cff.py} excludes \code{ctpps\_2022}); no
-  HL-LHC proton transport exists in this release.
-\item \code{pythia8CommonSettings} (\path{Pythia8CommonSettings_cfi.py}) keeps
-  \code{ParticleDecays:tau0Max = 10} (mm): every hadron with $c\tau > 10\mm$ is left for Geant4 to decay.
-  This 2017 convention defines the "stable particle" of all later chapters and has not been revisited
-  for the Phase-2 tracker.
-\item the generator jets and MET of \code{pgen} have no era dependence: \code{jetPtMin = 3},
-  \code{Rho\_EtaMax = 4.5} (\path{GenJetParameters_cfi.py}) and the fiducial cut of \code{genMetCalo},
-  $|\eta| < 5.0$ hard-coded in \path{RecoMET/METAlgorithms/src/GenSpecificAlgo.cc}, are the same for
-  the 2024 and the Phase-2 detectors ($|\eta| < 4$ tracking, HGCal to $3.0$).
+\item \code{pythia8CommonSettings} (\path{Pythia8CommonSettings_cfi.py}, imported by 262 files of the
+  same directory) switches \code{ParticleDecays:limitTau0} on with
+  \code{tau0Max = 10} (in mm/c, the Pythia8 default): every particle with $c\tau > 10\mm$ is left for Geant4
+  to decay. This defines the ``stable particle'' of all later chapters; the release has one copy of the file
+  for Run 2, Run 3 and Phase-2, and no era modifier touches it.
+\item \code{LHCTransport} (\code{PPSSimTrackProducer}) carries the forward protons to PPS, the proton
+  spectrometer whose stations start $203\,$m from CMS (\code{PPSRegionStart\_45}); it runs in our 2024 GEN job
+  (\path{SimPPS/Configuration/python/GenPPS_cff.py} adds it through the \code{ctpps\_2022} modifier, and its
+  \code{HepMCProduct} is in our file). The Phase-2 era excludes that modifier
+  (\path{Configuration/Eras/python/Era_Phase2_cff.py}, line 23) and no other one adds a proton transport: a
+  Phase-2 GEN step transports no forward proton.
 \end{itemize}
-Not established from the release: whether the $14\TeV$ fragments will be retuned (there is no Phase-2
-tune directory) and the real HL-LHC optics of the first years (the payload is "nominal").
+What the release does not contain: a tune directory for 14 TeV or Phase-2 (\code{MCTunes2017} and
+\code{MCTunesRun3ECM13p6TeV} are the only ones), and a Phase-2 luminous region other than the two
+\code{nominal} payloads above.

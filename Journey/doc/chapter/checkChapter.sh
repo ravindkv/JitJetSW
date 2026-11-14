@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # checkChapter.sh: compile one chapter of the book on its own (with the preamble of doc/JitJetSW.tex) and report what
-# the Constitution asks for: the page count (5 +- 2, plus 2-3 for a hand-over section; 10-13, 14-17, 16-19 for the
+# the Constitution asks for: the page count (8 +- 2 for 01_ME .. 08_PU, plus 2-3 for a hand-over section; 10-13, 14-17, 16-19 for the
 # detector chapters 09_G4, 10_SIM, 11_DIGI of Rule J; 20-25 for the checkpoint chapters 12_L1T and 13_HLT of Rule G),
 # the subsections of B3 in a detector chapter, the sections (the five of Rule B, plus at most one hand-over section "Made
 # here for the next stage: ..." of Rule B6; for a checkpoint chapter B1, B2, one section per step, B4, B5), the
@@ -35,10 +35,10 @@ else
     echo "== chapter $ch: $pages pages (a detector chapter: the Constitution, Rule J, asks for $detector)"
     echo "-- sections (Rule B: five$( (( handover )) && echo ', plus the hand-over section'); Rule J: B3 in subsections):"
   elif (( handover )); then
-    echo "== chapter $ch: $pages pages (the Constitution asks for 5 +- 2, plus 2-3 for the hand-over section of Rule B6)"
+    echo "== chapter $ch: $pages pages (the Constitution asks for 8 +- 2, plus 2-3 for the hand-over section of Rule B6)"
     echo "-- sections (Rule B: five, plus the hand-over section):"
   else
-    echo "== chapter $ch: $pages pages (the Constitution asks for 5 +- 2)"
+    echo "== chapter $ch: $pages pages (the Constitution asks for 8 +- 2)"
     echo "-- sections (Rule B asks for exactly five):"
   fi
 fi

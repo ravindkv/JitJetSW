@@ -6,13 +6,13 @@ Script: `test/05_Had/run_05_Had.sh`; outputs in `test/05_Had/out/`. All commands
 initialized CMSSW_15_0_5 (`cd CMSSW_15_0_5/src && cmsenv && cd JitJetSW/Journey/test`).
 
 ```bash
-05_Had/run_05_Had.sh            # everything: cmsDriver.py, cmsRun GEN, GenPartAnalyzer, PNG pages, ledger
+05_Had/run_05_Had.sh            # everything: cmsDriver.py, cmsRun GEN, GenPartAnalyzer, ledger
 RUN=0 05_Had/run_05_Had.sh      # only write step1_GEN_05_Had_cfg.py
 ANALYZE=0 05_Had/run_05_Had.sh  # GEN step only, no analyzer, no ledger
 ```
 
-The script sources `common/jitjet_common.sh` and calls `gen_stage on on on on off 4 "hadronisation (Lund strings)"`
-(ISR, FSR, MPI, Hadronize on; Decay off; 4 analyzer pages). It requires the output of chapter 04
+The script sources `common/jitjet_common.sh` and calls `DRAW_STAGES=4 gen_stage on on on on off 4 "hadronisation (Lund strings)"`
+(ISR, FSR, MPI, Hadronize on; Decay off; 1 analyzer page, stage 4). It requires the output of chapter 04
 (`04_MPI/out/step1_GEN_04_MPI.root`, Rule E) to exist, although the event is regenerated from scratch with the same seeds.
 
 ## 1. The cmsDriver.py commands
@@ -122,23 +122,23 @@ is how the pages with the cones were made on 13 November 2026, the GEN file unch
 ```bash
 cd 05_Had/out
 cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_05_Had.root outputFile=genPartAnalyzer_05_Had.root \
-   maxEvents=1 eventsToProcess=1:1:1 maxStage=4 pdfFile=genPartAnalyzer_05_Had.pdf \
+   maxEvents=1 eventsToProcess=1:1:1 maxStage=4 drawStages=4 pdfFile=genPartAnalyzer_05_Had.pdf \
    sampleLabel="chapter 05_Had: hadronisation (Lund strings)|ISR on, FSR on, MPI on|Hadronize on, Decay off|pTHatMin 100 GeV, 13.6 TeV" \
    coneR=0.4 > genPartAnalyzer_05_Had.log 2>&1
-pdftoppm -cropbox -r 110 -png genPartAnalyzer_05_Had.pdf genPartAnalyzer_05_Had_page
 python3 ../../common/genLedger.py step1_GEN_05_Had.root --event 1:1:1 > ledger_05_Had.txt 2> ledger_05_Had.log
 cd ../..
 ```
 
-- `common/genPartAnalyzer_cfg.py` (plugin `GenPartAnalyzer`, `plugins/GenPartAnalyzer.cc`): one eta-phi page per
-  generation stage up to `maxStage=4`: page 1 the hard process (the two b quarks, status 23), page 2 the parton shower
-  (14 particles: the hard process and its shower), page 3 MPI and beam remnants (169 partons, status 62/63, the b quarks with primordial kT), page 4 the
-  hadronisation (the 320 primary hadrons, the B- and B*+ matched to the b and bbar chains). Marker size ~ log pT, labels
-  for pT > 5 GeV, particles beyond |eta| = 6 on the border. On every page the dashed cones Delta R < 0.4 around the two
+- `common/genPartAnalyzer_cfg.py` (plugin `GenPartAnalyzer`, `plugins/GenPartAnalyzer.cc`): analyses every
+  generation stage up to `maxStage=4` (in the log: stage 1 the hard process, the two b quarks, status 23; stage 2 the
+  parton shower, 14 particles: the hard process and its shower; stage 3 MPI and beam remnants, 169 partons, status
+  62/63, the b quarks with primordial kT) and draws one eta-phi page, `drawStages=4`: the hadronisation (the 320 primary
+  hadrons, the B- and B*+ matched to the b and bbar chains). Marker size ~ log pT, labels
+  for pT > 5 GeV, particles beyond |eta| = 6 on the border. On the page the dashed cones Delta R < 0.4 around the two
   systems (`coneR=0.4`) with their pT, and an inset magnifying the fuller cone with the name and pT of the 12 hardest
-  particles within 1.25 x 0.4 of its axis ("+N more" for the others); on page 4 the B- cone (9 hadrons, 114.4 GeV), the
-  inset of figure 5.1. Pages 1-3 are those of chapter 04 (same parton level). Outputs: `genPartAnalyzer_05_Had.pdf` (4 pages),
-  `genPartAnalyzer_05_Had_page-1..4.png` (110 dpi, cropbox), `genPartAnalyzer_05_Had.root` (the TH2 per stage) and
+  particles within 1.25 x 0.4 of its axis ("+N more" for the others): the B- cone (9 hadrons, 114.4 GeV), the
+  inset of figure 5.1. The pages of stages 1-3 are those of chapters 01 and 04 (same parton level). Outputs:
+  `genPartAnalyzer_05_Had.pdf` (1 page, included by the .tex), `genPartAnalyzer_05_Had.root` (the TH2 per stage) and
   `genPartAnalyzer_05_Had.log` (the b / bbar / net b+bbar pT per stage and the quark-to-hadron matching, section 4).
 - `common/genLedger.py` (FWLite, no cmsRun): the record by status group, the hard process, the final state by kind and by
   region, and the cones Delta R < 0.4 around the last copies of the b and bbar quarks, written to `ledger_05_Had.txt`
@@ -524,7 +524,12 @@ and 39 joined partons) and 45 joins with status 73 (two mothers each, "combinati
 
 ### 4.6 The release files quoted in "Open problems for Phase-2"
 
-`$CMSSW_RELEASE_BASE/src/Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py` (the 21 settings of CP5):
+The state of CMSSW_15_0_5 as installed, not of the development branch: all paths under `$CMSSW_RELEASE_BASE/src` =
+`/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`; the externals from
+`$CMSSW_RELEASE_BASE/config/toolbox/el9_amd64_gcc12/tools/selected/`: `pythia8.xml` (version 311, `$PYTHIA8DATA/Version.xml`
+line 9: `Pythia:versionNumber` 8.311), `herwig7.xml` (7.2.2).
+
+`Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py` (the 21 settings of CP5, lines 5-25):
 
 ```
 'Tune:pp 14', 'Tune:ee 7',
@@ -543,16 +548,62 @@ and 39 joined partons) and 45 joins with status 73 (two mothers each, "combinati
 `ParticleDecays:tau0Max = 10`, `ParticleDecays:allowPhotonRadiation = on`.
 
 `MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py` differs from the 2017 file only by `SigmaTotal:sigmaEl = 22.08`,
-`SigmaTotal:sigmaTot = 101.037`. `MCTunes2017/PythiaCP5TuneUpSettings_cfi.py`: `pT0Ref=1.407`, `coreRadius=0.6671`,
-`coreFraction=0.4281`, `ColourReconnection:range=4.881` (no string parameter). `MCTunes2017/PythiaCP5CR1TuneSettings_cfi.py`:
-`ColourReconnection:mode=1`, `BeamRemnants:remnantMode=1`, `ColourReconnection:junctionCorrection=0.238`,
-`timeDilationPar=8.58`, `m0=1.721`, `StringZ:aLund=0.38`, `StringZ:bLund=0.64`, `StringFlav:probQQtoQ=0.078`,
-`StringFlav:probStoUD=0.2`. `PythiaCP5CR2TuneSettings_cfi.py`: `ColourReconnection:mode=2`, `m2Lambda=4.395`, `fracGluon=0.9896`.
-`grep -rl 'StringZ\|rFactB\|StringPT\|StringFlav' Configuration/Generator/python` finds only these CR1 files and
-`UpsMM_8TeV_TuneCUETP8M1_cfi.py` (`StringFlav:mesonBvector = 3.000`, comment "needs work"). The 14 TeV fragments of
-`Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py` (`TTbar_14TeV_TuneCP5_cfi`,
-`QCD_Pt15To7000_Flat_14TeV_TuneCP5_cff`, `MinBias_14TeV_pythia8_TuneCP5_cfi`, ...) import
-`Configuration.Generator.MCTunes2017.PythiaCP5Settings_cfi`. Herwig7: `Configuration/Generator/python/Herwig7Settings/Herwig7CH3TuneSettings_cfi.py`.
+`SigmaTotal:sigmaTot = 101.037` (`diff`). The CP5 variants of `MCTunes2017/` (no string parameter in Up, Down, CR2):
+
+| file | changed with respect to CP5 |
+|---|---|
+| `PythiaCP5TuneUpSettings_cfi.py` | `pT0Ref=1.407`, `coreRadius=0.6671`, `coreFraction=0.4281`, `ColourReconnection:range=4.881` |
+| `PythiaCP5TuneDownSettings_cfi.py` | `pT0Ref=1.46`, `coreRadius=0.6879`, `coreFraction=0.7253`, `ColourReconnection:range=4.691` |
+| `PythiaCP5CR1TuneSettings_cfi.py` | `pT0Ref=1.375`, `ecmPow=0.03283`, `coreFraction=0.4446`, `coreRadius=0.6046`, `ColourReconnection:mode=1`, `BeamRemnants:remnantMode=1`, `junctionCorrection=0.238`, `timeDilationPar=8.58`, `m0=1.721`, `StringZ:aLund=0.38`, `StringZ:bLund=0.64`, `StringFlav:probQQtoQ=0.078`, `StringFlav:probStoUD=0.2` (lines 10-22) |
+| `PythiaCP5CR2TuneSettings_cfi.py` | `pT0Ref=1.454`, `ecmPow=0.0555`, `coreFraction=0.4392`, `coreRadius=0.6532`, `ColourReconnection:mode=2`, `m2Lambda=4.395`, `fracGluon=0.9896` |
+
+Searches over the whole release (the commands, from `$CMSSW_RELEASE_BASE/src`):
+
+```
+grep -rln "CP5CR1\|CP5CR2" --include=*.py .                  # only the four CR tune files themselves
+grep -rln "CP5TuneUp\|CP5TuneDown" --include=*.py .          # only the two tune files themselves
+grep -rln "rFactB\|StringZ:" --include=*.py --include=*.cc .  # the two CR1 files and three test cfgs of
+                                                             # GeneratorInterface/ExternalDecays/test (StringZ:usePetersonB/C)
+grep -rln 'StringZ\|rFactB\|StringPT\|StringFlav' Configuration/Generator/python   # CR1 files + UpsMM_8TeV_TuneCUETP8M1_cfi.py
+```
+
+`Configuration/Generator/python/UpsMM_8TeV_TuneCUETP8M1_cfi.py` (`comEnergy = 8000.0`), lines 19-23: `StringFlav:mesonBvector = 3.000`
+`# relative production vector/pseudoscalar for charm mesons - needs work`, `mesonBL1S1J0 = 0.072`, `mesonBL1S0J1 = 3.000`,
+`mesonBL1S1J1 = 0.216`, `mesonBL1S1J2 = 0.000`; used by `relval_steps.py` line 1272 (`steps['UpsMM']`).
+
+Pythia8 documentation of the release (`$PYTHIA8DATA`): `Tunes.xml` lines 205-207 (`Tune:ee`, default 7: "Choice of tune to
+e+e- data, mainly for the hadronization and timelike-showering aspects"), line 251 (option 7: "the Monash 2013 tune by Peter
+Skands at al. [...] to both e+e- and pp/pbarp data"); `Fragmentation.xml` lines 116-131 (Bowler modification
+1/z^(r_Q b m_Q^2), `rFactC`, `rFactB`); `MultipartonInteractions.xml` line 195 (`pT0 = pT0Ref * (ecmNow / ecmRef)^ecmPow`),
+line 217 (`ecmRef` default 7000); `ColourReconnection.xml` lines 119-120 (`pT0_Rec` is "`range` times `pT0`, the latter being
+the same energy-dependent dampening parameter as used for MPIs"). With CP5:
+`python3 -c "print(1.41*(13600/7000)**0.03344, 1.41*(14000/7000)**0.03344)"` gives 1.4417 and 1.4431 GeV
+(`step1_GEN_05_Had.log`: `pT0 =  1.44 gives sigmaInteraction = 500.67 mb`).
+
+`Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py`, `upgradeFragments` (line 3255; `relval_upgrade.py`
+makes a workflow of every fragment for every Run4 key): 52 fragments have `14TeV` in their name. Their tune (the import of
+each file in `Configuration/Generator/python`): 37 `MCTunes2017.PythiaCP5Settings_cfi` (`TTbar_14TeV_TuneCP5_cfi` line 3290,
+`MinBias_14TeV_pythia8_TuneCP5_cfi` line 3296, `QCD_Pt15To7000_Flat_14TeV_TuneCP5_cff` line 3307, ...), 12
+`Pythia8CUEP8M1Settings_cfi` (`Wjet_Pt_80_120_14TeV_TuneCUETP8M1_cfi`, `QCD_Pt_80_120_14TeV_TuneCUETP8M1_cfi`,
+`DYToLL_M-50_14TeV_pythia8_cff`, ...; the block is `'Tune:pp 14'`, `'Tune:ee 7'`, `'MultipartonInteractions:pT0Ref=2.4024'`,
+`'MultipartonInteractions:ecmPow=0.25208'`, `'MultipartonInteractions:expPow=1.6'`), 2 Pythia6 (`LM1_sfts_14TeV_cfi`,
+`H200ChargedTaus_Tauola_14TeV_cfi`: `Pythia6GeneratorFilter`), 1 ExHuME (`GluGluTo2Jets_M_300_2000_14TeV_Exhume_cff`). All 30
+files `Configuration/Generator/python/*14TeV*CP5*.py` import the `MCTunes2017` block; no `MCTunes*` directory for 14 TeV
+exists (`ls -d Configuration/Generator/python/MCTunes*`: `MCTunes2017`, `MCTunesRun3ECM13p6TeV`). Pileup of the Run4
+workflows: `relval_steps.py` line 4617, `'--pileup':'AVE_200_BX_25ns'` with `RelValMinBias_14TeV`.
+
+Herwig7: `Configuration/Generator/python/Herwig7Settings/Herwig7CH3TuneSettings_cfi.py`;
+`/cvmfs/cms.cern.ch/el9_amd64_gcc12/external/herwig7/7.2.2-574799262b99269d60b48d6a114feb6d/share/Herwig/defaults/Hadronization.in`
+line 21: `create Herwig::ClusterHadronizationHandler ClusterHadHandler`. Herwig7 steps in `relval_steps.py`: lines 1708
+(`QCD_Pt-30_13TeV_aMCatNLO_herwig7`) and 1910-1913 (`TTbar_13TeV_Pow_herwig7`, two `DYToLL...TuneCH3_13TeV...herwig7`,
+`DY_TuneCH3_13TeV_herwig_madgraph_matchbox`), all `genvalid`; `grep -ci herwig upgradeWorkflowComponents.py` gives 0.
+
+Tracking acceptance of the Phase-2 validation: `Validation/RecoTrack/python/TrackingParticleSelectionsForEfficiency_cff.py`
+lines 12, 16 (`minRapidity = -2.5`, `maxRapidity = 2.5`), 34-35 (Phase-2 efficiency: `-3.5`, `3.5`, "within efficient eta
+range in phase-2"), 54-55 (Phase-2 general selector: `-4.5`, `4.5`, "extend eta to full acceptance"). Default Phase-2
+geometry: `relval_Run4.py` line 14, `prefixDet = 29600` (Run4D110); `Configuration/Geometry/python/dictRun4Geometry.py` line
+1553, `("O9","T35","C18","M14","F8","I17") : "D110"`; the `C18` block (line 613) lists `hcalforwardalgo.xml` (line 627) and
+`Geometry/HcalSimData/data/hf.xml` (line 643).
 
 Pythia 8.311 defaults (`$PYTHIA8DATA` = `/cvmfs/cms.cern.ch/el9_amd64_gcc12/external/pythia8/311-62f197bacb831a8defc23e576ff6b2ab/share/Pythia8/xmldoc`):
 

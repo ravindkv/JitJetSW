@@ -11,7 +11,7 @@
 # For a sample generated with later Pythia8 levels off (the generator chapters 01-06, gen_stage of
 # test/common/jitjet_common.sh) limit the stages and collect the pages in one PDF, e.g. for chapter 02:
 #   cd test/02_PS/out && cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_02_PS.root maxEvents=1 \
-#          maxStage=2 pdfFile=genPartAnalyzer_02_PS.pdf sampleLabel="chapter 02_PS|ISR on, FSR on|MPI off, Had off"
+#          maxStage=2 drawStages=2 pdfFile=genPartAnalyzer_02_PS.pdf sampleLabel="chapter 02_PS|ISR on, FSR on|MPI off, Had off"
 import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 
@@ -26,6 +26,8 @@ options.register('printParticles', False, VarParsing.multiplicity.singleton, Var
                  'print every drawn particle of every stage to stdout')
 options.register('maxStage', 5, VarParsing.multiplicity.singleton, VarParsing.varType.int,
                  'last stage to analyse and draw (1 hard process, 2 parton shower, 3 MPI, 4 hadronisation, 5 decays)')
+options.register('drawStages', '', VarParsing.multiplicity.list, VarParsing.varType.int,
+                 'the analysed stages that get a page, e.g. 2 or 2,3 (default: all; the others are analysed and printed)')
 options.register('pdfFile', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'if set, all plots go as pages into this single PDF instead of one PDF per stage and event')
 options.register('sampleLabel', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
@@ -56,6 +58,7 @@ process.genPartAnalyzer = cms.EDAnalyzer('GenPartAnalyzer',
     savePDF=cms.bool(True),
     printParticles=cms.bool(options.printParticles),
     maxStage=cms.int32(options.maxStage),
+    drawStages=cms.vint32(options.drawStages),
     pdfFile=cms.string(options.pdfFile),
     sampleLabel=cms.string(options.sampleLabel),
     coneR=cms.double(options.coneR),

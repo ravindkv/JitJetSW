@@ -6,7 +6,7 @@
 #
 #   cd test/08_PU/out && cmsRun ../../common/genJetPileup_cfg.py inputFiles=file:../../07_GenJet/out/step2_GENJET_07_GenJet.root \
 #          pileupFiles=file:step1_GEN_MinBias_08_PU.root eventsToProcess=1:1:1 nPileup=68 skipPileup=71 \
-#          pdfFile=genJetPileup_08_PU.pdf          (the full command, with every option, is in test/08_PU/run_08_PU.sh)
+#          pdfFile=genJetAnalyzer_08_PU.pdf        (the full command, with every option, is in test/08_PU/run_08_PU.sh)
 #
 # nPileup collisions are read in sequence from the library file(s) after the first skipPileup
 # events (pileupType=fixed; pileupType=poisson draws the number from Poisson(nPileup) with seed

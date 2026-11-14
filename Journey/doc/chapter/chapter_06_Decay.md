@@ -9,7 +9,7 @@ initialized CMSSW_15_0_5 (`cd CMSSW_15_0_5/src && cmsenv && cd JitJetSW/Journey/
 ./06_Decay/run_06_Decay.sh          # needs test/05_Had/out/step1_GEN_05_Had.root (Rule E), ~1 min
 ```
 
-which sources `common/jitjet_common.sh` and calls `gen_stage on on on on on 5 "hadron decays ..."`: the same
+which sources `common/jitjet_common.sh` and calls `DRAW_STAGES=5 gen_stage on on on on on 5 "hadron decays ..."`: the same
 generator chapter machinery as chapters 01 to 05, with the fifth switch, `HadronLevel:Decay`, now `on`.
 
 ## 1. The cmsDriver.py commands
@@ -160,31 +160,29 @@ these three steps:
 
 ```bash
 cd 06_Decay/out
-# 1. GenPartAnalyzer: the eta-phi displays, five pages (one per stage), the b / bbar tracking printed to the log
+# 1. GenPartAnalyzer: stages 1-5 analysed (the b / bbar tracking printed to the log), one page drawn, stage 5
 cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_06_Decay.root \
-   outputFile=genPartAnalyzer_06_Decay.root maxEvents=1 eventsToProcess=1:1:1 maxStage=5 \
+   outputFile=genPartAnalyzer_06_Decay.root maxEvents=1 eventsToProcess=1:1:1 maxStage=5 drawStages=5 \
    pdfFile=genPartAnalyzer_06_Decay.pdf \
    sampleLabel="chapter 06_Decay: hadron decays (the full generator event)|ISR on, FSR on, MPI on|Hadronize on, Decay on|pTHatMin 100 GeV, 13.6 TeV" \
    coneR=0.4 > genPartAnalyzer_06_Decay.log 2>&1
-# 2. the PNG pages of the PDF for the book (ROOT PDFs carry an A4 MediaBox, hence -cropbox)
-pdftoppm -cropbox -r 110 -png genPartAnalyzer_06_Decay.pdf genPartAnalyzer_06_Decay_page
-# 3. the ledger (FWLite, no cmsRun)
+# 2. the ledger (FWLite, no cmsRun)
 python3 ../../common/genLedger.py step1_GEN_06_Decay.root --event 1:1:1 > ledger_06_Decay.txt 2> ledger_06_Decay.log
 cd ../..
 ```
 
 - `common/genPartAnalyzer_cfg.py` (`VarParsing`: `inputFiles`, `outputFile`, `maxEvents`, `eventsToProcess`,
-  `maxStage`, `pdfFile`, `sampleLabel`, and `etaMax` = 6, `labelPtMin` = 5 GeV left at their defaults) runs the
+  `maxStage`, `drawStages`, `pdfFile`, `sampleLabel`, and `etaMax` = 6, `labelPtMin` = 5 GeV left at their defaults) runs the
   `GenPartAnalyzer` plugin of `JitJetSW/Journey/plugins/GenPartAnalyzer.cc` on `genParticles`. It produces
-  - `genPartAnalyzer_06_Decay.pdf`: five pages, the eta-phi map of the particles alive at the end of stage 1
-    (hard process), 2 (+ parton shower), 3 (+ MPI and beam remnants), 4 (+ hadronisation: the 320 primary
-    hadrons) and 5 (+ hadron decays: the 634 status-1 particles), marker size growing with pT, colour = origin;
-    `genPartAnalyzer_06_Decay_page-1..5.png` are the pages, page 5 is figure 6.1 of the chapter. On every page
-    the dashed cones Delta R < 0.4 around the two systems with their pT (neutrinos not counted) and an inset of the
-    fuller cone; on page 5 a second inset, since the other cone holds at least three particles: the b cone (21
-    particles, 79.1 GeV) bottom right, the bbar cone (18, 115.9 GeV) top right, each with the name and pT of its 12
-    hardest particles within 1.25 x 0.4 of the axis ("+N more" for the others), the antineutrino in parentheses;
-    the decay products of a magnified cone are labelled only in its inset;
+  - `genPartAnalyzer_06_Decay.pdf`: one page (`drawStages=5`), the eta-phi map of the particles alive at the end of
+    stage 5 (+ hadron decays: the 634 status-1 particles), marker size growing with pT, colour = origin;
+    the page is figure 6.1 of the chapter (the .tex includes the PDF). Stages 1 (hard process), 2 (+ parton
+    shower), 3 (+ MPI and beam remnants) and 4 (+ hadronisation: the 320 primary hadrons) are analysed for the log,
+    their pages are those of chapters 01, 04 and 05. On the page the dashed cones Delta R < 0.4 around the two systems
+    with their pT (neutrinos not counted), an inset of the fuller cone and a second inset, since the other cone holds
+    at least three particles: the b cone (21 particles, 79.1 GeV) bottom right, the bbar cone (18, 115.9 GeV) top
+    right, each with the name and pT of its 12 hardest particles within 1.25 x 0.4 of the axis ("+N more" for the
+    others), the antineutrino in parentheses; the decay products of a magnified cone are labelled only in its inset;
   - `genPartAnalyzer_06_Decay.root`: the TH2 (eta, phi, weight pT) per stage (`TFileService`);
   - `genPartAnalyzer_06_Decay.log`: the `== GenPartAnalyzer` line and one `stage N` line per stage with the b and
     bbar (quark, then primary hadron, then its stable decay products) pT, eta, phi, indices and the net b + bbar pT.
@@ -294,7 +292,7 @@ final state (status 1): n=320 sumE=13600.0 GeV sumPt=505.7 GeV
 Differences quoted in the chapter: record 1230 -> 1846 (+616); stable 320 -> 634 (+314); decayed 0 -> 302;
 sumPt 505.7 -> 528.9 (+23.2); |eta| < 2.5: 684.6 -> 733.8 GeV (+49.2); |eta| >= 5.5: 7010.1 -> 6817.1 GeV (-193.0);
 visible 5779.2 -> 5851.0 GeV (+71.8); invisible 0 -> 95.5 GeV. Of the 320 primary hadrons 132 stay stable
-(legend of page 5: "primary hadron (132)"), so 188 decayed; 302 - 188 = 114 decays of decay products;
+(legend of the stage-5 page: "primary hadron (132)"), so 188 decayed; 302 - 188 = 114 decays of decay products;
 616 new particles = 502 stable (634 - 132) + 114 decayed.
 
 ### 4.3 The analyzer log, `test/06_Decay/out/genPartAnalyzer_06_Decay.log`
@@ -318,7 +316,7 @@ visible 5779.2 -> 5851.0 GeV (+71.8); invisible 0 -> 95.5 GeV. Of the 320 primar
   cone dR<0.4 (stage 5) | around b: n=21 pt=79.1207 eta=-1.58026 phi=-2.07815 scalar sum pT=79.467 members [idx]pdg:pt:dR = [1813]22:17.7277:0.00938886 [1828]211:13.3128:0.0251742 [1827]-211:10.9951:0.0438498 [1838]310:7.95839:0.0499624 [1438]22:5.77836:0.0854139 [1435]11:4.95115:0.179882 [1440]22:3.51683:0.147643 [1439]22:3.0324:0.16388 [1442]22:2.3646:0.251945 [1374]211:2.14455:0.29478 [1586]22:1.96827:0.356353 [1840]22:1.46305:0.115927 [1437]22:1.38732:0.0378915 [1236]310:0.906323:0.244158 [1451]211:0.478113:0.355992 [1441]22:0.470439:0.323616 [1839]22:0.301431:0.201592 [1593]22:0.292582:0.310631 [1812]22:0.163679:0.08783 [1348]-211:0.154445:0.274446 [804]-211:0.0993873:0.285037 | around bbar: n=18 pt=115.944 eta=-3.74635 phi=1.00816 scalar sum pT=116.011 members [idx]pdg:pt:dR = [1753]211:30.6144:0.0106927 [1821]310:15.6545:0.0340961 [1841]310:12.873:0.00906361 [1835]130:11.7772:0.0673147 [1842]22:8.23657:0.0256749 [1832]211:7.51836:0.0450077 [1844]22:6.40256:0.0549173 [1818]22:5.76164:0.00230666 [1831]-211:4.27048:0.0579937 [1819]22:2.94065:0.0676758 [1820]22:2.52864:0.0392866 [1845]22:2.2628:0.0541929 [1282]-321:1.64258:0.18046 [1504]22:1.55608:0.023542 [1843]22:0.817201:0.07345 [1836]22:0.696542:0.134685 [1837]22:0.307863:0.198276 [1797]22:0.149714:0.141523
 ```
 
-The page-5 display (`genPartAnalyzer_06_Decay_page-5.png`) header: 634 particles drawn, 38 with |eta| > 6 on the
+The stage-5 display (`genPartAnalyzer_06_Decay.pdf`) header: 634 particles drawn, 38 with |eta| > 6 on the
 border; legend: b system (9), bbar system (16), primary hadron (132), decay product (477); net b+bbar
 |pT| = 20.30 GeV (px = 13.73, py = 14.96), sum |pT| = 208.45 GeV, Delta phi(b, bbar) = 3.10. The stage-2 and
 stage-3 lines are identical to those of `test/05_Had/out/genPartAnalyzer_05_Had.log` (same parton level).
@@ -484,36 +482,121 @@ no `tau0`):
 
 ### 4.8 The release files quoted in "Open problems for Phase-2"
 
-All under `$CMSSW_RELEASE_BASE/src` = `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
+The state of CMSSW_15_0_5 as installed, not of the development branch. All under `$CMSSW_RELEASE_BASE/src` =
+`/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src` unless said otherwise; versions of the externals from
+`$CMSSW_RELEASE_BASE/config/toolbox/el9_amd64_gcc12/tools/selected/`: `pythia8.xml` 311, `evtgen.xml` 2.0.0, `lhapdf.xml`
+6.4.0, `cmsswdata.xml` `GeneratorInterface/EvtGenInterface=V02-11-00`.
 
-- `Configuration/Generator/python/Pythia8CommonSettings_cfi.py`: the eight lines of `pythia8CommonSettings`
-  (listed in section 2).
-- `Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py`: `SigmaTotal:sigmaEl = 21.89`,
-  `SigmaTotal:sigmaTot = 100.309`; `Configuration/Generator/python/MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py`:
-  `SigmaTotal:sigmaEl = 22.08`, `SigmaTotal:sigmaTot = 101.037` (all other lines identical). The fragment of the
-  book and the 14 TeV relval fragments `TTbar_14TeV_TuneCP5_cfi.py`, `MinBias_14TeV_pythia8_TuneCP5_cfi.py` import
-  the `MCTunes2017` version.
-- `Configuration/Generator/python/Hadronizer_TuneCP5_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_evtgen_cff.py`:
-  `ExternalDecays = cms.PSet(EvtGen130 = cms.untracked.PSet(decay_table = 'GeneratorInterface/EvtGenInterface/data/DECAY_2010.DEC',
-  particle_property_file = cms.FileInPath('GeneratorInterface/EvtGenInterface/data/evt.pdl'), list_forced_decays = cms.vstring(),
-  operates_on_particles = cms.vint32()), parameterSets = cms.vstring('EvtGen130'))`;
-  `B0ToJpsiK0s_JMM_Filter_DGamma0_TuneCP5_13p6TeV-pythia8-evtgen_cfi.py`: `DECAY_2014_NOLONGLIFE.DEC`, `evt_2014.pdl`;
-  `GeneratorInterface/EvtGenInterface/python/EvtGenSetting_cff.py`: `EvtGenExtraParticles` (extra particle
-  definitions appended to `processParameters` by the EvtGen fragments).
-- `GeneratorInterface/EvtGenInterface/data/README` points to the cms-data package; on cvmfs
-  `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/data-GeneratorInterface-EvtGenInterface/V02-12-00/GeneratorInterface/EvtGenInterface/data/`
-  holds `DECAY_2010.DEC`, `DECAY_2014.DEC`, `DECAY_2020.DEC` (and their `_NOLONGLIFE` variants), `evt.pdl`,
-  `evt_2014.pdl`, `evt_2020.pdl`; `DECAY_2020.DEC` line 2620: `Decay B-` / `# Updated to PDG 2008` / `0.0569 D*0 e- anti-nu_e PHOTOS HQET2 ... # 1.0 * PDG2014`.
-  Versions from `config/toolbox/el9_amd64_gcc12/tools/selected/`: pythia8 311, evtgen 2.0.0, lhapdf 6.4.0.
-- `SimG4Core/Application/python/g4SimHits_cfi.py`, the `Generator` PSet: `RDecLenCut = cms.double(2.9)` (cm),
-  `LDecLenCut = cms.double(30.0)` (cm), `MinPCut = 0.04`, `MinEtaCut = -5.5`, `MaxEtaCut = 5.5`.
-- `IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py` (`BetafuncEvtVtxGenerator`, `readDB = True`,
-  the 2024 beam spot of this chapter); `VtxSmearedRealisticHLLHC_cfi.py` (`HLLHCEvtVtxGenerator`, `readDB = True`);
-  `VtxSmearedHLLHC14TeV_cfi.py` (`EprotonInGeV = 7000`); `VtxSmearedParameters_cfi.py` line 1101,
-  `HLLHCVtxSmearingParameters`: `EprotonInGeV = 6500.0`, `CrossingAngleInurad = 510.0`, `CrabFrequencyInMHz = 400.0`,
-  `BetaCrossingPlaneInm = 0.20`, `BetaSeparationPlaneInm = 0.20`.
-- `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py` line 3171, `'Run4D110'`:
-  `'Geom': 'ExtendedRun4D110'`, `'GT': 'auto:phase2_realistic_T33'`, `'Era': 'Phase2C17I13M9'`,
-  `'ScenToRun': ['GenSimHLBeamSpot', ...]`; `'BeamSpot': 'DBrealisticHLLHC'` (lines 3208, 3216).
-- `Geometry/TrackerCommonData/data/PhaseII/` (XML of the Phase-2 tracker; the inner-tracker layer radii were not
-  extracted for the chapter).
+**Decay tables.**
+
+- The Phase-2 list: `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py`, `upgradeFragments` (line 3255),
+  52 names with `14TeV`. `TTbar_14TeV_TuneCP5_cfi.py`, `MinBias_14TeV_pythia8_TuneCP5_cfi.py` have no `ExternalDecays`
+  (`grep -c ExternalDecays` gives 0). The 11 with EvtGen (all with the label `EvtGen130`; `operates_on_particles` empty except
+  the last two):
+
+  | fragment | `decay_table` |
+  |---|---|
+  | `B0ToKstarMuMu_14TeV_TuneCP5_cfi`, `BsToEleEle_14TeV_TuneCP5_cfi`, `BsToJpsiGamma_14TeV_TuneCP5_cfi`, `BsToJpsiPhi_mumuKK_14TeV_TuneCP5_cfi`, `BsToMuMu_14TeV_TuneCP5_cfi` (line 16), `BsToPhiPhi_KKKK_14TeV_TuneCP5_cfi`, `BuMixing_BMuonFilter_forSTEAM_14TeV_TuneCP5_cfi` | `DECAY_2010.DEC` |
+  | `BdToKstarEleEle_14TeV_TuneCP5_cfi`, `BuToJPsiPrimeKToJPsiPiPiK_14TeV_TuneCP5_pythia8_cfi`, `Chib1PToUpsilon1SGamma_MuFilter_TuneCP5_14TeV-pythia8_evtgen_cfi` (`(20553,555)`), `ChicToJpsiGamma_MuFilter_TuneCP5_14TeV_pythia8_evtgen_cfi` (`(20443,445)`) | `DECAY_2014_NOLONGLIFE.DEC` |
+
+- Active `decay_table` lines in `Configuration/Generator/python` (39 files):
+  `grep -rhE "^[^#]*decay_table *= *cms" --include=*.py . | grep -oE "DECAY[A-Za-z0-9_]*\.DEC" | sort | uniq -c`:
+  23 `DECAY_2010.DEC`, 8 `DECAY_2014_NOLONGLIFE.DEC`, 8 `DECAY_NOLONGLIFE.DEC`; `grep -rln "DECAY_2020\|evt_2020"` over the
+  whole release (`*.py`, `*.cc`, `*.h`, `*.txt`) finds nothing. Example,
+  `Hadronizer_TuneCP5_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_evtgen_cff.py` lines 13-21 (workflow 523 of
+  `relval_extendedgen.py`, line 56): `ExternalDecays = cms.PSet(EvtGen130 = cms.untracked.PSet(decay_table =
+  cms.string('GeneratorInterface/EvtGenInterface/data/DECAY_2010.DEC'), particle_property_file =
+  cms.FileInPath('GeneratorInterface/EvtGenInterface/data/evt.pdl'), list_forced_decays = cms.vstring(),
+  operates_on_particles = cms.vint32()), parameterSets = cms.vstring('EvtGen130'))`.
+  `GeneratorInterface/EvtGenInterface/python/EvtGenSetting_cff.py`: `EvtGenExtraParticles` (extra particle definitions
+  appended to `processParameters` by the EvtGen fragments).
+- `GeneratorInterface/EvtGenInterface/plugins/EvtGen/EvtGenInterface.cc`: line 60 `SetDefault_m_PDGs()` (lines 60-285, 191
+  active `m_PDGs.push_back`: `sed -n 60,285p EvtGenInterface.cc | sed 's#//.*##' | grep -c "m_PDGs.push_back"`); line 294
+  `decay_table` read with no default; line 299 `use_internal_photos` default `true` (PHOTOS); lines 387-404: an empty
+  `operates_on_particles` falls back to `SetDefault_m_PDGs()`; line 678 `DEFINE_EDM_PLUGIN(..., "EvtGen130")`.
+  `GeneratorInterface/ExternalDecays/src/ExternalDecayDriver.cc` line 36: `"EvtGen1"` or `"EvtGen130"` create the plugin.
+- The tables: `$CMSSW_RELEASE_BASE/external/el9_amd64_gcc12/data/GeneratorInterface/EvtGenInterface` is a link to
+  `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/data-GeneratorInterface-EvtGenInterface/V02-11-00/GeneratorInterface/EvtGenInterface`
+  (`edmFileInPath GeneratorInterface/EvtGenInterface/data/DECAY_2010.DEC` resolves there; V02-12-00 on cvmfs is not the one
+  of this release). `GeneratorInterface/EvtGenInterface/data/README` in `src` only says the files moved to the data
+  package. In that `data/` directory:
+
+  ```
+  diff DECAY_2014.DEC DECAY_2020.DEC                     # only "0a1,20": the EvtGen licence header
+  cmp $EVTGEN_BASE/share/EvtGen/DECAY.DEC DECAY_2020.DEC  # identical (EvtGen 2.0.0's own table)
+  cmp DECAY.DEC DECAY_2020.DEC; cmp DECAY_NOLONGLIFE.DEC DECAY_2020_NOLONGLIFE.DEC   # identical
+  grep -oE "PDG ?20[0-9]{2}" DECAY_2020.DEC | sed 's/ //' | sort | uniq -c
+      # PDG2000 2, PDG2004 1, PDG2008 12, PDG2010 1, PDG2011 2018, PDG2014 105, PDG2015 3
+  grep -oE "PDG ?20[0-9]{2}" DECAY_2010.DEC | sed 's/ //' | sort | uniq -c
+      # PDG2000 2, PDG2004 1, PDG2008 12, PDG2010 1, PDG2011 2235
+  ```
+
+  (among all `*.DEC` and `*.dec` files only the user decay file `BdBstohhtoMuMu.dec` names "PDG 2020").
+  `DECAY_2020.DEC` line 2620: `Decay B-` / `# Updated to PDG 2008` / `0.0569 D*0 e- anti-nu_e PHOTOS HQET2 1.207 0.920
+  1.406 0.853; # 1.0 * PDG2014`; `DECAY_2010.DEC` line 2706: `Decay B-` / `# Updated to PDG 2008` / `0.056800000 D*0 e-
+  anti-nu_e PHOTOS HQET 0.77 1.33 0.92; #[Reconstructed PDG2011]`.
+- Semileptonic branching fractions, sum of the channels with `e- anti-nu_e` in the `Decay B-` block:
+
+  ```
+  awk '/^Decay B-$/{on=1;next} on&&/^Enddecay/{exit} on{sub(/#.*/,""); if($0 ~ / e- / && $0 ~ /anti-nu_e/) s+=$1}
+       END{print s}' DECAY_2010.DEC          # 0.0980 (19 channels); DECAY_2014_NOLONGLIFE.DEC, DECAY_2020.DEC: 0.1072
+  ```
+
+  Pythia 8.311, `$PYTHIA8DATA/ParticleData.xml` line 2335 (`id="521"`, B+/B-): the channels on for the particle (`onMode`
+  1 or 2) sum to 1.000; those with `12 -11` sum to 0.1129, `12 -11 -423` (anti-D*0 e+ nu_e) is 0.0617.
+
+**The lifetime boundary and Geant4.**
+
+- `Configuration/Generator/python/Pythia8CommonSettings_cfi.py` lines 5-12 (the eight lines of `pythia8CommonSettings`,
+  section 2); `grep -rl "Pythia8CommonSettings_cfi import" --include=*.py Configuration/Generator/python | wc -l` gives 262
+  (63 with `14TeV` in the name). Pythia8 documentation (`$PYTHIA8DATA`): `ParticleDecays.xml` lines 43 (`limitTau0` default
+  off), 47 (`tau0Max` default 10, mm/c), 272-276 (`allowPhotonRadiation` default off, "in order to avoid double-counting of
+  emissions if you link to an external QED-radiation program"); `ErrorChecks.xml` line 83 (`Check:epTolErr` default 1e-4,
+  "as a fraction of the initial energy"); `MainProgramSettings.xml` lines 22-23 ("It is up to you to decide which ones, if
+  any, you actually want to use when you write your main program"), line 221 (`Main:timesAllowErrors` default 10); `grep -rn
+  timesAllowErrors --include=*.cc --include=*.h $CMSSW_RELEASE_BASE/src` finds nothing; `Tunes.xml` line 256
+  (`Tune:preferLHAPDF` default 2); `BeamParameters.xml` line 170 (`Beams:setProductionScalesFromLHEF` default off);
+  `SUSYLesHouchesAccord.xml` line 151 (`SLHA:minMassSM` default 100); `TotalCrossSections.xml` lines 88-91
+  (`SigmaTotal:mode` 0: "Make your own choices (the "own model"), set as fixed values").
+- `Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py` lines 22-24: `SigmaTotal:mode = 0`,
+  `SigmaTotal:sigmaEl = 21.89`, `SigmaTotal:sigmaTot = 100.309`; `MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py`:
+  `22.08`, `101.037` (all other lines identical). The fragment of the book and the 37 CP5 fragments at 14 TeV of
+  `upgradeFragments` import the `MCTunes2017` version.
+- `SimG4Core/Application/python/g4SimHits_cfi.py` lines 271-283, the `Generator` PSet: `RDecLenCut = cms.double(2.9), ## (cm)
+  the cut on vertex radius` (line 282, set nowhere else in the python of the release), `LDecLenCut = cms.double(30.0), ##
+  (cm) decay volume length`, `MinPCut = 0.04`, `MinEtaCut = -5.5`, `MaxEtaCut = 5.5`; `SimG4Core/Application/python/hectorParameter_cfi.py`
+  line 4: `EtaCutForHector = cms.double(8.2)`.
+- `SimG4Core/Generators/src/Generator.cc`: lines 51-52 (`RDecLenCut` -> `theDecRCut2`), line 56 (`double theDecLenCut =
+  p.getParameter<double>("LDecLenCut") * CLHEP::cm;`, a local variable, used only in the printout of line 90), line 87
+  (`Z_hector = RDecLenCut * sinh(EtaCutForHector)` = 2.9 cm x sinh(8.2) = 5279 cm), lines 185-187 ("The selection is made
+  considering if the partcile with status = 2 have the end_vertex with a radius greater than the radius of beampipe cylinder
+  (no requirement on the Z of the vertex is applyed)."), lines 366-369 ("Decay chain outside the fiducial cylinder defined
+  by theRDecLenCut are used for Geant4 tracking with predefined decay channel").
+- `Validation/RecoTrack/python/TrackingParticleSelectionsForEfficiency_cff.py` lines 29 and 49: `pset.tip = 2.5 # beampipe
+  is around 2.0, BPIX1 is at 2.9` (Phase 1); line 36: `# IT1 will be around 3.0 (as in Phase1)` (Phase 2).
+- Default Phase-2 geometry: `relval_Run4.py` line 14 `prefixDet = 29600 #update this line when change the default version`
+  (Run4D110); `Configuration/Geometry/python/dictRun4Geometry.py` line 1553 (`D110` = `T35` + ...), line 351 (`T35` lists
+  `Geometry/TrackerCommonData/data/PhaseII/Tracker_DD4hep_compatible_IT711_2023_05/pixel.xml`); in that file lines
+  12376-12397, `DDTrackerAngular` with parent `pixel:ITLayer1`: `ITLayer1RodFlipped` at `Radius = 27.5*mm` (line 12381),
+  `ITLayer1RodUnflipped` at `Radius = 32.5*mm` (line 12392); layer 2 at 59 and 64 mm (lines 12425, 12436).
+- The decay vertices of the event: section 4.5 above (`[1503] pdg=521 ... r_decay=5.544 mm`, `[1817] pdg=-421 ... r_decay=12.077 mm`).
+
+**Vertex smearing of the Phase-2 relvals.**
+
+- `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py` line 3171, `'Run4D110'`: `'Geom':
+  'ExtendedRun4D110'`, `'GT': 'auto:phase2_realistic_T33'`, `'Era': 'Phase2C17I13M9'`, `'ScenToRun': ['GenSimHLBeamSpot',
+  ...]` (no `'BeamSpot'` key; lines 3208 and 3216 set `'DBrealisticHLLHC'` only for `Run4D110GenOnly` and
+  `Run4D110SimOnGen`). `relval_steps.py` lines 4665-4672 (`GenSimHLBeamSpot`: `'--conditions' : gt+'_13TeV'`,
+  `'--beamspot' : 'DBrealisticHLLHC'`) and 4674-4681 (`GenSimHLBeamSpot14`: `'--conditions' : gt`, same beam spot);
+  `relval_upgrade.py` lines 40-42: a fragment with `14TeV` in its name runs `GenSimHLBeamSpot14`.
+- `Configuration/AlCa/python/autoCond.py` line 111: `'phase2_realistic' : '150X_mcRun4_realistic_v1'`; lines 138-139 apply
+  `autoCondBSHLLHC13TeV`; `autoCondModifiers.py` line 131: the `_13TeV` keys add
+  `SimBeamSpotHLLHCObjects_z4p3cm_t193ns_13TeV_nominal_mc_v1` for `SimBeamSpotHLLHCObjectsRcd`.
+- `Configuration/StandardSequences/python/VtxSmeared.py` line 4: `'DBrealisticHLLHC'` ->
+  `IOMC.EventVertexGenerators.VtxSmearedRealisticHLLHC_cfi` (`HLLHCEvtVtxGenerator`, `readDB = True`, "read parameters from
+  GT (SimBeamSpotHLLHCObjectsRcd)"); lines 44-45: `'HLLHC'`, `'HLLHC14TeV'` (python parameters). `IOMC/EventVertexGenerators/src/HLLHCEvtVtxGenerator.cc`
+  lines 50-57: the python parameters are read only `if (!readDB_)`. `VtxSmearedParameters_cfi.py` lines 1100-1117:
+  `# Parameters for HL-LHC operation at 13TeV`, `HLLHCVtxSmearingParameters`: `EprotonInGeV = 6500.0`,
+  `CrossingAngleInurad = 510.0`, `CrabFrequencyInMHz = 400.0`, `BetaCrossingPlaneInm = 0.20`, `BetaSeparationPlaneInm =
+  0.20`; `VtxSmearedHLLHC14TeV_cfi.py`: `EprotonInGeV = 7000`. The 2024 beam spot of this chapter:
+  `VtxSmearedRealistic_cfi.py` (`BetafuncEvtVtxGenerator`, `readDB = True`, `VtxSmeared.py` line 3, `'DBrealistic'`).

@@ -145,9 +145,9 @@ chapter~\ref{ch:05_Had}.\footnote{\code{genPartAnalyzer\_06\_Decay.log} (the ``c
 
 \begin{figure}[!tb]
 \centering
-\includegraphics[width=\textwidth]{06_Decay/out/genPartAnalyzer_06_Decay_page-5.png}
+\includegraphics[width=\textwidth]{06_Decay/out/genPartAnalyzer_06_Decay.pdf}
 \caption{The $\eta$--$\phi$ display of the complete generator event, stage 5 of
-\code{test/06\_Decay/out/genPartAnalyzer\_06\_Decay.pdf} (page 5): the 634 stable particles, marker size growing with
+\code{test/06\_Decay/out/genPartAnalyzer\_06\_Decay.pdf} (its only page): the 634 stable particles, marker size growing with
 \pt, coloured by origin. Red: the 9 stable decay products of the $B^-$; blue: the 16 of the $B^{*+}$; violet: the
 primary hadrons left undecayed; grey: the decay products of the other hadrons. The magenta star is the vector sum
 of the $b$ and $\bar{b}$ systems, $\pt = 20.3\GeV$. Dashed: the cones $\Delta R<0.4$, $79.1\GeV$ around the $b$
@@ -268,66 +268,78 @@ particles beyond $\abseta = 6$ are drawn on the border.
 
 \FloatBarrier
 \section{Open problems for Phase-2}
+This list is the state of CMSSW\_15\_0\_5, the release of the book, read in \path{$CMSSW_RELEASE_BASE/src} and in its
+externals (Pythia~8.311, EvtGen~2.0.0 and its decay tables), not of the development branch, which changes every day.
+
 \paragraph{Which decay tables.}
 This event is decayed with Pythia8's own tables: the GEN log prints ``no particle data has been changed from its
-default value'', and the configuration has no \code{ExternalDecays} block. That is also what the Phase-2 release
-validation does: the fragments it uses, \path{Configuration/Generator/python/TTbar_14TeV_TuneCP5_cfi.py} and
-\path{MinBias_14TeV_pythia8_TuneCP5_cfi.py}, contain no external decayer either. The production fragments that
-do use EvtGen do it through the \code{ExternalDecays} parameter set of the Pythia8 module, for example in
-\path{Configuration/Generator/python/Hadronizer_TuneCP5_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_evtgen_cff.py}:
-\code{EvtGen130} with \code{decay\_table} set to \path{GeneratorInterface/EvtGenInterface/data/DECAY_2010.DEC},
-\code{particle\_property\_file} to \code{evt.pdl}, and empty \code{list\_forced\_decays} and \code{operates\_on\_particles}
-(so EvtGen takes every species it knows, $b$ and $c$ hadrons among them). The $B$-physics fragments of the same
-directory use \code{DECAY\_2014\_NOLONGLIFE.DEC} with \code{evt\_2014.pdl}, while the data package shipped with
-the release (\path{cms-data/GeneratorInterface-EvtGenInterface}, V02-12-00, EvtGen~2.0.0) also carries
-\code{DECAY\_2020.DEC} and \code{evt\_2020.pdl}, whose $B^-$ block still reads ``Updated to PDG 2008'' with
-branching fractions marked PDG2014. Three generations of tables coexist in one release, and a 2010 table is
-the default of the standard hadronizer fragment. The central Phase-2 Monte Carlo fragments are not part of the
-release (they live in the production repository), so which table they use could not be established here;
-what the release shows is that nothing selects a newer table by default, and that the Pythia8-only path of this
-chapter is the one used for the Phase-2 relvals. For a $b$-jet study at the HL-LHC the semileptonic branching
-fractions and the $D$ decay multiplicities, which set the neutrino energy and the track multiplicity in the jet,
-are decided by this choice.
+default value'', and the configuration has no \code{ExternalDecays} block. So are the signal and pileup fragments of
+the Phase-2 relvals, \path{Configuration/Generator/python/TTbar_14TeV_TuneCP5_cfi.py} and
+\path{MinBias_14TeV_pythia8_TuneCP5_cfi.py}, but not all 52 fragments at 14~TeV of their list (\code{upgradeFragments}
+in \path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}): 11 hand the heavy hadrons to EvtGen
+through the \code{ExternalDecays} parameter set of the Pythia8 module, 7 with the table \path{DECAY_2010.DEC} (e.g.
+\path{BsToMuMu_14TeV_TuneCP5_cfi.py}) and 4 with \path{DECAY_2014_NOLONGLIFE.DEC}. Their label \code{EvtGen130} runs
+EvtGen~2.0.0 (\path{evtgen.xml} of the toolbox); with an empty \code{operates\_on\_particles} it takes over a built-in
+list of 191 species, the $B$ and $D$ hadrons and the $\tau$ among them (\code{SetDefault\_m\_PDGs}, line 60 of
+\path{GeneratorInterface/EvtGenInterface/plugins/EvtGen/EvtGenInterface.cc}), and it has no default table: each
+fragment names one. Of the 39 EvtGen fragments of \path{Configuration/Generator/python}, 23 name
+\path{DECAY_2010.DEC}, the TuneCP5 hadronizer
+\path{Hadronizer_TuneCP5_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_evtgen_cff.py} among them, 8
+\path{DECAY_2014_NOLONGLIFE.DEC}, 8 \path{DECAY_NOLONGLIFE.DEC}, none \path{DECAY_2020.DEC}. The tables are in the
+data package \code{GeneratorInterface/EvtGenInterface} V02-11-00 (\path{cmsswdata.xml} of the toolbox), and they are
+two generations, not three: \path{DECAY_2020.DEC} is \path{DECAY_2014.DEC} with a 20-line licence header in front,
+byte for byte the \path{DECAY.DEC} that EvtGen~2.0.0 ships, and \path{DECAY_NOLONGLIFE.DEC} is its copy without the
+long-lived decays. The $B^-$ block of \path{DECAY_2020.DEC} (line 2620) still opens with ``Updated to PDG 2008'' over
+branching fractions marked PDG2014; no \code{DECAY*.DEC} names a PDG edition later than 2015, and
+\path{DECAY_2010.DEC} none later than 2011. The choice matters for $b$ jets: $B^-\to e^-\bar\nu_e X$ is 11.3\% in the
+Pythia8 table of this event (\path{ParticleData.xml}), 9.8\% in \path{DECAY_2010.DEC} and 10.7\% in
+\path{DECAY_2014.DEC}, and the semileptonic decays set the neutrino energy that no detector sees, $95.5\GeV$ here.
 
 \paragraph{The lifetime boundary and the displaced vertices.}
 \code{ParticleDecays:tau0Max = 10} (mm) in \path{Pythia8CommonSettings_cfi.py} is Pythia8's own default
-(\code{ParticleDecays.xml}: \code{default="10."}); CMS only switches \code{limitTau0} on. The boundary has been
-the same for Run~2, Run~3 and the Phase-2 relvals. It is a cut on the species, not on the vertex: in this event
-the forward $B^+$ decays $117\mm$ from the primary vertex and its $\bar{D}^0$ at $258\mm$, inside the
-acceptance window that Geant4 applies to generator vertices, \code{RDecLenCut = 2.9} and \code{LDecLenCut = 30.0} (cm)
-in \path{SimG4Core/Application/python/g4SimHits_cfi.py}, but a $B$ hadron of a few TeV at larger $\eta$ would
-not be. Everything above the boundary ($K^0_S$, $\Lambda$, $\Sigma$, $\Xi$, $\Omega$) decays in Geant4 with
-Geant4's own branching fractions and kinematics, not Pythia8's; the generator-level $V^0$ content of a jet
-is therefore split between two programs. For Phase-2 the vertex smearing changes module:
-\path{IOMC/EventVertexGenerators/python/VtxSmearedRealisticHLLHC_cfi.py} (\code{HLLHCEvtVtxGenerator}, read from
-the \code{SimBeamSpotHLLHCObjectsRcd} of the global tag), with the crab-cavity parameters of
-\code{HLLHCVtxSmearingParameters} in \path{VtxSmearedParameters_cfi.py} (\code{CrossingAngleInurad = 510},
-\code{BetaCrossingPlaneInm = 0.20}, \code{EprotonInGeV = 6500} in the base set, 7000 in the 14~TeV clone), which is
-what the relval scenario \code{GenSimHLBeamSpot} of \path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}
-selects (\code{BeamSpot: DBrealisticHLLHC}, geometry \code{ExtendedRun4D110}, era \code{Phase2C17I13M9}). The
-Phase-2 inner tracker that will resolve these vertices is described in the XML of
-\path{Geometry/TrackerCommonData/data/PhaseII/}; its first-layer radius is not a python parameter and was not
-extracted here.
+(\code{ParticleDecays.xml}: \code{default="10."}); CMS only switches \code{limitTau0} on, in the one block that 262
+fragments of \path{Configuration/Generator/python} import, at 13, 13.6 and 14~TeV alike. It is a cut on the species,
+not on the vertex. Where Geant4 takes over is set by \code{RDecLenCut = 2.9} (cm) in
+\path{SimG4Core/Application/python/g4SimHits_cfi.py} (line 282): from a generator decay inside that radius Geant4
+receives the daughters; a particle decaying further out is given to Geant4 with its generator daughters attached, a
+``predefined decay channel'' (\path{SimG4Core/Generators/src/Generator.cc}, lines 186 and 366). In this event the
+forward $B^+$ decays at $r = 5.5\mm$ and its $\bar{D}^0$ at $12.1\mm$, both inside. \code{LDecLenCut = 30.0}, the
+``decay volume length'' of the same block, is read into a local variable and only printed (\path{Generator.cc}, line
+56; ``no requirement on the Z of the vertex'', line 187). The radius 2.9~cm is that of the Phase-1 pixels (``BPIX1 is
+at 2.9'', \path{Validation/RecoTrack/python/TrackingParticleSelectionsForEfficiency_cff.py}, line 29) and no Phase-2
+modifier changes it, while the first inner-tracker layer of the default Phase-2 geometry D110 has its rods at 27.5 and
+32.5~mm (\path{Geometry/TrackerCommonData/data/PhaseII/Tracker_DD4hep_compatible_IT711_2023_05/pixel.xml}, lines 12381
+and 12392): a $B$ or $D$ hadron that decays between 27.5 and 29~mm crosses the radius of the inner rods in reality but
+is never given to Geant4. Everything above the lifetime boundary ($K^0_S$, $\Lambda$, $\Sigma$, $\Xi$, $\Omega$)
+decays in Geant4 with Geant4's own branching fractions and kinematics, not Pythia8's; the generator-level $V^0$
+content of a jet is therefore split between two programs. The Phase-2 vertex smearing is \code{DBrealisticHLLHC}, the
+beam spot of the step \code{GenSimHLBeamSpot} of the default workflow \code{Run4D110} (\path{relval_steps.py}, lines
+4665--4677; \code{prefixDet = 29600}, \path{relval_Run4.py}, line 14):
+\path{IOMC/EventVertexGenerators/python/VtxSmearedRealisticHLLHC_cfi.py}, an \code{HLLHCEvtVtxGenerator} with
+\code{readDB = True} that takes its crab-cavity parameters from the \code{SimBeamSpotHLLHCObjectsRcd} of the global
+tag. The python block \code{HLLHCVtxSmearingParameters} (\path{VtxSmearedParameters_cfi.py}, line 1101, ``Parameters
+for HL-LHC operation at 13TeV'', \code{EprotonInGeV = 6500}) serves only the scenarios \code{HLLHC} and
+\code{HLLHC14TeV} that read no database.
 
 \paragraph{The age of the common settings.}
-\path{Pythia8CommonSettings_cfi.py} has eight lines and none of them is tune-specific:
-\code{Tune:preferLHAPDF = 2} is the Pythia8 default (\code{Tunes.xml}) and does nothing;
-\code{Main:timesAllowErrors = 10000} raises the number of flawed events Pythia8 may skip before it aborts from the
-default 10, so that a sick configuration is not noticed; \code{Check:epTolErr = 0.01} loosens the
-energy-momentum conservation check from the default $10^{-4}$ to 1\% of the collision energy, i.e. $136\GeV$ at
-13.6~TeV; \code{SLHA:minMassSM = 1000} and \code{Beams:setProductionScalesFromLHEF = off} concern SUSY and
-Les Houches input; \code{ParticleDecays:allowPhotonRadiation = on} adds QED radiation in decays to lepton pairs,
-which the Pythia8 manual leaves off by default to avoid double counting with an external QED program such as
-PHOTOS, which EvtGen runs. The block dates from the 2017 tune campaign and its physics content is the same in
-CMSSW\_15\_0\_5. The tune itself is older than the beam energy: the fragment of the book imports
-\path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py}, whose total and elastic cross
-sections are the 13~TeV values, \code{SigmaTotal:sigmaTot = 100.309} and \code{sigmaEl = 21.89} (mb), while the
-release also holds \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py} with 101.037 and 22.08~mb for
-13.6~TeV; the 14~TeV fragments of the Phase-2 relvals (\code{TTbar\_14TeV\_TuneCP5\_cfi.py},
-\code{MinBias\_14TeV\_pythia8\_TuneCP5\_cfi.py}) import the 2017 block as well, so no CP5 setting has been
-re-derived for 14~TeV. These cross sections feed the MPI machinery (the log of this chapter computes
-$\sigma_{\mathrm{ND}} = 55.42\mb$ from them) and, through the minimum-bias events of chapter~\ref{ch:08_PU},
-the number of particles per pileup collision at PU~200.
+\path{Pythia8CommonSettings_cfi.py} has eight lines and none of them is tune-specific: \code{Tune:preferLHAPDF = 2}
+and \code{Beams:setProductionScalesFromLHEF = off} are the Pythia8 defaults (\path{Tunes.xml},
+\path{BeamParameters.xml}) and do nothing; nor does \code{Main:timesAllowErrors = 10000} in CMSSW: it is a setting for
+the user's own main program (\path{MainProgramSettings.xml}: ``It is up to you to decide which ones, if any, you
+actually want to use''), and no C++ file of the release reads it; \code{Check:epTolErr = 0.01} loosens the
+energy-momentum conservation check from the default $10^{-4}$ to 1\% of the collision energy (\path{ErrorChecks.xml}),
+$136\GeV$ at 13.6~TeV and $140\GeV$ at 14~TeV; \code{SLHA:minMassSM = 1000} concerns SUSY input;
+\code{ParticleDecays:allowPhotonRadiation = on} adds QED radiation in decays to lepton pairs, which Pythia8 leaves off
+by default ``to avoid double-counting of emissions if you link to an external QED-radiation program''
+(\path{ParticleDecays.xml}), such as the PHOTOS that EvtGen runs (\code{use\_internal\_photos}, default true,
+\path{EvtGenInterface.cc}, line 299). Nor is the tune re-derived for the beam energy: the fragment of the book imports
+\path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py}, whose \code{SigmaTotal:mode = 0} takes the
+total and elastic cross sections ``as fixed values'' (\path{TotalCrossSections.xml}), \code{sigmaTot = 100.309} and
+\code{sigmaEl = 21.89} (mb), while the release also holds \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py} with
+101.037 and 22.08~mb for 13.6~TeV; the 37 CP5 fragments at 14~TeV of the Phase-2 relvals, \code{TTbar} and
+\code{MinBias} among them, import the 2017 block, so their cross sections are those of this event. They feed the MPI
+machinery (the log of this chapter computes $\sigma_{\mathrm{ND}} = 55.42\mb$ from them) and, through the minimum-bias
+events of chapter~\ref{ch:08_PU}, the number of particles per pileup collision at PU~200.
 
 \begin{plainwords}[What to take away]
 The decays are the last step of the generator and the first place where the detector enters the physics choices:

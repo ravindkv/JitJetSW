@@ -389,7 +389,25 @@ Per collision in the tracker region:
 
 ### 4.6 Numbers from the release quoted in "Open problems for Phase-2"
 
-All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
+The state of the release CMSSW_15_0_5 itself (not of the CMSSW development branch), all under
+`$CMSSW_RELEASE_BASE/src` = `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`. "What Phase-2 changes" is
+the difference of the effective `g4SimHits` (after all modifiers) between `Run3_2025` and the default Phase-2 era,
+`Phase2C17I13M9` (`DEFAULT_VERSION = "Run4D110"` in `Configuration/Geometry/python/defaultPhase2ConditionsEra_cff.py`;
+`'Run4D110': Geom ExtendedRun4D110, Era Phase2C17I13M9` in `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py`,
+line 3171), dumped from an initialized area with
+
+```bash
+for e in Run3_2025 Phase2C17I13M9; do python3 -c "
+import FWCore.ParameterSet.Config as cms, importlib
+m = importlib.import_module('Configuration.Eras.Era_$e'+'_cff'); p = cms.Process('X', getattr(m, '$e'))
+p.load('SimG4Core.Application.g4SimHits_cfi'); print(p.g4SimHits.dumpPython())" > g4_$e.txt; done
+diff g4_Run3_2025.txt g4_Phase2C17I13M9.txt
+```
+
+The difference: `CaloHits`, `OnlySDs`, `TrackHits` (`phase2_common`), `SaveCaloBoundaryInformation` in `CaloSD`,
+`CaloTrkProcessing`, `TrackingAction` (`phase2_hgcal`), `ECalSD.StoreLayerTimeSim`, `ECalSD.TimeSliceUnit`
+(`phase2_timing`), `LHCTransport`, `MuonSD.HaveDemoChambers` (`phase2_common`), `g4GeometryDD4hepSource` (True in
+`Run3_2025` through `dd4hep`, which `Configuration/Eras/python/Era_Phase2_cff.py` excludes); nothing else.
 
 - `SimG4Core/Application/python/g4SimHits_cfi.py`: `Generator`: `MinPCut = 0.04`, `MaxPCut = 99999.0`,
   `MinEtaCut = -5.5`, `MaxEtaCut = 5.5`, `RDecLenCut = 2.9`, `LDecLenCut = 30.0`, `PDGfilter = (21,1,2,3,4,5,6)` with
@@ -415,23 +433,47 @@ All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
   `HGCScintillatorSensitiveDetector`, `HFNoseSensitiveDetector`, `MtdSensitiveDetector`, `ZdcSensitiveDetector`,
   `BCM1FSensitiveDetector`, `PLTSensitiveDetector`, ...; `TrackHits` with `FastTimerHitsBarrel`, `FastTimerHitsEndcap`;
   `CaloHits` with `HGCHitsEE`, `HGCHitsHEfront`, `HGCHitsHEback`, `CalibrationHGCHits*`, `HFNoseHits`;
-  `LHCTransport = False`; `MuonSD.HaveDemoChambers = False`), `hgcaltb`, `phase2_hgcalOnly`, `phase2_hgcalV18`
-  (`HGCSD.HitCollection = 2`), `fixLongLivedSleptonSim`; `phase2_hgcal` on `common_MCtruth`
-  (`SaveCaloBoundaryInformation = True`); `fineCalo` on `common_MCtruth`.
-- `Configuration/StandardSequences/python/SimWithCastor_cff.py`: `MinEtaCut = -7.0`, `MaxEtaCut = 5.5`;
+  `LHCTransport = False`; `MuonSD.HaveDemoChambers = False`; comment "Selection of SD's for Phase2, exclude PPS",
+  line 751, although the PPS sensitive detectors stay in the list), `hgcaltb`, `phase2_hgcalOnly` (used only by test
+  configurations), `phase2_hgcalV18` (`HGCSD.HitCollection = 2`; only in `Era_Phase2C22I13M9_cff.py`),
+  `fixLongLivedSleptonSim`; `phase2_hgcal` on `common_MCtruth` (`SaveCaloBoundaryInformation = True`); `fineCalo` on
+  `common_MCtruth`. `phase2_common` `CaloHits` (line 758) has no `EcalHitsEE`, `EcalHitsES`.
+- The eta cut outside `g4SimHits_cfi.py` (`grep -rn "MinEtaCut\|MaxEtaCut"`, test configurations left out):
+  `Configuration/StandardSequences/python/SimWithCastor_cff.py`: `MinEtaCut = -7.0`, `MaxEtaCut = 5.5`;
   `SimG4Core/Application/python/NeutronBGforMuons_cff.py`: `MinEtaCut = -7.0`, `MaxEtaCut = 7.0`, `TrackNeutrino` left,
   `Physics.type = FTFP_BERT_XS_EML`; `NeutronBGforMuonsHP_cff.py`: `FTFP_BERT_HP_EML`; `cpuBenchmark_cff.py`:
-  `FTFP_BERT`, `TrackNeutrino = True`, roulette limits 0.
+  `FTFP_BERT`, `TrackNeutrino = True`, roulette limits 0, eta cut set to the same 5.5;
+  `SimPPS/PPSSimTrackProducer/python/SimTrackProducerForFullSim_cff.py` (the "PPS one"): `MinEtaCut = -13.0`,
+  `MaxEtaCut = 13.0`; `Configuration/StandardSequences/python/SimWithoutCastor_cff.py`: 5.5. No `toModify(g4SimHits`
+  outside `g4SimHits_cfi.py` except `Validation/Geometry/python/materialBudgetVolume_cfi.py`.
+- `Physics.type` set elsewhere (all customisation functions or tools): `cpuBenchmark_cff.py`, `NeutronBGforMuons*_cff.py`
+  (above), `SimG4Core/CustomPhysics/python/Exotica_*_SIM_cfi.py` (`CustomPhysics`), `SimG4Core/GFlash/python/GflashSim_cfi.py`
+  (`GFlash`), `SimG4Core/PrintGeomInfo/python/*` and `SimTracker/TrackerMaterialAnalysis` (`DummyPhysics`),
+  `SimMuon/Neutron/python/SimIdealNeutrons*_cff.py` (`QGSP_BERT_HP`), `reproc2011_2012_cff.py`.
 - `SimG4Core/Generators/src/Generator.cc`: lines 51 to 56 (`theRDecLenCut`, `theDecLenCut` local), 82 to 87
   (`Z_lmax = R * (1 - exp(-2 eta)) / (2 exp(-eta)) = R sinh(eta)`, `Z_hector`), 90 (the only use of `theDecLenCut`:
   a printout), 305 to 313 (the very-forward n / nbar / gamma rule), 316 to 365 (the p and geometric eta cuts), 369
-  (status 2 with `r >= RDecLenCut`), 394 (`setGenId`).
+  (status 2 with `r >= RDecLenCut` and `abs(z) < Z_hector`), 318 (`ptot < theMinPCut`: the 40 MeV cut is on the total
+  momentum), 394 (`setGenId`).
 - `SimG4Core/Application/src/StackingAction.cc`: line 189 (primary neutrinos killed), 204 (secondary neutrinos),
   341 (`if (prob < 1.0 && aTrack->GetKineticEnergy() < elim)`), 399 (`regionHGcal` set only if `gRusRoHGcal < 1.0 ||
   nRusRoHGcal < 1.0`).
 - `SimG4Core/Application/src/RunManagerMT.cc`, `runForPhase2()` (lines 348 to 356): `m_isPhase2 = true` if a region
   `HGCalRegion`, `FastTimerRegionETL` or `FastTimerRegionBTL` exists; `RunManagerMTWorker.cc` line 454:
-  `Phase2SteppingAction` instead of `SteppingAction`.
+  `Phase2SteppingAction` instead of `SteppingAction`. `SteppingAction.cc`: line 24 (`CMStoZDCtransport` read), 138
+  (region checks also for `sVeryForward`), 143 to 144 (dead regions, except `isForZDC`, `SteppingAction.h` lines 95 to
+  97: only if `CMStoZDCtransport`). `Phase2SteppingAction.cc`: constructor lines 21 to 40 (`CMStoZDCtransport` never
+  read; `CMS2ZDCName` read, unused), 142 to 148 (dead regions, no ZDC exception), 171 to 213 (tracker / BTL
+  transitions).
+- `SimG4Core/PhysicsLists/src/CMSEmStandardPhysics.cc`: lines 56 to 57 (`SetMscRangeFactor(0.2)`,
+  `SetMscStepLimitType(fMinimal)`: the defaults), 112 to 113 (`HcalRegion`, `HGCalRegion` looked up), 142 ("e-/e+ msc
+  for HCAL and HGCAL using the Urban model"), 144 to 153 (`msc3` with `G4MscRangeFactor = 0.04`, `G4MscGeomFactor =
+  2.5`, `G4MscSafetyFactor = 0.6`, `G4MscLambdaLimit = 1` mm, `G4MscStepLimit = UseSafety` of `g4SimHits_cfi.py`),
+  173 to 190 (`msc3` added for both regions); the same for e+ at lines 214 to 259.
+- `SimG4CMS/Forward/src/MtdSD.cc`: lines 47 to 48 (`//default must be 0.5`, `//default must be 0.05`);
+  `SimG4CMS/Forward/src/TimingSD.cc`: lines 163 to 172 (`setStoreTrack` only if `incidentEnergy > energyCut`).
+- `SimG4CMS/Calo/src/CaloSD.cc`: line 43 (`eminHit(0.)`), 59 (`tmaxHit = TmaxHit`, 1000 ns), 87 to 99 (`EminHits`,
+  `TmaxHits` taken only for a collection named in `HCNames`).
 - `SimG4Core/PhysicsLists/plugins/FTFPCMS_BERT_EMM.cc`: `CMSEmStandardPhysics`, `G4EmExtraPhysics`, `G4DecayPhysics`,
   `G4HadronElasticPhysics`, `CMSHadronPhysicsFTFP_BERT(minFTFP, maxBERT, maxBERTpi, ...)`, `G4StoppingPhysics`;
   the variants `FTFPCMS_BERT_EMMT`, `FTFPCMS_BERT_EMM_TRK`, `FTFPCMS_BERT_HP_EMM`, `FTFPCMS_INCLXX_EMM`,
@@ -445,13 +487,31 @@ All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
 - `Configuration/Generator/python/Pythia8CommonSettings_cfi.py`: `ParticleDecays:limitTau0 = on`,
   `ParticleDecays:tau0Max = 10` (mm).
 - `L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py`: `etaBoundaries = (-1.5, 1.5)`, `(-3.0, -1.5)`,
-  `(+1.5, +3.0)`, `(-5.5, -3.0)`, `(+3.0, +5.5)`.
+  `(+1.5, +3.0)` (lines 97, 121, 126), `(-5.5, -3.0)`, `(+3.0, +5.5)` (lines 412, 416).
+- The geometries: `Geometry/CMSCommonData/python/cmsExtendedGeometryRun4D110XML_cfi.py` (D110) against
+  `cmsExtendedGeometry2025XML_cfi.py`. Both build the HF from `Geometry/HcalCommonData/data/hcalforwardalgo.xml`
+  (`VCAL`: `rMin = cms:ForwdBeamR1`, `dzVCal` from `ForwdVcalZ1`, `ForwdVcalZ2`) with `hf.xml`, `hfpmt.xml`,
+  `hffibrebundle.xml`; `Geometry/CMSCommonData/data/cms/2030/v5/cms.xml` (D110) and `cms/2021/v3/cms.xml` (2025):
+  `ForwdVcalZ1 = 11.1495*m`, `ForwdVcalZ2 = 12.8005*m`, `ForwdBeamR1 = 12.495*cm`; asinh(1114.95 / 12.495) = 5.18,
+  asinh(1280.05 / 12.495) = 5.32. Beam pipe: `Geometry/CMSCommonData/data/beampipe/2030/v3/beampipe.xml` (D110) and
+  `beampipe/2021/v1/beampipe.xml` (2025) are identical (`diff` empty); `BeampipeRout1 = 2.2500*cm` (`BeamTube1`,
+  length `BeampipeZ2 = 1.902*m`), `BeampipeRin1 = Rout1 - 0.8*mm`. First inner-tracker layer of D110:
+  `Geometry/TrackerCommonData/data/PhaseII/Tracker_DD4hep_compatible_IT711_2023_05/pixel.xml`, `ITLayer1` (`rMin =
+  26.905*mm`, line 6596), rods at `Radius = 27.5*mm` (flipped, line 12381) and `32.5*mm` (unflipped, line 12392).
+  Beam line: `Geometry/CMSCommonData/data/extend/v2/cmsextent.xml` (D110; `v3` in 2025, same `CMStoZDC`): `CMStoZDC`,
+  `dz = 56*m - 25*cm` at `z = +-(83*m + 25*cm)`, i.e. abs(z) 27.5 to 139.0 m, `CMSCutsRegion = InterimRegion`;
+  `Geometry/ForwardCommonData/data/cmszdc.xml`: `zposition = 140.0*m`; `Geometry/ForwardSimData/data/zdcsens.xml`
+  (D110). Sensitive-volume files of D110: `trackersens.xml`, `pixelsens.xml`, `ecalsens.xml`, `hcalsenspmf.xml`,
+  `hgcsensv15.xml`, `muonSens.xml`, `zdcsens.xml`, `mtdsens.xml` (no `pltsens`, `bcm1fsens`, `bhmsens`, Roman pots).
+  Production cuts of D110: `Geometry/HGCalSimData/data/hgcProdCutsv15.xml` (`HGCal`, `HGCalEE`, `HGCalHEsil`,
+  `HGCalHEmix` -> `HGCalRegion`, 0.03 mm for e-, e+, gamma, protons), `Geometry/EcalSimData/data/EcalProdCuts.xml`
+  (`EcalRegion` 1 mm), `Geometry/HcalSimData/data/HcalProdCuts/2030/v1/HcalProdCuts.xml` (`HcalRegion` 1 mm),
+  `Geometry/MTDSimData/data/v5/mtdProdCuts.xml` (0.1 mm; 0.01 mm in the ETL sensors).
 - `config/toolbox/el9_amd64_gcc12/tools/selected/geant4.xml`: `geant4` version 11.2.2; the log banner:
-  `Geant4 version Name: geant4-11-02-patch-02 [MT] (21-June-2024)`.
-- Not established from the release: the radius of the Phase-2 beam pipe and of the first inner-tracker layer (only in
-  the XML of `Geometry/TrackerCommonData/data/PhaseII/`), whether the Phase-2 forward geometry closes the gap between
-  the calorimeter envelope (about abs(eta) 5.3 in this event) and the 5.5 cut, and since when the `RusRoHGcal*`
-  values are what they are (no history on cvmfs).
+  `Geant4 version Name: geant4-11-02-patch-02 [MT] (21-June-2024)`; `g4hepem.xml`, `g4hepemcore.xml` are in the same
+  toolbox (`G4HepEmActive = False`).
+- Not quoted, since the release carries no history: since when the `RusRoHGcal*` and the other values are what
+  they are.
 
 ### 4.7 The 2024 and the 2025 settings
 

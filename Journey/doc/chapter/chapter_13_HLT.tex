@@ -878,73 +878,96 @@ transverse energy. Magenta circles: the two generator jets. The right panel list
 \FloatBarrier
 \section{Open problems for Phase-2}
 
-The Phase-2 HLT will receive 750\,kHz from the Level-1 trigger instead of 100\,kHz, at a pileup of 140 to 200, with
-a new tracker, the HGCAL in the endcaps and a timing layer (MTD). Its menu in the release is \code{75e33}
-(\path{HLTrigger/Configuration/python/HLT_75e33_cff.py} and the directory \path{HLT_75e33/}; \code{HLT:@relvalRun4}
-in \path{Configuration/HLT/python/autoHLT.py}). What follows compares it with the Run-3 menu of this chapter, step by
-step; every statement is a line of the release or of the global tag of the Phase-2 workflows,
-\code{150X\_mcRun4\_realistic\_v1} (\path{Configuration/AlCa/python/autoCond.py}, line 111).
+This section describes CMSSW\_15\_0\_5, the release of the book, as it is in \path{$CMSSW_RELEASE_BASE/src}, not the
+development branch, which changes every day. Its Phase-2 workflows simulate 200 pileup collisions
+(\path{Configuration/PyReleaseValidation/python/relval_steps.py}, line 4617) with a new tracker, the HGCAL and a timing
+layer, MTD (\path{Configuration/Eras/python/Era_Phase2_cff.py}, line 24). The HLT menu is \code{75e33}
+(\path{HLTrigger/Configuration/python/HLT_75e33_cff.py} and \path{HLT_75e33/}; \code{HLT:@relvalRun4} in
+\path{Configuration/HLT/python/autoHLT.py}), the global tag \code{150X\_mcRun4\_realistic\_v1}
+(\path{Configuration/AlCa/python/autoCond.py}, line 111).
 
 \textbf{An event like ours has no Phase-2 path.} The schedule of \code{75e33} (line 353 of the \code{\_cff}) has 54
 entries: 32 \code{HLT\_}, 16 \code{L1T\_} (Level-1 objects cut at offline-equivalent thresholds), 4 \code{MC\_}, the
-final path and an endpath, against the 898 paths of the 2025 menu. Its jet and energy-sum paths are \code{HLT\_AK4PFPuppiJet520} (seed \code{pSinglePuppiJet230}),
-\code{HLT\_PFPuppiHT1070}, \code{HLT\_PFPuppiMETTypeOne140\_PFPuppiMHT140}, two double-jet paths with two $b$ tags
-(two jets above $128\GeV$ with $\abseta<2.4$ and $\Delta\eta<1.6$, \path{hltDoublePFPuppiJets128MaxEta2p4_cfi.py}) and
-four four-jet paths with three $b$ tags. There is no ladder of prescaled single-jet paths like \code{HLT\_PFJet40}
-\ldots{} \code{450}, no forward jet path, no dijet-average path and no HF calibration path like
-\code{HLT\_DiPFJetAve100\_HFJEC}. The paths that the jet energy scale and the trigger efficiencies are measured with
-in Run~3, the 16 that accepted our event among them, are not written yet; and a $b\bar b$ pair with a jet in the HF
-fails even the $b$-tag paths, which require $\abseta<2.4$ for both jets.
+final path and an endpath, against the 898 paths of the 2025 menu. Its jet and energy-sum paths are
+\code{HLT\_AK4PFPuppiJet520} (seed \code{pSinglePuppiJet230}), \code{HLT\_PFPuppiHT1070},
+\code{HLT\_PFPuppiMETTypeOne140\_PFPuppiMHT140}, two double-jet paths with two $b$ tags (two jets above $128\GeV$ with
+$\abseta<2.4$ and $\Delta\eta<1.6$, \path{hltDoublePFPuppiJets128MaxEta2p4_cfi.py}) and four four-jet paths with three
+$b$ tags. There is no ladder of prescaled single-jet paths like \code{HLT\_PFJet40} \ldots{} \code{450}, no forward jet
+path, no dijet-average path and no HF calibration path like \code{HLT\_DiPFJetAve100\_HFJEC}: the paths that the jet
+energy scale and the trigger efficiencies are measured with in Run~3, the 16 that accepted our event among them, are not
+written yet. A jet in the HF cannot even seed one: the three Level-1 jet seeds of the paths take jets with $\abseta<2.4$
+(\code{l1tGTsc4Jet}, lines 30--34 of
+\path{L1Trigger/Configuration/python/Phase2GTMenus/SeedDefinitions/step1_2024/l1tGTMenuObjects_cff.py}), and our
+$\bar{b}$ jet seeded \code{L1\_SingleJet90} at $\eta=-3.74$ in step~1.
+
+\textbf{The Phase-2 HLT does not start from a raw event.} In step~1, 70\,\% of our raw event of 1861.5\,kB came from the
+tracker. In Phase-2 the tracker has no raw data: \path{Configuration/StandardSequences/python/DigiToRaw_cff.py} drops
+its packers (line 41, ``\code{\# FIXME}'', after ``Remove siPixelRawData until we have phase2 pixel digis'', line 38)
+and has no HGCAL packer (line 22). The HLT reads the simulated digis instead (\code{simSiPixelDigis},
+\code{mix:Tracker}, \code{simHGCalUnsuppressedDigis} through \code{HGCalRawToDigiFake}:
+\path{hltSiPixelClusters_cfi.py}, line 23, \path{hltSiPhase2Clusters_cfi.py}, line 5, \path{hltHgcalDigis_cfi.py}, line
+3) and the Level-1 objects straight from the emulator (\code{l1tGTProducer}, \code{l1tTkMuonsGmt}, \ldots); only ECAL,
+HCAL and the muon chambers are unpacked from \code{rawDataCollector}. So the workflows run the HLT in the job that makes
+the digis (\path{relval_steps.py}, line 4728), and the raw event by detector, the first number of step~1, has no Phase-2
+counterpart for the tracker and the HGCAL.
 
 \textbf{The pileup subtraction of the Phase-2 HLT jets is an identity.} The jets of the Phase-2 HLT are PUPPI jets,
-corrected in three levels with the payload \code{AK4PFPuppiHLT} (\path{HLT_75e33/modules/hltAK4PFPuppiJetCorrectorL1_cfi.py}:
-\code{L1FastjetCorrectorProducer}, $\rho$ from \code{hltFixedGridRhoFastjetAll}, made of all PF candidates). In the
-global tag that payload is \code{JetCorrectorParametersCollection\_Phase2Spring23ticlv4\_MC\_AK4PFPuppiHLT\_v1}, one
-interval of validity written on 21 September 2023, and in it the L1FastJet level and the L3Absolute level both have
-the formula ``1'' (\code{conddb dump} of the payload): the menu computes $\rho$ and runs a corrector that multiplies by
-one. PUPPI removes the pileup particle by particle, so no offset may be the intention, but then a jet's response
-rests on L2Relative alone, which has 19 bins of $\eta$ from $-5.2$ to $5.2$ (the Run-3 payload of this chapter has
-82 bins of $\eta$, and 118 cells of $\eta\times\phi$). The name says ``ticlv4''; the menu already carries the
-\code{ticl\_v5} alternative of the HGCAL reconstruction (\path{HLT_75e33/sequences/HLTIterTICLSequence_cfi.py}). The
-same global tag gives the Run-3 HLT labels \code{AK4PFHLT} and \code{AK4CaloHLT} as \code{Run3Summer21} payloads.
+corrected in three levels with the payload \code{AK4PFPuppiHLT}; the first level is an \code{L1FastjetCorrectorProducer}
+with $\rho$ from \code{hltFixedGridRhoFastjetAll} (\path{HLT_75e33/modules/hltAK4PFPuppiJetCorrectorL1_cfi.py}). In
+the global tag of the Phase-2 workflows that payload is
+\path{JetCorrectorParametersCollection_Phase2Spring23ticlv4_MC_AK4PFPuppiHLT_v1}, one interval of validity written
+on 21 September 2023, and in it the L1FastJet level and the L3Absolute level both have the formula ``1'' (\code{conddb
+dump} of the payload): the menu computes $\rho$ and runs a corrector that multiplies by one. The response rests on
+L2Relative alone: 19 bins of $\eta$, one of them for all of $-5.2<\eta<-3$, so our $\bar{b}$ jet ($\eta=-3.77$) gets the
+same function of \pt{} as a jet at $\eta=-5$ (Run~3: 82 bins for calo jets, 118 cells of $\eta\times\phi$ for PF jets).
+The name says ``ticlv4''; \code{ticl\_v5} is already in the menu (\path{HLT_75e33/sequences/HLTIterTICLSequence_cfi.py},
+lines 13--14). The AK8 PUPPI jets have no Phase-2 payload at all: they read the offline Run-3 label \code{AK8PFPuppi}
+(\path{hltAK8PFPuppiJetCorrectorL1_cfi.py}, line 4), \code{Winter22Run3\_V1\_MC\_AK8PFPuppi} in the global tag. The
+AK4 PF jets without PUPPI (\path{hltAK4PFJetCorrectorL1_cfi.py}, label \code{AK4PF}, used by the tau paths and
+\code{MC\_JME}) get \code{PhaseIIFall17\_V5\_MC\_AK4PF}, a payload written on 23 November 2017 (\code{conddb list}),
+six years before the PUPPI payload of the same global tag.
 
 \textbf{The pileup estimate of PUPPI is a count of pixel clusters, and in the HF it has no tracks.}
-\path{HLT_75e33/modules/hltPFPuppi_cfi.py} has three regions: $\abseta<2.5$, $2.5<\abseta<3.5$ and
-$3.5<\abseta<10$. In the first two the neutral threshold grows with the pileup (\code{MinNeutralPt} 0.5105 and
-$0.821\GeV$ plus a slope of $9.51\times10^{-6}$ and $1.902\times10^{-5}$), and the pileup is measured by the number of
-pixel clusters (\code{PUProxyValue = hltPixelClustersMultiplicity}), not by vertices. In the last region,
-\code{useCharged = False} and a neutral particle needs $3.656\GeV$. Our $\bar b$ jet is in that region: 17 HF
-particles of which, at PU 200, PUPPI can only cut the soft ones. The file has no comment, no date and no reference to
-the sample its numbers were fitted on. The HF calibration of particle flow is off in both menus
-(\code{calibHF\_use = False}, \path{HLT_75e33/modules/hltParticleFlowTmpBarrel_cfi.py}, line 121, as in
-\code{hltParticleFlow} of the 2025 menu), and the Phase-2 particle flow reads the hadron calibration with the empty label
-(line 122), which in the Phase-2 global tag is \code{PFCalibration\_Run3\_mc\_offline}: an offline Run-3 calibration,
-where the Run-3 HLT reads its own (\code{calibrationsLabel = "HLT"}, \code{PFCalibration\_Run3\_2024\_online\_v1} in our
-global tag).
+\path{HLT_75e33/modules/hltPFPuppi_cfi.py} has three regions: $\abseta<2.5$, $2.5<\abseta<3.5$ and $3.5<\abseta<10$. A
+neutral particle is kept above \code{MinNeutralPt} $+$ \code{MinNeutralPtSlope}${}\times N$
+(\path{CommonTools/PileupAlgos/interface/PuppiAlgo.h}, line 33), $N$ being the number of pixel clusters, not of vertices
+(\code{PUProxyValue = hltPixelClustersMultiplicity}, line 11): 0.5105 and $0.821\GeV$ plus $9.51\times10^{-6}$ and
+$1.902\times10^{-5}$ per cluster in the first two regions, $3.656\GeV$ plus $5.072\times10^{-5}$ in the last, where
+\code{useCharged = False}. Our $\bar{b}$ jet is there: 17 HF particles, and no track to tell the signal from the pileup.
+The file has no comment, date or reference to the sample its numbers were fitted on. The HF calibration of particle flow
+is off in both menus (\code{calibHF\_use = False}, \path{HLT_75e33/modules/hltParticleFlowTmpBarrel_cfi.py}, line 121,
+as in \code{hltParticleFlow} of the 2025 menu); its hadron calibration has the empty label (line 122),
+\code{PFCalibration\_Run3\_mc\_offline} in the Phase-2 global tag, an offline Run-3 one, where the Run-3 HLT reads its
+own (label \code{HLT}, \code{PFCalibration\_Run3\_2024\_online\_v1}); its HCAL thresholds come from the global tag
+(\code{usePFThresholdsFromDB = True}, \path{hltParticleFlowRecHitHBHE_cfi.py}, line 31):
+\code{HcalPFCuts\_2023\_V1.0\_mc}, the payload of our 2024 global tag, replaced in 2025 by \code{HcalPFCuts\_2025\_mc}.
 
-\textbf{The tracking reconstructs every collision, without the timing layer.} Step~3 showed that the Run-3 HLT keeps
-one pixel vertex of 31 (\code{hltTrimmedPixelVertices}, \code{fractionSumPt2 = 0.3}) and builds full tracks only
-around it. In Phase-2 the seeds of the first iteration are all the pixel tracks, with no vertex
+\textbf{The tracking reconstructs every collision, without the timing layer.} Step~3 showed that the Run-3 HLT keeps one
+pixel vertex of 31 (\code{hltTrimmedPixelVertices}, \code{fractionSumPt2 = 0.3}) and builds full tracks only around it.
+In Phase-2 the seeds of the first iteration are all the pixel tracks, with no vertex
 (\path{HLT_75e33/modules/hltInitialStepSeeds_cfi.py}: \code{InputVertexCollection = ""}, \code{usePV = False}); the only
-vertex trimmer of the menu is in a muon path. At PU 200 the full tracking of every collision is the price of not
-choosing the hard one too early. The primary vertices are found in $z$ only: \code{DA\_vect}, \code{useTiming =
-False} (\path{hltOfflinePrimaryVertices_cfi.py}, line 22), no track times, although the era includes the timing layer
-(\code{phase2\_timing}, \code{phase2\_timing\_layer}). The timing was the argument for the MTD at 200 collisions per
-crossing.
+vertex trimmer of the menu is in a muon path. The primary vertices are found in $z$ only (\code{DA\_vect}, no track
+times, \path{hltUnsortedOfflinePrimaryVertices_cfi.py}, line 16) and sorted without time (\code{useTiming = False},
+\path{hltOfflinePrimaryVertices_cfi.py}, line 22), while the offline reconstruction of the same release and era uses
+\code{DA2D\_vect} with track times and \code{useTiming = True}
+(\path{RecoVertex/Configuration/python/RecoVertex_phase2_timing_cff.py}, lines 5, 12, 33). No module of the menu
+reconstructs the MTD, and the HGCAL particle flow has \code{useMTDTiming = False} (\path{hltPfTICL_cfi.py}, line 32).
 
 \textbf{No cheap cut before the expensive steps.} A Run-3 jet path cuts on calo jets (step~2) before it pays for the
-tracking. The Phase-2 jet paths go from the Level-1 seed (\code{PathStatusFilter} on a Phase-2 global-trigger
-algorithm) to the full reconstruction and cut only on the PUPPI jets
-(\path{HLT_75e33/paths/HLT_AK4PFPuppiJet520_cfi.py}); the calo jets of the menu serve only the vertex sorting. With
-750\,kHz of input, every seeded event pays for tracking, HGCAL clustering and PUPPI.
+tracking. The Phase-2 jet paths go from the Level-1 seed (a \code{PathStatusFilter}) to the full reconstruction and cut
+only on the PUPPI jets (\path{HLT_75e33/paths/HLT_AK4PFPuppiJet520_cfi.py}); the calo jets of the menu serve only the
+vertex sorting (\path{hltOfflinePrimaryVertices_cfi.py}, line 25). Every seeded event pays for tracking, HGCAL
+clustering and PUPPI.
 
 \textbf{What the menu itself says.} The comments of \code{75e33} are few, and they are about unfinished business:
-``Removed temporarily until final decision on L1T tau Phase-2'' (line 411, the two tau paths),
-``Run3 thresholds. Will be overwritten with valid aging customisation'' (the HCAL thresholds of the e/$\gamma$
-$H/E$, \path{hltEgammaHoverEL1Seeded_cfi.py}), ``Probably need to move elsewhere in the final setup''
-(\path{HLTInitialStepSequence_cfi.py}). And the Run-3 lesson of this chapter applies to Phase-2 as well: a menu works
-only with the Level-1 menu it was written for. The 2024 version of this chapter ran the 2025 HLT menu on the 2024
-Level-1 decision, and could do so only after 30 of its seed algorithms were removed; the release simulates 2024 with a
-fake HLT menu (\code{relval2024 : Fake2}). A Phase-2 study needs the Phase-2 HLT menu and the Phase-2 Level-1 menu of the same
-date; the release has one of each, \code{75e33} and \code{step1\_2024}, the ``first prototype menu'' of
-chapter~\ref{ch:12_L1T}.
+``Removed temporarily until final decision on L1T tau Phase-2'' (line 411, two Level-1 tau paths), ``Run3 thresholds.
+Will be overwritten with valid aging customisation'' (the HCAL thresholds of the e/$\gamma$ $H/E$,
+\path{hltEgammaHoverEL1Seeded_cfi.py}, line 17; \code{usePFThresholdsFromDB}, line 21, overwrites them with the 2023
+payload above), ``Probably need to move elsewhere in the final setup'' (\path{HLTInitialStepSequence_cfi.py}, lines
+31--32, the LST variant of the tracking). As in Run~3, a menu works only with the Level-1 menu it was written for (the 2024 version
+of this chapter had to drop 30 Level-1 algorithms from its seeds; the release simulates 2024 with \code{relval2024 : Fake2}). The Phase-2 seeds
+name 19 Level-1 algorithms, defined in all three Level-1 menus of the release, each ``The first prototype menu'':
+\code{step1\_2023}, \code{step1\_2024} (the default, \path{ConfigBuilder.py}, line 1597, and the menu of chapter~\ref{ch:12_L1T}),
+\code{step1\_2024\_explicitSeeds}; but \code{pSinglePuppiJet230} is $160\GeV$ of Level-1 \pt{} in the first and an
+offline-equivalent $230\GeV$ in the second (\path{l1tGTMenu_hadr_metSeeds_cff.py}, line 25). The HLT menu has a sibling,
+\code{75e33\_timing}, a 41-entry subset (\path{upgradeWorkflowComponents.py}, line 1703).

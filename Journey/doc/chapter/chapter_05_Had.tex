@@ -268,9 +268,9 @@ $\bar b$ cone $\Delta R<0.4$ & 2 & 2485.9 & 117.1 & 2 & 2465.3 & 116.0 & 0 & $-2
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{05_Had/out/genPartAnalyzer_05_Had_page-4.png}
-\caption{The event after hadronisation (\code{test/05\_Had/out/genPartAnalyzer\_05\_Had\_page-4.png}, page 4 of
-\code{genPartAnalyzer\_05\_Had.pdf}): the 320 primary hadrons in $\eta$--$\phi$, marker size $\propto\log\pt$,
+\includegraphics[width=\textwidth]{05_Had/out/genPartAnalyzer_05_Had.pdf}
+\caption{The event after hadronisation (\code{test/05\_Had/out/genPartAnalyzer\_05\_Had.pdf},
+stage 4): the 320 primary hadrons in $\eta$--$\phi$, marker size $\propto\log\pt$,
 the $B^-$ (red) and the $B^{*+}$ (blue) matched to the $b$ and $\bar b$ chains, the star their vector sum. Dashed:
 the cones $\Delta R<0.4$ (analyzer option \code{coneR}), $114.4\GeV$ around the $B^-$ (nine hadrons) and
 $116.0\GeV$ around the $B^{*+}$ (two); the inset magnifies the $B^-$ cone with the name and \pt{} of every hadron
@@ -282,60 +282,68 @@ the parton level, the display of chapter~\ref{ch:04_MPI}, with the quarks at the
 
 \FloatBarrier
 \section{Open problems for Phase-2}
-\paragraph{The hadronisation of CP5 is Pythia8 as delivered.}
-The tune of this event, CP5, is the file
-\path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py} of the release, 21 settings: \code{Tune:pp 14}
-and \code{Tune:ee 7} (the Monash 2013 tune as base), the MPI parameters (\code{pT0Ref=1.41}, \code{ecmPow=0.03344},
-\code{coreRadius}, \code{coreFraction}), \code{ColourReconnection:range=5.176}, $\alpha_S=0.118$ at second order for
-the showers and the MPI, the PDF \code{NNPDF31\_nnlo\_as\_0118} and the total cross sections. It does not contain a
-single \code{StringZ}, \code{StringPT} or \code{StringFlav} parameter, nor does \path{Pythia8CommonSettings_cfi.py}
-(\code{Check:epTolErr = 0.01} and the decay settings of chapter~\ref{ch:06_Decay}). The fragmentation of every CMS
-Pythia8 sample is therefore the Pythia8 default, which in the Pythia 8.311 of this release
-(\path{$PYTHIA8DATA/Fragmentation.xml}, \path{FlavourSelection.xml}) is \code{StringZ:aLund = 0.68}, \code{bLund = 0.98},
-\code{rFactB = 0.855}, \code{rFactC = 1.32}, \code{aExtraDiquark = 0.97}, \code{StringPT:sigma = 0.335},
-\code{StringFlav:probStoUD = 0.217}, \code{probQQtoQ = 0.081}, \code{mesonBvector = 2.20}; the ``changes only'' table
-that Pythia8 prints in \path{step1_GEN_05_Had.log} lists none of them. These are the Monash 2013 values fitted to LEP
-and SLD $e^+e^-$ data. \code{rFactB}, the Bowler parameter that fixes how much of the $b$ momentum the $B$ hadron
-takes, was fitted to the $B$-hadron energy fraction measured at the $Z$ pole and has never been set by CMS: not in
-CP5, not in its \code{TuneUp}/\code{TuneDown} variants (which vary only the MPI and CR parameters), not in the Run-3
-copy \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py} (which differs from the 2017 file only in
-\code{SigmaTotal:sigmaEl = 22.08}, \code{sigmaTot = 101.037}). The only tune files that touch any string parameter
-are \path{MCTunes2017/PythiaCP5CR1TuneSettings_cfi.py}, the colour-reconnection variant for the top-mass systematics
-(\code{ColourReconnection:mode=1} with \code{StringZ:aLund=0.38}, \code{bLund=0.64}, \code{probQQtoQ=0.078},
-\code{probStoUD=0.2}), and its $13.6\TeV$ copy; their sibling \code{CP5CR2} (\code{mode=2}) changes the colour
-reconnection only. Outside the tune files a single fragment of \path{Configuration/Generator/python} sets a string
-parameter: the Run-1 \path{UpsMM_8TeV_TuneCUETP8M1_cfi.py}, with \code{StringFlav:mesonBvector = 3.000} and the
-comment ``needs work''. Since when: the directory is \code{MCTunes2017} and CP5 dates
-from the 2017 tuning campaign (CMS-GEN-17-001); the release on \code{cvmfs} carries no git history, so the date at
-which the file took its present content could not be established here.
+This list is the state of CMSSW\_15\_0\_5, the release of the book, read in \path{$CMSSW_RELEASE_BASE/src} and in its
+externals, not of the development branch, which changes every day.
 
-\paragraph{Hadronisation does not know the collider energy, the jets do.}
-None of the string parameters depends on $\sqrt s$: a $b$ string of $12.8\GeV$ fragments the same way at
-13.6 and at $14\TeV$, and the Phase-2 relvals use the same tune file: \path{TTbar_14TeV_TuneCP5_cfi.py},
-\path{QCD_Pt15To7000_Flat_14TeV_TuneCP5_cff.py} and \path{MinBias_14TeV_pythia8_TuneCP5_cfi.py} (the fragments of
-\path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}) all import
-\path{MCTunes2017.PythiaCP5Settings_cfi}; there is no \code{MCTunes} directory for $14\TeV$. What changes at the
-HL-LHC is everything around this stage: at $14\TeV$ the flavour composition of the jets shifts towards gluon
-jets, which fragment into more and softer hadrons (the 20-parton string of this event gives 42 hadrons, the
-$b$ string 6), and the response of a particle-flow detector depends on that multiplicity and on the
-charged-to-neutral split (169 to 151 here). The colour reconnection of CP5 is tuned to the Run-2 underlying
-event, and \code{ColourReconnection:range} enters through $p_{\mathrm{T},0}$, which CP5 scales as
-$(\sqrt s/7\TeV)^{0.03344}$ (\code{MultipartonInteractions:ecmPow}); with 200 pileup collisions per crossing,
-each hadronised separately with the same strings, an error in the soft hadron spectrum ($\sigma$, $a$, $b$)
-under every jet is multiplied by 200.
+\paragraph{The hadronisation of CP5 is Pythia8 as delivered.}
+The tune of this event, CP5, is the file \path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py} of
+the release, 21 settings: \code{Tune:pp 14} and \code{Tune:ee 7} (the Monash 2013 tune as base), four MPI parameters
+(\code{pT0Ref=1.41}, \code{ecmPow=0.03344}, \code{coreRadius}, \code{coreFraction}), $\alpha_S=0.118$ at second order
+for the showers and the MPI, \code{ColourReconnection:range=5.176}, the PDF \code{NNPDF31\_nnlo\_as\_0118} and the
+total cross sections. It does not contain a single \code{StringZ}, \code{StringPT} or \code{StringFlav} parameter, nor
+does \path{Pythia8CommonSettings_cfi.py} (\code{Check:epTolErr = 0.01} and the decay settings of
+chapter~\ref{ch:06_Decay}). The fragmentation is therefore the Pythia8 default, which in the Pythia 8.311 of this
+release (\path{$PYTHIA8DATA/Fragmentation.xml}, \path{FlavourSelection.xml}) is \code{StringZ:aLund = 0.68},
+\code{bLund = 0.98}, \code{rFactB = 0.855}, \code{rFactC = 1.32}, \code{aExtraDiquark = 0.97}, \code{StringPT:sigma =
+0.335}, \code{StringFlav:probStoUD = 0.217}, \code{probQQtoQ = 0.081}, \code{mesonBvector = 2.20}; the ``changes
+only'' table that Pythia8 prints in \path{step1_GEN_05_Had.log} lists none of them. They come with \mbox{\code{Tune:ee
+7}}, itself the default: \path{Tunes.xml} calls \code{Tune:ee} the tune ``mainly for the hadronization and
+timelike-showering aspects'' and option 7 ``the Monash 2013 tune [\ldots] to both $e^+e^-$ and $pp/p\bar p$ data''.
+\code{rFactB} is the $r_b$ of the Bowler factor $1/z^{r_b\,b\,m_b^2}$ (\path{Fragmentation.xml}, lines 116--131),
+which sets the light-cone fraction $z$ of the $b$ momentum that the $B$ hadron takes. No file of the release sets it:
+not CP5, not its \code{TuneUp}/\code{TuneDown} variants (which change only MPI and CR parameters), not the 13.6~TeV
+copy \path{MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py} (which differs from the 2017 file only in
+\code{SigmaTotal:sigmaEl = 22.08}, \code{sigmaTot = 101.037}). The only tune files that touch a string parameter are
+\path{MCTunes2017/PythiaCP5CR1TuneSettings_cfi.py} (\code{ColourReconnection:mode=1}, new MPI values and
+\code{StringZ:aLund=0.38}, \code{bLund=0.64}, \code{probQQtoQ=0.078}, \code{probStoUD=0.2}) and its 13.6~TeV copy;
+their sibling \code{CP5CR2} (\code{mode=2}) changes the colour reconnection and the MPI, no string. No fragment of the
+release imports CR1, CR2, \code{TuneUp} or \code{TuneDown}. Outside the tune files a single fragment sets string
+parameters, the 8~TeV \path{UpsMM_8TeV_TuneCUETP8M1_cfi.py}: five \code{StringFlav:mesonB...} values, the first
+\code{mesonBvector = 3.000} with the comment ``relative production vector/pseudoscalar for charm mesons - needs
+work''. Since when: the release says it only through the directory name, \code{MCTunes2017}; its files on \code{cvmfs}
+carry no history.
+
+\paragraph{Hadronisation does not know the collider energy.}
+None of the string parameters depends on $\sqrt s$: a $b$ string of $12.8\GeV$ fragments the same way at 13.6 and at
+$14\TeV$. The Phase-2 relvals have 52 fragments at $14\TeV$ (\code{upgradeFragments}, line 3255 of
+\path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}): 37 of them import
+\path{MCTunes2017/PythiaCP5Settings_cfi.py} like this event (\path{TTbar_14TeV_TuneCP5_cfi.py} and
+\path{MinBias_14TeV_pythia8_TuneCP5_cfi.py} among them), 12 import \path{Pythia8CUEP8M1Settings_cfi.py} (the tune
+CUETP8M1: \code{Tune:pp 14}, \code{Tune:ee 7} and three MPI values), the last three use Pythia6 or ExHuME. Every
+Pythia8 event of the list hadronises with the same Monash strings; there is no \code{MCTunes} directory for $14\TeV$.
+The only energy dependence of the soft model is $p_{\mathrm{T},0} = 1.41\GeV\times(\sqrt s/7\TeV)^{0.03344}$
+(\path{MultipartonInteractions.xml}), which also sets the scale of the colour reconnection, \code{range} times
+$p_{\mathrm{T},0}$ (\path{ColourReconnection.xml}); it goes from $1.442$ (the log prints 1.44) to $1.443\GeV$ between
+13.6 and $14\TeV$. The response of a particle-flow detector depends on the hadron multiplicity (the 20-parton string
+of this event gives 42 hadrons, the $b$ string 6) and on the charged-to-neutral split (169 to 151 here); the 200
+pileup collisions per crossing of the Phase-2 relvals (\code{AVE\_200\_BX\_25ns}, \path{relval_steps.py}, line 4617)
+are hadronised with the same strings, so an error in $\sigma$, $a$, $b$ is repeated under every jet in each of them.
 
 \paragraph{What the Phase-2 jet-energy calibration will need from this stage.}
-Three things, none of which is in a configuration file today. (i) Flavour-dependent corrections and their
-uncertainty: $b$, light-quark and gluon jets respond differently because of the fragmentation function; the
-standard estimate of the uncertainty is the difference to an independent hadronisation model, which the release
-has (\path{Configuration/Generator/python/Herwig7Settings/Herwig7CH3TuneSettings_cfi.py}, the cluster model of
-Herwig7), but no Phase-2 relval workflow with Herwig7 exists in \path{upgradeWorkflowComponents.py}. (ii) A $b$-jet energy scale with a $b$-fragmentation uncertainty: the
-fraction $x_E$ of the $b$ momentum in the $B$ hadron is governed by \code{rFactB = 0.855}, a LEP number, whose
-variations ($r_b$, $b$) have to be propagated to the $b$-jet response together with the semileptonic branching
-fractions of chapter~\ref{ch:06_Decay}; with the Phase-2 tracker to $\abseta=4$ and the MTD timing layer, $b$
-jets will be tagged over a wider region than today. (iii) The forward region: $94$ primary hadrons with
-$4897.9\GeV$ sit in $3.0<\abseta<5.2$, where Phase-2 puts HGCal and a tracker up to $\abseta=4$ instead of the
-HF alone; the multiplicity and neutral fraction the strings give there have never been measured by CMS and
-are an extrapolation of the central tune. Whether the jet-energy-correction payloads of the Phase-2 global
-tags carry flavour-dependent corrections lives in the conditions database, not in the python of the release,
-and was not checked here.
+Three things, and what the release offers for them. (i) Flavour-dependent corrections and their uncertainty: $b$,
+light-quark and gluon jets respond differently because of the fragmentation function, and the uncertainty is the
+difference to an independent hadronisation model. The release has one, Herwig~7.2.2 (\path{herwig7.xml} of the
+toolbox), which hadronises clusters, not strings (\path{share/Herwig/defaults/Hadronization.in} creates a
+\code{ClusterHadronizationHandler}), with the CH3 tune of \path{Herwig7Settings/Herwig7CH3TuneSettings_cfi.py}; but
+its relval steps are 13~TeV generator-only workflows (\path{relval_steps.py}, lines 1708 and 1910--1913) and no
+Herwig7 fragment is in \code{upgradeFragments}. (ii) A $b$-jet energy scale with a $b$-fragmentation uncertainty: the
+momentum fraction of the $B$ hadron is governed by \code{rFactB = 0.855}, a number of the $e^+e^-$ tune that no file
+of the release varies (\code{TuneUp}/\code{TuneDown} leave the strings alone, CR1 moves $a$ and $b$ but not $r_b$).
+Its variations have to be propagated to the $b$-jet response together with the semileptonic branching fractions of
+chapter~\ref{ch:06_Decay}, over a wider tracking region: the Phase-2 tracking validation counts particles up to $|y| =
+3.5$, ``within efficient eta range in phase-2'', instead of 2.5
+(\path{Validation/RecoTrack/python/TrackingParticleSelectionsForEfficiency_cff.py}, lines 12--16 and 34--35). (iii)
+The forward region: $94$ primary hadrons with $4897.9\GeV$ sit in $3.0<\abseta<5.2$, the HF of the ledger, which the
+default Phase-2 geometry keeps (\path{hf.xml} in the calorimeter set \code{C18} of D110,
+\path{Configuration/Geometry/python/dictRun4Geometry.py}); their multiplicity and neutral fraction come from the same
+$e^+e^-$ strings as in the centre, since no parameter of the release distinguishes forward from central hadronisation.

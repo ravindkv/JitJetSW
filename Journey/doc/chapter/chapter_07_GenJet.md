@@ -6,7 +6,7 @@ The anti-kT generator jets of the ONE bbbar event (run 1, lumi 1, event 1), clus
 `CMSSW_15_0_5` (`cd CMSSW_15_0_5/src && cmsenv && cd JitJetSW/Journey/test`).
 
 ```bash
-07_GenJet/run_07_GenJet.sh                 # everything: cmsDriver.py, cmsRun, analyzer, PNG pages, ledger
+07_GenJet/run_07_GenJet.sh                 # everything: cmsDriver.py, cmsRun, analyzer, ledger
 JETPTMIN=10 07_GenJet/run_07_GenJet.sh     # jets with pT > 10 GeV instead of 3
 JETS=ak4GenJets,ak8GenJetsNoNu 07_GenJet/run_07_GenJet.sh   # other collections drawn (the four are always produced)
 RUN=0 07_GenJet/run_07_GenJet.sh           # only write the configuration
@@ -133,22 +133,24 @@ standard event content drops them (`drop *_genParticlesForJets_*_*` in `EventCon
 ```bash
 cd 07_GenJet/out && cmsRun ../../common/genJetAnalyzer_cfg.py inputFiles=file:step2_GENJET_07_GenJet.root \
    outputFile=genJetAnalyzer_07_GenJet.root maxEvents=1 eventsToProcess=1:1:1 maxStage=5 \
-   jets=ak4GenJets,ak4GenJetsNoNu,ak8GenJets pdfFile=genJetAnalyzer_07_GenJet.pdf \
+   jets=ak4GenJets,ak4GenJetsNoNu,ak8GenJets \
+   jetPdfFiles=genJetAnalyzer_07_GenJet_AK4.pdf,genJetAnalyzer_07_GenJet_AK4NoNu.pdf,genJetAnalyzer_07_GenJet_AK8.pdf \
    sampleLabel="chapter 07_GenJet: generator jets|anti-kT R = 0.4 / 0.8 on the status 1 particles|jet pT > 3 GeV|bbbar pTHat > 100 GeV, 13.6 TeV" \
    > genJetAnalyzer_07_GenJet.log 2>&1
-pdftoppm -cropbox -r 110 -png genJetAnalyzer_07_GenJet.pdf genJetAnalyzer_07_GenJet_page
 python3 ../../common/genLedger.py step2_GENJET_07_GenJet.root --event 1:1:1 --jets ak4GenJets,ak4GenJetsNoNu,ak8GenJets > ledger_07_GenJet.txt
 cd -
 ```
 
-- `common/genJetAnalyzer_cfg.py` runs two `EDAnalyzer`s of `plugins/`: `GenPartAnalyzer` (with `maxStage=5`: the five generator-stage
-  pages of chapters 01-06, so that the PDF of this chapter starts like the earlier ones) and `GenJetAnalyzer` (one page per
-  collection in `jets`). An always-true `HLTBool` filter between them keeps the stage pages in front of the jet pages. `R`,
+- `common/genJetAnalyzer_cfg.py` runs two `EDAnalyzer`s of `plugins/`: `GenPartAnalyzer` (with `maxStage=5`: the five generator
+  stages analysed and printed to the log, as in chapter 06; with `jetPdfFiles` they are not drawn, their pages are those of
+  chapters 01-06) and `GenJetAnalyzer` (one page per collection in `jets`, each in its own one-page PDF of `jetPdfFiles`, in
+  the same order; without `jetPdfFiles` all pages go into the one PDF `pdfFile`). An always-true `HLTBool` filter between them
+  keeps the stage printout (and, with `pdfFile`, the stage pages) in front of the jets. `R`,
   `jetAlgorithm`, `jetPtMin` and `src` of every collection are read from the producer ParameterSet stored in the file (the page
   titles say "process GENJET, AntiKt R=0.4, jetPtMin=3 GeV, src=genParticlesForJets"). The hard-process b / bbar are followed to
   their last same-flavour copy (status 71) and matched to the nearest jet within R.
-- Produces: `genJetAnalyzer_07_GenJet.pdf` (8 pages: 1-5 the generator stages, 6 `ak4GenJets`, 7 `ak4GenJetsNoNu`, 8 `ak8GenJets`),
-  `genJetAnalyzer_07_GenJet_page-1..8.png` (110 dpi, `pdftoppm -cropbox`), `genJetAnalyzer_07_GenJet.root` (TFileService: the
+- Produces: `genJetAnalyzer_07_GenJet_AK4.pdf` (`ak4GenJets`), `_AK4NoNu.pdf` (`ak4GenJetsNoNu`), `_AK8.pdf` (`ak8GenJets`), one
+  page each, included by the .tex (the run script names a collection `ak<R>GenJets<suffix>` -> `AK<R><suffix>`), `genJetAnalyzer_07_GenJet.root` (TFileService: the
   `genPartAnalyzer` and `genJetAnalyzer` directories with per-collection histograms nJets, jetPt, jetEta, nConstituents, etaPhiPt,
   ptBjet, ptBbarJet, ptNetBBbarJets, responseB), `genJetAnalyzer_07_GenJet.log` (the printout of section 4).
 - `common/genLedger.py` (FWLite, no cmsRun) writes `ledger_07_GenJet.txt`: the record by status group, the hard process, the
@@ -237,8 +239,8 @@ cd -
     [27] pt=3.07219 eta=3.78225 phi=-2.42274 mass=2.37219 nConst=9
 ```
 
-The dijet masses quoted in the .tex (386.8, 319.7, 439.5 GeV) are in the header line of pages 6, 7, 8 of the PDF / PNG
-("b jet + bbar jet: ... m = 386.8 GeV"), together with "38 beyond |eta| = 6 on the border" (39 on page 8: `addPoint` of
+The dijet masses quoted in the .tex (386.8, 319.7, 439.5 GeV) are in the header line of the AK4, AK4NoNu, AK8 pages
+("b jet + bbar jet: ... m = 386.8 GeV"), together with "38 beyond |eta| = 6 on the border" (39 on the AK8 page: `addPoint` of
 `plugins/GenJetAnalyzer.cc` also counts the axis of the ak8 jet [24] at eta = 6.12) and "status 1, not in a jet (395 /
 396 / 146)".
 
@@ -390,18 +392,27 @@ All under `$CMSSW_RELEASE_BASE/src` = `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cm
 
 | file | what was read |
 |---|---|
-| `RecoJets/JetProducers/python/GenJetParameters_cfi.py` | `jetPtMin = 3.0`, `inputEtMin = 0.0`, `inputEMin = 0.0`, `doAreaFastjet = False`, `doRhoFastjet = False`, `useDeterministicSeed = True`, `minSeed = 14327` |
+| `RecoJets/JetProducers/python/GenJetParameters_cfi.py` | `jetPtMin = 3.0`, `inputEtMin = 0.0`, `inputEMin = 0.0`, `doAreaFastjet = False`, `doRhoFastjet = False` (lines 7-9, 17-18), `useDeterministicSeed = True`, `minSeed = 14327` |
 | `RecoJets/JetProducers/python/ak4GenJets_cfi.py`, `ak8GenJets_cfi.py` | `jetAlgorithm = "AntiKt"`, `rParam = 0.4` / `0.8` (`ak8GenJetsSoftDrop` with `jetPtMin = 100.0` is defined but not run) |
-| `RecoJets/JetProducers/plugins/VirtualJetProducer.cc` | `inputEtMin` / `inputEMin` applied per input in `inputTowers()`; `fillDescriptions` default `jetPtMin = 5.` |
-| `RecoJets/Configuration/python/GenJetParticles_cff.py` | header "ShR 27 Mar 07"; the `ignoreParticleIDs` list; `NoNu` adds 12, 14, 16; `NoMuNoNu` adds 12, 13, 14, 16 |
+| `RecoJets/Configuration/python/GenJetParticles_cff.py` | line 5, the only date: `# ShR 27 Mar 07: move modules producing candidates for Jets from RecoGenJets.cff`; the `ignoreParticleIDs` list (lines 10-17); `NoNu` adds 12, 14, 16 (line 25); `NoMuNoNu` adds 12, 13, 14, 16 (line 28) |
 | `RecoJets/JetProducers/plugins/InputGenJetsParticleSelector.cc` | status 1 selection, `isIgnored`, `excludeResonances` (status 3 or 22 resonances), `partonicFinalState` |
-| `grep -rl phase2 RecoJets JetMETCorrections Validation/RecoJets` | only `RecoJets/Configuration/python/RecoJets_EventContent_cff.py` (`phase2_pp_on_AA`) and `CaloTowersES_cfi.py`; nothing in `JetMETCorrections` or `Validation/RecoJets` |
-| `PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py` | `slimmedGenJets` from `ak4GenJetsNoNu`, `cut = ""`; `slimmedGenJetsAK8` from `ak8GenJetsNoNu`, `cut = "pt > 80"`, `cutLoose = "pt > 10."`, `nLoose = 3` |
-| `PhysicsTools/NanoAOD/python/jetMC_cff.py` | `genJetTable cut = "pt > 10"`, `genJetAK8Table cut = "pt > 100."` |
-| `CommonTools/PileupAlgos/python/Puppi_cff.py` | `phase2_common.toModify(puppi, EtaMinUseDeltaZ = 4.0, DeltaZCut = 0.1, algos = [eta 0-2.5 / 2.5-3.5: MinNeutralPt 0.2, 0.2, MinNeutralPtSlope 0.015, 0.030; eta 3.5-10: MinNeutralPt 2.0, slope 0.08, MedEtaSF 0.75])` |
-| `L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py` | region `etaBoundaries`: barrel (-1.5, 1.5), HGCal (1.5, 3.0) and (-3.0, -1.5), HF (3.0, 5.5) and (-5.5, -3.0) |
-| `Configuration/AlCa/python/autoCond.py` | `phase2_realistic = 150X_mcRun4_realistic_v1`; `phase1_2024_realistic = 150X_mcRun3_2024_realistic_v2` |
-| `conddb --db pro list 150X_mcRun4_realistic_v1` | `JetCorrectionsRecord`: AK4PF, AK8PF, AK8PFchs = `JetCorrectorParametersCollection_PhaseIIFall17_V5_MC_*`; AK4PFPuppi, AK4PFchs, AK8PFPuppi = `..._Winter22Run3_V1_MC_*`; AK4PFPuppiHLT = `..._Phase2Spring23ticlv4_MC_AK4PFPuppiHLT_v1`; AK4CaloHLT, AK4PFHLT etc. = `..._Run3Summer21_MC_*`; `JetResolutionRcd` and `JetResolutionScaleFactorRcd`: all `JR_Spring16_25nsV6_MC_*` |
+| `grep -rli phase2 RecoJets JetMETCorrections Validation/RecoJets` | only `RecoJets/Configuration/python/CaloTowersES_cfi.py` (`phase2_hgcal`, lines 9-10) and `RecoJets_EventContent_cff.py` (`phase2_pp_on_AA`, lines 57, 63); nothing in `JetMETCorrections` or `Validation/RecoJets`. `grep -rnE "toModify\(\s*(ak4GenJets\|ak8GenJets\|genParticlesForJets)"` over the python of the release: nothing |
+| python check (no cmsRun): `cms.Process('X', <era>)`, `load('RecoJets.Configuration.GenJetParticles_cff')`, `load('RecoJets.Configuration.RecoGenJets_cff')`, `load('PhysicsTools.PatAlgos.slimming.slimmedGenJets_cfi')`, `dumpPython()` of `genParticlesForJets(NoNu)`, `ak4GenJets(NoNu)`, `ak8GenJets(NoNu)`, `slimmedGenJets(AK8)` | identical (168 lines) for `Phase2C17I13M9` (the era of `Run4D110`, `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py` 3171-3177) and `Run3_2024` |
+| `PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py` | `slimmedGenJets` from `ak4GenJetsNoNu`, `cut = ""`; `slimmedGenJetsAK8` from `ak8GenJetsNoNu`, `cut = "pt > 80"`, `cutLoose = "pt > 10."`, `nLoose = 3`; modifiers only `pp_on_AA`, `genJetSubEvent` |
+| `PhysicsTools/NanoAOD/python/jetMC_cff.py` | `genJetTable cut = "pt > 10"` (line 23), `genJetAK8Table cut = "pt > 100."` (line 60) |
+| `CommonTools/PileupAlgos/python/Puppi_cff.py` (74-102) | `phase2_common.toModify(puppi, EtaMinUseDeltaZ = 4.0, DeltaZCut = 0.1, algos = [eta 0-2.5 / 2.5-3.5: MinNeutralPt 0.2, 0.2, MinNeutralPtSlope 0.015, 0.030; eta 3.5-10: MinNeutralPt 2.0, slope 0.08, MedEtaSF 0.75])` |
+| `PhysicsTools/PatAlgos/python/slimming/miniAOD_tools.py` (642), `mcMatchLayer0/jetMatch_cfi.py` (18-26) | `process.patJetGenJetMatch.matched = "slimmedGenJets"`; `GenJetMatcher` with `maxDeltaR = 0.4` (line 24), `resolveAmbiguities = True`; the only modifier is `pp_on_AA` |
+| `L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py` | calorimeter sectors `etaBoundaries`: barrel (-1.5, 1.5) (line 97), HGCal (-3.0, -1.5) and (+1.5, +3.0) (lines 121, 126), HF (-5.5, -3.0) and (+3.0, +5.5) (lines 412-426) |
+| `CommonTools/ParticleFlow/python/pfNoPileUpJME_cff.py` (18, 20-25); `CommonTools/PileupAlgos/plugins/PuppiProducer.cc` (285, 289) | `EtaMinUseDz = 2.4`; `phase2_common.toModify(..., maxDzForPrimaryAssignment=0.1, EtaMinUseDz = 4.0)`; Puppi applies the bare `DeltaZCut` to charged particles with `abs(eta) >= EtaMinUseDZ` |
+| `Validation/RecoTrack/python/TrackingParticleSelectionsForEfficiency_cff.py` (46-60) | `_modifyForPhase1`: `minRapidity = -3`, `maxRapidity = 3`; `_modifyForPhase2`: `-4.5`, `4.5`; comment "extend eta to full acceptance" |
+| `Configuration/AlCa/python/autoCond.py` | `phase2_realistic = 150X_mcRun4_realistic_v1` (line 111); `phase1_2024_realistic = 150X_mcRun3_2024_realistic_v2` (line 95) |
+| `conddb --db pro list 150X_mcRun4_realistic_v1` | `JetCorrectionsRecord`: AK4PF, AK8PF, AK8PFchs = `JetCorrectorParametersCollection_PhaseIIFall17_V5_MC_*` (inserted 2017-11-23); AK4PFPuppi, AK4PFchs, AK8PFPuppi = `..._Winter22Run3_V1_MC_*` (2022-06-30); AK4PFPuppiHLT = `..._Phase2Spring23ticlv4_MC_AK4PFPuppiHLT_v1` (2023-09-21); AK4CaloHLT, AK4PFHLT etc. = `..._Run3Summer21_MC_*`; `JetResolutionRcd` and `JetResolutionScaleFactorRcd`: all `JR_Spring16_25nsV6_MC_*` (2016-07-05). Insertion times from `conddb list <tag>` |
+| `PhysicsTools/PatAlgos/python/slimming/miniAOD_tools.py` (411), `recoLayer0/jetCorrFactors_cfi.py` (11), `slimming/applySubstructure_cff.py` (54) | the JEC labels miniAOD asks the global tag for: `AK4PFPuppi`, `AK4PFchs`, `AK8PFPuppi` ("the collections actually used offline") |
 | `conddb --db pro list 150X_mcRun3_2024_realistic_v2` | AK4PFPuppi = `..._Winter24_AK4PFPuppi_offline_v1`, AK4PFchs = `..._Winter23_AK4PFchs_offline_v1`, AK8PFPuppi = `..._Winter23_AK8PFPuppi_offline_v1`, AK4PF = `..._Summer19UL17_V5_MC_AK4PF`; `JetResolutionRcd`: `JR_Summer19UL18_JRV2_MC_*` (Puppi, chs), `JR_Autumn18_V1_106X_MC_*` (PF) |
-| `CondFormats/JetMETObjects/data/` | only `CMSSW_3110_*`, `CMSSW_362_*`, `CMSSW_538*` response / track files: no Run-3 or Phase-2 JEC text file in the release |
-| `doc/tmp/Gen4Phase2.md` (this package) | the Phase-2 GEN step has byte-identical `genParticlesForJets`, `ak4GenJets`, `ak4GenJetsNoNu`, `ak8GenJets` producers |
+| `conddb --db pro dump e03e9aba10078fb17133ec27fdedc3a47b0b3c17` (`..._Winter22Run3_V1_MC_AK4PFPuppi`) | `L2Relative` in 82 `JetEta` records over -5.191..5.191, edges 0, 0.087, ..., 1.392, 1.479, 1.566, ..., 2.5, 2.65, 2.853, 2.964, 3.139, 3.314, 3.489, 3.664, 3.839, 4.013, ..., 4.889, 5.191 (the b-bar jet, eta -3.75, in -3.839..-3.664); `L1FastJet` formula `1`; `Uncertainty` 40 records to 5.4 |
+| `conddb --db pro dump 1581021745b44b8b690b85a0b5c09713a30d2baf` (`..._Phase2Spring23ticlv4_MC_AK4PFPuppiHLT_v1`) | `L2Relative` in 19 records, edges 0, 0.4, 0.8, 0.9, 1.3, 1.8, 2.5, 2.7, 2.9, 3.0, 5.2: one record for 3.0 < abs(eta) < 5.2 on each side |
+| `conddb --db pro dump 3c2cdd64d5eeee081fd5a02b5e5500efb5a09e5d` (`JR_Spring16_25nsV6_MC_PtResolution_AK4PFPuppi`) | 130 records in `JetEta` x `Rho`: eta bins out to 3.2-4.7; rho bins 0-6.73, 6.73-12.51, 12.51-18.29, 18.29-24.08, 24.08-44.31 GeV; `JetPt` from 15 GeV; formula `sqrt([0]*abs([0])/(x*x)+[1]*[1]*pow(x,[3])+[2]*[2])` |
+| `CondFormats/JetMETObjects/src/JetResolutionObject.cc` (386-414), `interface/JetResolutionObject.h` (132), `JetMETCorrections/Modules/src/JetResolution.cc` (28-32) | `getRecord` returns `nullptr` when no record has every bin `min <= value < max`; `JetResolution::getResolution`: `if (!record) return 1;` |
+| `HLTrigger/Configuration/python/HLT_75e33/modules/hltAK8PFPuppiJetCorrectorL1_cfi.py` (L2, L3 alike), `hltAK4PFPuppiJetCorrectorL1_cfi.py`; `Configuration/HLT/python/autoHLT.py` (17) | AK8: `algorithm = cms.string('AK8PFPuppi')`; AK4: `'AK4PFPuppiHLT'`; `'relvalRun4' : '75e33'` (the Phase-2 HLT menu) |
+| `CondFormats/JetMETObjects/data/` | 293 files: `Spring10_*`, `Fall10_*`, `Jec10V1_*`, `Jec10V3_*`, `Jec11V0_*` text corrections, `ResponseNZS_data_2010.txt` and the `CMSSW_3110_*`, `CMSSW_31X_*`, `CMSSW_362*`, `CMSSW_538*` response / track files: no Run-3 or Phase-2 JEC text file in the release |
+| the event (`test/07_GenJet/out/`) | `ledger_07_GenJet.txt`: neutrino pT 37.5 GeV; regions 2.5-3.0: 4 ak4 jets 18.5 GeV, 3.0-5.2: 6 jets 146.3 GeV; b-bar jet eta -3.75; `genJetAnalyzer_07_GenJet.log`: ak4 jet [13] eta -4.70, ak8 jet [24] eta 6.12, b-jet response 0.87 (line 50); chapter 08: 69.4 GeV of pileup pT per unit area in abs(eta) < 2.5 (`chapter_08_PU.md`, 4.7) |

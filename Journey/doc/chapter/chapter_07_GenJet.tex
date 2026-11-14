@@ -1,5 +1,5 @@
 % chapter_07_GenJet.tex -- chapter 07 of the JitJet book: the generator jets (process GENJET).
-% Every number comes from test/07_GenJet/out/ (genJetAnalyzer_07_GenJet.log, ledger_07_GenJet.txt, the PNG pages) and
+% Every number comes from test/07_GenJet/out/ (genJetAnalyzer_07_GenJet.log, ledger_07_GenJet.txt, the PDF pages) and
 % from the FWLite extras listed in doc/chapter/chapter_07_GenJet.md, section 4.
 \providecommand{\antikt}{anti-$k_{\mathrm{T}}$}
 \providecommand{\dR}{\ensuremath{\Delta R}}
@@ -100,7 +100,7 @@ products), \code{tausAsJets = False}, \code{partonicFinalState = False}.
 \caption{The $b$ and $\bar b$ jets in the three collections drawn (\code{genJetAnalyzer\_07\_GenJet.log}).
 The quark is the status-71 copy ($\pt=91.74$ and $116.36\GeV$); \dR{} is the distance between jet axis
 and quark; the net \pt{} and $\Delta\phi$ are those of the pair; $m_{jj}$ is read from the page header
-(\code{genJetAnalyzer\_07\_GenJet\_page-6/7/8.png}).}
+(\code{genJetAnalyzer\_07\_GenJet\_AK4/AK4NoNu/AK8.pdf}).}
 \label{tab:07_bjets}
 \begin{tabular}{llrrrrrrr}
 \toprule
@@ -215,12 +215,12 @@ net \pt{}        & 0.0   & 25.1  & 20.3  & 6.1   & 36.5  & 24.0 \\
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.8\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_page-6.png}
+\includegraphics[width=0.8\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_AK4.pdf}
 \caption{\code{ak4GenJets}: the 27 \antikt{} $R=0.4$ jets with $\pt>3\GeV$ of the event, over the 634 stable
 particles (marker size $\sim\log\pt$). The $b$ jet [0] ($117.8\GeV$, red) and the $\bar b$ jet [1]
-($115.9\GeV$, blue) are matched to the status-71 quarks (stars). Pages 1--5 of the same PDF are the five
-generator stages of chapters~\ref{ch:01_ME}--\ref{ch:06_Decay}.
-(\code{test/07\_GenJet/out/genJetAnalyzer\_07\_GenJet\_page-6.png})}
+($115.9\GeV$, blue) are matched to the status-71 quarks (stars). The five generator stages are the displays
+of chapters~\ref{ch:01_ME}--\ref{ch:06_Decay}.
+(\code{test/07\_GenJet/out/genJetAnalyzer\_07\_GenJet\_AK4.pdf})}
 \label{fig:07_ak4}
 \end{figure}
 
@@ -239,80 +239,94 @@ up).
 \begin{figure}[htb]
 \centering
 \begin{subfigure}[t]{0.495\textwidth}
-\includegraphics[width=\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_page-7.png}
+\includegraphics[width=\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_AK4NoNu.pdf}
 \caption{\code{ak4GenJetsNoNu}: without the neutrino the $b$ jet is $79.8\GeV$.}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.495\textwidth}
-\includegraphics[width=\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_page-8.png}
+\includegraphics[width=\textwidth]{07_GenJet/out/genJetAnalyzer_07_GenJet_AK8.pdf}
 \caption{\code{ak8GenJets}: $R=0.8$, the $b$ jet is $141.1\GeV$ with 55 constituents.}
 \end{subfigure}
 \caption{The same event in the two other collections
-(\code{genJetAnalyzer\_07\_GenJet\_page-7.png}, \code{page-8.png}).}
+(\code{genJetAnalyzer\_07\_GenJet\_AK4NoNu.pdf}, \code{\_AK8.pdf}).}
 \label{fig:07_nonu_ak8}
 \end{figure}
 
 \FloatBarrier
 \section{Open problems for Phase-2}
 
-The generator jets are the reference of the jet energy scale, so what is frozen here is frozen for the whole
-HL-LHC programme. A look into \code{CMSSW\_15\_0\_5} gives the following.
+The generator jets are the reference of the jet energy scale, so what is frozen here is frozen for the whole HL-LHC
+programme. The list below is the state of \code{CMSSW\_15\_0\_5}, the release of this book, read in
+\path{$CMSSW_RELEASE_BASE/src}, in its externals and in the global tags its \path{autoCond.py} names, not in the
+development branch of CMSSW.
 
-\textbf{The definitions have not moved since Run 2.} \path{RecoJets/JetProducers/python/GenJetParameters_cfi.py}
-sets \code{jetPtMin} \code{3.0}, \code{inputEtMin} \code{0.0}, \code{inputEMin} \code{0.0}, \code{doAreaFastjet}
-\code{False}, \code{doRhoFastjet} \code{False}; \path{ak4GenJets_cfi.py} and \path{ak8GenJets_cfi.py} fix \code{rParam} to 0.4
-and 0.8. No file in \path{RecoJets/Configuration/python} or \path{RecoJets/JetProducers/python} carries a
-\code{phase2} era modifier for the generator jets (the only \code{phase2} strings in \code{RecoJets} are the
-heavy-ion event content, \path{RecoJets_EventContent_cff.py}, and \path{CaloTowersES_cfi.py}); the Phase-2
-GEN step of \path{doc/tmp/Gen4Phase2.md} runs byte-identical producers. The thresholds that matter
-downstream are also unchanged: miniAOD keeps \code{slimmedGenJets} from \code{ak4GenJetsNoNu} without a
-cut and \code{slimmedGenJetsAK8} from \code{ak8GenJetsNoNu} with \code{pt > 80}
-(\path{PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py}); nanoAOD writes \code{GenJet} with
-\code{pt > 10} and \code{GenJetAK8} with \code{pt > 100} (\path{PhysicsTools/NanoAOD/python/jetMC_cff.py}).
-Note that the compiled default of \code{jetPtMin} in \code{VirtualJetProducer::fillDescriptions} is $5\GeV$
-while the \code{cfi} says $3\GeV$: the \code{cfi} wins, but a module built without it would cut differently.
-None of this is wrong for Phase-2, but none of it was revisited for it either.
+\textbf{The definitions are the same for Run 3 and Phase-2.}
+\path{RecoJets/JetProducers/python/GenJetParameters_cfi.py} sets \code{jetPtMin} \code{3.0}, \code{inputEtMin}
+\code{0.0}, \code{inputEMin} \code{0.0}, \code{doAreaFastjet} \code{False}, \code{doRhoFastjet} \code{False};
+\path{ak4GenJets_cfi.py} and \path{ak8GenJets_cfi.py} fix \code{rParam} to 0.4 and 0.8. No file in
+\path{RecoJets/Configuration/python} or \path{RecoJets/JetProducers/python} carries a \code{phase2} era modifier for
+the generator jets (an \emph{era} switches one configuration between detectors; the only \code{phase2} strings in
+\code{RecoJets} are the heavy-ion event content, \path{RecoJets_EventContent_cff.py}, and
+\path{CaloTowersES_cfi.py}), and no file of the release modifies them: \path{GenJetParticles_cff},
+\path{RecoGenJets_cff} and \path{slimmedGenJets_cfi}, loaded into a \code{cms.Process} with the era of the Phase-2
+workflow \code{Run4D110}, \code{Phase2C17I13M9}, and with \code{Run3\_2024}, give an identical \code{dumpPython()}.
+The thresholds that matter downstream are the same for both: miniAOD keeps \code{slimmedGenJets} from
+\code{ak4GenJetsNoNu} without a cut and \code{slimmedGenJetsAK8} from \code{ak8GenJetsNoNu} with \code{pt > 80}
+(\path{PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py}); nanoAOD writes \code{GenJet} with \code{pt >
+10} and \code{GenJetAK8} with \code{pt > 100} (\path{PhysicsTools/NanoAOD/python/jetMC_cff.py}). None of this is
+wrong for Phase-2, but none of it is specific to it either.
 
-\textbf{The exclusion lists are the 2007 lists.} The file
-\path{RecoJets/Configuration/python/GenJetParticles_cff.py} is headed ``ShR 27 Mar 07'' and its \code{ignoreParticleIDs} are the invisible BSM particles listed above; the
-only later additions are the \code{NoNu} (12, 14, 16) and \code{NoMuNoNu} (12, 13, 14, 16) clones. There is
-no pileup-robust generator-jet definition and there need not be one: \code{genParticles} holds only the
-signal collision, so a generator jet is pileup-free by construction (chapter~\ref{ch:08_PU} shows what happens
-when the pileup particles are added to the clustering on purpose). The pileup robustness is entirely on the
-reconstruction side, and that side has been retuned for Phase-2: \path{CommonTools/PileupAlgos/python/Puppi_cff.py}
-modifies \code{puppi} under \code{phase2\_common} with \code{EtaMinUseDeltaZ = 4.0}, \code{DeltaZCut = 0.1},
-\code{MinNeutralPt = 0.2} up to $\abseta=3.5$ and $2.0$ beyond, with the $\eta$ regions $0$--$2.5$,
-$2.5$--$3.5$, $3.5$--$10$. The reference against which that tuning is judged remains the unchanged
-\code{ak4GenJetsNoNu}. One open point for a $b$-rich analysis is the one visible in this event: the
-\code{NoNu} reference removes the $37.5\GeV$ neutrino and makes the $b$ jet response $0.87$, so the flavour
-dependence of the corrections, measured against this reference, is as large at the HL-LHC as it is now.
+\textbf{The exclusion lists.} The only date in \path{RecoJets/Configuration/python/GenJetParticles_cff.py} is the
+comment ``ShR 27 Mar 07: move modules producing candidates for Jets from RecoGenJets.cff''; its
+\code{ignoreParticleIDs} are the invisible BSM particles listed above, and the only variants are the \code{NoNu}
+(adds 12, 14, 16) and \code{NoMuNoNu} (12, 13, 14, 16) clones. There is no pileup-robust generator-jet definition
+and there need not be one: \code{genParticles} holds only the signal collision, so a generator jet is pileup-free by
+construction (chapter~\ref{ch:08_PU} shows what happens when the pileup particles are added to the clustering on
+purpose). The pileup robustness is entirely on the reconstruction side, and that side has a Phase-2 setting:
+\path{CommonTools/PileupAlgos/python/Puppi_cff.py} modifies \code{puppi} under \code{phase2\_common} with
+\code{EtaMinUseDeltaZ = 4.0}, \code{DeltaZCut = 0.1}, \code{MinNeutralPt = 0.2} up to $\abseta=3.5$ and $2.0$
+beyond, with the $\eta$ regions $0$--$2.5$, $2.5$--$3.5$, $3.5$--$10$ (lines 74--102). The reference against which
+that tuning is judged remains the unchanged \code{ak4GenJetsNoNu}: miniAOD matches a reconstructed jet to
+\code{slimmedGenJets} within $\Delta R<0.4$ (\path{PhysicsTools/PatAlgos/python/slimming/miniAOD_tools.py}, line
+642, and \path{mcMatchLayer0/jetMatch_cfi.py}, line 24), with no Phase-2 modifier. One open point for a $b$-rich
+analysis is the one visible in this event: the \code{NoNu} reference removes the $37.5\GeV$ neutrino and makes the
+$b$ jet response $0.87$, so the flavour dependence of the corrections, measured against this reference, is as large
+at the HL-LHC as it is now.
 
-\textbf{The $\eta$ reach.} Generator jets have no $\eta$ cut; in this event \code{ak4GenJets} reach
-$\eta=-4.70$ and \code{ak8GenJets} $\eta=6.12$. The Run-3 detector of this book sees jets up to
-$\abseta\approx5.2$ with the HF, with the region $2.5$--$3.0$ covered by calorimeters only; the Phase-2 layout
-in the release puts the tracker to $\abseta=4.0$ (the \code{EtaMinUseDeltaZ = 4.0} of Puppi above), the
-HGCal at $1.5<\abseta<3.0$ and the HF at $3.0<\abseta<5.5$, as spelled out by the region boundaries of the
-Phase-2 Level-1 particle flow, \path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py}
-(\code{etaBoundaries = (-1.5, 1.5)}, \code{(1.5, 3.0)}, \code{(3.0, 5.5)}). In the ledger of this event the
-$2.5<\abseta<3.0$ region holds 4 \code{ak4GenJets} ($18.5\GeV$) and $3.0<\abseta<5.2$ holds 6
-($146.3\GeV$, the $\bar b$ jet among them): with the HGCal and the extended tracker the $\bar b$ jet of
-this event, at $\eta=-3.75$, is still an HF jet, and its $B^{*+}$ decay products at $\abseta>3$ are still
-untracked. Whether the generator-jet validation follows the new boundaries could not be established:
-\path{Validation/RecoJets/python} contains no \code{phase2} modifier.
+\textbf{The $\eta$ reach.} Generator jets have no $\eta$ cut; in this event \code{ak4GenJets} reach $\eta=-4.70$ and
+\code{ak8GenJets} $\eta=6.12$. The Run-3 detector of this book sees jets up to $\abseta\approx5.2$ with the HF. The
+Phase-2 layout in the release puts the HGCal at $1.5<\abseta<3.0$ and the HF at $3.0<\abseta<5.5$, as spelled out by
+the calorimeter sectors of the Phase-2 Level-1 particle flow,
+\path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py} (\code{etaBoundaries} \code{(1.5, 3.0)}, lines
+121--126, and \code{(3.0, 5.5)}, lines 412--426), and it moves the tracking forward: the $\abseta$ above which Puppi
+accepts a charged particle on a bare $\Delta z$ cut goes from 2.4 to 4.0
+(\path{CommonTools/ParticleFlow/python/pfNoPileUpJME_cff.py}, lines 18 and 24), and the track validation extends its
+``full acceptance'' from $|y|<3$ (Phase-1 pixel) to $|y|<4.5$
+(\path{Validation/RecoTrack/python/TrackingParticleSelectionsForEfficiency_cff.py}, lines 46--60). In the ledger of
+this event the $2.5<\abseta<3.0$ region holds 4 \code{ak4GenJets} ($18.5\GeV$) and $3.0<\abseta<5.2$ holds 6
+($146.3\GeV$, the $\bar b$ jet among them): at Phase-2 the $\bar b$ jet, at $\eta=-3.75$, is still an HF jet for the
+calorimeters, but it lies inside the tracking acceptance, so the charged decay products of its $B^{*+}$ can become
+tracks. \path{Validation/RecoJets/python} contains no \code{phase2} modifier: the jet validation does not follow the
+new boundaries.
 
-\textbf{The jet energy corrections of Phase-2.} The chain that turns a reconstructed jet into a
-generator-jet-like one is a sequence of \code{JetCorrectorParametersCollection} payloads in the global tag.
-For the Phase-2 tag of this release, \path{auto:phase2_realistic} $=$ \path{150X_mcRun4_realistic_v1}
-(\path{Configuration/AlCa/python/autoCond.py}), \code{conddb list} gives: \code{AK4PF}, \code{AK8PF} and
-\code{AK8PFchs} from \path{PhaseIIFall17_V5_MC}, a 2017 Phase-2 study; \code{AK4PFPuppi},
-\code{AK4PFchs} and \code{AK8PFPuppi}, the collections actually used offline, from
-\path{Winter22Run3_V1_MC}, i.e.\ a Run-3 payload applied to the Phase-2 detector; only the HLT one,
-\code{AK4PFPuppiHLT}, is recent and Phase-2 (\path{Phase2Spring23ticlv4_MC_v1}). The jet resolution
-payloads of the same tag are all \path{JR_Spring16_25nsV6_MC}, from 2016. For comparison the 2024 tag of
-this book, \path{150X_mcRun3_2024_realistic_v2}, has \path{Winter24_AK4PFPuppi_offline_v1} and
-\path{JR_Summer19UL18_JRV2}. All of them take \code{ak4GenJetsNoNu} (or \code{ak8GenJetsNoNu}) matched
-to the reconstructed jet as the truth: the generator jets of this chapter, with their 2007 input list and
-$3\GeV$ threshold, are the reference of the HL-LHC jet energy scale until a Phase-2 payload is derived, and
-they will have to serve at PU 200 and $14\TeV$ without having been changed for either. What could not be
-established from the release: the $\eta$ binning of the Phase-2 payloads (the files live only in the
-database, \path{CondFormats/JetMETObjects/data} holds no Run-3 or Phase-2 text file) and whether the matching
-radius and \pt{} thresholds used to derive them will be adjusted for the HGCal granularity.
+\textbf{The jet energy corrections of Phase-2.} The chain that turns a reconstructed jet into a generator-jet-like
+one is a sequence of \code{JetCorrectorParametersCollection} payloads in the global tag. For the Phase-2 tag of this
+release, \path{auto:phase2_realistic} $=$ \path{150X_mcRun4_realistic_v1}
+(\path{Configuration/AlCa/python/autoCond.py}, line 111), \code{conddb list} gives: \code{AK4PF}, \code{AK8PF} and
+\code{AK8PFchs} from \path{PhaseIIFall17_V5_MC} (inserted 2017-11-23); \code{AK4PFPuppi}, \code{AK4PFchs} and
+\code{AK8PFPuppi}, the collections actually used offline, from \path{Winter22Run3_V1_MC} (inserted 2022-06-30), a
+payload named for Run 3 applied to the Phase-2 detector; only the HLT one, \code{AK4PFPuppiHLT}, is named for
+Phase-2 (\path{Phase2Spring23ticlv4_MC_v1}, inserted 2023-09-21), and the Phase-2 HLT corrects its AK8 jets with the
+offline label \code{AK8PFPuppi}, i.e.\ with the Run-3 payload
+(\path{HLTrigger/Configuration/python/HLT_75e33/modules/hltAK8PFPuppiJetCorrectorL1_cfi.py}). \code{conddb dump}
+shows the $\eta$ binning: the offline \code{AK4PFPuppi} \code{L2Relative} has 82 bins on the edges of the Run-3
+calorimeter towers ($\ldots$, 1.479, $\ldots$, 2.964, 3.139, $\ldots$, 5.191), the Phase-2 HLT one 19 bins with a
+single bin for $3.0<\abseta<5.2$, where the $\bar b$ jet of this event shares one $\eta$ bin with every HF jet. The
+jet resolution payloads of the same tag are all \path{JR_Spring16_25nsV6_MC} (inserted 2016-07-05); the
+\code{AK4PFPuppi} one has 130 records for $\abseta<4.7$ in five bins of the pileup density $\rho$ that end at
+$44.31\GeV$; beyond either edge no record matches and \code{JetResolution::getResolution} returns 1, a 100\,\%
+resolution (\path{JetMETCorrections/Modules/src/JetResolution.cc}, lines 28--32); chapter~\ref{ch:08_PU} finds
+$69\GeV$ of generator-level pileup \pt{} per unit area in $\abseta<2.5$ for 68 collisions (the reconstructed $\rho$
+is a median and smaller), and PU 200 triples it. For comparison the 2024 tag of this book, \path{150X_mcRun3_2024_realistic_v2}, has
+\path{Winter24_AK4PFPuppi_offline_v1} and \path{JR_Summer19UL18_JRV2}. Until an offline Phase-2 payload is in the
+global tag, the generator jets of this chapter, with their input list and $3\GeV$ threshold, are the reference of
+the HL-LHC jet energy scale, unchanged for PU 200 and $14\TeV$.

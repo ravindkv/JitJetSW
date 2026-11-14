@@ -646,77 +646,93 @@ collisions lay down $2174/(5\times2\pi) = 69\GeV$ of \pt{} per unit of $\eta$--$
 \section{Open problems for Phase-2}
 \label{sec:09_open}
 
-The hand-over is configured once for all eras in \path{SimG4Core/Application/python/g4SimHits_cfi.py}. A look
-through that file and the Phase-2 modifiers it imports gives the following.
+The problems below are the state of CMSSW\_15\_0\_5, the release of this book, as read in
+\code{\$CMSSW\_RELEASE\_BASE/src} and its externals, not of the development branch of CMSSW. The hand-over is
+configured once for all eras in \path{SimG4Core/Application/python/g4SimHits_cfi.py}; loaded in python with the
+default Phase-2 era of the release, \code{Phase2C17I13M9} (geometry D110, \code{DEFAULT\_VERSION} of
+\path{defaultPhase2ConditionsEra_cff.py}), its parameters after all modifiers were compared with those of \code{Run3\_2025}.
 
 \textbf{The $\eta$ cut is not era-dependent.} \code{Generator.MinEtaCut = -5.5}, \code{MaxEtaCut = 5.5} and
-\code{RDecLenCut = 2.9} carry no modifier at all; the only places where the cut changes are
-\path{Configuration/StandardSequences/python/SimWithCastor_cff.py} ($-7.0$ to $5.5$, for the CASTOR years) and
-\path{SimG4Core/Application/python/NeutronBGforMuons_cff.py} ($\pm7.0$, a neutron-background study). The Phase-2
-detector list of \code{phase2\_common} in the same file (\code{OnlySDs}) adds the HGCal, the MTD
-(\code{MtdSensitiveDetector}), the HFNose and keeps the ZDC, the BCM1F and the PLT; the Phase-2 Level-1 regions of
-\path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py} put the HGCal at $1.5<\abseta<3.0$ and the HF at
-$3.0<\abseta<5.5$. In this event the particles with $5.2<\abseta<5.5$ (16, $836\GeV$) are accepted and 12 of
-them never enter a calorimeter volume (the hole of the HF, section~\ref{sec:09_boundary}); whether the
-Phase-2 geometry closes that gap could not be established from the python. The very-forward rule that keeps neutrons and photons aimed at the ZDC
-(\code{EtaCutForHector = 8.2}, 160 primaries with $127\TeV$ in our 68 collisions) runs at the HL-LHC as it does
-now, with \code{SteppingAction.CMStoZDCtransport = False}, so these particles are simulated up to the beam-line
-dead regions and then killed: CPU spent on tracks that produce nothing.
+\code{RDecLenCut = 2.9} carry no modifier; only customisation functions change them (\path{SimWithCastor_cff.py},
+$-7.0$; \path{NeutronBGforMuons_cff.py}, $\pm7.0$; a PPS one, $\pm13$). The list \code{OnlySDs} of
+\code{phase2\_common} adds the HGCal, the MTD and the HFNose, keeps the ZDC and still names the BCM1F, PLT, BHM and
+PPS detectors, which have no \code{*sens.xml} file in the D110 geometry. In this event the particles with
+$5.2<\abseta<5.5$ (16, $836\GeV$) are accepted and 12 of them never enter a calorimeter volume (the hole of the HF,
+section~\ref{sec:09_boundary}). Phase-2 keeps the hole: \path{cmsExtendedGeometryRun4D110XML_cfi.py} builds the HF
+from the same \path{hcalforwardalgo.xml} and the same constants of \path{cms.xml} (\code{ForwdVcalZ1 = 11.1495\,m},
+\code{ForwdVcalZ2 = 12.8005\,m}, inner radius \code{ForwdBeamR1 = 12.495\,cm}), i.e.\ $\abseta = 5.18$ at its front
+face and $5.32$ at its back, while the Phase-2 Level-1 regions (\path{l1ctLayer1_cff.py}) assume the HF up to $5.5$.
+The very-forward rule (\code{EtaCutForHector = 8.2}; 160 primaries with $127\TeV$ in our 68 collisions) is unchanged
+too. With \code{SteppingAction.CMStoZDCtransport = False} these neutrons and photons are killed when they enter the
+beam-line volume \code{CMStoZDC} ($|z|=27.5$ to $139$\,m, the dead region \code{InterimRegion} of
+\path{extend/v2/cmsextent.xml}, as in 2025), in front of the ZDC at $|z|=140$\,m (\path{cmszdc.xml}), and the
+Phase-2 stepping (below) does not even read that flag: the ZDC of the HL-LHC geometry is simulated, and the
+very-forward particles never reach it.
 
-\textbf{The $40\MeV$ cut and the decay cylinder.} \code{MinPCut = 0.04} has no modifier either. It is a cut
-on the total momentum, below the response of any detector of Run~3; for the HGCal (\code{HGCSD.EminHit = 0.0})
-and the MTD (\code{MtdSD.EminHit = 0.0}) the sensitive detectors keep every deposit, so the $40\MeV$ remains the
-only lower limit of what is simulated, and it has not been revisited. \code{LDecLenCut = 30.0} is read in
-\code{Generator.cc} into a local variable, printed and never used: the decay cylinder is defined by its radius
-alone, $2.9\cm$, the Run-3 beam pipe. The $\bar D^0$ of this event decayed at $r = 1.2\cm$, $z = -22.7\cm$,
-inside it, so Pythia's decay was kept; a $2.9\cm$ cylinder of unlimited length also keeps generator decays that
-happen metres down the beam pipe. The radius of the Phase-2 beam pipe and of the first inner-tracker layer is
-not in a python file of the release and I could not establish whether $2.9\cm$ still corresponds to it.
+\textbf{The $40\MeV$ cut and the decay cylinder.} \code{MinPCut = 0.04}, a cut on the total momentum of a primary
+(\code{Generator.cc}, line 318), has no modifier either; with \code{HGCSD.EminHit = 0.0} and \code{MtdSD.EminHit =
+0.0} it remains the only lower limit on what enters Geant4. \code{LDecLenCut = 30.0} is read into a local variable
+(line 56), printed (line 90) and never used: the decay cylinder is its radius, $2.9\cm$, up to the $52.8$\,m of the
+very-forward rule (line 369). This radius is not the beam pipe, whose central tube ends at $r=2.25\cm$
+(\code{BeampipeRout1}, \path{beampipe/2021/v1/beampipe.xml}); the $\bar D^0$ of this event decayed at $r = 1.2\cm$,
+$z = -22.7\cm$, inside both, so Pythia's decay was kept. Phase-2 keeps the beam pipe (\path{beampipe/2030/v3/beampipe.xml}
+of D110 has the same content) but puts the rods of its first inner-tracker layer at $r=2.75$ and $3.25\cm$
+(\code{ITLayer1} in \path{PhaseII/Tracker_DD4hep_compatible_IT711_2023_05/pixel.xml}): the cylinder ends between
+them, and a decay at $2.75<r<2.9\cm$ is kept as Pythia made it although its parent may have crossed silicon.
 
-\textbf{The StackingAction thresholds.} The Russian roulette of the \code{StackingAction} kills low-energy
-photons (\code{RusRoGammaEnergyLimit = 5} MeV) and neutrons (\code{RusRoNeutronEnergyLimit = 10} MeV) with a
-survival probability per region: $0.3$ for photons and $0.1$ for neutrons in the ECAL, HCAL, muon iron,
-preshower and world. The two Phase-2 entries, \code{RusRoHGcalGamma = 1.3} and \code{RusRoHGcalNeutron = 1.1},
-are not tuned probabilities: \path{SimG4Core/Application/src/StackingAction.cc} applies the roulette only when
-the value is below 1 (line 341, \code{prob < 1.0}) and only registers the \code{HGCalRegion} in that case
-(line 399), so these values switch the roulette off in the HGCal. Every photon above the production cut and
-every neutron is tracked there, which is the right choice for a calorimeter with $0.5$ and $1$\,cm$^2$ cells
-and timing, and the CPU cost of it at PU 200 is paid in full. The heavy-particle thresholds
-(\code{NeutronThreshold}, \code{ProtonThreshold}, \code{IonThreshold} $=30\MeV$) act only with
-\code{KillHeavy = True}, which is off.
+\textbf{The StackingAction thresholds and the HGCal production cut.} The Russian roulette of the
+\code{StackingAction} kills low-energy photons (\code{RusRoGammaEnergyLimit = 5} MeV) and neutrons
+(\code{RusRoNeutronEnergyLimit = 10} MeV) with a survival probability per region: $0.3$ for photons and $0.1$ for
+neutrons in the ECAL, HCAL, muon iron, preshower and world. The two Phase-2 entries, \code{RusRoHGcalGamma = 1.3}
+and \code{RusRoHGcalNeutron = 1.1}, are not tuned probabilities: \path{SimG4Core/Application/src/StackingAction.cc}
+applies the roulette only when the value is below 1 (line 341, \code{prob < 1.0}) and only registers the
+\code{HGCalRegion} in that case (line 399), so these values switch the roulette off in the HGCal. Every photon above
+the production cut and every neutron is tracked there, and that cut is the smallest of the calorimeters: $0.03\mm$
+for electrons, positrons, photons and protons in the whole HGCal, absorbers included (\code{HGCalRegion},
+\path{hgcProdCutsv15.xml} of D110), against $1\mm$ in the \code{EcalRegion} and \code{HcalRegion}; at PU 200 the CPU
+cost of both choices is paid in full. The heavy-particle thresholds (\code{NeutronThreshold},
+\code{ProtonThreshold}, \code{IonThreshold} $=30\MeV$) act only with \code{KillHeavy = True}, which is off.
 
 \textbf{Physics list and Geant4 version.} The signal log carries the banner ``Geant4 version Name:
 geant4-11-02-patch-02 [MT] (21-June-2024)'', i.e.\ the \code{geant4} tool 11.2.2 of this release. The list is
-\code{SimG4Core/Physics/FTFP\_BERT\_EMM} for every era (no modifier in \code{g4SimHits\_cfi.py}; only the
-CPU-benchmark and neutron-background customisations switch to \code{FTFP\_BERT}, \code{FTFP\_BERT\_XS\_EML},
-\code{FTFP\_BERT\_HP\_EML}): \path{SimG4Core/PhysicsLists/plugins/FTFPCMS_BERT_EMM.cc} registers the CMS
-electromagnetic constructor \code{CMSEmStandardPhysics}, \code{G4DecayPhysics}, elastic, FTFP/Bertini
-(\code{EminFTFP = 3}, \code{EmaxBERT = 6}, \code{EmaxBERTpi = 12} GeV) and stopping physics. The EM options
-\code{G4TransportWithMSC = 2}, \code{G4GammaGeneralProcess = True}, \code{G4HepEmActive = False} are the same
-for Phase-2. Whether the HGCal needs a different EM constructor (the \code{\_EMMT} and \code{\_EMM\_TRK}
-variants exist next to it) could not be established from the configuration.
+\code{SimG4Core/Physics/FTFP\_BERT\_EMM} for every era: no modifier touches \code{Physics}; only customisation
+functions change it (CPU benchmark, neutron background, exotica, GFlash, geometry tools). Its plugin,
+\path{SimG4Core/PhysicsLists/plugins/FTFPCMS_BERT_EMM.cc}, registers the electromagnetic constructor
+\code{CMSEmStandardPhysics}, then \code{G4EmExtraPhysics}, \code{G4DecayPhysics}, elastic, FTFP/Bertini
+(\code{EminFTFP = 3}, \code{EmaxBERT = 6}, \code{EmaxBERTpi = 12} GeV), stopping and ion physics; the EM options
+\code{G4TransportWithMSC = 2}, \code{G4GammaGeneralProcess = True}, \code{G4HepEmActive = False} are the same for
+Phase-2. That constructor already knows the HGCal: \path{SimG4Core/PhysicsLists/src/CMSEmStandardPhysics.cc} gives
+the \code{HGCalRegion} the multiple scattering of the \code{HcalRegion} (lines 112--113 and 142--190, ``e-/e+ msc
+for HCAL and HGCAL using the Urban model'', with \code{G4MscRangeFactor = 0.04}, \code{G4MscStepLimit = UseSafety}),
+while everywhere else, the ECAL crystals included, the defaults of lines 56--57 apply (range factor $0.2$,
+\code{fMinimal}): the electromagnetic section of the HGCal is stepped like a hadron calorimeter.
 
 \textbf{The time windows.} \code{common\_maximum\_time} sets \code{MaxTrackTime = 500} ns in the central region,
-\code{MaxTrackTimeForward = 2000} ns beyond \code{MaxZCentralCMS = 50} m, and the only modifier that touches it
-is \code{h2tb} (a test beam, 1000\,ns); \code{CaloSD.TmaxHits} is $500\ns$ for every calorimeter collection
-and $2000$ for the ZDC. Phase-2 changes the stepping, not the window: \path{SimG4Core/Application/src/RunManagerMT.cc}
-(\code{runForPhase2}) switches to \code{Phase2SteppingAction} as soon as a region named \code{HGCalRegion},
-\code{FastTimerRegionBTL} or \code{FastTimerRegionETL} exists in the geometry, and that class records the
-tracker-to-BTL transition (\code{BTLName = BarrelTimingLayer}) with the same time cuts. The timing detectors are
-given finer slices (\code{MtdSD.TimeSliceUnit = 0.01} ns, \code{HGCSD.TimeSliceUnit = 0.001} ns, and
-\code{phase2\_timing} sets \code{ECalSD.TimeSliceUnit = 0.001} with \code{StoreLayerTimeSim = True}), while
-\code{MtdSD.EnergyThresholdForPersistencyInGeV = 1e9} and \code{ForHistoryInGeV = 1e9} are marked in the file
-``keep temporarily old behaviour'': no MTD hit makes its track persistent.
+\code{MaxTrackTimeForward = 2000} ns beyond \code{MaxZCentralCMS = 50} m; the only modifier that touches it is
+\code{h2tb} (a test beam, 1000\,ns). \code{CaloSD.TmaxHits} is $500\ns$ for the collections of \code{HCNames} and
+$2000$ for the ZDC; the HGCal and HFNose collections are not in that list and fall back on \code{TmaxHit = 1000} ns
+(\path{SimG4CMS/Calo/src/CaloSD.cc}, lines 59 and 87--99). Phase-2 changes the stepping, not the window:
+\path{SimG4Core/Application/src/RunManagerMT.cc} (\code{runForPhase2}) switches to \code{Phase2SteppingAction} as
+soon as a region \code{HGCalRegion}, \code{FastTimerRegionBTL} or \code{FastTimerRegionETL} exists, and that class
+records the tracker-to-BTL transition (\code{BTLName = BarrelTimingLayer}) with the same time cuts and no exception
+for the ZDC. The timing detectors are given finer slices (\code{MtdSD.TimeSliceUnit = 0.01} ns,
+\code{HGCSD.TimeSliceUnit = 0.001} ns, and \code{phase2\_timing} sets \code{ECalSD.TimeSliceUnit = 0.001} with
+\code{StoreLayerTimeSim = True}), while \code{MtdSD.EnergyThresholdForPersistencyInGeV = 1e9} and
+\code{ForHistoryInGeV = 1e9} are marked in the file ``keep temporarily old behaviour'' and
+\path{SimG4CMS/Forward/src/MtdSD.cc} (lines 47--48) says ``default must be 0.5'' and ``0.05'': no MTD hit makes its
+track persistent.
 
-\textbf{What \code{phase2} modifies in \code{g4SimHits\_cfi.py}, and what it does not.} The modifiers found by
-grep are \code{phase2\_hgcal} (\code{common\_MCtruth.SaveCaloBoundaryInformation = True}), \code{phase2\_timing}
-(the ECAL time slices above), \code{phase2\_common} (the \code{OnlySDs}, \code{TrackHits} and \code{CaloHits}
-lists with \code{FastTimerHitsBarrel/Endcap}, \code{HGCHitsEE/HEfront/HEback}, \code{HFNoseHits};
-\code{LHCTransport = False}, i.e.\ no PPS proton transport in Phase-2 where \code{run3\_common} sets it
-\code{True}; in \code{MuonSD}, \code{HaveDemoChambers = False}), \code{phase2\_hgcalOnly} and
-\code{phase2\_hgcalV18} (in \code{HGCSD}, \code{HitCollection = 2}). Nothing is era-modified in
-\code{Generator}, in \code{StackingAction}, in \code{Physics}, in \code{common\_maximum\_time} or in
-\code{TrackerSD}, whose \code{EnergyThresholdForPersistencyInGeV = 0.2} and
-\code{ElectronicSigmaInNanoSeconds = 12.06} (hence the $36.2\ns$ Low/High time-of-flight split, designed for
-the strip electronics) are inherited by the Phase-2 pixel modules: the hand-over of the HL-LHC is,
-parameter for parameter, the hand-over of this chapter.
+\textbf{What \code{phase2} modifies in \code{g4SimHits\_cfi.py}, and what it does not.} Compared with
+\code{Run3\_2025}, the module under \code{Phase2C17I13M9} differs in four places only: \code{phase2\_hgcal} sets
+\code{SaveCaloBoundaryInformation = True} in \code{common\_MCtruth}; \code{phase2\_timing} gives the ECAL the time
+slices above; \code{phase2\_common} sets the lists \code{OnlySDs}, \code{TrackHits} and \code{CaloHits} (with
+\code{FastTimerHitsBarrel/Endcap}, \code{HGCHitsEE/HEfront/HEback}, \code{HFNoseHits}), \code{LHCTransport = False}
+(no PPS proton transport, which \code{run3\_common} switches on) and \code{HaveDemoChambers = False} in
+\code{MuonSD}; and \path{Era_Phase2_cff.py} excludes the \code{dd4hep} modifier, which changes the source of the
+geometry. The modifier \code{phase2\_hgcalV18} (\code{HGCSD.HitCollection = 2}) belongs only to
+\code{Phase2C22I13M9}. Nothing is era-modified in the parameter sets \code{Generator}, \code{StackingAction},
+\code{Physics}, \code{common\_maximum\_time} or \code{TrackerSD}. The tracker sensitive detector
+(\path{TkAccumulatingSensitiveDetector.cc}) splits its hits into \code{LowTof} and \code{HighTof} collections at
+$3\sigma = 36.2\ns$ (line 64, \code{ElectronicSigmaInNanoSeconds = 12.06}) and stores every particle above
+$0.2\GeV$ that makes a hit; both pass unchanged to the Phase-2 inner and outer tracker: the hand-over of the HL-LHC
+is, parameter for parameter, the hand-over of this chapter.

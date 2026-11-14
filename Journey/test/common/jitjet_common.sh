@@ -25,12 +25,16 @@
 #   ANALYZE=0      skip the analyzers (plots, ledgers)
 #   EVENTS=1       events generated / simulated (the book follows ONE event; more only for illustration)
 #   EVENT=1:1:1    the event of the book (run:lumi:event), the one drawn and mixed
-#   PNG=0          do not convert the PDF pages to PNG
+#   PNG=1          convert the PDF pages to PNG (pdftoppm). Default 0 for chapters 01-08, whose .tex include the PDFs
+#                  themselves, 1 for 09-13
 #   CONE_R=0.4     gen_stage: the GenPartAnalyzer pages draw the cone Delta R < CONE_R around the b and the bbar, with its
 #                  pT and a zoom on the fuller cone (default 0: no cones; the ledger always lists the cones of R = 0.4)
+#   DRAW_STAGES=2  gen_stage: the GenPartAnalyzer PDF gets only the pages of these stages (comma list; default: every
+#                  stage up to maxStage); the other stages are still analysed and printed in the log
 #   XSEC_EVENTS=1000, XSEC_FILE=1   gen_xsec: the number of events, and keep them in out/xsec_GEN_<chapter>.root
 #   REGEN=0        gen_stage: keep the existing out/step1_GEN_<chapter>.root (do not run the GEN job again) and redo only
-#                  the analyzer pages and the ledger, e.g. for a chapter whose GEN file a later chapter reads (06 -> 07)
+#                  the analyzer pages and the ledger, e.g. for a chapter whose GEN file a later chapter reads (06 -> 07);
+#                  run_07_GenJet.sh and run_08_PU.sh honour it too (step2_GENJET_07_GenJet.root, the minimum-bias library)
 #   YEAR           2025 for the CMS chapters 08-13, 2024 for the generator chapters 01-07 (the defaults of CONDITIONS, ERA)
 #   CONDITIONS, ERA, GEOMETRY, BEAMSPOT, COMENERGY, PTHATMIN   the Run-3 settings (change all together for another scenario)
 
@@ -74,7 +78,10 @@ jitjet_init() {
   EVENT=${EVENT:-1:1:1}
   RUN=${RUN:-1}
   ANALYZE=${ANALYZE:-1}
-  PNG=${PNG:-1}
+  case $CHAPTER in  # the .tex of chapters 01-08 include the analyzer PDFs, no PNG needed (14 November 2026)
+    0[1-8]_*) PNG=${PNG:-0} ;;
+    *)        PNG=${PNG:-1} ;;
+  esac
   PLUGIN_LIB=$CMSSW_BASE/lib/$SCRAM_ARCH/pluginJitJetSWJourneyAuto.so
   GEN_FRAGMENT=Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py
   CMSRUN_PREFIX=${CMSRUN_PREFIX:-}
@@ -170,15 +177,25 @@ gen_stage() {  # gen_stage <isr> <fsr> <mpi> <had> <decay> <maxStage> <descripti
   (( RUN )) || return 0
   [[ -s $OUT/$out ]] || { echo "No output produced: $OUT/$out" >&2; exit 1; }
   (( ANALYZE )) || return 0
-  local a=genPartAnalyzer_${CHAPTER}
-  local label="chapter $CHAPTER: $desc|ISR $isr, FSR $fsr, MPI $mpi|Hadronize $had, Decay $decay|pTHatMin $PTHATMIN GeV, 13.6 TeV"
-  run_cmsrun "$COMMON/genPartAnalyzer_cfg.py" "$OUT/$a.log" inputFiles="file:$OUT/$out" outputFile="$a.root" maxEvents=1 \
-    eventsToProcess="$EVENT" maxStage="$max_stage" pdfFile="$a.pdf" sampleLabel="$label" coneR="${CONE_R:-0}"
-  grep -E '^== GenPartAnalyzer|^  stage|^  by scattering|^  cone' "$OUT/$a.log"
-  pdf_pages_png "$OUT/$a.pdf"
+  GEN_MAX_STAGE=$max_stage
+  GEN_LABEL="chapter $CHAPTER: $desc|ISR $isr, FSR $fsr, MPI $mpi|Hadronize $had, Decay $decay|pTHatMin $PTHATMIN GeV, 13.6 TeV"
+  gen_part_pages "genPartAnalyzer_${CHAPTER}" "${DRAW_STAGES:-}"
   python3 "$COMMON/genLedger.py" "$OUT/$out" --event "$EVENT" > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" ||
     { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
   echo "  Ledger: $(basename "$OUT/ledger_${CHAPTER}.txt")"
+}
+
+# the GenPartAnalyzer pages of out/step1_GEN_<chapter>.root: out/<name>.pdf/.root/.log (+ PNG pages if PNG=1). Every stage up to
+# GEN_MAX_STAGE is analysed (log), only <drawStages> (comma list; empty: all) get a page; GEN_MAX_STAGE and GEN_LABEL
+# are set by gen_stage, so a chapter can call it again after gen_stage for an extra PDF (04_MPI: the shower page).
+gen_part_pages() {  # gen_part_pages <name> [drawStages]
+  local a=$1 draw=${2:-}
+  local opt=()
+  [[ -n $draw ]] && opt=(drawStages="$draw")
+  run_cmsrun "$COMMON/genPartAnalyzer_cfg.py" "$OUT/$a.log" inputFiles="file:$OUT/step1_GEN_${CHAPTER}.root" outputFile="$a.root" \
+    maxEvents=1 eventsToProcess="$EVENT" maxStage="$GEN_MAX_STAGE" "${opt[@]}" pdfFile="$a.pdf" sampleLabel="$GEN_LABEL" coneR="${CONE_R:-0}"
+  grep -E '^== GenPartAnalyzer|^  stage|^  by scattering|^  cone' "$OUT/$a.log"
+  pdf_pages_png "$OUT/$a.pdf"
 }
 
 # the cross section of a generator chapter. Pythia8 estimates sigma from the events it generated, with the statistical

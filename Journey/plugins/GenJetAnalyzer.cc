@@ -21,7 +21,9 @@
 // as pages into that single PDF. With openPdf = false the file is opened by another module of
 // the same job that prints into the same PDF before this one (genJetAnalyzer_cfg.py runs
 // GenPartAnalyzer first, so every event gets the generator-stage pages followed by the jet
-// pages); closePdf = false leaves the closing to that module. Per collection, the TFileService file gets the jet pT, eta
+// pages); closePdf = false leaves the closing to that module. With pdfFiles (one name per collection, in the order of
+// genJets) every collection gets its own one-page PDF instead, with its page of the first event analysed (the chapters
+// draw one event; ROOT cannot keep several multi-page PDFs open at once), and pdfFile is not used. Per collection, the TFileService file gets the jet pT, eta
 // and multiplicity, the constituent multiplicity, the b / bbar jet pT, the response, the net
 // b + bbar jet pT and etaPhiPt (TH2, eta vs phi weighted by jet pT).
 //
@@ -110,6 +112,8 @@ private:
   std::vector<edm::InputTag> jetTags_;
   std::vector<edm::EDGetTokenT<Jets>> jetToks_;
   std::string outputPrefix_, pdfFile_, sampleLabel_;
+  std::vector<std::string> pdfFiles_;  // if set: one one-page PDF per collection (the first event)
+  std::vector<char> pdfFileDone_;      // the page of collection k has been written to pdfFiles_[k]
   double etaMax_, labelPtMin_;
   int signalCollisionId_;  // >= 0: the status 1 particles of the other collisions (collisionId) are pileup
   bool savePDF_, printConstituents_, openPdf_, closePdf_;
@@ -125,6 +129,7 @@ GenJetAnalyzer::GenJetAnalyzer(const edm::ParameterSet& ps)
       outputPrefix_(ps.getParameter<std::string>("outputPrefix")),
       pdfFile_(ps.getParameter<std::string>("pdfFile")),
       sampleLabel_(ps.getParameter<std::string>("sampleLabel")),
+      pdfFiles_(ps.getParameter<std::vector<std::string>>("pdfFiles")),
       etaMax_(ps.getParameter<double>("etaMax")),
       labelPtMin_(ps.getParameter<double>("labelPtMin")),
       signalCollisionId_(ps.getParameter<int>("signalCollisionId")),
@@ -132,6 +137,10 @@ GenJetAnalyzer::GenJetAnalyzer(const edm::ParameterSet& ps)
       printConstituents_(ps.getParameter<bool>("printConstituents")),
       openPdf_(ps.getParameter<bool>("openPdf")),
       closePdf_(ps.getParameter<bool>("closePdf")) {
+  if (!pdfFiles_.empty() && pdfFiles_.size() != jetTags_.size())
+    throw cms::Exception("Configuration") << "GenJetAnalyzer: pdfFiles has " << pdfFiles_.size() << " names for "
+                                          << jetTags_.size() << " genJets collections";
+  pdfFileDone_.assign(pdfFiles_.size(), 0);
   usesResource(TFileService::kSharedResource);
   edm::Service<TFileService> fs;
   for (auto const& tag : jetTags_) {
@@ -168,6 +177,8 @@ void GenJetAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   desc.add<bool>("savePDF", true);
   desc.add<std::string>("pdfFile", "")
       ->setComment("if set, all plots are written as pages of this single PDF instead of one PDF per collection and event");
+  desc.add<std::vector<std::string>>("pdfFiles", {})
+      ->setComment("if set (one name per genJets collection): each collection gets its own one-page PDF, its page of the first event; pdfFile is not used");
   desc.add<std::string>("sampleLabel", "")
       ->setComment("printed in the right panel of every plot, '|' separates lines (e.g. the generator stage)");
   desc.add<bool>("printConstituents", false)->setComment("print the constituents (genParticles indices) of every jet to stdout");
@@ -671,6 +682,16 @@ void GenJetAnalyzer::draw(size_t k, const edm::Event& ev, const Gens& gens, cons
     text(0.805, 0.335 - 0.026 * nList, Form("... %zu more", jets.size() - nList), 0.017, kGray + 2);
 
   canvas_->Update();
+  if (!pdfFiles_.empty()) {  // a complete one-page PDF per collection: Print without "[" / "]" opens and closes it
+    if (!pdfFileDone_[k]) {
+      canvas_->Print(pdfFiles_[k].c_str());
+      pdfFileDone_[k] = 1;
+    } else {
+      std::cout << "  " << label << ": page of run:lumi:event " << ev.id().run() << ":" << ev.id().luminosityBlock() << ":"
+                << ev.id().event() << " not drawn, " << pdfFiles_[k] << " holds the first event only\n";
+    }
+    return;
+  }
   if (pdfFile_.empty()) {
     canvas_->Print(Form("%s_%s_run%u_event%llu.pdf", outputPrefix_.c_str(), label.c_str(), ev.id().run(), ev.id().event()));
     return;

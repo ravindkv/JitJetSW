@@ -74,15 +74,15 @@ from FWLite on \code{step1\_GEN\_04\_MPI.root} (companion, section 4.6).}
 \centering
 \begin{minipage}[t]{0.495\textwidth}\centering
 {\small\textbf{(a)} chapter~\ref{ch:02_PS}: MPI off}\\[2pt]
-\includegraphics[width=\textwidth,trim=0 0 170 0,clip]{02_PS/out/genPartAnalyzer_02_PS_page-2.png}
+\includegraphics[width=\textwidth,trim=0 0 170 0,clip]{02_PS/out/genPartAnalyzer_02_PS.pdf}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.495\textwidth}\centering
 {\small\textbf{(b)} this chapter: MPI on, same hard process}\\[2pt]
-\includegraphics[width=\textwidth,trim=0 0 170 0,clip]{04_MPI/out/genPartAnalyzer_04_MPI_page-2.png}
+\includegraphics[width=\textwidth,trim=0 0 170 0,clip]{04_MPI/out/genPartAnalyzer_04_MPI_shower.pdf}
 \end{minipage}
-\caption{The parton shower of the same hard process twice, at the end of stage 2 (page 2 of
-\code{genPartAnalyzer\_02\_PS.pdf} and of \code{genPartAnalyzer\_04\_MPI.pdf} without the legend panel; (a) in
-full is figure~\ref{fig:02_PS_display}). Page 1, the hard process, is the same picture in both. (a) MPI off:
+\caption{The parton shower of the same hard process twice, at the end of stage 2 (the page of
+\code{genPartAnalyzer\_02\_PS.pdf} and of \code{genPartAnalyzer\_04\_MPI\_shower.pdf}, without the legend panel; (a) in
+full is figure~\ref{fig:02_PS_display}). The hard process (the display of chapter 01) is the same in both. (a) MPI off:
 the $b$ at $46.9\GeV$ with five FSR partons (green triangles), no ISR, the $\bar b$ untouched at $113.2\GeV$,
 $b+\bar b$ $66.4\GeV$. (b) MPI on: the $b$ at $91.6\GeV$, the $\bar b$ at $118.6\GeV$, one ISR parton (orange,
 $12.0\GeV$) and 11 FSR partons, $b+\bar b$ $27.3\GeV$; only the hard process and its own showers are drawn, the
@@ -201,14 +201,14 @@ $k_\mathrm{T}$ of $1.09\GeV$ (median $0.77\GeV$, largest $3.89\GeV$).\footnote{F
 \code{step1\_GEN\_04\_MPI.root}, status-61 entries.} The outgoing partons of each interaction are then copied
 with the kick included: the $b$ goes from $\pt=91.59$ to $91.74\GeV$, the $\bar b$ from 118.57 to
 $116.36\GeV$, and the net $|\vec\pt(b)+\vec\pt(\bar b)|$ from 27.29 to $25.08\GeV$. In this file these final
-copies have no daughters, so they are the status-1 partons of the record, the ones page~3 of the analyzer draws;
+copies have no daughters, so they are the status-1 partons of the record, the ones the analyzer draws at stage 3;
 in chapter~\ref{ch:05_Had}, where they fragment, the same copies appear as status 62.
 
 \begin{figure}[!tb]
 \centering
-\includegraphics[width=\textwidth]{04_MPI/out/genPartAnalyzer_04_MPI_page-3.png}
-\caption{The event at the end of the parton level in the $\eta$--$\phi$ plane (\code{genPartAnalyzer\_04\_MPI.pdf},
-page 3; marker size grows with $\log\pt$, the \pt{} is written for $\pt>5\GeV$): 169 partons with their primordial
+\includegraphics[width=\textwidth]{04_MPI/out/genPartAnalyzer_04_MPI.pdf}
+\caption{The event at the end of the parton level in the $\eta$--$\phi$ plane (\code{genPartAnalyzer\_04\_MPI.pdf};
+marker size grows with $\log\pt$, the \pt{} is written for $\pt>5\GeV$): 169 partons with their primordial
 $k_\mathrm{T}$, coloured by the scattering they belong to. Orange and green: the ISR (1) and FSR (11) partons of
 the hard process, the same as in figure~\ref{fig:04_showers}(b), with the $b$ at $91.7\GeV$ and the $\bar b$ at
 $116.4\GeV$. Cyan: the 31 multiparton interactions, squares their 61 outgoing partons, triangles the 25 ISR (up)
@@ -317,45 +317,62 @@ the 25 ISR and 56 FSR emissions of their showers.
 
 \section{Open problems for Phase-2}
 
-
+At the HL-LHC this MPI model makes the underlying event of every hard collision and all the pileup (200 collisions
+per crossing, \code{AVE\_200\_BX\_25ns}, \path{relval_steps.py} line 4617). The list below is the state of
+\code{CMSSW\_15\_0\_5}, the release of this book, read in \path{$CMSSW_RELEASE_BASE/src} and its externals, not of
+the CMSSW development branch.
 
 \paragraph{CP5 is a 2017 tune extrapolated to $14\TeV$ through one exponent.}
-The block used by the fragment of this book, \path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py},
-sets \code{pT0Ref=1.41}, \code{ecmPow=0.03344}, \code{coreRadius=0.7634}, \code{coreFraction=0.63} and
-\code{ColourReconnection:range=5.176}; these were fitted to 7 and $13\TeV$ data (CMS-GEN-17-001; the release
-records only the tune name), and the only handle that knows about the beam energy is \code{ecmPow}, which moves $\ptz$ from $1.4395\GeV$ at $13\TeV$ to
-$1.4431\GeV$ at $14\TeV$. The Pythia8 default is \code{ecmPow=0.215} (Monash); CP5's value, six times smaller,
-means an almost energy-independent regulator, so the MPI activity in CP5 grows with $\sqrt s$ nearly as fast as
-the parton densities at small $x$ do. No $14\TeV$ measurement tests this extrapolation yet; the release contains no $14\TeV$ tune, and the directory \path{MCTunes2017/} holds only the
-CP1--CP5 blocks of 2017 with their ``Up''/``Down'' variants and the two colour-reconnection alternatives
-\path{PythiaCP5CR1TuneSettings_cfi.py} (\code{ColourReconnection:mode=1}, \code{BeamRemnants:remnantMode=1},
-\code{pT0Ref=1.375}) and \path{PythiaCP5CR2TuneSettings_cfi.py} (\code{mode=2}, \code{pT0Ref=1.454},
-\code{ecmPow=0.0555}), alternatives for systematic studies, not replacements. What could not be established:
-which data entered the CP5 fit (the release records only the tune name) and whether a newer CMS tune exists
-outside the release; inside it there is none, and no $14\TeV$ or Phase-2 variant of the MPI parameters.
+The block of our fragment, \path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py}, sets
+\code{pT0Ref=1.41}, \code{ecmPow=0.03344}, the matter profile (\code{coreRadius=0.7634},
+\code{coreFraction=0.63}) and \code{ColourReconnection:range=5.176} without a comment: the release records the tune
+name and the year of its directory, not the data of the fit. Only \code{ecmPow} refers to the beam energy; it moves
+$\ptz$ from $1.4395\GeV$ at $13\TeV$ to $1.4431\GeV$ at $14\TeV$. The Pythia8 default is \code{ecmPow=0.215}
+(Monash, line 221 of \path{MultipartonInteractions.xml}); CP5's value, six times smaller, means an almost
+energy-independent regulator, so the MPI activity grows with $\sqrt s$ nearly as fast as the parton densities at
+small $x$. The release has no $14\TeV$ tune, and no era can change one for Phase-2: no file of
+\path{Configuration/Generator/python/} or \path{GeneratorInterface/*/python/} calls \code{toModify}.
 
 \paragraph{The only Run-3 update is the total cross section, and most fragments do not use it.}
-The release has a second directory, \path{Configuration/Generator/python/MCTunesRun3ECM13p6TeV/}, whose
-\path{PythiaCP5Settings_cfi.py} differs from the 2017 file in two lines only: \code{SigmaTotal:sigmaEl}
-(22.08 instead of $21.89\mb$) and \code{SigmaTotal:sigmaTot} (101.037 instead of $100.309\mb$). With
-\code{SigmaTotal:mode = 0} Pythia8 takes these total and elastic cross sections as fixed numbers at whatever beam
-energy is set, and derives from them the non-diffractive cross section that normalises the MPI rate, the
-$\sigma_{\mathrm{ND}}=55.42\mb$ printed at $13.6\TeV$ in \code{step1\_GEN\_04\_MPI.log}. Our fragment and the
-release's minimum-bias fragment \path{Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py} (the
-pileup library of chapter~\ref{ch:08_PU}, and the \path{RelValMinBias_14TeV} input that
-\path{Configuration/PyReleaseValidation/python/relval_steps.py} mixes at \path{AVE_200_BX_25ns} for the Phase-2
-workflows) both import the 2017 block, i.e.\ the $13\TeV$ cross sections; only six B-physics and soft-QCD
-fragments import the $13.6\TeV$ one, and no file in the release carries $14\TeV$ values. At PU~200 a per-cent
-change in the MPI activity of one minimum-bias collision is a per-cent change of the whole pileup energy in every
-crossing.
+The 17 blocks of \path{MCTunesRun3ECM13p6TeV/} differ from those of \path{MCTunes2017/} only in
+\code{SigmaTotal:sigmaEl} (22.08 instead of $21.89\mb$) and \code{SigmaTotal:sigmaTot} (101.037 instead of
+$100.309\mb$). With \code{SigmaTotal:mode = 0} Pythia8 takes them as fixed numbers at any beam energy and derives
+from them the non-diffractive cross section that normalises the MPI rate ($\sigma_{\mathrm{ND}}=55.42\mb$ at
+$13.6\TeV$ in \code{step1\_GEN\_04\_MPI.log}). Our fragment and \path{MinBias_14TeV_pythia8_TuneCP5_cfi.py} (the
+pileup library of chapter~\ref{ch:08_PU} and the \path{RelValMinBias_14TeV} pileup of the \code{Run4} workflows)
+import the 2017 block; only six B-physics and soft-QCD fragments import the $13.6\TeV$ one, and no file of the
+release sets other values.
 
 \paragraph{Pileup is MPI without a hard process.}
-The minimum-bias collisions of chapter~\ref{ch:08_PU} are generated with \code{SoftQCD:inelastic = on} and the
-same CP5 block: their 7.0 interactions on average (\code{genstats\_08\_PU.txt}) come from the same $\ptz$,
-matter profile and colour reconnection as the 31 interactions of this event, so the pileup jets of
-chapter~\ref{ch:08_PU} are made of exactly the objects studied here. Table~\ref{tab:04_ledger} shows where they
-go: 17 partons with $190.5\GeV$ added in $2.5<\abseta<3.0$ and 49 with $2493.5\GeV$ in $3.0<\abseta<5.2$, the
-HGCal endcap and the extended Phase-2 tracker ($\abseta<4.0$), the regions Run~3 measures least precisely and
-that constrained the tune the least.
+The minimum-bias collisions of chapter~\ref{ch:08_PU} are generated with \code{SoftQCD:inelastic = on} (line 16
+of \path{MinBias_14TeV_pythia8_TuneCP5_cfi.py}) and the same CP5 block: their 7.0 interactions on average
+(\code{genstats\_08\_PU.txt}) come from the same $\ptz$, matter profile and colour reconnection as the 31~MPI of
+this event (\code{genPartAnalyzer\_04\_MPI.log}). A per-cent change in the MPI activity of one minimum-bias
+collision is therefore a per-cent change of the pileup energy of every crossing at PU~200, and it lands where the
+MPI of this event do (table~\ref{tab:04_ledger}): 17 partons and $190.5\GeV$ in $2.5<\abseta<3.0$, inside the
+HGCal sectors $1.5<\abseta<3.0$ of \path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py}, and 49 partons
+with $2493.5\GeV$ in $3.0<\abseta<5.2$, the HF. The pileup jets of chapter~\ref{ch:08_PU} are made of exactly the
+objects of this chapter.
 
+\paragraph{The variations of the tune exist, but nothing in the release runs them.}
+Next to CP5, the directory \path{MCTunes2017/} holds four variations of it. The uncertainty variations
+\code{TuneUp} and \code{TuneDown} (files \code{PythiaCP5Tune\{Up,Down\}Settings\_cfi.py}) move only
+\code{pT0Ref} (1.407 and 1.46 instead of 1.41), the matter profile (\code{coreFraction} 0.4281 and 0.7253,
+\code{coreRadius} 0.6671 and 0.6879) and \code{ColourReconnection:range} (4.881 and 4.691). The alternative
+colour-reconnection models \code{CR1} and \code{CR2} (files \code{PythiaCP5CR\{1,2\}TuneSettings\_cfi.py}) switch
+to \code{ColourReconnection:mode=1} (with \code{BeamRemnants:remnantMode=1}, \code{pT0Ref=1.375},
+\code{ecmPow=0.03283}) and \code{mode=2} (\code{pT0Ref=1.454}, \code{ecmPow=0.0555}, the steepest energy
+dependence of the five blocks). No python file of the release outside the two tune directories imports any of
+the four (a \code{grep} over \path{$CMSSW_RELEASE_BASE/src}): no relval workflow, Run-3 or Phase-2, shows how
+much the underlying event of a jet or the pileup energy of a crossing moves with the MPI and colour-reconnection
+parameters. At PU~200, where the pileup is two hundred times the MPI of one collision, that systematic is left to
+whoever writes the fragment.
 
+\paragraph{The Phase-2 relvals use three underlying-event models.}
+\path{relval_upgrade.py} runs each of the 152 fragments of \code{upgradeFragments} (\path{upgradeWorkflowComponents.py},
+lines 3256--3407) for every \code{Run4} geometry. Of the 52 at $14\TeV$, 37 import CP5, one is ExHuME, two use the
+Pythia6 tune Z2* and 12 the older block \path{Pythia8CUEP8M1Settings_cfi.py} (\code{pT0Ref=2.4024},
+\code{ecmPow=0.25208}), among them the jet samples \path{QCD_Pt_80_120_14TeV_TuneCUETP8M1_cfi} and
+its $600$--$800$ and $3000$--$3500\GeV$ siblings, while \path{QCDForPF_14TeV_TuneCP5_cfi} uses CP5. From 13 to
+$14\TeV$ CUETP8M1 raises $\ptz$ by 1.9\% ($2.808\to2.861\GeV$), CP5 by 0.25\%: at PU~200 such a sample has its
+hard collision and its 200 CP5 pileup collisions from two models that extrapolate differently.

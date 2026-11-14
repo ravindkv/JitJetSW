@@ -215,10 +215,10 @@ chapter 01 within the errors: the shower moves momentum around, it does not chan
 
 \begin{figure}[!tb]
 \centering
-\includegraphics[width=\textwidth]{02_PS/out/genPartAnalyzer_02_PS_page-2.png}
-\caption{The $\eta$--$\phi$ display of the event after the shower (\code{GenPartAnalyzer}, page 2 of
-\code{test/02\_PS/out/genPartAnalyzer\_02\_PS.pdf} as \code{genPartAnalyzer\_02\_PS\_page-2.png}; the marker size
-grows with $\log\pt$; page 1 is the display of chapter 01): the $b$ at $46.9\GeV$ with its five radiated partons
+\includegraphics[width=\textwidth]{02_PS/out/genPartAnalyzer_02_PS.pdf}
+\caption{The $\eta$--$\phi$ display of the event after the shower (\code{GenPartAnalyzer}, the page of
+\code{test/02\_PS/out/genPartAnalyzer\_02\_PS.pdf}; the marker size
+grows with $\log\pt$; the hard process is the display of chapter 01): the $b$ at $46.9\GeV$ with its five radiated partons
 (green triangles), the untouched $\bar b$ and the vector sum $b+\bar b$ of $66.4\GeV$ (magenta star). Dashed: the
 cones $\Delta R < 0.4$ (analyzer option \code{coneR}) with their \pt; the inset magnifies the $b$ cone, whose
 partons are too close to be told apart on this scale. The partons are drawn at the end of the shower, before the
@@ -253,26 +253,28 @@ five partons that now share the jet with the quark.
 \section{Open problems for Phase-2}
 
 The shower of this chapter is steered by two python files of the release, both imported by the fragment
-\path{Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py}. What follows is what they contain in
-\code{CMSSW\_15\_0\_5}, and what it means for the HL-LHC.
+\path{Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py}, and by the Pythia8 defaults they leave
+alone. What follows is the state of \code{CMSSW\_15\_0\_5}, the release of this book, as read in
+\code{\$CMSSW\_RELEASE\_BASE/src} and in its Pythia8 8.311 (not the development branch of CMSSW), and what it
+means for the HL-LHC.
 
-\paragraph{CP5 showers: a 2017 tune of 13 TeV data, extrapolated.}
+\paragraph{CP5 showers: a tune of the directory \code{MCTunes2017}, extrapolated.}
 \path{Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py} starts from \code{Tune:pp 14} and
-\code{Tune:ee 7} (the Monash 2013 tune of Pythia8); for the showers it changes only the coupling, setting
-\code{SpaceShower:alphaSvalue} and \code{TimeShower:alphaSvalue} to 0.118 with \code{alphaSorder=2}. The
-directory name says when: the CP tunes were derived in 2017 from underlying-event measurements at 13 TeV
-(CMS-GEN-17-001). The energy dependence of the tune is the single parameter \code{MultipartonInteractions:ecmPow =
-0.03344} in the formula $\pt^0 = \pt^{0,\mathrm{ref}}\,(E_\mathrm{cm}/E_\mathrm{cm}^\mathrm{ref})^{\mathrm{ecmPow}}$
-with \code{pT0Ref = 1.41} and the reference energy at its Pythia8 default \code{MultipartonInteractions:ecmRef =
-7000} GeV (not set in the file): the cut-off is $1.442\GeV$ at $13.6\TeV$ and $1.443\GeV$ at $14\TeV$, a change of
-one per mille, so going from Run 3 to the HL-LHC energy is harmless for the formula; what is open is whether a
-power law fitted between 7 and 13 TeV holds at 14, which no file in the release addresses. This parameter enters
+\code{Tune:ee 7} (the Monash 2013 tune of Pythia8, \path{Tunes.xml}); for the showers it changes only the
+coupling, setting \code{SpaceShower:alphaSvalue} and \code{TimeShower:alphaSvalue} to 0.118 with
+\code{alphaSorder=2}. The directory name is the only date the release gives. The energy dependence of the tune
+is the single parameter \code{MultipartonInteractions:ecmPow = 0.03344} in the formula
+$\pt^0 = \pt^{0,\mathrm{ref}}\,(E_\mathrm{cm}/E_\mathrm{cm}^\mathrm{ref})^{\mathrm{ecmPow}}$ with
+\code{pT0Ref = 1.41} and the reference energy at its Pythia8 default \code{MultipartonInteractions:ecmRef =
+7000} GeV (not set in the file): the cut-off is $1.442\GeV$ at $13.6\TeV$ and $1.443\GeV$ at $14\TeV$, a change
+of one per mille, so for the formula going from Run 3 to the HL-LHC energy is harmless. This parameter enters
 chapter 04, not this one: for the ISR the regularisation is \code{SpaceShower:pT0Ref = 2.0} with
-\code{SpaceShower:ecmPow = 0.0} and \code{samePTasMPI = off}, Pythia8 defaults that CMS never tuned, so the ISR
-cut-off has no energy dependence at all. The FSR cut-off \code{TimeShower:pTmin = 0.5} is also untouched, and Pythia8
-overrides it at initialisation (raised to $0.611\GeV$, in every log of this book). At the HL-LHC the soft end of
-the ISR spectrum is what populates $1.5 < \abseta < 3.0$, the acceptance of the HGCal, with low-\pt{} partons on
-top of 200 pileup collisions; the cut-off that decides how many of them exist is a default of 2014.
+\code{SpaceShower:ecmPow = 0.0} and \code{samePTasMPI = off}, Pythia8 defaults (\path{SpacelikeShowers.xml})
+that no file of \path{Configuration/Generator/python} sets, so the ISR cut-off has no energy dependence at all.
+The FSR cut-off \code{TimeShower:pTmin = 0.5} is set by no file either, and Pythia8 overrides it at
+initialisation (``pTmin too low, raised to 0.611'', in every Pythia8 log of this book, line 108 of
+\path{step1_GEN_02_PS.log}). At the HL-LHC, where 200 pileup collisions add their own soft radiation to the
+event, the cut-offs that decide how many soft partons the signal itself radiates are untuned defaults.
 
 \paragraph{The ``Run 3'' copy of CP5 only changed two cross sections.} The release also has
 \path{Configuration/Generator/python/MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py}. Its \code{diff} against the
@@ -285,33 +287,37 @@ parameter is byte-identical. Our fragment, like all 40 \code{*14TeV*} fragments 
 2017 file; none of them imports the Run 3 one (0 of 40), and there is no \code{MCTunes} directory for 14 TeV or
 Phase-2. The Phase-2 pileup of the release validation is built from exactly these fragments:
 \path{Configuration/PyReleaseValidation/python/relval_steps.py} uses \code{MinBias\_14TeV\_pythia8\_TuneCP5} with
-\code{AVE\_200\_BX\_25ns} for the \code{Run4} datasets. So the 200 minimum-bias collisions of a Phase-2 event, and
-the showers of its signal, run with the 13 TeV numbers of 2017 and even with the 13 TeV total cross section that the
-Run 3 copy corrected.
+\code{AVE\_200\_BX\_25ns} for the \code{Run4} datasets. So the 200 minimum-bias collisions of a Phase-2 relval event, and
+the showers of a CP5 signal, run with the 2017 file, including the total cross section that the 13.6 TeV copy
+replaced. Twelve of the 52 \code{14TeV} fragments of the upgrade workflows (\code{upgradeFragments} in
+\path{upgradeWorkflowComponents.py}) do not use CP5 at all but \path{Pythia8CUEP8M1Settings_cfi.py} (tune
+CUETP8M1), which changes three MPI numbers of Monash and none of the showers: they shower with the Monash
+coupling, $\alpha_s = 0.1365$ at first order, the default printed next to 0.118 in the settings table of our log.
 
 \paragraph{The shower-uncertainty weights carry a note that says it.}
-\path{Configuration/Generator/python/PSweightsPythia/PythiaPSweightsSettings_cfi.py}, the block that adds the
-ISR/FSR $\mu_R$ variations as event weights (not included in our fragment, which is why the GEN file carries no
-such weights), ends with \code{UncertaintyBands:ISRpTmin2Fac = 20} and the comment ``for consistency with UL and
-P8.240 set to 20, to be optimized and changed for Run 3 re-MC''. The optimisation announced for Run 3 is not in
-\code{CMSSW\_15\_0\_5}; for Phase-2 nothing is planned in the file.
+\path{Configuration/Generator/python/PSweightsPythia/PythiaPSweightsSettings_cfi.py} is the block that
+adds the ISR/FSR $\mu_R$ variations as event weights; it is not included in our fragment, and in only 2 of the
+40 14 TeV CP5 fragments (it switches \code{UncertaintyBands:doVariations} on, default off in
+\path{Variations.xml}). It ends with \code{UncertaintyBands:ISRpTmin2Fac = 20} (Pythia8 default 4) and the comment ``for consistency with
+UL and P8.240 set to 20, to be optimized and changed for Run 3 re-MC''. In \code{CMSSW\_15\_0\_5} the value is
+still 20 with that comment, and the file has no Phase-2 variant.
 
 \paragraph{Pythia8CommonSettings has no version at all.}
-\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py} holds eight lines used by every CMS Pythia8
-fragment of Run 2, Run 3 and Phase-2 alike: \code{Beams:setProductionScalesFromLHEF} = off,
+\path{Configuration/Generator/python/Pythia8CommonSettings_cfi.py} holds eight lines imported by 262 files of
+the same directory, Run 2, Run 3 and Phase-2 alike: \code{Beams:setProductionScalesFromLHEF} = off,
 \code{Tune:preferLHAPDF} = 2, \code{Main:timesAllowErrors} = 10000, \code{Check:epTolErr} = 0.01 (the energy--momentum
 conservation tolerance, loosened by a factor 100 from the Pythia8 default $10^{-4}$, visible in the settings table
 of the log), \code{SLHA:minMassSM} = 1000, \code{ParticleDecays:limitTau0} = on, \code{ParticleDecays:tau0Max} = 10 and
-\code{ParticleDecays:allowPhotonRadiation} = on. None of them concerns the shower directly; \code{tau0Max = 10}
-(in mm) will matter in chapters 06 and 09, because it decides which particles decay in Pythia8 and which are handed
-to Geant4, and in Phase-2 the first tracker layer and the MTD timing layer sit where that boundary falls. The file
-carries no date and \code{cvmfs} carries no git history, so I could not establish from the release when it was last
-changed; its content is the same for the 13 TeV and the 14 TeV fragments in the same directory.
+\code{ParticleDecays:allowPhotonRadiation} = on. None of them concerns the shower directly; \code{limitTau0} (default
+off) with \code{tau0Max = 10} (in mm/c, the Pythia8 default) will matter in chapters 06 and 09, because it decides
+which particles decay in Pythia8 and which are handed to Geant4, that is, which decays the Phase-2 detector
+simulation has to do itself. The file carries no date and \code{cvmfs} carries no git history, so I could not
+establish from the release when it was last changed; its content is the same for the 13 TeV and the 14 TeV
+fragments in the same directory.
 
-\paragraph{What the event itself says.} In this event the $\bar b$ at $\eta = -3.75$ radiated nothing, by chance.
-On average it radiates, and its gluons land between $\abseta = 3$ and $5$: in the 2024 detector this is the HF, in
-Phase-2 it is the HF too, just outside the HGCal. The $b$ at $\eta = -1.44$ radiated five partons within $\Delta R <
-0.31$; their number and their energy sharing are what a jet algorithm, a $b$ tagger or a jet-mass measurement sees,
-and they are governed by $\alpha_s^\mathrm{FSR} = 0.118$ and \code{TimeShower:pTmin} of
-table~\ref{tab:02_PS_settings}. Neither has been revisited for 14 TeV, and chapters 04 and 07 will show how much of
-the jet they make.
+\paragraph{What the event itself says.} In this event the $\bar b$ at $\eta = -3.75$ radiated nothing, as happens
+in 35.4\% of the 1000 events of \path{showerStats_02_PS.txt}. On average it radiates, and its gluons stay close
+to it, at $\abseta > 3$. The $b$ at $\eta = -1.44$ radiated five partons within $\Delta R \le 0.31$; their number
+and their energy sharing are what a jet algorithm, a $b$ tagger or a jet-mass measurement sees, and they are
+governed by $\alpha_s^\mathrm{FSR} = 0.118$ and \code{TimeShower:pTmin} of table~\ref{tab:02_PS_settings}.
+Neither has a 14 TeV value in the release, and chapters 04 and 07 will show how much of the jet they make.

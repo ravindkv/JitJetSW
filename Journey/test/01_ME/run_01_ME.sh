@@ -9,7 +9,7 @@
 # process of this chapter is the hard process of the whole book (the same q qbar -> b bbar kinematics).
 # Output in test/01_ME/out/:
 #   step1_GEN_01_ME.root, .log, .driver.log       the GEN step (cmsDriver config: test/01_ME/step1_GEN_01_ME_cfg.py)
-#   genPartAnalyzer_01_ME.pdf, .root, .log        the eta-phi page of the hard process (GenPartAnalyzer), + PNG pages
+#   genPartAnalyzer_01_ME.pdf, .root, .log        the eta-phi page of the hard process (GenPartAnalyzer)
 #   ledger_01_ME.txt                              the energy ledger of the event (common/genLedger.py)
 #   xsec_GEN_01_ME.log, .driver.log               the cross section from XSEC_EVENTS=1000 events, same settings and seeds,
 #                                                 no ROOT file (config: test/01_ME/xsec_GEN_01_ME_cfg.py; common gen_xsec);

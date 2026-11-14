@@ -1054,16 +1054,18 @@ circles: the two generator jets.}
 \FloatBarrier
 \section{Open problems for Phase-2}
 
-The Phase-2 Level-1 trigger is a different machine: it has the tracker (tracks above $2\GeV$ at 40\,MHz), a
-particle-flow reconstruction and PUPPI in firmware (the \emph{correlator}), the HGCAL in the endcaps, a latency of
-$12.5\,\mu$s and an output rate of 750\,kHz. What follows is what the release, CMSSW\_15\_0\_5 with the era
-\code{Phase2C17I13M9}, says about its state.
+The Phase-2 Level-1 trigger is a different machine: it has the tracker (stubs above $2\GeV$ up to $\abseta=2.5$,
+\path{L1Trigger/TrackTrigger/python/ProducerSetup_cfi.py}), a particle-flow reconstruction and PUPPI in firmware (the
+\emph{correlator}) and the HGCAL in the endcaps. What follows is the state of CMSSW\_15\_0\_5, the release of this
+book, not of the CMSSW development branch, where any of it may have changed since; the era is \code{Phase2C17I13M9} and
+the global tag \code{auto:phase2\_realistic\_T33}, those of the default Phase-2 version \code{Run4D110}
+(\path{Configuration/Geometry/python/defaultPhase2ConditionsEra_cff.py}, line 5).
 
 \textbf{The Run-3 trigger of this chapter still runs in Phase-2, on Run-3 primitives.} In
 \path{L1Trigger/Configuration/python/SimL1Emulator_cff.py} the Phase-2 emulation is built as
 \code{\_phase2\_siml1emulator = SimL1EmulatorTask.copy()} (line 62) and substituted under \code{phase2\_trigger} (line
-279): a copy of the task of this chapter with modules added. Layer-1, Layer-2, the three track finders, the
-$\mu$GMT and the $\mu$GT of Run~3 are all still executed on the Phase-2 detector; no modifier removes them
+279): a copy of the task of this chapter with modules added. Layer-1, Layer-2, the three track finders, the $\mu$GMT
+and the $\mu$GT of Run~3 are all still executed on the Phase-2 detector; no modifier removes them
 (\path{L1Trigger/L1TCalorimeter/python/simDigis_cff.py}, \path{L1Trigger/L1TMuon/python/simDigis_cff.py}, where
 \code{phase2\_trigger} lists \code{simBmtfDigis}, \code{simEmtfDigis}, \code{simGmtStage2Digis} explicitly). The header
 of the file says of the forward calorimeter: ``At the moment, there is no emulator available for upgrade HF Trigger
@@ -1071,75 +1073,91 @@ Primitives, so these missing (required!) inputs are presently ignored by downstr
 trigger-primitive emulator of chapter~\ref{ch:11_DIGI} has no Phase-2 modifier at all
 (\path{SimCalorimetry/HcalTrigPrimProducers/python/hcaltpdigi_cfi.py}: the last modifiers are \code{run3\_HB} and
 \code{run3\_common}), and the Phase-2 calorimeter-trigger modules read \code{simHcalTriggerPrimitiveDigis}, the
-collection of step~1 of this chapter. The Phase-2 ECAL barrel primitive (one per crystal, the reason for the new
-barrel electronics) exists as \code{simEcalEBTriggerPrimitivePhase2Digis} but is switched on only by
-\code{phase2\_ecalTP\_devel} (\path{SimCalorimetry/Configuration/python/ecalDigiSequence_cff.py}), a modifier that no era
-includes; the era uses \code{simEcalEBTriggerPrimitiveDigis}, made from the Run-3 digitisation that
-chapter~\ref{ch:11_DIGI} found in the same state.
+collection of step~1 of this chapter; so do the HF clusters of the Phase-2 particle flow (\code{hcalDigisHF = True},
+\path{L1Trigger/Phase2L1ParticleFlow/python/l1tPFClustersFromCombinedCalo_cfi.py}). The ECAL barrel primitive meant for
+Phase-2, \code{simEcalEBTriggerPrimitivePhase2Digis}, is switched on only by \code{phase2\_ecalTP\_devel}
+(\path{SimCalorimetry/Configuration/python/ecalDigiSequence_cff.py}, lines 34--48), which no era includes (only the
+test workflows \code{ECALTPPh2} add it); the era uses \code{simEcalEBTriggerPrimitiveDigis}, made from the Run-3
+digitisation that chapter~\ref{ch:11_DIGI} found in the same state, with Run-3 conditions (last paragraph).
 
-\textbf{The pileup subtraction of the Phase-2 calorimeter towers was fitted in 2019.} The module that plays the
-role of our Layer-1 (\path{l1tTowerCalibrationProducer_cfi.py} in \path{L1Trigger/L1CaloTrigger/python/}) opens with
-``Choosen settings 6 March 2019, 10\_3\_X MTD samples''; its pileup estimate counts the towers hit, converts the count
-to a number of vertices and the number of vertices to an energy per tower with ``Parameters derived on 6 March
-2019 on 10\_3\_X MTD samples''. The 2024 calorimeter-jet emulator (\path{l1tPhase2CaloJetEmulator_cfi.py}) carries the
-same numbers without the comment, under jet calibrations ``derived 26 June 2024 on 14\_0\_0\_pre3 131X QCD sample''.
-This chapter showed for PU 60 what such an estimate is worth when the detector is not uniform (a jet's own energy
-in its rings; tower ring 28, whose response changed by a factor of three between two global tags): scaled linearly
-to PU 200 the towers of step~2 would hold some $7\TeV$, and the estimate that decides how much of it is a jet is a
-fit on 2019 samples.
+\textbf{The pileup subtraction of the Phase-2 calorimeter towers was fitted in 2019.} The module that plays the role of
+our Layer-1 (\path{l1tTowerCalibrationProducer_cfi.py} in \path{L1Trigger/L1CaloTrigger/python/}) opens with ``Choosen
+settings 6 March 2019, 10\_3\_X MTD samples''; its pileup estimate counts the towers hit, converts the count to a
+number of vertices and the number of vertices to an energy per tower with ``Parameters derived on 6 March 2019 on
+10\_3\_X MTD samples''. The 2024 calorimeter-jet emulator (\path{l1tPhase2CaloJetEmulator_cfi.py}) carries the same
+numbers without the comment, under jet calibrations ``derived 26 June 2024 on 14\_0\_0\_pre3 131X QCD sample''. This
+chapter showed for PU 60 what such an estimate is worth on a detector that is not uniform (a jet's own energy in its
+rings; tower ring 28): scaled linearly to PU 200 the towers of step~2 would hold some $7\TeV$, and what decides how
+much of it is a jet is a fit on 2019 samples.
 
 \textbf{A sum that is always zero.} Line 115 of \path{SimL1Emulator_cff.py} configures the Phase-2 calorimeter
 $H_{\mathrm T}$ with \code{BXVCaloJetsInputTag = ("L1CaloJet", "CaloJets")}. No module has the label \code{L1CaloJet}:
-the producer of line 108 is \code{l1tCaloJet}, and the collection it writes is called
-\code{L1CaloJetCollectionBXV} (\path{L1Trigger/L1CaloTrigger/plugins/L1CaloJetProducer.cc}, line 341). In
-the producer of the sum, \path{L1CaloJetHTTProducer.cc} of the same directory, the value is set to 0 and filled
-only \code{if (bxvCaloJetsHandle.isValid())}:
-the product is written, with the value 0, for every event. Nothing fails because nothing reads it: the Phase-2
-global trigger takes no calorimeter jet at all (below).
+the producer of line 108 is \code{l1tCaloJet}, and the collection it writes is called \code{L1CaloJetCollectionBXV}
+(\path{L1Trigger/L1CaloTrigger/plugins/L1CaloJetProducer.cc}, line 341). In the producer of the sum,
+\path{L1CaloJetHTTProducer.cc} of the same directory, the value is set to 0 and filled only \code{if
+(bxvCaloJetsHandle.isValid())}: the product is written, with the value 0, for every event, and kept in the output
+(\path{L1Trigger_EventContent_cff.py}, line 210). Nothing fails because nothing reads it: the Phase-2 global trigger
+takes no calorimeter jet at all (below).
 
-\textbf{The Phase-2 jets are particle-flow jets, with corrections of March 2022 and cuts ``to be tuned''.} The jets
-the Phase-2 global trigger receives are \code{l1tSC4PFL1PuppiCorrectedEmulator}, a seeded cone of radius 0.4 on
-PUPPI candidates (\path{L1Trigger/Phase2L1GT/python/l1tGTProducer_cff.py}); the calorimeter jets above are not an
-input. Their energy correction is \path{L1Trigger/Phase2L1ParticleFlow/data/jecs/jecs_20220308.root}
-(\path{l1pfJetMet_cff.py}), and the cone of radius 0.8 uses the same file with the same directory,
-\code{L1PuppiSC4EmuJets}: the wide jets are corrected as narrow ones. The hadron calibrations of the candidates
-under them are tagged with the 11\_0\_X release (\code{hadcorr\_barrel\_110X.root}, \code{hfcorr\_110X.root},
-\code{hadcorr\_HGCal3D\_TC\_110X.root}). The PUPPI parameters of \path{l1ctLayer1_cff.py} are annotated ``ballpark pT
-from PU'' and ``ballpark alpha from PU''; in the HF, where our $\bar b$ jet is and where there are no tracks to
-tell the pileup, a candidate needs $10\GeV$ (\code{ptCut}), the sort keeps ten per region (``to be tuned'') and
-four buffer sizes are ``to be defined''. The vertex against which all of this is done is the single best one of a
-histogram of track $z$ (\code{Algorithm = fastHisto}, \code{FH\_NVtx = 1},
-\path{L1Trigger/VertexFinder/python/l1tVertexProducer_cfi.py}), with a comment that the track-\pt{} saturation
-differs between the Technical Design Report and the firmware.
+\textbf{The Phase-2 jets are particle-flow jets, with corrections of March 2022 and cuts ``to be tuned''.} The jets the
+Phase-2 global trigger receives (\path{L1Trigger/Phase2L1GT/python/l1tGTProducer_cff.py}) are
+\code{l1tSC4PFL1PuppiCorrectedEmulator}, a seeded cone of radius 0.4 on PUPPI candidates. Their energy correction is
+the file \path{jecs_20220308.root} of \path{L1Trigger/Phase2L1ParticleFlow/data/jecs/} (\path{l1pfJetMet_cff.py}), and
+the cone of radius 0.8 uses the same file with the same directory, \code{L1PuppiSC4EmuJets}: the wide jets are
+corrected as narrow ones (its own \code{L1PuppiSC8EmuJets} lacks the \code{emul\_eta\_bin} tables the emulator needs).
+The hadron calibrations of the candidates under them are tagged with the 11\_0\_X release
+(\code{hadcorr\_barrel\_110X.root}, \code{hfcorr\_110X.root}, \code{hadcorr\_HGCal3D\_TC\_110X.root}) and chosen by the
+HGCAL modifier \code{phase2\_hgcalV11}, a stand-in for the release of the samples (``since there's no other modifier
+for it'', \path{pfClustersFromCombinedCalo_cff.py}, line 5). The PUPPI parameters of \path{l1ctLayer1_cff.py} are
+annotated ``ballpark pT from PU'' and ``ballpark alpha from PU''; in the HF, where our $\bar b$ jet is and where there
+are no tracks to tell the pileup, a cluster enters only above $15\GeV$ (\code{hadPtCut}, $1\GeV$ in the other regions),
+a candidate needs $10\GeV$ (\code{ptCut}), the sort keeps ten per region (``to be tuned'') and four buffer sizes are
+``to be defined''. The vertex against which all of this is done is the single best one (\code{FH\_NVtx = 1}) of a
+histogram of track $z$, made by \code{l1tVertexFinderEmulator} (\code{fastHistoEmulation},
+\path{L1Trigger/VertexFinder/python/l1tVertexProducer_cfi.py}, line 82; tracks count at most $127\GeV$, ``Option `0'
+was used for the TDR, but `1' is used for the firmware'').
 
 \textbf{The HGCAL trigger primitives are calibrated for an older HGCAL.} The era includes the modifiers
-\code{phase2\_hgcalV10}, \code{V11} and \code{V16} together, and the trigger takes its settings from the first two:
+\code{phase2\_hgcalV10}, \code{V11} and \code{V16} together. \code{V16} sets two things of the trigger, the layers it
+reads and their $dE/dx$ weights (\path{l1tHGCalTriggerGeometryESProducer_cfi.py},
+\path{hgcalLayersCalibrationCoefficients_cfi.py}); the rest comes from the first two:
 \path{L1Trigger/L1THGCal/python/l1tHGCalBackEndLayer1Producer_cfi.py} switches the layer calibration off with ``we
 still don't have layer calibrations for $>=$V9 geometry'', the trigger geometry class is
-\code{HGCalTriggerGeometryV9Imp3}, and the e/$\gamma$ identification in use (\code{v10\_3151}) was ``trained using
-TPG software version 3.15.1''.
+\code{HGCalTriggerGeometryV9Imp3}, and the e/$\gamma$ identification in use (\code{v10\_3151}) was ``trained using TPG
+software version 3.15.1''.
 
-\textbf{The Phase-2 menu is ``the first prototype menu''.} The Phase-2 global trigger is a separate
-\code{cmsDriver} step (\code{L1P2GT}) whose default menu is \code{step1\_2024}
-(\path{Configuration/Applications/python/ConfigBuilder.py}, line 1597;
-\path{L1Trigger/Configuration/python/Phase2GTMenus/step1_2024.py} begins with the comment quoted). It has 40
-algorithms against the 465 of this chapter. The jet ones are \code{pSinglePuppiJet230},
-\code{pDoublePuppiJet112\_112}, \code{pPuppiHT450}, \code{pPuppiMHT140}, \code{pPuppiMET200} and a four-jet one; the
-numbers are offline thresholds, translated to trigger thresholds with linear ``scalings'' (for jets in the barrel
-an offset of $17.33\GeV$ and a slope of 1.28) that ``correspond to version v44 derived with the Annual Review 2024
-config in the 14\_2\_x release'', one release series behind this one. There is no single-jet algorithm below
-$230\GeV$, no prescaled ladder like \code{SingleJet35/60/90/120}, and the file named for $b$ tagging holds only
-multi-muon seeds: an event like ours, two $b$ jets of $115\GeV$, has no hadronic way into the Phase-2 menu as it
-stands, and the jet triggers on which jet calibration relies are not written yet.
+\textbf{The Phase-2 menu is ``the first prototype menu''.} The Phase-2 global trigger is a separate \code{cmsDriver}
+step (\code{L1P2GT}) whose default menu is \code{step1\_2024}
+(\path{Configuration/Applications/python/ConfigBuilder.py}, line 1597), and the file \path{step1_2024.py} of
+\path{L1Trigger/Configuration/python/Phase2GTMenus/} begins with the comment quoted. It has 40 algorithms against the
+465 of this chapter. The jet ones are \code{pSinglePuppiJet230}, \code{pDoublePuppiJet112\_112}, the dijet-mass seed
+\code{pDoublePuppiJet160\_35\_mass620}, \code{pPuppiHT450}, \code{pPuppiMHT140}, \code{pPuppiMET200} and a four-jet
+one; the numbers are offline thresholds, translated to trigger thresholds with linear ``scalings'' (barrel jets: offset
+$17.33\GeV$, slope 1.28) that ``correspond to version v44 derived with the Annual Review 2024 config in the 14\_2\_x
+release'', one release series behind this one. Every jet seed but the dijet-mass one takes jets at $\abseta<2.4$ only
+(\code{l1tGTsc4Jet}, \path{l1tGTMenuObjects_cff.py}), and so does the $H_{\mathrm T}$ (\code{maxJetEta = 2.4},
+\path{l1tMHTPFProducer_cfi.py}). There is no single-jet algorithm below $230\GeV$ and no prescaled ladder like
+\code{SingleJet35/60/90/120}. A $b$-tagging network runs on the PUPPI jets
+(\code{l1tBJetProducerPuppiCorrectedEmulator}, \path{L1BJetProducer_cff.py}), but the jets handed to the global trigger
+carry only \pt, $\eta$, $\phi$ and $z$ (\path{L1Trigger/Phase2L1GT/plugins/L1GTProducer.cc}, lines 370--390), and the
+file named for $b$ tagging holds only multi-muon seeds. Our event has no hadronic way in: of the jet seeds, the $\bar
+b$ jet at $\eta=-3.75$ enters only the dijet-mass one, which asks for $620\GeV$ (our two generator jets make
+$387\GeV$), the $b$ jet of $118\GeV$ is far below $230\GeV$, and the jet triggers on which jet calibration relies are
+not written yet.
 
-\textbf{The Run-3 emulation itself is not uniform in time.} The simulated 2025 trigger of this chapter is
-assembled from payloads of different years: the calorimeter parameters \code{2024\_v0\_1} (the release has
-\code{v0\_3} and two 2025 versions in python), with, in the python of that version, jet compression tables
-\code{2017v1} and the jet calibration \code{lut\_calib\_2023v0\_ECALZS\_PhiRing}; seven of the nineteen ECAL
-trigger-primitive payloads \code{2018\_mc}; the HCAL ones \code{2019} and \code{2024}; the barrel muon parameters
-\code{Stage2v1\_2018\_mc}; the menu of 2025 on the scales \code{scales\_2024\_05\_15}; and in the EMTF the era
-\code{Run3\_2021} selects \code{PtAssignmentEngine2017} with the comment ``TODO - implement ver 2021''
-(\path{L1Trigger/L1TMuonEndCap/src/EMTFSetup.cc}). The CSC shower thresholds of 2025 that \code{run3\_CSC\_2025} sets
-are never used: the modifier writes \code{showerParams}, the producer reads \code{showerParam}
-(\path{L1Trigger/CSCTriggerPrimitives/src/CSCBaseboard.cc}). The prescales are absent. Whoever compares a simulated
-trigger efficiency with data should know which of the six steps were simulated as of 2025.
+\textbf{The Run-3 conditions are of many years, in a Phase-2 job even more than in 2025.} In a Phase-2 job the Run-3
+emulators of the first paragraph read the Phase-2 global tag, \code{150X\_mcRun4\_realistic\_v1}
+(\code{phase2\_realistic} in \path{Configuration/AlCa/python/autoCond.py}, plus tracker payloads for \code{\_T33}): the
+$\mu$GT runs the menu \code{L1Menu\_Collisions2023\_v1\_2\_0} with the calorimeter parameters \code{2022\_v0\_2}, the
+barrel and global muon parameters of 2018 and the EMTF of \code{Run3\_2022}; and the crystal primitives that feed the
+Phase-2 barrel calorimeter trigger read ten ECAL trigger-primitive payloads (\path{EcalEBTrigPrimProducer.cc}, lines
+55--67), three named \code{beamv5\_startup}, one \code{80X\_2016}, the linearisation \code{UL\_2018} and three named
+for the upgrade (\code{TL1000\_upgradeTIA\_8deg}). The simulated 2025 trigger of this chapter is assembled the same
+way: the calorimeter parameters \code{2024\_v0\_1} (the release has two 2025 versions in python) with jet compression
+tables \code{2017v1}, seven of the nineteen ECAL trigger-primitive payloads \code{2018\_mc}, the HCAL ones \code{2019}
+and \code{2024}, the barrel muon parameters \code{Stage2v1\_2018\_mc}, the menu of 2025 on the scales
+\code{scales\_2024\_05\_15}. In both, the EMTF runs with the era \code{Run3\_2021}, which selects
+\code{PtAssignmentEngine2017} with the comment ``TODO - implement ver 2021''
+(\path{L1Trigger/L1TMuonEndCap/src/EMTFSetup.cc}, line 27), and the prescales are absent (\code{passThrough}). Whoever
+compares a simulated trigger efficiency with data should know which of the six steps were simulated as of 2025, and
+that a Phase-2 sample carries a Run-3 decision of the 2023 menu.

@@ -10,6 +10,10 @@
 # With maxStage > 0 (default 5) GenPartAnalyzer runs first in the same job, so that, as in the
 # PDFs of the generator stages, every event starts with the eta-phi maps of the generator-record
 # stages 1..maxStage (its PDFs / pages, histograms and printout are added to the same outputs).
+# With jetPdfFiles (one name per collection of jets) every collection gets its own one-page PDF instead, and the
+# generator stages are only analysed and printed (their pages are those of chapters 01-06), e.g. chapter 07:
+#   jets=ak4GenJets,ak4GenJetsNoNu,ak8GenJets \
+#   jetPdfFiles=genJetAnalyzer_07_GenJet_AK4.pdf,genJetAnalyzer_07_GenJet_AK4NoNu.pdf,genJetAnalyzer_07_GenJet_AK8.pdf
 #
 # The jet collections are read from the most recent process that produced them: the GEN step
 # (pgen runs the same anti-kT clustering) or the GENJET step of chapter 07 (test/07_GenJet/run_07_GenJet.sh). The
@@ -35,12 +39,16 @@ options.register('printConstituents', False, VarParsing.multiplicity.singleton, 
                  'print the constituents (genParticles indices) of every jet to stdout')
 options.register('pdfFile', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'if set, all plots go as pages into this single PDF instead of one PDF per collection and event')
+options.register('jetPdfFiles', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+                 'comma-separated, one per collection of jets: one one-page PDF per collection (first event); '
+                 'then no generator-stage pages and pdfFile is not used')
 options.register('sampleLabel', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  "text printed in the right panel of every plot, '|' separates lines, e.g. the generator stage")
 options.register('eventsToProcess', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'run:lumi:event (or a range) to analyse, e.g. 1:1:1; empty: the first maxEvents events')
 options._tags, options._tagOrder = {}, []  # keep outputFile as given (VarParsing would append _numEvent<N> when maxEvents > 0)
 options.parseArguments()
+jetPdfFiles = [f.strip() for f in options.jetPdfFiles.split(',') if f.strip()]
 
 process = cms.Process('GENJETANA')
 process.load('FWCore.MessageService.MessageLogger_cfi')
@@ -60,7 +68,7 @@ if options.maxStage > 0:
         outputPrefix=cms.string(prefix),
         etaMax=cms.double(options.etaMax),
         labelPtMin=cms.double(options.labelPtMin),
-        savePDF=cms.bool(True),
+        savePDF=cms.bool(not jetPdfFiles),  # with jetPdfFiles the stages are analysed and printed, not drawn
         printParticles=cms.bool(False),
         maxStage=cms.int32(options.maxStage),
         pdfFile=cms.string(options.pdfFile),
@@ -78,6 +86,7 @@ process.genJetAnalyzer = cms.EDAnalyzer('GenJetAnalyzer',
     savePDF=cms.bool(True),
     printConstituents=cms.bool(options.printConstituents),
     pdfFile=cms.string(options.pdfFile),
+    pdfFiles=cms.vstring(*jetPdfFiles),
     sampleLabel=cms.string(options.sampleLabel),
     openPdf=cms.bool(options.maxStage <= 0),
     closePdf=cms.bool(True),

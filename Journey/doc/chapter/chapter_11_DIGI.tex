@@ -900,87 +900,103 @@ different sample). The $\bar b$ jet, at $\eta=-3.75$, beyond the tracker, has on
 
 \section{Open problems for Phase-2}
 
-The Phase-2 era of this release is \code{Phase2C17I13M9}, defined in
-\path{Configuration/Eras/python/Era_Phase2C17I13M9_cff.py} as the \code{Phase2} chain (\code{phase2\_common},
-\code{phase2\_tracker}, \code{phase2\_hgcal}, \code{phase2\_timing\_layer}, \code{phase2\_muon}) plus \code{phase2\_GE0}
-and the HGCal V10--V16 modifiers. It rebuilds \code{process.mix.digitizers} in
-\path{SimGeneral/MixingModule/python/digitizers_cfi.py}: the strip digitiser is removed, the pixel one replaced by
-the \code{Phase2TrackerDigitizer}, the HGCal and MTD digitisers added, the ECAL endcap and preshower switched off.
+This list is the state of the release of the book, \code{CMSSW\_15\_0\_5}, read in \path{$CMSSW_RELEASE_BASE/src} and in
+the parameters a \code{cms.Process} built with the Phase-2 era really gets, not of the development branch, which changes
+at any time. The default Phase-2 version of the release, \code{Run4D110}
+(\path{Configuration/Geometry/python/defaultPhase2ConditionsEra_cff.py}), runs with the era \code{Phase2C17I13M9}
+(\path{Configuration/Eras/python/Era_Phase2C17I13M9_cff.py}). Its chain starts from \code{Run3\_noMkFit} without
+\code{phase1Pixel} (so the \code{run2\_*} and \code{run3\_*} modifiers that set the digitisers of this chapter still
+act) and adds the ten \code{phase2\_*} modifiers of \path{Era_Phase2_cff.py}, \code{hcalHardcodeConditions},
+\code{phase2\_etlV4}, \code{phase2\_GE0} and HGCal V10, V11 and V16 (V12 is excluded).
+\path{SimGeneral/MixingModule/python/digitizers_cfi.py} then removes the strip digitiser, replaces the pixel one by the
+\code{Phase2TrackerDigitizer} and adds HGCal and MTD.
 
-\textbf{The Phase-2 tracker digitiser carries 2012 numbers.} In \path{SimTracker/SiPhase2Digitizer/python/phase2TrackerDigitizer_cfi.py}
-the inner pixels have a threshold of 1000\,e without smearing (\code{AddThresholdSmearing = False}), no noise
-(\code{NoiseInElectrons = 0}, \code{AddNoise = False}, \code{AddNoisyPixels = False}), no inefficiency, 1500\,e per
-ADC count on 4 bits (\code{AdcFullScale = 15}, dual-slope readout mode 3) and a time window of $-5$ to $+20\ns$;
-against the 1600\,e, 245\,e smearing, 175\,e noise, 8 bits and $\pm12.5\ns$ of table~\ref{tab:11_cuts}, the HL-LHC
-pixel is simulated without noise, noisy pixels or inefficiency, and \code{UseReweighting = False} carries the comment
-``will be True for realistic simulations''. The outer-tracker modules have thresholds of 6300\,e (PS pixels, ``0.4
-MIP''), 4800\,e (PS strips) and 6000\,e (2S) with noise 1010 and 1263\,e set so that ``4.75 sigma $\Rightarrow$
-occupancy = 1e-6'', a square-window hit detection (\code{HitDetectionMode = 0}), \code{CBCDeadTime = 0},
-\code{KillModules = False} and a charge-sharing parameter \code{SigmaCoeff} ``to be confirmed with simulations in
-CMSSW\_6.X''. The bias-rail inefficiency, the dead strips and the pixel time-walk exist only as customisations
-(\path{customizeForOTInefficiency.py}, \path{customizeForPhase2TrackerSignalShape.py}). In the Run-3
-digitiser the radiation damage of the pixels enters through the DB templates (\code{UseReweighting = True} under
-\code{phase1Pixel} in \path{SimGeneral/MixingModule/python/SiPixelSimParameters_cfi.py}, where \code{run3\_common}
-sets the Run-3 thresholds); nothing equivalent exists for Phase-2.
+\textbf{The Phase-2 tracker: an ideal inner pixel, an outer tracker ``to be confirmed''.} In
+\path{SimTracker/SiPhase2Digitizer/python/phase2TrackerDigitizer_cfi.py} the inner pixels have a threshold of 1000\,e
+without smearing, no noise (\code{NoiseInElectrons = 0}, \code{AddNoise = False}, \code{AddNoisyPixels = False}), no
+inefficiency, 1500\,e per ADC count on 4 bits (\code{AdcFullScale = 15}, dual-slope mode 3) and a window of $-5$ to
+$+20\ns$, against the 1600\,e, 245\,e smearing, 175\,e noise, 8 bits and $\pm12.5\ns$ of table~\ref{tab:11_cuts}.
+Radiation damage would enter, as in Run~3, by reweighting the charge with templates: the Phase-2 algorithm has the code
+(\path{Phase2TrackerDigitizerAlgorithm.cc}, line 138), but \code{UseReweighting = False} carries the comment ``will be
+True for realistic simulations'' and nothing in the release sets it; in Run~3 \code{phase1Pixel}, which the Phase-2 era
+excludes, sets it \code{True} (\path{SiPixelSimParameters_cfi.py}). The outer tracker has thresholds of 6300\,e (PS
+pixels, ``0.4 MIP''), 4800\,e (PS strips, whose comment also reads ``0.4 MIP = 0.4 * 16000 e'', i.e.\ 6400\,e) and
+6000\,e (2S); the strip noise, 1010 and 1263\,e, is set so that ``4.75 sigma$\Rightarrow$occupancy =1e-6'', the PS-pixel
+noise of 200\,e is ``30\% of the readout noise (should be changed in future)''; the 2S hit detection is a square window
+(\code{HitDetectionMode = 0}, \code{CBCDeadTime = 0}) and the charge sharing \code{SigmaCoeff} is ``to be confirmed with
+simulations in CMSSW\_6.X''. Only the bias rails of the PS macro-pixels are inefficient by default
+(\code{BiasRailInefficiencyFlag = 1}: a hit inside a $37.5\um$ rail is dropped,
+\path{plugins/PSPDigitizerAlgorithm.cc}); dead strips and the pixel time-walk only come with
+\path{customizeForOTInefficiency.py} and \path{customizeForPhase2TrackerSignalShape.py}.
 
-\textbf{The ECAL barrel of Phase-2 is digitised with the Run-3 electronics.} \path{SimGeneral/MixingModule/python/ecalDigitizer_cfi.py}
-sets \code{doEE = False} (\code{phase2\_hgcal}) and \code{doES = False} (\code{phase2\_common}) and leaves the barrel to
-the same \code{EcalDigiProducer}: 10 samples at 40\,MHz, peak in sample 6, the noise correlation matrices of
+\textbf{The ECAL barrel of Phase-2 is digitised with the Run-3 electronics.}
+\path{SimGeneral/MixingModule/python/ecalDigitizer_cfi.py} sets \code{doEE = False} (\code{phase2\_hgcal}) and
+\code{doES = False} (\code{phase2\_common}) and leaves the barrel to the same \code{EcalDigiProducer}: 10 samples at
+40\,MHz, peak in sample 6, the noise correlation matrices of
 \path{SimCalorimetry/EcalSimProducers/python/ecalDigiParameters_cff.py} and the 2250 photoelectrons per GeV of
-\path{ecalSimParameterMap_cff.py}, none with a Phase-2 modifier. The new front-end (16 samples at 160\,MHz, two
-gains) is \code{EcalDigiProducer\_Ph2} in \path{ecalDigitizer_Ph2_cfi.py}, switched on only by
-\code{phase2\_ecal\_devel}, which is not in \code{Phase2C17I13M9}; its noise matrices are declared in
-\path{ecalDigiParameters_Ph2_cff.py} as ``Phase2 noise correlation matrices with fake numbers to simply test the code
-flow''. The ageing of \path{SLHCUpgradeSimulations/Configuration/python/aging.py} (\code{ageEcal}) changes conditions
-and particle-flow thresholds (0.103 to $0.707\GeV$ for 300 to 4500\,fb$^{-1}$), not a digitiser parameter.
+\path{ecalSimParameterMap_cff.py}, none with a Phase-2 modifier, and the Run-3 trigger primitives and selective readout
+still run (\path{ecalDigiSequence_cff.py}). The new front-end (16 samples at 160\,MHz, two gains,
+\path{EcalConstants.h}) is \code{EcalDigiProducer\_Ph2} in \path{ecalDigitizer_Ph2_cfi.py}, switched on only by
+\code{phase2\_ecal\_devel}, not in the era; its noise matrices are ``Phase2 noise correlation matrices with fake numbers
+to simply test the code flow'' (\path{ecalDigiParameters_Ph2_cff.py}). The ageing, \code{ageEcal} of
+\path{SLHCUpgradeSimulations/Configuration/python/aging.py}, changes no digitiser parameter but swaps five conditions
+tags, three of them (pedestals, MC intercalibrations, laser corrections) read by the digitiser, and raises the
+particle-flow thresholds (0.103 to $0.707\GeV$ for 300 to 4500\,fb$^{-1}$).
 
-\textbf{HCAL: the HE is killed, the HB keeps its Run-3 settings, the ageing is a customisation.}
-\path{SimCalorimetry/HcalSimProducers/python/hcalUnsuppressedDigis_cfi.py} sets \code{killHE = True} and
-\code{doZDCDigi = False} under \code{phase2\_hgcal} (\path{hcalSimParameters_cfi.py} still gives the killed HE new
-sampling factors under \code{phase2\_hcal}). The HB of Phase-2 is the HB of Run~3: 10 time slices, sample of interest
-6, SiPM smearing and TDC threshold 18.7 from \code{run3\_HB} and \code{run3\_common}, zero-suppression levels from the
-DB. The darkening is off by default (\code{HBDarkening = False}, \code{DelivLuminosity = 0}, SiPM
-\code{doRadiationDamage} off) and turned on by \code{customise\_aging\_3000} of \path{aging.py}, which only the
-\code{Aging1000} / \code{Aging3000} relval workflows add; that function raises the particle-flow seeds to
-$1.25$--$2.5\GeV$ and carries the comment ``todo: determine ZS threshold adjustments'': the zero suppression of the
-aged HB is not adjusted. The HF keeps \code{samplingFactor = 0.37}, the Run-3 shower library and
-\code{HFDarkening = False}.
+\textbf{HCAL: the HE is killed, the HB keeps its Run-3 electronics with hard-coded conditions.}
+\path{SimCalorimetry/HcalSimProducers/python/hcalUnsuppressedDigis_cfi.py} sets \code{killHE = True} and \code{doZDCDigi
+= False} under \code{phase2\_hgcal}. The HB of Phase-2 is the HB of Run~3 (10 time slices, sample of interest 6, SiPM
+smearing and TDC threshold 18.7 from \code{run3\_HB} and \code{run3\_common}), but not its conditions:
+\code{hcalHardcodeConditions} makes \path{Configuration/StandardSequences/python/Digi_cff.py} add the source
+\code{es\_hardcode} with an \code{ESPrefer} (it wins over the global tag) for pedestals, gains, SiPM parameters and
+zero-suppression thresholds (\path{CalibCalorimetry/HcalPlugins/python/Hcal_Conditions_forGlobalTag_cff.py}). Every HB
+channel has the same zero-suppression threshold, 16 ADC counts, and the same gain, an ``average from 2017 HEP17''. The
+darkening is off (\code{HBDarkening = False}, \code{DelivLuminosity = 0}); the SiPM radiation damage
+(\code{doRadiationDamage = True}) needs \code{iLumi > 0} (\path{HcalHardcodeParameters.cc}); here \code{iLumi} is $-1$.
+Both come with \code{customise\_aging\_*} of \path{aging.py}, added only by the \code{Aging1000} / \code{Aging3000}
+relval workflows; at 3000\,fb$^{-1}$ they raise the particle-flow seeds to $1.25$--$2.5\GeV$, and \code{ageSiPM} says
+``todo: determine ZS threshold adjustments'': the aged HB is still cut at 16 counts. The HF keeps \code{samplingFactor =
+0.37}, the Run-3 shower library and \code{HFDarkening = False}.
 
-\textbf{HGCal: begin-of-life noise by default, ageing by hand.} In
-\path{SimCalorimetry/HGCalSimProducers/python/hgcalDigitizer_cfi.py} the silicon has a threshold
-\code{adcThreshold\_fC = 0.672} (``$\sim$MIP/2'', scaled per thickness), \code{tdcOnset\_fC = 60},
-\code{adcSaturation\_fC = 100} at 10 bits, a time LSB of 24.4\,ps (\path{hgcROCParameters_cfi.py}), noise of
-2000 / 2400 / 2000 electrons for the 120 / 200 / 300\,$\mu$m sensors (\code{nonAgedNoises\_v9} under
-\code{phase2\_hgcalV10}) and \code{scaleByDose = False}: no fluence, no leakage current, charge collection
-efficiency 1. The end-of-life setting (\code{HGCal\_setEndOfLifeNoise}, dose map
-\path{doseParams_3000fb_fluka-3.7.20.txt}, sensors \code{TDR\_600V}) is applied by \code{customise\_aging\_3000}
-only. The scintillator part has \code{nPEperMIP = 21}, \code{adcThreshold\_fC = 0.5} and a noise
-\code{noise\_MIP = 1/100} marked ``this is to be deprecated''.
+\textbf{HGCal: begin-of-life noise through a ``legacy'' branch, ageing by hand.} In
+\path{SimCalorimetry/HGCalSimProducers/python/hgcalDigitizer_cfi.py} the silicon has a threshold \code{adcThreshold\_fC
+= 0.672} (``$\sim$MIP/2'', scaled per thickness, \path{hgcROCParameters_cfi.py}), a noise of 2000 / 2400 / 2000
+electrons for the 120 / 200 / 300\,$\mu$m sensors (\code{nonAgedNoises\_v9}, \code{phase2\_hgcalV10}) and
+\code{scaleByDose = False}: no fluence, no leakage current, charge collection efficiency 1, one gain, the branch of
+\path{plugins/HGCDigitizerBase.cc} ``kept for legacy compatibility with the TDR simulation'' that ``probably should
+simply be removed in a future iteration''. The end-of-life setting (\code{HGCal\_setEndOfLifeNoise}, dose map
+\path{doseParams_3000fb_fluka-3.7.20.txt}, sensors \code{TDR\_600V}) comes only from \code{agedHGCal} of
+\path{aging.py}, which the 3000, 3000-ultimate and 4500-ultimate customisations call alike, with the 3000\,fb$^{-1}$ map
+unscaled; \code{HGCal\_setEndOfLifeNoise\_4000} (\code{byDoseFactor = 1.333}) is called by none. The scintillator part
+has \code{nPEperMIP = 21}, \code{adcThreshold\_fC = 0.5} and a noise \code{noise\_MIP = 1/100} ``to be deprecated''.
 
-\textbf{MTD.} In \path{SimFastTiming/FastTimingCommon/python/mtdDigitizer_cfi.py} the BTL has an energy threshold
-of 4 photoelectrons, a dark count rate of 10\,GHz that does not depend on the fluence and a time resolution
-normalised to a test beam (\code{TestBeamMIPTimeRes = 4.293}); the ETL has \code{IntegratedLuminosity = 1000}, a
-fluence parametrisation in $r$ and a gain rule \code{min(15, 30 - x)}, but \code{applyDegradation = False}, and
-its \code{meVPerMIP = 0.085} is annotated ``from HGCAL'' and corrected to 0.015 by \code{phase2\_etlV4}.
+\textbf{MTD: a fixed age.} In \path{SimFastTiming/FastTimingCommon/python/mtdDigitizer_cfi.py} the BTL has an energy
+threshold of 4 photoelectrons, a dark count rate fixed at 10\,GHz (no luminosity parameter) and a time resolution
+normalised to a test beam (\code{TestBeamMIPTimeRes = 4.293}); the ETL gain follows a fluence parametrisation in $r$ at
+a fixed \code{IntegratedLuminosity = 1000}\,fb$^{-1}$ (gain \code{min(15, 30 - x)}), \code{applyDegradation = False},
+and \code{meVPerMIP = 0.085}, ``from HGCAL'', is corrected to 0.015 by \code{phase2\_etlV4}. \path{aging.py} touches
+neither the MTD nor the tracker: a sample ``aged'' to 3000\,fb$^{-1}$ keeps an ETL at 1000\,fb$^{-1}$ and a tracker
+without radiation damage.
 
 \textbf{Muon chambers.} The DT (\path{SimMuon/DTDigitizer/python/muonDTDigis_cfi.py}: smearing 2.4\,ns, dead time
-150\,ns ``from M. Pegoraro'', \code{phase2Digis = False}) and the CSC (\path{SimMuon/CSCDigitizer/python/muonCSCDigis_cfi.py}:
-bunch timing offsets from the ``latest tuning by Vadim Khotilovich 16-Nov-2012 based on SingleMuPt10 relval sample'',
-neutron background off) have no Phase-2 modifier at all. The RPC digitiser is replaced under \code{phase2\_muon} by
+150\,ns ``from M. Pegoraro'', \code{phase2Digis = False}: ``phase 1 units'') and the CSC
+(\path{SimMuon/CSCDigitizer/python/muonCSCDigis_cfi.py}: neutron background off) have no Phase-2 modifier; the CSC bunch
+timing offsets are those set ``if running in Run 2'' by \code{run2\_common}, which the era inherits, not the ``latest
+tuning'' of 16-Nov-2012 of the default. The RPC digitiser is replaced under \code{phase2\_muon} by
 \code{RPCandIRPCDigiProducer} with \code{doBkgNoise = False}, where the Run-3 one has \code{True}; the GEM background
-scales with \code{instLumi} (2.0 under \code{run3\_common}, 5 under \code{phase2\_common}) but
-\code{simulateBkgNoise = False} by default; the ME0 digitiser is removed from the task by \code{phase2\_GE0} ``while
-GE0 is in development'' (\path{SimMuon/Configuration/python/SimMuon_cff.py}). The chamber ageing exists as the
-\code{*ChamberMasker\_cff.py} customisations and is not called by \code{aging.py}.
+scales with \code{instLumi} (2.0 under \code{run3\_common}, 5 under \code{phase2\_common}) but \code{simulateBkgNoise =
+False}; the ME0 digitiser is removed by \code{phase2\_GE0} ``while GE0 is in development''
+(\path{SimMuon/Configuration/python/SimMuon_cff.py}). The chamber ageing exists as the \code{*ChamberMasker\_cff.py}
+customisations, not called by \code{aging.py}.
 
 \textbf{The mixing at PU 200.} The Phase-2 relval pileup is \code{AVE\_200\_BX\_25ns}
-(\path{Configuration/PyReleaseValidation/python/relval_steps.py}): \code{mix\_POISSON\_average\_cfi} with
-\code{N = 200} and \code{B = (-3, 3)} (\path{Configuration/StandardSequences/python/Mixing.py}), seven bunch crossings
-where the Run-3 production profiles of 2024 and 2025 (both through \path{mix_probFunction_25ns_PoissonOOTPU_cfi.py})
-use $-12$ to $+3$. With 200 collisions per crossing the
-\code{CrossingFrame} of this chapter, $448\,315$ tracker hits for 193 collisions, becomes some 3 million, and the
-premixing of the production (\code{premix\_stage1}: no noise, no noisy pixels, \code{UseFullReadout = True} for the
-ECAL, \code{markAndPass} for the HCAL) is the only way it is done. Whether $-3$ to $+3$ is enough for the HB frames
-(10 slices) and the CSC strips ($-250$ to $+500\ns$, 10 crossings before) could not be established: no file of the
-release states why Phase-2 uses the shorter window. Figure~\ref{fig:11_windows} puts the two windows next to each
-other: the DT drift times of this event already reach $422\ns$, 17 crossings.
+(\path{Configuration/PyReleaseValidation/python/relval_steps.py}): \code{mix\_POISSON\_average\_cfi} with \code{N = 200}
+and \code{B = (-3, 3)} (\path{Configuration/StandardSequences/python/Mixing.py}), seven bunch crossings where the Run-3
+production profiles of 2024 and 2025 (both through \path{mix_probFunction_25ns_PoissonOOTPU_cfi.py}) use $-12$ to $+3$.
+With 200 collisions per crossing the \code{CrossingFrame} of this chapter, $448\,315$ tracker hits for 193 collisions,
+becomes some 3 million. Premixing (\code{premix\_stage1}) changes the digitisers: no noisy pixels, no calorimeter noise,
+every ECAL channel kept (\code{UseFullReadout = True}), HCAL digis marked instead of suppressed (\code{markAndPass}).
+Whether $-3$ to $+3$ is enough for the HB frames (10 slices) and the CSC strips ($-250$ to $+500\ns$) could not be
+established: \path{Mixing.py} also defines \code{AVE\_200\_BX\_25ns\_m12p3} ($-12$ to $+3$) and \code{\_m6p6} ($-6$ to
+$+6$), but no workflow uses them and no file says why. On the axis of figure~\ref{fig:11_windows} the Phase-2 window is
+$-75$ to $+75\ns$; the DT drift times of this event reach $422\ns$, 17 crossings.

@@ -4,7 +4,7 @@ The companion of `doc/chapter/chapter_08_PU.tex` (Rule C of `Constitution.txt`):
 `test/08_PU/run_08_PU.sh`, a walk-through of the configurations, and every number the chapter quotes, copied
 from `test/08_PU/out/`. All commands are run from `JitJetSW/Journey/test` in an initialised CMSSW_15_0_5
 (`cd CMSSW_15_0_5/src && cmsenv`); the chapter needs the output of chapter 07,
-`test/07_GenJet/out/step2_GENJET_07_GenJet.root` and `genJetAnalyzer_07_GenJet.pdf` (Rule E).
+`test/07_GenJet/out/step2_GENJET_07_GenJet.root` (Rule E).
 
 ```bash
 ./08_PU/run_08_PU.sh                 # everything below: the library, the catalogue, the drawn collision, the overlay, the ledger
@@ -18,7 +18,7 @@ JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./08_PU/run_08_PU.sh   # three o
 
 Variables (defaults): `PUEVENTS=250 PUSEED=20241 PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30`, plus
 the common ones of `common/jitjet_common.sh` (`YEAR=2025 CONDITIONS=auto:phase1_2025_realistic ERA=Run3_2025
-GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0 EVENT=1:1:1 RUN=1 ANALYZE=1 PNG=1`, and the pileup
+GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0 EVENT=1:1:1 RUN=1 ANALYZE=1 PNG=0` (the .tex of chapters 01-08 include the PDFs), and the pileup
 convention of the book `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up
 by bunch crossing -1 and the in-time collisions of bunch crossing 0 in the mixing of chapter 10 for this
 signal event (MixingModule seed 12345, Poisson(60) per bunch crossing, the library read in sequence: events
@@ -164,11 +164,11 @@ cd 08_PU/out && cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1
   pdfFile=genPartAnalyzer_MinBias_08_PU.pdf \
   sampleLabel="chapter 08_PU (8b): one minimum-bias collision|library event 72 of 250|SoftQCD inelastic, CP5, 13.6 TeV|no hard process" \
   > genPartAnalyzer_MinBias_08_PU.log 2>&1
-pdftoppm -cropbox -r 110 -png genPartAnalyzer_MinBias_08_PU.pdf genPartAnalyzer_MinBias_08_PU_page; cd ../..
+cd ../..
 ```
 
 Produces `genPartAnalyzer_MinBias_08_PU.pdf` (5 pages: hard process, parton shower, MPI / remnants,
-hadronisation, hadron decays), the PNG pages `_page-1..5.png` (page 5 is figure 8.1 of the chapter), the
+hadronisation, hadron decays; page 5 is figure 8.1 of the chapter, `\includegraphics[page=5]`), the
 `.root` with the eta-phi histograms, and the `.log` with the particle count per stage.
 
 **(8a+8b) the overlay**, `common/genJetPileup_cfg.py` (the MixingModule on the HepMC record,
@@ -178,11 +178,10 @@ hadronisation, hadron decays), the PNG pages `_page-1..5.png` (page 5 is figure 
 cd 08_PU/out && cmsRun ../../common/genJetPileup_cfg.py inputFiles=file:../../07_GenJet/out/step2_GENJET_07_GenJet.root \
   pileupFiles=file:step1_GEN_MinBias_08_PU.root eventsToProcess=1:1:1 nPileup=68 skipPileup=71 pileupType=fixed \
   pileupSeed=20243 jetPtMin=3 labelPtMin=30 jets=ak4GenJetsPU outputFile=genJetPileup_08_PU.root \
-  edmOutput=step2_GENJETPU_08_PU.root pdfFile=genJetPileup_08_PU.pdf maxEvents=-1 \
+  edmOutput=step2_GENJETPU_08_PU.root pdfFile=genJetAnalyzer_08_PU.pdf maxEvents=-1 \
   sampleLabel="chapter 08_PU (8a+8b): signal + pileup|+ 68 minimum-bias collisions in time|library events 72-139 (bx 0)|bbbar pTHat > 100 GeV, 13.6 TeV|jet pT > 3 GeV, drawn > 30 GeV" \
   > genJetPileup_08_PU.log 2>&1
-pdfunite ../../07_GenJet/out/genJetAnalyzer_07_GenJet.pdf genJetPileup_08_PU.pdf genJetAnalyzer_08_PU.pdf
-pdftoppm -cropbox -r 110 -png genJetAnalyzer_08_PU.pdf genJetAnalyzer_08_PU_page; cd ../..
+cd ../..
 ```
 
 `genJetPileup_cfg.py`, part by part: `RandomNumberGeneratorService.mix` (the MixingModule needs an engine
@@ -195,11 +194,10 @@ with `useCrossingFrame = True`, `mix = 'mix'`); `genParticlesForJetsPU` / `NoNuP
 of `RecoJets/Configuration/GenJetParticles_cff.py` on `genParticlesPU`); `ak4GenJetsPU`, `ak8GenJetsPU`,
 `ak4GenJetsNoNuPU`, `ak8GenJetsNoNuPU` (the producers of `RecoJets/JetProducers`, `jetPtMin` from the
 argument); and `genJetAnalyzer` (`GenJetAnalyzer` on `genParticlesPU` with `signalCollisionId = 0`, one page
-per collection in `jets`). Produces `genJetPileup_08_PU.pdf` (one page), `.root` (the jet histograms,
-`TFileService`), `.log` (every jet with pT, eta, phi, mass, constituents and pileup pT, the b / bbar
-matching; section 4), the EDM file `step2_GENJETPU_08_PU.root` (section 2); `pdfunite` makes
-`genJetAnalyzer_08_PU.pdf` (the 8 pages of chapter 07 + the overlay page 9) and `pdftoppm` the PNG pages
-(`_page-9.png` is figure 8.2 of the chapter).
+per collection in `jets`). Produces `genJetAnalyzer_08_PU.pdf` (one page, the overlay; until 14 November 2026
+the 8 pages of chapter 07 were put in front of it with `pdfunite`), `genJetPileup_08_PU.root` (the jet histograms,
+`TFileService`), `genJetPileup_08_PU.log` (every jet with pT, eta, phi, mass, constituents and pileup pT, the b / bbar
+matching; section 4), the EDM file `step2_GENJETPU_08_PU.root` (section 2); `genJetAnalyzer_08_PU.pdf` is figure 8.2 of the chapter.
 
 **the ledger**, `common/genLedger.py --pu` on the EDM file:
 
@@ -422,8 +420,8 @@ The signal alone, for comparison (`test/07_GenJet/out/genJetAnalyzer_07_GenJet.l
 ```
 
 Derived from the two jet lists: jets above 10 / 20 / 30 / 50 GeV: 6 / 2 / 2 / 2 (signal) and 175 / 116 / 76 / 9
-(overlay); dijet mass m(jet [0] + jet [1]) from (pT, eta, phi, mass): 386.8 GeV (signal, also printed on page 6
-as "m = 386.8 GeV") and 521.7 GeV (overlay, printed on page 9); the b jet (now jet [1]) gained
+(overlay); dijet mass m(jet [0] + jet [1]) from (pT, eta, phi, mass): 386.8 GeV (signal, also printed on the AK4 page
+of chapter 07 as "m = 386.8 GeV") and 521.7 GeV (overlay, printed on its page); the b jet (now jet [1]) gained
 150.895 - 117.788 = 33.1 GeV and the bbar jet (jet [0]) 152.028 - 115.944 = 36.1 GeV; the jet axes moved by
 Delta R = 0.041 (b) and 0.034 (bbar).
 From `step2_GENJETPU_08_PU.root` with FWLite (`Events` / `Handle('std::vector<reco::GenJet>')` on
@@ -513,12 +511,14 @@ At PU 200 (x 200 / 68 = 2.9): 204 GeV per unit area, 103 GeV per cone.
 Configuration/PyReleaseValidation/python/relval_steps.py (4617):
     elif 'Run4' in ds:
         PUDataSets[ds]={'-n':10,'--pileup':'AVE_200_BX_25ns','--pileup_input':'das:/RelValMinBias_14TeV/%s/GEN-SIM'%(name,)}
-    (4612-4615: '2022', '2023', '2024', '2025' -> 'Run3_Flat55To75_PoissonOOTPU' with RelValMinBias_14TeV)
-Configuration/StandardSequences/python/Mixing.py (184, 160, 124):
+    (4611-4615: '2022', '2023', '2024', '2025' -> 'Run3_Flat55To75_PoissonOOTPU' with RelValMinBias_14TeV)
+Configuration/StandardSequences/python/Mixing.py (184, 159, 124):
     addMixingScenario("AVE_200_BX_25ns",{'file': 'SimGeneral.MixingModule.mix_POISSON_average_cfi','BX':25, 'B': (-3,3), 'N': 200})
     addMixingScenario("AVE_50_BX_25ns",{'file': 'SimGeneral.MixingModule.mix_POISSON_average_cfi','BX':25, 'B': (-12,3), 'N': 50})
     addMixingScenario("Run3_Flat55To75_PoissonOOTPU",{'file': 'SimGeneral.MixingModule.mix_Run3_Flat55To75_PoissonOOTPU_cfi'})
-Configuration/StandardSequences/python/Mixing.py (139, 132): the production profiles of 2025 and 2024
+SimGeneral/MixingModule/python/mix_POISSON_average_cfi.py (26) and mix_probFunction_25ns_PoissonOOTPU_cfi.py (42):
+    sequential = cms.untracked.bool(False),      (the overlay of this book: sequential = True, skipEvents = 71)
+Configuration/StandardSequences/python/Mixing.py (139, 132): the profiles of 2025 and 2024
     "2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23" -> Run3_2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23_cfi
         probFunction over 0-99 collisions: mean 64.34, r.m.s. 11.70, median 65; header "A distribution for Run3 studies (2023)
         derived from LHC simulations", "Hadronic x-sec : 80mb", 2340 colliding bunches, minBunch -12, maxBunch 3
@@ -529,9 +529,20 @@ SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py: minBun
 SimGeneral/MixingModule/python/mix_Run3_Flat55To75_PoissonOOTPU_cfi.py: probValue 0 for 0-54, 1/21 = 0.047619 for 55-75
 Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCP5_cfi.py: comEnergy = 14000.0, crossSection = 71.39e+09, SoftQCD:inelastic = on
 Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py: SigmaTotal:mode = 0, SigmaTotal:sigmaEl = 21.89, SigmaTotal:sigmaTot = 100.309, MultipartonInteractions:pT0Ref=1.41, ecmPow=0.03344
-Configuration/Generator/python/: MinBias_13TeV_pythia8_TuneCUETP8M1_cfi, MinBias_14TeV_pythia8_TuneCUETP8M1_cfi, MinBias_TuneZ2star_*_pythia6_cff, MinBias_13TeV_cfi / MinBias_cfi / MinBiasP0_cfi / PythiaMinBias_cfi (Pythia6), Hydjet_*_MinBias_* (no 13.6 TeV CP5 fragment)
-    CP5 at 13 TeV: MinBias_13TeV_pythia8_cff.py and SoftQCDinelastic_13TeV_pythia8_cff.py (PythiaCP5Settings_cfi, SoftQCD:inelastic = on, comEnergy = 13000.0),
-    used by the GEN validation steps of relval_steps.py (1697, 1706: genvalid('MinBias_13TeV_pythia8_cff'), genvalid('SoftQCDinelastic_13TeV_pythia8_cff'))
+    (no SigmaDiffractive setting, nor in Pythia8CommonSettings_cfi.py); sigma_inel = 100.309 - 21.89 = 78.42 mb at every energy
+Configuration/Generator/python/MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py: identical to the 2017 file except SigmaTotal:sigmaEl = 22.08, SigmaTotal:sigmaTot = 101.037 (lines 23-24): 78.96 mb
+    imported by 6 python files of the release (all 13p6TeV fragments with a filter); MCTunes2017.PythiaCP5Settings_cfi imported by 84 (82 in Configuration/Generator, 2 in GeneratorInterface); no 14 TeV directory
+$PYTHIA8_BASE/share/Pythia8/xmldoc/TotalCrossSections.xml (Pythia 8.311, toolbox pythia8.xml): line 88-92 SigmaTotal:mode default 1, option 0 'Make your own choices (the "own model"), set as fixed values.'
+    line 108-115: SigmaDiffractive:mode default 1 = 'The SaS parametrizations'
+test/08_PU/out/step1_GEN_MinBias_08_PU.log (740, 786): sum 7.842e+01 mb (ND 55.42, SD 6.432 + 6.432, DD 8.848, CD 1.285); 'total cross section = 7.842e+10 +- 3.028e+02 pb'
+Configuration/Generator/python/: MinBias_13TeV_pythia8_TuneCUETP8M1_cfi, MinBias_14TeV_pythia8_TuneCUETP8M1_cfi, MinBias_TuneZ2star_*_pythia6_cff, MinBias_13TeV_cfi / MinBias_cfi / MinBiasP0_cfi / PythiaMinBias_cfi (Pythia6), Hydjet_*_MinBias_* (no unfiltered 13.6 TeV CP5 minimum-bias fragment)
+    CP5 at 13 TeV: MinBias_13TeV_pythia8_cff.py and SoftQCDinelastic_13TeV_pythia8_cff.py (PythiaCP5Settings_cfi, SoftQCD:inelastic = on, comEnergy = 13000.0)
+    and SoftQCDnonDiffractive_13TeV_pythia8_cff.py (SoftQCD:nonDiffractive = on), used by the GEN validation steps of relval_steps.py
+    (1697, 1704, 1706: genvalid('MinBias_13TeV_pythia8_cff'), genvalid('SoftQCDnonDiffractive_13TeV_pythia8_cff'), genvalid('SoftQCDinelastic_13TeV_pythia8_cff'))
+    CP5 at 13.6 TeV, filtered: XiMinus_13p6TeV_SoftQCDInel_TuneCP5_cfi.py (PythiaFilter ParticleID 3312, MinPt 1.0, lines 26-33), OmegaMinus_13p6TeV_SoftQCDInel_TuneCP5_cfi.py
+    (OmegaFilter), DStarToD0Pi_D0ToKsPiPi_inclusive_SoftQCD_TuneCP5_13p6TeV-pythia8-evtgen.py (SoftQCD:nonDiffractive with PTFilter on the c quark)
+    no energy override for RelValMinBias_14TeV: neither 13600 nor comEnergy in relval_steps.py, relval_upgrade.py, upgradeWorkflowComponents.py
+    (the only '13p6' entries there are the filtered fragments, upgradeWorkflowComponents.py 3397-3404); the fragment enters as 'MinBias_14TeV' (3296)
 Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py (3171-3177, 'Run4D110'): 'Geom': 'ExtendedRun4D110', 'GT': 'auto:phase2_realistic_T33', 'Era': 'Phase2C17I13M9', 'ScenToRun': ['GenSimHLBeamSpot', ...]
     relval_upgrade.py (40-42): a 14TeV fragment runs 'GenSimHLBeamSpot14', whose '--beamspot' is 'DBrealisticHLLHC' (relval_steps.py 4674-4677; 'GenSimHLBeamSpot' 4665-4668 uses gt + '_13TeV');
     'Run4D110GenOnly' / 'Run4D110SimOnGen' (3206-3220) carry 'BeamSpot': 'DBrealisticHLLHC' explicitly
@@ -541,14 +552,24 @@ Configuration/AlCa/python/autoCondPhase2.py (162): 'phase2_realistic_T33' = 'pha
 Configuration/AlCa/python/autoCond.py (111): 'phase2_realistic' : '150X_mcRun4_realistic_v1'; (95): 'phase1_2024_realistic' : '150X_mcRun3_2024_realistic_v2'; (107): 'phase1_2025_realistic' : '150X_mcRun3_2025_realistic_v1'
 IOMC/EventVertexGenerators/python/VtxSmearedRealisticHLLHC_cfi.py: VtxSmeared = HLLHCEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)   # SimBeamSpotHLLHCObjectsRcd
 IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py: VtxSmeared = BetafuncEvtVtxGenerator.clone(src = "generator:unsmeared", readDB = True)    # SimBeamSpotObjectsRcd
-IOMC/EventVertexGenerators/python/VtxSmearedParameters_cfi.py (1101-1117), HLLHCVtxSmearingParameters:
+IOMC/EventVertexGenerators/python/VtxSmearedParameters_cfi.py (1100-1117), '# Parameters for HL-LHC operation at 13TeV' then HLLHCVtxSmearingParameters:
     MeanXIncm = MeanYIncm = MeanZIncm = 0, TimeOffsetInns = 0.0, EprotonInGeV = 6500.0, CrossingAngleInurad = 510.0, CrabFrequencyInMHz = 400.0, RF800 = False,
     BetaCrossingPlaneInm = 0.20, BetaSeparationPlaneInm = 0.20, HorizontalEmittance = 2.5e-06, VerticalEmittance = 2.05e-06, BunchLengthInm = 0.090,
     CrabbingAngleCrossingInurad = 380.0, CrabbingAngleSeparationInurad = 0.0
 IOMC/EventVertexGenerators/python/VtxSmearedHLLHC14TeV_cfi.py: HLLHCVtxSmearingParameters.clone(EprotonInGeV = cms.double(7000))
+Configuration/StandardSequences/python/VtxSmeared.py (4, 44, 45): 'DBrealisticHLLHC' -> VtxSmearedRealisticHLLHC_cfi, 'HLLHC' -> VtxSmearedHLLHC_cfi (6500 GeV), 'HLLHC14TeV' -> VtxSmearedHLLHC14TeV_cfi
 IOMC/EventVertexGenerators/src/HLLHCEvtVtxGenerator.cc (131-132): z = (shoot() - 0.5) * 6.0 * fBunchLength; t = (shoot() - 0.5) * 6.0 * fBunchLength;  (accept-reject on intensity(x, y, z, t))
 IOMC/EventVertexGenerators/src/BetafuncEvtVtxGenerator.cc (84, 97): tmp_sigz = RandGaussQ::shoot(engine, 0., fSigmaZ); tmp_sigt = RandGaussQ::shoot(engine, 0., fSigmaZ)
-doc/tmp/Gen4Phase2.md (53): SimBeamSpotHLLHCObjectsRcd payload SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1 (GT 150X_mcRun4_realistic_v1); not re-checked with conddb for this chapter
+conddb --db pro list 150X_mcRun4_realistic_v1: SimBeamSpotHLLHCObjectsRcd  SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1
+conddb --db pro list SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1: one IOV from run 1, inserted 2024-07-04 12:49:25, payload b8e3fc124707dcee90d5b68a50d9adfd5f8775ee
+conddb --db pro dump b8e3fc124707dcee90d5b68a50d9adfd5f8775ee (SimBeamSpotHLLHCObjects):
+    fMeanX = fMeanY = fMeanZ = 0, fEProton = 7000, fCrabFrequency = 400, fRF800 = 0, fCrossingAngle = 510, fCrabbingAngleCrossing = 380,
+    fCrabbingAngleSeparation = 0, fBetaCrossingPlane = fBetaSeparationPlane = 0.20, fHorizontalEmittance = 2.5e-06, fVerticalEmittance = 2.05e-06,
+    fBunchLength = 0.090, fTimeOffset = 0   (no time-spread parameter: 't193ns' is only in the tag name; 0.090 m / c = 300 ps)
+RecoLocalFastTime/FTLRecProducers/python/mtdUncalibratedRecHits_cfi.py (25): ETL timeResolutionInNs = cms.string("0.0370"), # [ns]
+    (11: BTL timeResolutionInNs = "0.308*pow(x,-0.4175)"; SimFastTiming/FastTimingCommon/python/mtdDigitizer_cfi.py 25: TestBeamMIPTimeRes, "0.048[ns]*sqrt(8000.)")
+RecoVertex/Configuration/python/RecoVertex_phase2_timing_cff.py (5, 33): unsortedOfflinePrimaryVertices4D, algorithm = "DA2D_vect", assignment = dict(useTiming = True)
+    (switched on by RecoVertex/Configuration/python/RecoVertex_cff.py 78: phase2_timing.toReplaceWith(vertexrecoTask, _phase2_tktiming_vertexrecoTask))
 ```
 
 Library sizes: PU 200 x 7 crossings (-3..3) = 1400 minimum-bias events per signal event; Run 3 scenario

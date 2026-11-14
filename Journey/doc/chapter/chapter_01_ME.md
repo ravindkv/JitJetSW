@@ -5,7 +5,7 @@ The technical companion of `doc/chapter/chapter_01_ME.tex` (Rule C of `Constitut
 quotes, copied from `test/01_ME/out/`. All commands are run from `test/` of an initialized CMSSW_15_0_5
 (`cd CMSSW_15_0_5/src && cmsenv && cd JitJetSW/Journey/test`).
 
-    ./01_ME/run_01_ME.sh              # the whole chapter: cmsDriver.py, cmsRun, GenPartAnalyzer, PNG pages, ledger
+    ./01_ME/run_01_ME.sh              # the whole chapter: cmsDriver.py, cmsRun, GenPartAnalyzer, ledger
     RUN=0 ./01_ME/run_01_ME.sh        # only write 01_ME/step1_GEN_01_ME_cfg.py
     ANALYZE=0 ./01_ME/run_01_ME.sh    # generate, no analyzer / ledger
     EVENTS=10 ./01_ME/run_01_ME.sh    # more events (only for illustration; the book follows event 1:1:1)
@@ -178,22 +178,20 @@ section 4 were made):
 
 ## 3. The analyzer configs
 
-`gen_stage` runs the `GenPartAnalyzer` (`plugins/GenPartAnalyzer.cc`, configuration `common/genPartAnalyzer_cfg.py`),
-converts the PDF pages to PNG, and writes the ledger with `common/genLedger.py` (FWLite). From `test/`:
+`gen_stage` runs the `GenPartAnalyzer` (`plugins/GenPartAnalyzer.cc`, configuration `common/genPartAnalyzer_cfg.py`)
+and writes the ledger with `common/genLedger.py` (FWLite). From `test/`:
 
     cd 01_ME/out
     cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:$PWD/step1_GEN_01_ME.root outputFile=genPartAnalyzer_01_ME.root \
         maxEvents=1 eventsToProcess=1:1:1 maxStage=1 pdfFile=genPartAnalyzer_01_ME.pdf \
         sampleLabel="chapter 01_ME: the matrix element q qbar -> b bbar|ISR off, FSR off, MPI off|Hadronize off, Decay off|pTHatMin 100 GeV, 13.6 TeV" \
         > genPartAnalyzer_01_ME.log 2>&1
-    pdftoppm -cropbox -r 110 -png genPartAnalyzer_01_ME.pdf genPartAnalyzer_01_ME_page      # -> genPartAnalyzer_01_ME_page-1.png
     python3 ../../common/genLedger.py step1_GEN_01_ME.root --event 1:1:1 > ledger_01_ME.txt 2> ledger_01_ME.log
     cd ../..
 
 | file in `01_ME/out/` | produced by | content |
 |---|---|---|
-| `genPartAnalyzer_01_ME.pdf` | GenPartAnalyzer | 1 page (`maxStage=1`): the eta-phi map of the hard process, the b (red) and bbar (blue) with their pT, eta, phi, the net and scalar pT sums, the sample label in the right panel |
-| `genPartAnalyzer_01_ME_page-1.png` | `pdftoppm -cropbox` (`pdf_pages_png`) | the page as PNG, the figure of the chapter |
+| `genPartAnalyzer_01_ME.pdf` | GenPartAnalyzer | 1 page (`maxStage=1`): the eta-phi map of the hard process, the b (red) and bbar (blue) with their pT, eta, phi, the net and scalar pT sums, the sample label in the right panel; the figure of the chapter (the .tex includes the PDF) |
 | `genPartAnalyzer_01_ME.root` | GenPartAnalyzer (TFileService) | the TH2 (eta, phi, weight pT) of stage 1 |
 | `genPartAnalyzer_01_ME.log` | cmsRun | the per-stage b / bbar line (section 4) |
 | `ledger_01_ME.txt` | `genLedger.py` | the record by status group, the hard process (x1, x2, sqrt(s_hat), the outgoing partons), the final state by kind and by region (section 4) |
@@ -326,7 +324,7 @@ sigma_t = SigmaZ / c = 3.6 cm / (29.98 cm/ns) = 120 ps (`BetafuncEvtVtxGenerator
     == GenPartAnalyzer run:lumi:event 1:1:1 nGenParticles=14 nStatus1=6 hard b idx=5 hard bbar idx=4
       stage 1 (hardProcess): nParticles=2 | b quark (status 23): pt=113.221 eta=-1.43851 phi=-2.15105 idx=[5] | #bar{b} quark (status 23): pt=113.221 eta=-3.75298 phi=0.990547 idx=[4] | net b+bbar: |sum pT|=9.89808e-06 (px=-8.27802e-06 py=5.42645e-06) scalar sum pT=226.442
 
-The page itself (`genPartAnalyzer_01_ME_page-1.png`) prints: b quark (status 23): pT = 113.22 GeV, eta = -1.44,
+The page itself (`genPartAnalyzer_01_ME.pdf`) prints: b quark (status 23): pT = 113.22 GeV, eta = -1.44,
 phi = -2.15; bbar quark (status 23): pT = 113.22 GeV, eta = -3.75, phi = 0.99; net b+bbar 0.00 GeV, sum |pT| = 226.44 GeV,
 Delta phi(b, bbar) = 3.14.
 
@@ -374,9 +372,16 @@ of its cone rows): each quark is alone in its cone here, with the primordial kT 
 
 ### 4.7 The release files of "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`, CMSSW_15_0_5)
 
+Everything below was read in the release CMSSW_15_0_5 (`$CMSSW_RELEASE_BASE/src`, its Pythia8 8.311 external in
+`$PYTHIA8DATA`, and the global tags named by its `Configuration/AlCa/python/autoCond.py`), not in the CMSSW
+development branch.
+
 - `Configuration/Generator/python/Pythia8CommonSettings_cfi.py`: `Tune:preferLHAPDF = 2`, `Main:timesAllowErrors = 10000`,
   `Check:epTolErr = 0.01`, `Beams:setProductionScalesFromLHEF = off`, `SLHA:minMassSM = 1000.`,
   `ParticleDecays:limitTau0 = on`, `ParticleDecays:tau0Max = 10`, `ParticleDecays:allowPhotonRadiation = on`.
+  Imported by 262 files of `Configuration/Generator/python/` (`grep -l Pythia8CommonSettings_cfi *.py | wc -l`); no
+  `toModify` of it (or of any `generator`) in `Configuration/Generator`, `Configuration/StandardSequences`,
+  `GeneratorInterface`.
 - `Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py`: `Tune:pp 14`, `Tune:ee 7`,
   `MultipartonInteractions:ecmPow=0.03344`, `bProfile=2`, `pT0Ref=1.41`, `coreRadius=0.7634`, `coreFraction=0.63`,
   `ColourReconnection:range=5.176`, `SigmaTotal:zeroAXB=off`, `SpaceShower:alphaSorder=2`, `SpaceShower:alphaSvalue=0.118`,
@@ -384,11 +389,26 @@ of its cone rows): each quark is alone in its cone here, with the primordial kT 
   `MultipartonInteractions:alphaSorder=2`, `TimeShower:alphaSorder=2`, `TimeShower:alphaSvalue=0.118`,
   `SigmaTotal:mode = 0`, `SigmaTotal:sigmaEl = 21.89`, `SigmaTotal:sigmaTot = 100.309`, `PDF:pSet=LHAPDF6:NNPDF31_nnlo_as_0118`.
 - `Configuration/Generator/python/MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py`: identical except
-  `SigmaTotal:sigmaEl = 22.08`, `SigmaTotal:sigmaTot = 101.037`. The directories under `Configuration/Generator/python/`
-  are `MCTunes2017` and `MCTunesRun3ECM13p6TeV` only; 40 fragments named `*14TeV*CP5*`, 20 `*14TeV*CUETP8M1*`,
-  7 files named `*13p6TeV*` (all using the Run-3 directory). pT0 at the two energies:
-  1.41 * (13600/7000)^0.03344 = 1.4416 GeV, 1.41 * (14000/7000)^0.03344 = 1.4431 GeV (`MultipartonInteractions:ecmRef`
+  `SigmaTotal:sigmaEl = 22.08`, `SigmaTotal:sigmaTot = 101.037`. The tune directories under `Configuration/Generator/python/`
+  are `MCTunes2017` and `MCTunesRun3ECM13p6TeV` only (the other two directories are `Herwig7Settings` and
+  `PSweightsPythia`); 40 files have both `14TeV` and `CP5` in the name (30 of them match the glob `*14TeV*CP5*`), all
+  40 import `MCTunes2017.PythiaCP5Settings`; 20 match `*14TeV*CUETP8M1*`; 6 files are named `*13p6TeV*`, all importing
+  `MCTunesRun3ECM13p6TeV.PythiaCP5Settings_cfi`. pT0 at the two energies:
+  1.41 * (13600/7000)^0.03344 = 1.4417 GeV, 1.41 * (14000/7000)^0.03344 = 1.4431 GeV (`MultipartonInteractions:ecmRef`
   default 7000, Pythia8 `MultipartonInteractions.xml`).
+- `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py`, `upgradeFragments` (line 3255): 152
+  fragments, 52 with `14TeV` in the name. Tune of the 52 (from their imports): 37 `MCTunes2017.PythiaCP5Settings`;
+  12 `Pythia8CUEP8M1Settings` (`Wjet_Pt_80_120`, `Wjet_Pt_3000_3500`, `QCD_Pt_3000_3500`, `QCD_Pt_80_120`, `JpsiMM`, `WE`,
+  `H130GGgluonfusion`, `PhotonJet_Pt_10`, `QQH1352T_Tauola`, `QCD_Pt_600_800` `_14TeV_TuneCUETP8M1_cfi`,
+  `DYToLL_M-50_14TeV_pythia8_cff`, `DYToTauTau_M-50_14TeV_pythia8_tauola_cff`); 2 `PythiaUEZ2starSettings` with
+  `Pythia6GeneratorFilter` (`LM1_sfts_14TeV_cfi`, `H200ChargedTaus_Tauola_14TeV_cfi`); 1 `GluGluTo2Jets_M_300_2000_14TeV_Exhume_cff`.
+  `Configuration/Generator/python/Pythia8CUEP8M1Settings_cfi.py`: `Tune:pp 14`, `Tune:ee 7`,
+  `MultipartonInteractions:pT0Ref=2.4024`, `MultipartonInteractions:ecmPow=0.25208`, `MultipartonInteractions:expPow=1.6`;
+  none of the 22 files with `14TeV` in the name that import `Pythia8CUEP8M1Settings` sets `PDF:pSet`. The Pythia8 defaults are printed next to the CP5 values
+  in `test/01_ME/out/step1_GEN_01_ME.log`: line 135 `PDF:pSet` default `13`, line 138 `SigmaProcess:alphaSvalue`
+  default `0.13000`; `PDFSelection.xml`: `PDF:pSet` default 13 = "NNPDF2.3 QCD+QED LO alpha_s(M_Z) = 0.130".
+  `PDF:pSet` values in `Configuration/Generator/python/` (`grep -rho`): `LHAPDF6:NNPDF30_lo_as_0130` (1),
+  `LHAPDF6:NNPDF31_lo_as_0130` (12), `LHAPDF6:NNPDF31_nlo_as_0118` (6), `LHAPDF6:NNPDF31_nnlo_as_0118` (16), `5` (1).
 - `Configuration/Generator/python/TTbar_14TeV_TuneCP5_cfi.py`: `comEnergy = cms.double(14000.0)`, the same two blocks;
   the model of the fragment of the book (its header says so).
 - `Configuration/StandardSequences/python/VtxSmeared.py`: `'DBrealistic': 'IOMC.EventVertexGenerators.VtxSmearedRealistic_cfi'`,
@@ -403,42 +423,68 @@ of its cone rows): each quark is alone in its cone here, with the primordial kT 
   `VerticalEmittance = 2.05e-06`, `BunchLengthInm = 0.090`, `CrabbingAngleCrossingInurad = 380.0`,
   `CrabbingAngleSeparationInurad = 0.0`; `VtxSmearedHLLHC14TeV_cfi.py`: `HLLHCVtxSmearingParameters.clone(EprotonInGeV = cms.double(7000))`.
 - `IOMC/EventVertexGenerators/src/BetafuncEvtVtxGenerator.cc` lines 84-98: `Z = RandGaussQ(0, fSigmaZ) + fZ0`,
-  `X = RandGaussQ(0, BetaFunction(Z, fZ0)) + fX0`, `Y` likewise, `T = RandGaussQ(0, fSigmaZ) + fTimeOffset`;
-  `HLLHCEvtVtxGenerator.cc`: `integrandCC(x, z, t)` (the overlap density of the two crabbed bunches), `fTimeOffset_c_light`.
-- The HL-LHC payloads (`conddb --db pro list 150X_mcRun4_realistic_v1 | grep SimBeamSpot`, `conddb dump`):
-  `SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1` (record `SimBeamSpotHLLHCObjectsRcd`, inserted 2024-07-04):
-  EProton 7000, CrabFrequency 400, RF800 0, CrossingAngle 510, CrabbingAngleCrossing 380, CrabbingAngleSeparation 0,
-  BetaCrossingPlane 0.2, BetaSeparationPlane 0.2, HorizontalEmittance 2.5e-6, VerticalEmittance 2.05e-6,
-  BunchLength 0.09, MeanX = MeanY = MeanZ = TimeOffset = 0; `..._13TeV_nominal_mc_v1`: the same with EProton 6500.
-  The transverse size scales as sigma = sqrt(epsilon (beta + z^2/beta) / (beta gamma)) (`HLLHCEvtVtxGenerator::sigma`):
-  sqrt(7000/6500) = 1.038.
+  `X = RandGaussQ(0, BetaFunction(Z, fZ0)/sqrt(2)) + fX0` ("need sqrt(2) for beamspot width relative to single beam
+  width"), `Y` likewise, `T = RandGaussQ(0, fSigmaZ) + fTimeOffset`.
+  `HLLHCEvtVtxGenerator.cc`: `vertexShift` (line 120) draws `x, y, z, t` together by accept-reject on `intensity(x, y, z, t)`
+  (line 165) = `exp(-dy*dy/(sigmay*sigmay)) * integrandCC(x, z, t) / (2 pi sigmay)` with `dy = -(z - t) sin(alphay) - y cos(alphay)`
+  (`alphay` = 0 for `CrabbingAngleSeparation = 0`) and `sigmay = sigma(z, fVerticalEmittance, fBetaSeparationPlane, betagamma)`;
+  `sigma` (line 160) = `sqrt(epsilon (beta + z^2/beta) / betagamma)`, so the vertical size goes as 1/sqrt(beta gamma):
+  sqrt(7000/6500) = 1.038. `integrandCC` (line 185) is the overlap of the two crabbed bunches in `(x, z, ct)`.
+  Cross-check of the payload name (a numerical integration of the `integrandCC` formula above, `fRF800 = false`, on a
+  401 x 401 x 201 grid in z, ct, x, done for this section and not part of the scripts of the chapter): EProton 7000 gives
+  sigma_z = 4.27 cm, sigma(ct)/c = 193.3 ps; EProton 6500 gives 4.33 cm, 193.8 ps. The "t193ns" of the name is
+  therefore 193 ps.
+- The beam-spot payloads (`conddb list <tag>`, `conddb dump <hash>`):
+  `SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1` (record `SimBeamSpotHLLHCObjectsRcd`, IOV 1 inserted
+  2024-07-04): EProton 7000, CrabFrequency 400, RF800 0, CrossingAngle 510, CrabbingAngleCrossing 380,
+  CrabbingAngleSeparation 0, BetaCrossingPlane 0.2, BetaSeparationPlane 0.2, HorizontalEmittance 2.5e-6,
+  VerticalEmittance 2.05e-6, BunchLength 0.09, MeanX = MeanY = MeanZ = TimeOffset = 0; `..._13TeV_nominal_mc_v1`: the
+  same with EProton 6500. `SimBeamSpot_Realistic25ns13p6TeVEarly2024CollisionVtxSmearingParameters_v1_mc` (record
+  `SimBeamSpotObjectsRcd`, in `150X_mcRun3_2024_realistic_v2`): X0 = 0.0284683, Y0 = -0.016576, Z0 = 0.416038 cm,
+  SigmaZ = 3.6 cm, betastar = 30 cm, emittance = 5.725e-8 cm, TimeOffset = 0. `conddb list 150X_mcRun4_realistic_v1`:
+  `SimBeamSpotHLLHCObjectsRcd` -> `SimBeamSpotHLLHCObjects_z4p3cm_t193ns_14TeV_nominal_mc_v1`,
+  `BeamSpotObjectsRcd` -> `BeamSpotObjects_HLLHC_z4p3cm_t193ns_14TeV_nominal_mc`.
 - `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py`, `upgradeProperties['Run4']['Run4D110']`:
   `'Geom': 'ExtendedRun4D110'`, `'GT': 'auto:phase2_realistic_T33'`, `'Era': 'Phase2C17I13M9'`,
   `'ScenToRun': ['GenSimHLBeamSpot', 'DigiTrigger', 'RecoGlobal', 'HARVESTGlobal', 'ALCAPhase2']` (the `PU` keys:
-  `['GenSimHLBeamSpot', 'DigiTriggerPU', 'RecoGlobalPU', 'HARVESTGlobalPU']`).
-- `Configuration/PyReleaseValidation/python/relval_steps.py`: `upgradeStepDict['GenSimHLBeamSpot'][k] = {'-s': 'GEN,SIM',
-  '-n': 10, '--conditions': gt+'_13TeV', '--beamspot': 'DBrealisticHLLHC', '--datatier': 'GEN-SIM', '--eventcontent':
-  'FEVTDEBUG', '--geometry': geom}`; `upgradeStepDict['GenSimHLBeamSpot14'][k]`: the same with `'--conditions': gt`;
+  `['GenSimHLBeamSpot', 'DigiTriggerPU', 'RecoGlobalPU', 'HARVESTGlobalPU']`); every `Run4` key starts with
+  `GenSimHLBeamSpot`, except `Run4D110GenOnly` and `Run4D110SimOnGen` (`GenHLBeamSpot`, `'BeamSpot': 'DBrealisticHLLHC'`).
+- `Configuration/PyReleaseValidation/python/relval_steps.py`: line 4651 `upgradeStepDict['GenHLBeamSpot'][k]` with
+  `'--conditions': gt+'_13TeV'`; line 4665 `upgradeStepDict['GenSimHLBeamSpot'][k] = {'-s': 'GEN,SIM', '-n': 10,
+  '--conditions': gt+'_13TeV', '--beamspot': 'DBrealisticHLLHC', '--datatier': 'GEN-SIM', '--eventcontent': 'FEVTDEBUG',
+  '--geometry': geom}`; line 4674 `upgradeStepDict['GenSimHLBeamSpot14'][k]`: the same with `'--conditions': gt`;
   `upgradeStepDict['GenSim'][k]`: `'--beamspot': 'Realistic25ns13TeVEarly2017Collision'`;
-  `step1Up2024Defaults`: `'--conditions': 'auto:phase1_2024_realistic', '--era': 'Run3', '--beamspot': 'DBrealistic'`.
-- `Configuration/AlCa/python/autoCondModifiers.py`, `autoCondBSHLLHC13TeV`: for every key containing `phase2_realistic`,
-  `key + '_13TeV'` = the key's tags plus `SimBeamSpotHLLHCObjects_z4p3cm_t193ns_13TeV_nominal_mc_v1, SimBeamSpotHLLHCObjectsRcd`.
-  `autoCond.py`: `'phase1_2024_realistic': '150X_mcRun3_2024_realistic_v2'`, `'phase2_realistic': '150X_mcRun4_realistic_v1'`.
+  line 40 `step1Up2024Defaults`: `'--conditions': 'auto:phase1_2024_realistic', '--era': 'Run3', '--beamspot': 'DBrealistic'`.
+- `Configuration/PyReleaseValidation/python/relval_upgrade.py` lines 39-49: for a step with `'Sim'` and
+  `'HLBeamSpot'` in its name, `if '14TeV' in frag: step = 'GenSimHLBeamSpot14'`, `if 'CloseByParticle' in frag or 'CE_E'
+  in frag or 'CE_H' in frag: step = 'GenSimHLBeamSpotHGCALCloseBy'`; for a GEN-only `HLBeamSpot` step,
+  `if '14TeV' in frag: step = 'GenHLBeamSpot14'`.
+- `Configuration/AlCa/python/autoCondModifiers.py` line 128, `autoCondBSHLLHC13TeV`: for every key containing
+  `phase2_realistic`, `key + '_13TeV'` = the key's tags plus `SimBeamSpotHLLHCObjects_z4p3cm_t193ns_13TeV_nominal_mc_v1,
+  SimBeamSpotHLLHCObjectsRcd` (line 131). `autoCond.py`: `'phase1_2024_realistic': '150X_mcRun3_2024_realistic_v2'`,
+  `'phase2_realistic': '150X_mcRun4_realistic_v1'`.
 - `Configuration/Applications/python/ConfigBuilder.py` lines 1068-1074: "GEN step always requires to have a VtxSmearing
-  scenario (--beamspot) defined ... unless it's a special gen-only request (GEN:pgen_genonly)".
-- `SimTransport/PPSProtonTransport/python/OpticalFunctionsConfig_cfi.py` line 184: `opticalfunctionsTransportSetup_2021 = cms.PSet(..., BeamEnergy=cms.double(7000))`;
-  the `LHCTransport` parameters in the provenance of the file: `BeamEnergy = 7000`, `EtaCut = 8.2`, `MomentumCut = 3000`,
-  `TransportMethod = 'OpticalFunctions'`, `PPSRegionStart_45 = PPSRegionStart_56 = 203`. `Configuration/Eras/python/Era_Phase2_cff.py`
-  line 23: `Phase2 = cms.ModifierChain(Run3_noMkFit.copyAndExclude([phase1Pixel, trackingPhase1, seedingDeepCore, displacedRegionalTracking, ctpps_2022, dd4hep]), ...)`.
-- `RecoJets/JetProducers/python/GenJetParameters_cfi.py`: `jetPtMin = 3.0`, `inputEtMin = 0.0`, `Rho_EtaMax = 4.5`,
-  `Ghost_EtaMax = 6.0`, `GhostArea = 0.01`; `RecoJets/Configuration/python/GenJetParticles_cff.py`: `genParticlesForJets`
-  ignores the pdg ids 1000022, 1000012, ..., 39 (neutralinos, gravitinos, ...), `NoNu` adds 12, 14, 16;
-  `RecoMET/METProducers/python/genMetCalo_cfi.py`: `onlyFiducialParticles = True`; `RecoMET/METAlgorithms/src/GenSpecificAlgo.cc`
-  line 49: `if ((onlyFiducial && TMath::Abs(iParticle->eta()) >= 5.0))`.
+  scenario (--beamspot) defined ... unless it's a special gen-only request (GEN:pgen_genonly)"; the smearing cff is
+  loaded only in `prepare_GEN` (line 1407; `cffToBeLoaded=VtxSmeared[self._options.beamspot]`, line 1468).
+- `RecoLocalFastTime/FTLRecProducers/python/mtdUncalibratedRecHits_cfi.py`: endcap (`ETLUncalibRecHitAlgo`) line 25
+  `timeResolutionInNs = cms.string("0.0370")`; barrel (`BTLUncalibRecHitAlgo`) line 11 `"0.308*pow(x,-0.4175)"`.
+- The forward-proton transport: `Configuration/StandardSequences/python/Generator_cff.py` line 59, `pgen = cms.Sequence(...,
+  PPSTransportTask)`; `SimPPS/Configuration/python/GenPPS_cff.py` line 19 `ctpps_2022.toReplaceWith(PPSTransportTask,
+  cms.Task(LHCTransport))` (the 2016-2018 lines are commented out); `SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py`
+  `PPSRegionStart_45 = PPSRegionStart_56 = 203`; `edmDumpEventContent test/01_ME/out/step1_GEN_01_ME.root`:
+  `edm::HepMCProduct "LHCTransport" "" "GEN"`. `Configuration/Eras/python/Era_Phase2_cff.py` line 23:
+  `Phase2 = cms.ModifierChain(Run3_noMkFit.copyAndExclude([phase1Pixel, trackingPhase1, seedingDeepCore, displacedRegionalTracking, ctpps_2022, dd4hep]), ...)`.
+  (Not an open problem: the `BeamEnergy = 7000` of `opticalfunctionsTransportSetup_2021`,
+  `SimTransport/PPSProtonTransport/python/OpticalFunctionsConfig_cfi.py` line 184, is read only by `HectorTransport.cc`
+  line 158; the `OpticalFunctions` method used here takes the beam momentum from `CTPPSBeamParameters`,
+  `OpticalFunctionsTransport.cc` lines 104 and 112.)
 - `IOMC/RandomEngine/python/IOMC_cff.py`: `generator` 123456789, `VtxSmeared` 98765432, `LHCTransport` 87654321,
   `g4SimHits` 11, `mix` 12345.
-- Pythia8 8.311 `xmldoc` (`$PYTHIA8DATA`): `BeamRemnants:primordialKThard` default 1.8 (`BeamRemnants.xml`);
-  `MultipartonInteractions:ecmRef` default 7000.0, `pT0Ref` default 2.28; `SigmaTotal:mode` default 1, option 0 =
-  "Make your own choices (the own model), set as fixed values"; `ParticleProperties.xml`: 21 incoming, 23 outgoing
-  (hardest subprocess), 61 "incoming subprocess particle with primordial kT included", 62 "outgoing subprocess particle
-  with primordial kT included", 63 "outgoing beam remnant".
+- Pythia8 8.311 `xmldoc` (`$PYTHIA8DATA`): `Tunes.xml` `Tune:pp` default 14, option 14 "the Monash 2013 tune" (line 347),
+  `Tune:ee` default 7 (option 7 Monash, line 251); `PDFSelection.xml` `PDF:pSet` default 13 (lines 159, 184);
+  `MultipartonInteractions.xml` lines 179-182 (pT0 rescaled against "the nondiffractive inelastic" cross section),
+  `ecmRef` default 7000.0, `pT0Ref` default 2.28; `ParticleDecays.xml` `limitTau0` default off (line 43), `tau0Max`
+  default 10. "expressed in mm/c" (line 47); `BeamRemnants.xml` `BeamRemnants:primordialKThard` default 1.8;
+  `TotalCrossSections.xml` `SigmaTotal:mode` default 1, option 0 = "Make your own choices (the own model), set as fixed
+  values"; `ParticleProperties.xml`: 21 incoming, 23 outgoing (hardest subprocess), 61 "incoming subprocess particle with
+  primordial kT included", 62 "outgoing subprocess particle with primordial kT included", 63 "outgoing beam remnant".

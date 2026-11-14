@@ -705,71 +705,88 @@ primary of each kind is followed through the layers and labelled.}
 \section{Open problems for Phase-2}
 \label{sec:10_phase2}
 
-The sensitive detectors, the physics list and the mixing are configured in
-\path{SimG4Core/Application/python/g4SimHits_cfi.py}, in \path{Geometry/HcalSimData/python/HFParameters_cff.py},
-under \path{SimGeneral/MixingModule/python/} and in \path{Configuration/StandardSequences/python/Mixing.py}. A
-look through them and through the Phase-2 modifiers they contain gives the following; the hand-over cuts and the
-\code{StackingAction} were covered in chapter~\ref{ch:09_G4}, and so was the physics list
-(\code{FTFP\_BERT\_EMM}, with no \code{phase2} modifier on its \code{Physics} parameter set).
+The problems below are the state of CMSSW\_15\_0\_5, the release of this book, as read in
+\code{\$CMSSW\_RELEASE\_BASE/src} and its externals, not of the development branch of CMSSW. The sensitive
+detectors, the physics list and the mixing are configured in \path{g4SimHits_cfi.py}, \path{HFParameters_cff.py},
+\path{SimGeneral/MixingModule/python/} and \path{Mixing.py}; as in chapter~\ref{ch:09_G4}, their parameters after
+all modifiers were compared between \code{Run3\_2025} and the default Phase-2 era \code{Phase2C17I13M9} (geometry
+D110), and the hand-over cuts, the \code{StackingAction} and the physics list (\code{FTFP\_BERT\_EMM}, with no
+\code{phase2} modifier) were covered there.
 
 \textbf{The calorimeter hit thresholds stop at the Run-3 list.} \code{CaloSD} keeps a \code{PCaloHit} only above
 \code{EminHits = (0.015, 0.010, 0.0, 0.0, 0.0)} MeV (\path{SimG4CMS/Calo/src/CaloSD.cc} multiplies them by
-\code{CLHEP::MeV}) and before \code{TmaxHits = (500, 500, 500, 500, 2000)} ns,
-indexed by \code{HCNames = (EcalHitsEB, EcalHitsEE, EcalHitsES, HcalHits, ZDCHITS)}: $15$\,keV per crystal in the EB,
-$10$\,keV in the EE, nothing in the HCAL. The HGCal is not in this list: \code{HGCSD.EminHit = 0.0} and
-\code{HGCScintSD.EminHit = 0.0}, with \code{TimeSliceUnit = 0.001} ns, so every deposit of every step in its
-millions of cells is kept, time-sliced to the picosecond, and \code{TmaxHit = 1000} ns is the only limit. The 68
+\code{CLHEP::MeV}) and before \code{TmaxHits = (500, 500, 500, 500, 2000)} ns, indexed by \code{HCNames =
+(EcalHitsEB, EcalHitsEE, EcalHitsES, HcalHits, ZDCHITS)}: $15$\,keV per crystal in the EB, $10$\,keV in the EE,
+nothing in the HCAL. Phase-2 keeps this list although \code{phase2\_common} no longer produces
+\code{EcalHitsEE} and \code{EcalHitsES} (its \code{CaloHits}, line 758 of \code{g4SimHits\_cfi.py}), and the new
+calorimeters are not in it: a collection that is not listed falls back on a threshold of zero and \code{TmaxHit =
+1000} ns (\code{CaloSD.cc}, lines 43, 59 and 87--99). The HGCal adds \code{HGCSD.EminHit = 0.0} and
+\code{HGCScintSD.EminHit = 0.0}, with \code{HGCSD.TimeSliceUnit = 0.001} ns for the silicon and the scintillator
+(\path{SimG4CMS/Calo/src/HGCScintSD.cc}, line 41), so every deposit of every step in its cells is kept, time-sliced to
+the picosecond, until the $500\ns$ after which the stepping of chapter~\ref{ch:09_G4} stops a track. The 68
 in-time collisions alone deposit $3860\GeV$ in $34\,418$ ECAL cells here; at PU 200 the number of HGCal
-\code{PCaloHit}s per event is set by this zero. Whether a threshold or a coarser slice was ever tuned for the HGCal
-could not be established from the python; the default is ``keep everything''.
+\code{PCaloHit}s per event is set by this zero, which no modifier changes: the default is ``keep everything''.
 
 \textbf{The Birks constants of 1970.} The saturation of the scintillator light is applied with
 \code{HCalSD.UseBirkLaw = True}, \code{BirkC1 = 0.0060}, \code{BirkC2 = 0.142}, \code{BirkC3 = 1.75}, with the
 comment ``Values of Birks constants from NIM 80 (1970) 239-244: as implemented in Geant3 required correction due
-to biased computation of energy deposition''. The same three numbers are copied into \code{HGCScintSD}
-(lines 568--574 of the file), the scintillator tiles of the HGCal hadronic section, and into \code{TotemT2ScintSD}
-(\code{AHCalSD} has the same $C_2$, $C_3$ and \code{BirkC1 = 0.0052}); the HGCal silicon has no Birks law. The ECAL
-crystals, EB and EE, use their own parametrisation
-(\code{ECalSD.BirkL3Parametrization = True}, \code{BirkSlope = 0.253694}, \code{BirkCut = 0.1},
-\code{BirkC1 = 0.03333}). None of these carries an era modifier: the HL-LHC scintillator, a different material in
-a different geometry, is simulated with the HB tile constants of the 1970 measurement.
+to biased computation of enery deposition'' (sic). The same three numbers are copied into \code{HGCScintSD}
+(lines 568--574 of the file), the scintillator tiles of the HGCal hadronic section, whose material
+\code{materials:H\_Scintillator} (\path{hgcalHEmix/v17/hgcalHEmix.xml} of D110) has in \path{materials.xml} the
+composition and density of the HB plastic \code{materials:Scintillator} (C $0.915$, H $0.085$, $1.032$\,g/cm$^3$),
+and into \code{TotemT2ScintSD} (\code{AHCalSD} has the same $C_2$, $C_3$ and \code{BirkC1 = 0.0052}); the HGCal
+silicon has no Birks law. The ECAL crystals, EB and EE, use their own parametrisation
+(\code{ECalSD.BirkL3Parametrization = True}, \code{BirkSlope = 0.253694}, \code{BirkCut = 0.1}, \code{BirkC1 =
+0.03333}). None of these carries an era modifier: the HL-LHC tiles are simulated as the HB tiles, the same plastic
+with the constants of 1970.
 
-\textbf{Ageing is in the release and off.} \code{HCalSD} has \code{HBDarkening}, \code{HEDarkening} and
-\code{HFDarkening}, all \code{False}, and \code{common\_UseLuminosity} sets \code{DelivLuminosity = 5000}
-(fb$^{-1}$) for the ECAL and HCAL sensitive detectors, a number only read when a darkening flag is on. The HF
-fibre damage table (\path{SimG4CMS/Calo/python/HFDarkeningParams_cff.py}, the dose per depth and $\eta$ ring) is
-loaded by \code{g4SimHits\_cfi.py} and never used. No file under \code{Configuration/} or \code{SimG4Core/}
-switches a darkening on for a Phase-2 era (the only other occurrences are test configurations): the
-$3000$\,fb$^{-1}$ of the HL-LHC leave the simulated response of the HF fibres and the HB tiles unchanged, and
-where the production accounts for it, if it does, is not in this release.
+\textbf{Ageing is applied after Geant4, not in it.} \code{HCalSD} has \code{HBDarkening}, \code{HEDarkening} and
+\code{HFDarkening}, \code{False} in every era, and \code{common\_UseLuminosity} sets \code{DelivLuminosity = 5000}
+(fb$^{-1}$) for the ECAL and HCAL sensitive detectors, a number only read when a darkening flag is on; the HF fibre
+damage table (\path{SimG4CMS/Calo/python/HFDarkeningParams_cff.py}, a dose in 33 depth and 13 radial layers) is
+loaded and unused. The HL-LHC ageing of the release is \path{SLHCUpgradeSimulations/Configuration/python/aging.py}:
+its \code{customise\_aging\_1000} and \code{\_3000}, which the \code{Run4} workflows \code{Aging1000} and
+\code{Aging3000} apply to the DIGI and RECO steps only (\code{UpgradeWorkflowAging} in
+\path{upgradeWorkflowComponents.py}), darken the HB and HF in the HCAL digitiser and load aged ECAL conditions.
+In Geant4 they would only set the luminosities of \code{HCalSD} and \code{ECalSD}, with the comment ``these lines
+need to be further activated by turning on 'complete' aging for HF'' (line 133). The function that would do it,
+\code{hf\_complete\_aging} (line 178), is called by none of them and sets \code{HFDarkening} as a
+\code{cms.untracked.bool}, while \path{SimG4CMS/Calo/src/HCalSD.cc} reads it as a tracked parameter (line 96), a
+mismatch that \path{FWCore/ParameterSet/src/ParameterSet.cc} refuses (lines 233--241). The photoelectrons that the
+shower library gives an HF of $3000$\,fb$^{-1}$ are those of undamaged fibres; the damage enters later, as a weight
+of the digitiser.
 
 \textbf{The HF shower library is the Run-3 one.} \code{HFShower.UseShowerLibrary = True} with the file
 \code{HFShowerLibrary\_run3\_v7.root} (\code{FileVersion = 3}, \code{EqualizeTimeShift = True}) is set by the
 \code{run3\_HFSL} modifier of \code{Era\_Run3\_cff.py}, and the Phase-2 eras are built on \code{Run3\_noMkFit}
 (\path{Configuration/Eras/python/Era_Phase2_cff.py}), so they inherit it: \code{HFParameters\_cff.py} has no
 Phase-2 entry. The 1849 photoelectrons of the signal and the $53\,900$ of the bunch crossing are drawn from showers
-stored for the Run-3 detector; the HF geometry does not change for Phase-2, so the library carries over, but it has
-not been regenerated for 14\,TeV or for darkened fibres as far as the python shows.
+stored for the Run-3 detector; the HF of D110 is built from the same XML (chapter~\ref{ch:09_G4}), so the library
+carries over, with its old reach: the file has no event-information branch (\code{BranchEvt} is empty), so
+\path{SimG4CMS/Calo/src/HFShowerLibrary.cc} uses its hard-wired 16 energies from 2 to $1000\GeV$ (line 568), and a
+particle above $1\TeV$ gets a sum of showers of the $1000\GeV$ bin (\code{extrapolate}, lines 656--669).
 
 \textbf{The mixing window of Phase-2 is shorter than that of Run 3.} The 2025 production profile of the release,
 \path{2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23} (a \code{probFunction} over 0--99
 collisions with mean 64.3; 44.9 for the 2024 one, \path{2024_25ns_RunIII2024Summer24_PoissonOOTPU}), built on
 \path{SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py}, mixes \code{minBunch = -12} to
-\code{maxBunch = 3}: 16 bunch crossings, about $16\times64 \simeq 1030$ library collisions per signal event, which
-is why the production premixes. The Phase-2 relvals (\code{PUDataSets} for \code{Run4} in
+\code{maxBunch = 3}: 16 bunch crossings, about $16\times64 \simeq 1030$ library collisions per signal event (our three
+bunch crossings of 60 read 193). The Phase-2 relvals (\code{PUDataSets} for \code{Run4} in
 \path{Configuration/PyReleaseValidation/python/relval_steps.py}) use \code{AVE\_200\_BX\_25ns}, defined in
 \code{Mixing.py} as \path{mix_POISSON_average_cfi} with \code{N = 200} and \code{B = (-3, 3)}: seven bunch
 crossings, 1400 collisions, and the out-of-time pileup cut at $-75\ns$ instead of $-300\ns$ (the variants
-\code{AVE\_200\_BX\_25ns\_m12p3} and \code{\_m6p6} exist next to it). In this event the one early bunch crossing
-already puts 51 of the 204 muon-chamber hits and $139\,551$ tracker hits in front of the digitisers; whether
-$-3$ is enough for the detectors with a long memory (the DT drift, the CSC strip integration) is decided by the
-time windows of chapter~\ref{ch:11_DIGI}, not by the mixing.
+\code{AVE\_200\_BX\_25ns\_m12p3} and \code{\_m6p6} exist next to it, used by no workflow). In this event the one
+early bunch crossing already puts 51 of the 204 muon-chamber hits and $139\,551$ tracker hits in front of the
+digitisers; with \code{B = (-3, 3)} no collision older than $75\ns$ exists for the detectors with a long memory (the
+DT drift, the CSC strips) to see, whatever the time windows of chapter~\ref{ch:11_DIGI}.
 
 \textbf{What premixing keeps of the SimHits.} The modifier \code{premix\_stage1} extends the list
 \code{pcrossingFrames} of \code{mixSimHits} (\path{SimGeneral/MixingModule/python/mixObjects_cfi.py}) so that the
-\code{MuonCSCHits}, \code{MuonDTHits}, \code{MuonRPCHits}, the GEM hits (\code{run3\_GEM}) and, for Phase-2
-(\code{phase2\_muon}, dropped again by \code{phase2\_GE0}), the ME0 hits are written into the premixed event as \code{PCrossingFrame}s: the muon
-digitisers run only in stage 2, so these are the one kind of pileup SimHit the production still carries.
+\code{MuonCSCHits}, \code{MuonDTHits}, \code{MuonRPCHits}, the GEM hits (\code{run3\_GEM}) and, with
+\code{phase2\_muon}, the ME0 hits are written into the premixed event as \code{PCrossingFrame}s; \code{phase2\_GE0},
+part of \code{Phase2C17I13M9}, drops the ME0 hits again. These are the one kind of pileup SimHit a premixed sample
+carries: in stage 2 the \code{PreMixingModule} merges them with those of the signal and the muon digitisers run
+afterwards (\code{muonDigiTask} in \code{postDMDigi}, \path{Configuration/StandardSequences/python/DataMixerPreMix_cff.py}).
 \code{phase2\_hgcal} adds the three HGCal collections to \code{mixCaloHits} and \code{phase2\_timing\_layer} the
 MTD hits to \code{mixSimHits}; the HGCal digitisers run in \code{premixStage1} mode in stage 2 as well
 (\path{SimGeneral/MixingModule/python/digitizers_cfi.py}, ``HGCAL still needs calotruth for production mode''),

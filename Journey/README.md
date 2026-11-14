@@ -15,7 +15,7 @@ quotes. `doc/chapter/README.md` says how a chapter is written.
 | `04_MPI` | + multiparton interactions and beam remnants | `step1_GEN_04_MPI.root`, 3 pages (with the Delta R < 0.4 cones and their underlying-event part, partons coloured by scattering), ledger |
 | `05_Had` | + hadronisation (Lund strings) | `step1_GEN_05_Had.root`, 4 pages (with the Delta R < 0.4 cones and a zoom on the B- cone), ledger |
 | `06_Decay` | + hadron decays: the full generator event | `step1_GEN_06_Decay.root`, 5 pages (with the Delta R < 0.4 cones, neutrinos not counted, and a zoom on each cone), ledger |
-| `07_GenJet` | anti-kT generator jets as a separate step (process GENJET) | `step2_GENJET_07_GenJet.root`, 5 + 3 pages (GenJetAnalyzer), ledger |
+| `07_GenJet` | anti-kT generator jets as a separate step (process GENJET) | `step2_GENJET_07_GenJet.root`, `genJetAnalyzer_07_GenJet_AK4/AK4NoNu/AK8.pdf` (one page each), ledger |
 | `08_PU` | pileup at generator level: 250 minimum-bias collisions (GEN), one drawn; the signal + its 68 in-time collisions re-clustered | `step1_GEN_MinBias_08_PU.root`, `genstats_08_PU.txt`, `genJetAnalyzer_08_PU.pdf`, ledger |
 | `09_G4` | detector chapter (Rule J, 12 pages): the hand-over to Geant4: transport-only SIM of the signal and of all library collisions (what is accepted, what is dropped) | `step2_G4_signal_09_G4.root`, `step2_G4_pileup_09_G4.root`, SimAnalyzer pages, `ledger_09_G4.txt` (g4Ledger.py), `extras_09_G4.txt` (g4Extras_09_G4.py, FWLite) |
 | `10_SIM` | detector chapter (Rule J, 16 pages): full Geant4 physics switched on stage by stage (B, decays, EM, hadronic); the signal, the library and the mixing at SimHit level, station by station | `step2_SIM_{B,B_Decay,B_Decay_EM,signal,pileup}_10_SIM.root`, SimAnalyzer and SimHitAnalyzer pages (`signal/`, `pileup/`, `mixed/`), `step3_MIX_10_SIM.root` (the playback record of the mixing), ledger, `extras_10_SIM.txt` (simExtras_10_SIM.py, FWLite) |
@@ -46,7 +46,8 @@ first pileup chapters) are parked, untouched, in `test/tmp/` and `doc/tmp/`.
 ## The analyzers (plugins/)
 
 All analyzers draw with ROOT into a multi-page PDF (one PDF per job; ROOT keeps one PDF open) and print their numbers
-to stdout; the chapter scripts convert the pages to PNG (`pdftoppm -cropbox`) for the book and keep the logs.
+to stdout; the book includes the PDFs of chapters 01-08 directly, the scripts of chapters 09-13 convert the pages to PNG
+(`pdftoppm -cropbox`, `PNG=1`) for the book; all keep the logs.
 
 - **GenPartAnalyzer** (`test/common/genPartAnalyzer_cfg.py`): the genParticles of a GEN file as markers in the (eta, phi)
   plane, one page per generation stage that exists in the record (1 hard process, 2 parton shower, 3 MPI and beam
@@ -116,7 +117,9 @@ The CMS chapters 08-13 run with the 2025 settings of the release (`auto:phase1_2
 generator level the two are the same). The year of a chapter is `YEAR` in `test/common/jitjet_common.sh`. In this
 release the 2025 global tag has the geometry, the field map and the simulated beam spot of 2024, so 08-10 are identical
 with either year; the two years part at the digitisation (11-13 say in a "What the year changed" paragraph how).
-Every chapter ends with the open problems of its stage for Phase-2, dug out of the release configuration. The earlier Phase-2 runs (D110 geometry, `Phase2C17I13M9`, 14 TeV, PU 10 in bx -1..1, with the
+Every chapter ends with the open problems of its stage for Phase-2, dug out of the release CMSSW_15_0_5 itself
+(`$CMSSW_RELEASE_BASE/src`, its externals and the global tags it names), not out of the development branch, which changes
+every week. The earlier Phase-2 runs (D110 geometry, `Phase2C17I13M9`, 14 TeV, PU 10 in bx -1..1, with the
 HGCAL station of SimHitAnalyzer) and their scripts are kept in `test/tmp/` (`runCMSDrivers_mcPhase2_BBbar_SIM.sh`,
 `runPileup_mcPhase2_BBbar.sh`, `runSimHitAnalyzer_mcPhase2_BBbar.sh`, `GEN_Phase2/`, `SIM_Phase2/`, `PU_Phase2/`)
 and `doc/tmp/` (`Gen4Phase2.md`, `pu/Phase2/`, `sim/At*.md`); the chapter scripts take the scenario from

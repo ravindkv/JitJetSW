@@ -4,13 +4,15 @@
 // value is written next to the b, bbar and every particle above labelPtMin). One PDF is
 // written per stage and event (<outputPrefix>_stageN_<name>_run<R>_event<E>.pdf; ROOT can
 // keep only one multi-page PDF open at a time), or, if pdfFile is set, all plots go as pages
-// into that single PDF (per event the stages 1..maxStage; with openPdf / closePdf = false the
+// into that single PDF (per event the drawn stages; with openPdf / closePdf = false the
 // file is opened / closed by another module of the same job that prints into the same PDF,
 // e.g. GenJetAnalyzer, which then appends its pages after the stages of every event), plus TH2 (eta, phi, weight pT)
 // per stage in the TFileService file. maxStage limits the stages that are analysed, for a
 // sample generated with later Pythia8 levels switched off (ME only: 1, + parton shower: 2,
-// + MPI: 3, + hadronisation: 5); sampleLabel is printed in the right panel of every plot,
-// '|' separates lines.
+// + MPI: 3, + hadronisation: 5); drawStages picks the analysed stages that get a page (empty: all of
+// them; the others are still analysed and printed, so that a chapter shows only the page of its own
+// stage while the legend keeps the stages of the sample); sampleLabel is printed in the right panel
+// of every plot, '|' separates lines.
 //
 // The Pythia8 status codes kept in genParticles (Pythia8 manual, "Particle Properties")
 // give the stage in which each particle (or copy of a particle) was produced:
@@ -163,6 +165,7 @@ private:
   double etaMax_, labelPtMin_, coneR_;
   bool savePDF_, printParticles_, openPdf_, closePdf_;
   int maxStage_;
+  std::vector<int> drawStages_;  // the stages that get a page; empty: every analysed stage
   bool pdfOpen_ = false;  // the multi-page pdfFile_ is opened on the first page and closed in endJob
   // the event being drawn: the record has multiparton interactions (status 31-39), their number, and the scattering
   // of every particle (Scattering)
@@ -189,7 +192,8 @@ GenPartAnalyzer::GenPartAnalyzer(const edm::ParameterSet& ps)
       printParticles_(ps.getParameter<bool>("printParticles")),
       openPdf_(ps.getParameter<bool>("openPdf")),
       closePdf_(ps.getParameter<bool>("closePdf")),
-      maxStage_(std::min(std::max(ps.getParameter<int>("maxStage"), 1), kNStages)) {
+      maxStage_(std::min(std::max(ps.getParameter<int>("maxStage"), 1), kNStages)),
+      drawStages_(ps.getParameter<std::vector<int>>("drawStages")) {
   usesResource(TFileService::kSharedResource);
   edm::Service<TFileService> fs;
   for (int s = 1; s <= kNStages; ++s) {
@@ -220,6 +224,8 @@ void GenPartAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descripti
       ->setComment("printed in the right panel of every plot, '|' separates lines (e.g. the generator stage)");
   desc.add<int>("maxStage", kNStages)
       ->setComment("last stage to analyse and draw: 1 hard process, 2 parton shower, 3 MPI, 4 hadronisation, 5 decays");
+  desc.add<std::vector<int>>("drawStages", {})
+      ->setComment("the analysed stages that get a page (empty: all); the others are analysed and printed, but not drawn");
   desc.add<bool>("printParticles", false)->setComment("print every drawn particle of every stage to stdout");
   desc.add<bool>("openPdf", true)->setComment("open pdfFile before the first page (false: another module of the job opens it)");
   desc.add<bool>("closePdf", true)->setComment("close pdfFile in endJob (false: another module of the job closes it)");
@@ -783,7 +789,7 @@ void GenPartAnalyzer::analyze(const edm::Event& ev, const edm::EventSetup&) {
       }
     }
 
-    if (savePDF_)
+    if (savePDF_ && (drawStages_.empty() || std::find(drawStages_.begin(), drawStages_.end(), s) != drawStages_.end()))
       draw(s, ev, gens, alive, shown, sys);
   }
 }

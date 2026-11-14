@@ -23,12 +23,12 @@ python3 "$COMMON/genShowerStats.py" "$OUT/xsec_GEN_02_PS.root" --event 1:1:1 > "
 
 `gen_stage` (in `jitjet_common.sh`) symlinks the fragment `JitJetSW/Configuration/GenProduction/python/BBbar_14TeV_TuneCP5_cfi.py`
 into `Configuration/GenProduction/python/` (where `cmsDriver.py` looks for it), then runs `cmsDriver.py` with
-`--no_exec` to write `test/02_PS/step1_GEN_02_PS_cfg.py`, then `cmsRun` on it in `test/02_PS/out/`, then the analyzer,
-the PNG conversion and the ledger. The exact `cmsDriver.py` command, as recorded in the header of
+`--no_exec` to write `test/02_PS/step1_GEN_02_PS_cfg.py`, then `cmsRun` on it in `test/02_PS/out/`, then the analyzer
+and the ledger. The exact `cmsDriver.py` command, as recorded in the header of
 `step1_GEN_02_PS_cfg.py` ("with command line options") and in `out/step1_GEN_02_PS_cfg.driver.log`:
 
 ```bash
-./02_PS/run_02_PS.sh                 # the whole chapter: config, cmsRun, analyzer, PNG pages, ledger
+./02_PS/run_02_PS.sh                 # the whole chapter: config, cmsRun, analyzer, ledger
 RUN=0 ./02_PS/run_02_PS.sh           # only write the configuration
 ANALYZE=0 ./02_PS/run_02_PS.sh       # generate without the analyzer, the ledger and the shower statistics
 CONE_R=0 ./02_PS/run_02_PS.sh        # the display without the cones
@@ -164,10 +164,9 @@ Run by `gen_stage` after `cmsRun`, from `test/02_PS/out/` (the `|` in `sampleLab
 ```bash
 cd 02_PS/out
 cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_02_PS.root outputFile=genPartAnalyzer_02_PS.root \
-  maxEvents=1 eventsToProcess=1:1:1 maxStage=2 pdfFile=genPartAnalyzer_02_PS.pdf \
+  maxEvents=1 eventsToProcess=1:1:1 maxStage=2 drawStages=2 pdfFile=genPartAnalyzer_02_PS.pdf \
   sampleLabel="chapter 02_PS: the parton shower (ISR + FSR)|ISR on, FSR on, MPI off|Hadronize off, Decay off|pTHatMin 100 GeV, 13.6 TeV" \
   coneR=0.4 > genPartAnalyzer_02_PS.log 2>&1
-pdftoppm -cropbox -r 110 -png genPartAnalyzer_02_PS.pdf genPartAnalyzer_02_PS_page
 python3 ../../common/genLedger.py step1_GEN_02_PS.root --event 1:1:1 > ledger_02_PS.txt 2> ledger_02_PS.log
 python3 ../../common/genShowerStats.py xsec_GEN_02_PS.root --event 1:1:1 > showerStats_02_PS.txt 2> showerStats_02_PS.log
 cd ../..
@@ -176,9 +175,9 @@ cd ../..
 - `genPartAnalyzer_cfg.py` runs the `GenPartAnalyzer` plugin (`Journey/plugins/GenPartAnalyzer.cc`) on the
   `genParticles`. It classifies every entry by its status code into the stage that produced it (1 hard process
   21-29, 2 parton shower 41-49 and 51-59, 3 MPI and beam remnants 31-39 and 61-69, 4 hadronisation, 5 decays), draws
-  the particles alive at the end of each stage up to `maxStage=2` in the eta-phi plane (marker size ~ log pT, the pT
+  the particles alive at the end of stage 2 (`maxStage=2 drawStages=2`; stage 1 is analysed too, for the log) in the eta-phi plane (marker size ~ log pT, the pT
   written for pT > 5 GeV) and follows the b and bbar through their copies. It produces
-  `genPartAnalyzer_02_PS.pdf` (2 pages: the hard process, the parton shower), `genPartAnalyzer_02_PS.root`
+  `genPartAnalyzer_02_PS.pdf` (1 page, the parton shower; the hard process is the page of chapter 01), `genPartAnalyzer_02_PS.root`
   (TH2 eta-phi weighted by pT and the pT histograms of the b, bbar and net b+bbar per stage, in the `TFileService`
   file) and `genPartAnalyzer_02_PS.log` (the b, bbar and net b+bbar per stage, quoted in section 4).
   With `coneR=0.4` (default 0, off; `gen_stage` passes `CONE_R`) every page also has the cone Delta R < 0.4 around
@@ -189,8 +188,8 @@ cd ../..
   covers the fewest particles and no cone (`GenPartAnalyzer::drawZoom`): +-0.5 around the axis, every particle with
   its name and pT in a column on the right, joined to it by a thin line; the main frame then does not write their
   labels, which overlapped. The b+bbar label moves to the left of the star, clear of the bbar circle.
-- `pdftoppm -cropbox` renders the pages as `genPartAnalyzer_02_PS_page-1.png` and `page-2.png` (the ROOT PDF has an
-  A4 MediaBox around the landscape canvas, hence `-cropbox`); these PNGs are the figure of the chapter.
+- The .tex includes `genPartAnalyzer_02_PS.pdf` itself as the figure of the chapter (pdfTeX uses the CropBox
+  around the landscape canvas, not the A4 MediaBox of the ROOT PDF).
 - `genLedger.py` (FWLite, no `cmsRun`) prints `ledger_02_PS.txt`: the record by status group, the hard process, the
   final state by kind and by region, and (option `--cone`, default 0.4) the cone around each outgoing parton of the
   hard process: the axis is the last copy of the parton (status 1 here, with the primordial kT), the cone holds the
@@ -570,6 +569,9 @@ missing from the "changed settings" table of `step1_GEN_02_PS.log`; the Info lis
 
 ### 4.8 The release files of "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`)
 
+Everything below was read in the release CMSSW_15_0_5 (`$CMSSW_RELEASE_BASE/src` and its Pythia8 8.311 external,
+`$PYTHIA8DATA`), not in the CMSSW development branch.
+
 `Configuration/Generator/python/MCTunes2017/PythiaCP5Settings_cfi.py` (imported by the fragment), the full block:
 
 ```
@@ -586,6 +588,9 @@ missing from the "changed settings" table of `step1_GEN_02_PS.log`; the Info lis
 'PDF:pSet=LHAPDF6:NNPDF31_nnlo_as_0118',
 ```
 
+The file has no comment, and `grep -rn 'GEN-17-001' Configuration GeneratorInterface` finds nothing: the directory
+name `MCTunes2017` is the only date the release gives for the tune.
+
 `diff MCTunes2017/PythiaCP5Settings_cfi.py MCTunesRun3ECM13p6TeV/PythiaCP5Settings_cfi.py`:
 
 ```
@@ -601,27 +606,66 @@ The MPI cut-off from the formula of `MultipartonInteractions.xml`, pT0 = pT0Ref 
 pT0Ref = 1.41, ecmRef = 7000 (default), ecmPow = 0.03344: 1.41 x (13600/7000)^0.03344 = 1.4417 GeV at 13.6 TeV,
 1.41 x 2^0.03344 = 1.4431 GeV at 14 TeV.
 
-Counts in `Configuration/Generator/python/`: 30 files match `*14TeV*CP5*`; 40 files matching `*14TeV*` import
-`MCTunes2017.PythiaCP5Settings`; 6 files in the directory import `MCTunesRun3ECM13p6TeV.PythiaCP5Settings`, 0 of
-them with `14TeV` in the name. `TTbar_14TeV_TuneCP5_cfi.py`, `MinBias_14TeV_pythia8_TuneCP5_cfi.py` and
-`QCD_Pt_80_120_14TeV_TuneCP5_cfi.py` all have `from Configuration.Generator.MCTunes2017.PythiaCP5Settings_cfi import *`
-and `comEnergy = cms.double(14000.0)`. `Configuration/PyReleaseValidation/python/relval_steps.py`, lines 4604-4617:
+The shower defaults that no file sets (`grep -rl 'SpaceShower:pT0Ref\|SpaceShower:ecmPow\|samePTasMPI\|TimeShower:pTmin'
+Configuration/Generator/python` finds nothing): Pythia8 `SpacelikeShowers.xml` `SpaceShower:samePTasMPI` default off
+(line 245), `SpaceShower:pT0Ref` default 2.0 (line 287), `SpaceShower:ecmRef` 7000.0 (line 297), `SpaceShower:ecmPow`
+default 0.0 (line 301); `TimelikeShowers.xml` `TimeShower:pTmin` default 0.5 (line 253); `Tunes.xml` `Tune:pp` default
+14 and `Tune:ee` default 7, both "the Monash 2013 tune" (lines 347, 251). `test/02_PS/out/step1_GEN_02_PS.log` line 108:
+`PYTHIA Warning in SimpleTimeShower::init: pTmin too low , raised to 0.611` (the same line in every `step1_GEN_*.log` and
+`xsec_GEN_*.log` of the book); lines 142-145, the settings table: `SpaceShower:alphaSorder` 2 (default 1),
+`SpaceShower:alphaSvalue` 0.11800 (default 0.13650), `TimeShower:alphaSorder` 2 (default 1), `TimeShower:alphaSvalue`
+0.11800 (default 0.13650).
+
+Counts in `Configuration/Generator/python/`: 30 files match `*14TeV*CP5*`; 40 files have both `14TeV` and `CP5` in the
+name and all 40 import `MCTunes2017.PythiaCP5Settings`; 6 files in the directory import
+`MCTunesRun3ECM13p6TeV.PythiaCP5Settings`, 0 of them with `14TeV` in the name. `TTbar_14TeV_TuneCP5_cfi.py`,
+`MinBias_14TeV_pythia8_TuneCP5_cfi.py` and `QCD_Pt_80_120_14TeV_TuneCP5_cfi.py` all have
+`from Configuration.Generator.MCTunes2017.PythiaCP5Settings_cfi import *` and `comEnergy = cms.double(14000.0)`.
+`Configuration/PyReleaseValidation/python/relval_steps.py`, lines 4604-4617:
 `key='MinBias_14TeV_pythia8_TuneCP5'+'_'+ds` and, for `'Run4' in ds`,
 `PUDataSets[ds]={'-n':10,'--pileup':'AVE_200_BX_25ns','--pileup_input':'das:/RelValMinBias_14TeV/%s/GEN-SIM'%(name,)}`.
 
-`Configuration/Generator/python/PSweightsPythia/PythiaPSweightsSettings_cfi.py`, last lines:
+`Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py`, `upgradeFragments` (line 3255): 152 fragments,
+52 with `14TeV` in the name: 37 import `MCTunes2017.PythiaCP5Settings`, 12 `Pythia8CUEP8M1Settings`
+(`Wjet_Pt_80_120`, `Wjet_Pt_3000_3500`, `QCD_Pt_3000_3500`, `QCD_Pt_80_120`, `JpsiMM`, `WE`, `H130GGgluonfusion`,
+`PhotonJet_Pt_10`, `QQH1352T_Tauola`, `QCD_Pt_600_800` `_14TeV_TuneCUETP8M1_cfi`, `DYToLL_M-50_14TeV_pythia8_cff`,
+`DYToTauTau_M-50_14TeV_pythia8_tauola_cff`), 2 the Pythia6 `PythiaUEZ2starSettings`, 1 is Exhume.
+`Configuration/Generator/python/Pythia8CUEP8M1Settings_cfi.py`, the full block:
 
 ```
+'Tune:pp 14', 'Tune:ee 7',
+'MultipartonInteractions:pT0Ref=2.4024', 'MultipartonInteractions:ecmPow=0.25208', 'MultipartonInteractions:expPow=1.6',
+```
+
+`Configuration/Generator/python/PSweightsPythia/PythiaPSweightsSettings_cfi.py`, first and last lines:
+
+```
+        'UncertaintyBands:doVariations = on',
+        ...
         'UncertaintyBands:FSRpTmin2Fac = 20',
         'UncertaintyBands:ISRpTmin2Fac = 20' # for consistency with UL and P8.240 set to 20, to be optimized and changed for Run 3 re-MC
 ```
 
-`Configuration/Generator/python/Pythia8CommonSettings_cfi.py`, the full block:
+Pythia8 `Variations.xml`: `UncertaintyBands:doVariations` default off (line 32), `ISRpTmin2Fac` and `FSRpTmin2Fac`
+default 4.0 (lines 81, 88). The block is imported by 6 files of `Configuration/Generator/python/`, 2 of them with
+`14TeV` in the name (`HTo2LongLivedTo4bMH-125_MFF-12_CTau-900mm_TuneCP5_14TeV_pythia8_cfi.py`,
+`DisplacedSUSY_stopToBottom_M_800_500mm_TuneCP5_14TeV_pythia8_cff.py`); not by the fragment of the book.
+
+`Configuration/Generator/python/Pythia8CommonSettings_cfi.py`, the full block (imported by 262 files of
+`Configuration/Generator/python/`):
 
 ```
 'Tune:preferLHAPDF = 2', 'Main:timesAllowErrors = 10000', 'Check:epTolErr = 0.01',
 'Beams:setProductionScalesFromLHEF = off', 'SLHA:minMassSM = 1000.',
 'ParticleDecays:limitTau0 = on', 'ParticleDecays:tau0Max = 10', 'ParticleDecays:allowPhotonRadiation = on',
 ```
+
+Pythia8 `ErrorChecks.xml` line 83: `Check:epTolErr` default 1e-4 (the log, line 115: `0.0100000 | 1.0000e-04`);
+`ParticleDecays.xml`: `limitTau0` default off (line 43), `tau0Max` default 10. "expressed in mm/c" (lines 47-48).
+
+The event (B5, last paragraph): `test/02_PS/out/ledger_02_PS.txt` lines 8-9, outgoing -5 at eta = -3.75, 5 at
+eta = -1.44; `genPartAnalyzer_02_PS.log`, stage 2, the cone around the b: members b (dR 0), g 0.162, g 0.130,
+dbar 0.312, g 0.128, d 0.050 (five partons besides the b, the farthest at 0.31), the cone around the bbar: the bbar
+alone; `showerStats_02_PS.txt`: "bbar emissions per event ... none in 354 events (35.4%)".
 
 `IOMC/RandomEngine/python/IOMC_cff.py`: `generator = cms.PSet(initialSeed = cms.untracked.uint32(123456789), engineName = FullSimEngine)`.

@@ -38,8 +38,8 @@ With the same seeds (the default `RandomNumberGeneratorService` state, unchanged
 hard process is identical to chapters 01 and 02; Pythia8's interleaved ISR / FSR / MPI evolution draws its random
 numbers differently as soon as MPI compete, so the shower differs from chapter 02 emission by emission
 (section 4, table 4.3). Pythia8 has no setting that adds MPI on top of an existing shower; the chapter therefore shows
-the two showers side by side (figure 4.1: page 2 of `02_PS/out/genPartAnalyzer_02_PS.pdf` and of
-`04_MPI/out/genPartAnalyzer_04_MPI.pdf`, both cut to the eta-phi frame with `\includegraphics[trim=0 0 170 0,clip]`).
+the two showers side by side (figure 4.1: the page of `02_PS/out/genPartAnalyzer_02_PS.pdf` and of
+`04_MPI/out/genPartAnalyzer_04_MPI_shower.pdf`, both cut to the eta-phi frame with `\includegraphics[trim=0 0 170 0,clip]`).
 
 ## 2. The cmsRun on the python config
 
@@ -89,25 +89,31 @@ hadronised event, see section 4, table 4.6).
 
 ## 3. The analyzer configs
 
-`gen_stage` runs, after `cmsRun`, the per-stage analyzer, the PNG conversion and the ledger:
+`gen_stage` runs, after `cmsRun`, the per-stage analyzer and the ledger; `run_04_MPI.sh` then
+runs the analyzer once more for the shower page (`gen_part_pages`):
 
 ```bash
-# (a) eta-phi maps of the record per generation stage, 3 pages (1 hard process, 2 parton shower, 3 MPI / beam remnants)
+# (a) eta-phi map of the record: stages 1-3 analysed (log), one page drawn, stage 3 (MPI / beam remnants)
 cd 04_MPI/out && cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_04_MPI.root \
-  outputFile=genPartAnalyzer_04_MPI.root maxEvents=1 eventsToProcess=1:1:1 maxStage=3 \
+  outputFile=genPartAnalyzer_04_MPI.root maxEvents=1 eventsToProcess=1:1:1 maxStage=3 drawStages=3 \
   pdfFile=genPartAnalyzer_04_MPI.pdf \
   sampleLabel="chapter 04_MPI: multiparton interactions and beam remnants|ISR on, FSR on, MPI on|Hadronize off, Decay off|pTHatMin 100 GeV, 13.6 TeV" \
-  coneR=0.4 > genPartAnalyzer_04_MPI.log 2>&1 && cd ../..
+  coneR=0.4 > genPartAnalyzer_04_MPI.log 2>&1
+# (a') the same, one page drawn, stage 2 (the parton shower with MPI on, figure 4.1(b)); maxStage=3 keeps the legend
+#      of the stages of this sample
+cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_04_MPI.root \
+  outputFile=genPartAnalyzer_04_MPI_shower.root maxEvents=1 eventsToProcess=1:1:1 maxStage=3 drawStages=2 \
+  pdfFile=genPartAnalyzer_04_MPI_shower.pdf \
+  sampleLabel="chapter 04_MPI: multiparton interactions and beam remnants|ISR on, FSR on, MPI on|Hadronize off, Decay off|pTHatMin 100 GeV, 13.6 TeV" \
+  coneR=0.4 > genPartAnalyzer_04_MPI_shower.log 2>&1 && cd ../..
 # (coneR=0.4: CONE_R=${CONE_R:-0.4} in run_04_MPI.sh, as in chapter 02; CONE_R=0 ./04_MPI/run_04_MPI.sh draws no cones)
-# (b) the PDF pages as PNG for the book (ROOT PDFs carry an A4 MediaBox and a CropBox around the canvas)
-pdftoppm -cropbox -r 110 -png 04_MPI/out/genPartAnalyzer_04_MPI.pdf 04_MPI/out/genPartAnalyzer_04_MPI_page
-# (c) the ledger of the event (FWLite, no cmsRun)
+# (b) the ledger of the event (FWLite, no cmsRun)
 python3 common/genLedger.py 04_MPI/out/step1_GEN_04_MPI.root --event 1:1:1 > 04_MPI/out/ledger_04_MPI.txt
 ```
 
 | file | content |
 |---|---|
-| `genPartAnalyzer_04_MPI.pdf`, `_page-1/2/3.png` | page 1 the hard process (2 partons), page 2 after the parton shower of the hard process (14 partons: b, bbar, 1 hard-process ISR, 11 hard-process FSR; the initial-state emissions of an MPI, whose mother is an incoming parton, status 41, are produced in stage 3 with their interaction; section 4.6), page 3 the end of the parton level, the final partons with their primordial kT (169 partons, coloured by the scattering they belong to: b, bbar, 1 hard-process ISR, 11 hard-process FSR, 61 MPI partons, 25 MPI ISR, 56 MPI FSR, 13 beam remnants; 16 with eta beyond 6 on the border; the header counts them by scattering, 14 / 142 / 13). On every page the dashed cones Delta R < 0.4 around the b and the bbar with their pT, and an inset that magnifies the fuller cone (the b cone) with the name and pT of every parton; on page 3 the cone pT is followed by its underlying-event part (UE: the partons of the MPI and the remnants, scalar sum). The plugin `plugins/GenPartAnalyzer.cc` attributes every entry to the stage that produced it from its Pythia8 status code (21-29 hard process, 41-49 ISR, 51-59 FSR, 31-39 MPI, 61-69 primordial kT and remnants) and draws, at stage N, the particles alive at the end of stage N; in a record with MPI it also attributes every parton to its scattering (`scatteringOf`: up the mothers through copies, radiators and emissions, from an incoming parton down its chain to the scattering, a parton whose mother is a beam proton is a remnant: the walk of the FWLite script below) and draws the ISR / FSR emissions of an MPI in cyan (triangles), apart from those of the hard process (orange / green) |
+| `genPartAnalyzer_04_MPI_shower.pdf`; `genPartAnalyzer_04_MPI.pdf` | one page each (included as PDF by the .tex) (the hard process, stage 1, is the display of chapter 01; the log has every stage). The shower PDF (`drawStages=2`, figure 4.1(b)): after the parton shower of the hard process (14 partons: b, bbar, 1 hard-process ISR, 11 hard-process FSR; the initial-state emissions of an MPI, whose mother is an incoming parton, status 41, are produced in stage 3 with their interaction; section 4.6). The main PDF (`drawStages=3`, figure 4.3): the end of the parton level, the final partons with their primordial kT (169 partons, coloured by the scattering they belong to: b, bbar, 1 hard-process ISR, 11 hard-process FSR, 61 MPI partons, 25 MPI ISR, 56 MPI FSR, 13 beam remnants; 16 with eta beyond 6 on the border; the header counts them by scattering, 14 / 142 / 13). On both pages the dashed cones Delta R < 0.4 around the b and the bbar with their pT, and an inset that magnifies the fuller cone (the b cone) with the name and pT of every parton; at stage 3 the cone pT is followed by its underlying-event part (UE: the partons of the MPI and the remnants, scalar sum). The plugin `plugins/GenPartAnalyzer.cc` attributes every entry to the stage that produced it from its Pythia8 status code (21-29 hard process, 41-49 ISR, 51-59 FSR, 31-39 MPI, 61-69 primordial kT and remnants) and draws, at stage N, the particles alive at the end of stage N; in a record with MPI it also attributes every parton to its scattering (`scatteringOf`: up the mothers through copies, radiators and emissions, from an incoming parton down its chain to the scattering, a parton whose mother is a beam proton is a remnant: the walk of the FWLite script below) and draws the ISR / FSR emissions of an MPI in cyan (triangles), apart from those of the hard process (orange / green) |
 | `genPartAnalyzer_04_MPI.root` | per stage: `etaPhiPt` (TH2, weight pT), `ptB`, `ptBbar`, `ptNet` |
 | `genPartAnalyzer_04_MPI.log` | per stage: number of particles, the b and bbar copy (status, pT, eta, phi, index) and their net pT; the drawn particles by scattering and by the origin drawn ("by scattering"); the two cones with every member and its scattering (1 hard process, 3 MPI, 6 remnant) and, at stage 3, their hard-process and UE parts (section 4, table 4.2) |
 | `ledger_04_MPI.txt` | the record by status group, the hard process, the final state by kind and region, the cones Delta R < 0.4 around the last copies of the b and bbar (section 4, table 4.1) |
@@ -412,7 +418,9 @@ carry status 63 and the 156 other final partons of this file carry status 62 (15
 the b from 91.587 to 91.744 GeV and the bbar from 118.574 to 116.356 GeV (the status-1 copies here, the status-62 copies
 in chapter 05, table 4.2), the net b+bbar from 27.29 to 25.08 GeV.
 
-The legends of `genPartAnalyzer_04_MPI.pdf` (figures 4.1(b) and 4.3 of the chapter). Since 13 November 2026 (second
+The legends of the GenPartAnalyzer pages (figures 4.1(b) and 4.3 of the chapter; "page 2" and "page 3" below are
+the stage-2 and stage-3 pages, since 14 November 2026 `genPartAnalyzer_04_MPI_shower.pdf` and
+`genPartAnalyzer_04_MPI.pdf`, one page each). Since 13 November 2026 (second
 change of the day, chapter 04 review) the plugin attributes, in a record with MPI, every parton to the scattering it
 belongs to (`scatteringOf`, the walk of the `origin` function above) and draws an ISR / FSR emission of an MPI as
 "MPI ISR" / "MPI FSR" (cyan triangles), apart from the "hard-process ISR" / "hard-process FSR" (orange / green), so that
@@ -520,14 +528,21 @@ Variants in `MCTunes2017/`: `PythiaCP5TuneUpSettings_cfi.py` (`pT0Ref=1.407`, `c
 `range=4.691`), `PythiaCP5CR1TuneSettings_cfi.py` (`ColourReconnection:mode=1`, `BeamRemnants:remnantMode=1`, `pT0Ref=1.375`,
 `ecmPow=0.03283`, `coreFraction=0.4446`, `coreRadius=0.6046`, junction / time-dilation / Lund parameters),
 `PythiaCP5CR2TuneSettings_cfi.py` (`ColourReconnection:mode=2`, `pT0Ref=1.454`, `ecmPow=0.0555`, `coreFraction=0.4392`,
-`coreRadius=0.6532`, `m2Lambda=4.395`, `fracGluon=0.9896`). The same five blocks exist in `MCTunesRun3ECM13p6TeV/`
-(with the 13.6 TeV cross sections). Fragments importing the 13.6 TeV directory (`grep -rl MCTunesRun3ECM13p6TeV`):
+`coreRadius=0.6532`, `m2Lambda=4.395`, `fracGluon=0.9896`). None of the four CP5 variants is imported anywhere outside the
+two tune directories: `grep -rlE "PythiaCP5(CR1|CR2)TuneSettings|PythiaCP5Tune(Up|Down)" --include=*.py $CMSSW_RELEASE_BASE/src
+| grep -v "MCTunes2017/\|MCTunesRun3ECM13p6TeV/"` returns nothing. The minimum-bias fragment switches on
+`'SoftQCD:inelastic = on'` (`MinBias_14TeV_pythia8_TuneCP5_cfi.py` line 16); the 31 MPI of our event are in
+`test/04_MPI/out/genPartAnalyzer_04_MPI.log` ("of 31 interactions"). All 17 blocks of `MCTunes2017/` (CP1-CP5, their Up / Down
+variants, CR1, CR2) exist in `MCTunesRun3ECM13p6TeV/` and differ from them only in the two `SigmaTotal` lines above
+(`diff` of each pair); the whole release sets no other values (`grep -rhoE "SigmaTotal:sigma(Tot|El) *= *[0-9.]+"
+--include=*.py` gives 35 x `100.309` / `21.89` and 17 x `101.037` / `22.08`). None of the blocks carries a comment.
+Fragments importing the 13.6 TeV directory (`grep -rl MCTunesRun3ECM13p6TeV`):
 `B0ToJpsiK0s_JMM_Filter_DGamma0_TuneCP5_13p6TeV-pythia8-evtgen_cfi.py`, `DStarToD0Pi_D0ToKsPiPi_inclusive_SoftQCD_TuneCP5_13p6TeV-pythia8-evtgen.py`,
 `LbToJpsiLambda_JMM_Filter_DGamma0_TuneCP5_13p6TeV-pythia8-evtgen_cfi.py`, `LbToJpsiXiK0sPi_JMM_Filter_DGamma0_TuneCP5_13p6TeV-pythia8-evtgen_cfi.py`,
 `OmegaMinus_13p6TeV_SoftQCDInel_TuneCP5_cfi.py`, `XiMinus_13p6TeV_SoftQCDInel_TuneCP5_cfi.py`. No other tune directory
 exists under `Configuration/Generator/python/` (`Herwig7Settings/`, `MCTunes2017/`, `MCTunesRun3ECM13p6TeV/`, `PSweightsPythia/`).
 
-`Configuration/PyReleaseValidation/python/relval_steps.py` (the pileup input of the relval workflows):
+`Configuration/PyReleaseValidation/python/relval_steps.py` (the pileup input of the relval workflows, lines 4605 and 4616-4617):
 
 ```
     key='MinBias_14TeV_pythia8_TuneCP5'+'_'+ds
@@ -535,6 +550,36 @@ exists under `Configuration/Generator/python/` (`Herwig7Settings/`, `MCTunes2017
     elif 'Run4' in ds:
         PUDataSets[ds]={'-n':10,'--pileup':'AVE_200_BX_25ns','--pileup_input':'das:/RelValMinBias_14TeV/%s/GEN-SIM'%(name,)}
 ```
+
+No era modifier touches a generator setting: `grep -rln "toModify\|toReplaceWith" --include=*.py
+Configuration/Generator/python GeneratorInterface/*/python` returns nothing.
+
+The tunes of the Phase-2 relval fragments. `relval_upgrade.py` runs every entry of `upgradeFragments`
+(`upgradeWorkflowComponents.py` lines 3256-3407, 152 fragments) for every upgrade key, the `Run4` ones included. The 52
+with `14TeV` in their name (all `comEnergy` 14000 GeV) import: `MCTunes2017.PythiaCP5Settings_cfi` 37,
+`Pythia8CUEP8M1Settings_cfi` 12 (`Wjet_Pt_80_120`, `Wjet_Pt_3000_3500`, `QCD_Pt_3000_3500`, `QCD_Pt_80_120`, `JpsiMM`,
+`WE`, `H130GGgluonfusion`, `PhotonJet_Pt_10`, `QQH1352T_Tauola`, `QCD_Pt_600_800` `_14TeV_TuneCUETP8M1_cfi`, `DYToLL_M-50_14TeV_pythia8_cff`,
+`DYToTauTau_M-50_14TeV_pythia8_tauola_cff`), the Pythia6 `PythiaUEZ2starSettings_cfi` 2 (`LM1_sfts_14TeV_cfi`,
+`H200ChargedTaus_Tauola_14TeV_cfi`, `Pythia6GeneratorFilter`), ExHuME 1 (`GluGluTo2Jets_M_300_2000_14TeV_Exhume_cff`).
+`QCDForPF_14TeV_TuneCP5_cfi`, `QCD_Pt_1800_2400_14TeV_TuneCP5_cfi`, `QCD_Pt15To7000_Flat_14TeV_TuneCP5_cff` use CP5.
+`Pythia8CUEP8M1Settings_cfi.py`:
+
+```
+'Tune:pp 14', 'Tune:ee 7',
+'MultipartonInteractions:pT0Ref=2.4024', 'MultipartonInteractions:ecmPow=0.25208', 'MultipartonInteractions:expPow=1.6',
+```
+
+pT0 with `ecmRef` = 7000 GeV (default in both blocks):
+
+| sqrt(s) [TeV] | CP5 [GeV] | CUETP8M1 [GeV] |
+|---|---|---|
+| 13 | 1.4395 | 2.8081 |
+| 14 | 1.4431 (+0.25 %) | 2.8611 (+1.9 %) |
+
+`python3 -c "for e in (13000.,14000.): print(e, round(1.41*(e/7000.)**0.03344,4), round(2.4024*(e/7000.)**0.25208,4))"`.
+
+The HGCal region of the Phase-2 L1 correlator, `L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py` lines 119-129:
+`_hgcalSectors` with `etaBoundaries = cms.vdouble(-3.0, -1.5)` and `cms.vdouble(+1.5, +3.0)`.
 
 Pythia8 defaults quoted from the xmldoc of the release: `MultipartonInteractions:pT0Ref` 2.28, `ecmRef` 7000, `ecmPow` 0.215,
 `pTmin` 0.2, `bProfile` 3, `coreRadius` 0.4, `coreFraction` 0.5; `BeamRemnants:primordialKThard` 1.8, `primordialKTsoft` 0.9,

@@ -16,7 +16,7 @@ Rule B: The doc/chapter/chapter_XYZ.tex has exactly these sections (B1-B5, and (
     (B3) the numbers supporting/explaining the physics of the chapter (in a detector chapter, Rule J, one subsection
          per ingredient of the stage).
     (B4) ledger table summerising  how much energy was added/removed from the event and the eta-phi display plot
-    (B5) open problems for the Phase-2 LHC, after a DETAILED digging inside CMSSW (e.g. what cuts/thresholds/calibrations have not been updated since Run-2 or Run-3 
+    (B5) open problems for the Phase-2 LHC, after a DETAILED digging inside CMSSW for the release CMSSW_15_0_5 (e.g. what cuts/thresholds/calibrations have not been updated since Run-2 or Run-3 
     (B6) OPTIONAL hand-over section "Made here for the next stage: ...", placed between (B3) and (B4), in 2-3 pages: when a stage makes
          something that is not used by the stage itself but by a LATER stage, it is explained where it is MADE: what it is,
          how it is made, why it is made here and not in the stage that uses it, and its numbers for our event.
@@ -161,7 +161,7 @@ List of chapters:
         event only, Rule H; 2025 settings, Rule I)
 
 Length of each chapter:
-    5 pdf pages +-2 (01_ME .. 08_PU)
+    8 pdf pages +-2 (01_ME .. 08_PU)
     a chapter with a hand-over section (B6): 2-3 pdf pages more
     detector chapters (Rule J), 1-2 pages per subsection:
         09_G4    10-13 pdf pages

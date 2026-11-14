@@ -1,6 +1,6 @@
 % chapter_03_MnM.tex -- Chapter 03 of the JitJet book: matching and merging, the empty stage of this LO event.
 % Numbers: test/03_MnM/out/mnm_03_MnM.log (the check), test/02_PS/out/ledger_02_PS.txt and step1_GEN_02_PS.log
-% (what comes in and goes out unchanged). Figure: the chapter 02 display, test/02_PS/out/genPartAnalyzer_02_PS_page-2.png.
+% (what comes in and goes out unchanged). Figure: the chapter 02 display, test/02_PS/out/genPartAnalyzer_02_PS.pdf.
 \chapter{03 -- Matching and merging: the stage that does nothing to this event}
 \label{ch:03_MnM}
 
@@ -182,9 +182,9 @@ the whole event: nothing added, nothing removed, weight unchanged &
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{02_PS/out/genPartAnalyzer_02_PS_page-2.png}
+\includegraphics[width=\textwidth]{02_PS/out/genPartAnalyzer_02_PS.pdf}
 \caption{The $\eta$--$\phi$ display of the event after the matching and merging stage. This is the page of
-chapter~\ref{ch:02_PS}, \code{test/02\_PS/out/genPartAnalyzer\_02\_PS\_page-2.png}, shown again because the output of this
+chapter~\ref{ch:02_PS}, \code{test/02\_PS/out/genPartAnalyzer\_02\_PS.pdf}, shown again because the output of this
 chapter is a link to the output of chapter 02: the $\bar{b}$ of the hard process at $\eta=-3.75$ ($\pt=113.2\GeV$,
 blue), the $b$ after the shower at $\eta=-1.37$ ($\pt=46.9\GeV$, red; the green triangles are the five FSR
 partons drawn next to it), and the vector sum of the two (magenta star). No analyzer was run in this chapter.}
@@ -197,69 +197,84 @@ partons drawn next to it), and the vector sum of the two (magenta star). No anal
 
 The event of the book needs no matching, but the multi-jet backgrounds of every jet analysis do, and at the HL-LHC
 they will be generated at $14\TeV$ for a detector that measures jets up to $\abseta\approx3$ in the HGCal and in a
-pileup of 200 collisions. What follows is what the release \code{CMSSW\_15\_0\_5} contains on the subject, read in
-\path{$CMSSW_RELEASE_BASE/src}.
+pileup of 200 collisions (\code{AVE\_200\_BX\_25ns} for the \code{Run4} workflows, \path{relval_steps.py} line 4617).
+The list below is the state of \code{CMSSW\_15\_0\_5}, the release of this book, read in
+\path{$CMSSW_RELEASE_BASE/src} and in its externals (Pythia~8.311), not of the CMSSW development branch.
 
-\paragraph{Every matching fragment of the release is a $13\TeV$ fragment.}
+\paragraph{No Pythia8 or Herwig7 matching fragment of the release is at $13.6$ or $14\TeV$.}
 The directory \path{Configuration/Generator/python/} holds 22 fragments with \code{JetMatching:} settings, all named
 \code{*\_13TeV\_*} and all with \code{comEnergy = cms.double(13000.)}: the MLM hadronizers
 (\path{Hadronizer_TuneCP5_13TeV_MLM_5f_max4j_LHE_pythia8_cff.py} and its \code{CUETP8M1}, Tauola, EvtGen and
-$\tau$-decay variants) and the FxFx hadronizers (\path{Hadronizer_TuneCP5_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_cff.py}
-and variants, \path{TTbar012Jets_5f_NLO_FXFX_Madgraph_LHE_13TeV_cfi.py}). The MLM file carries the comment
-``Copied from https://github.com/cms-sw/genproductions for RelVal June 5, 2014'' and imports the tune from
+$\tau$-decay variants) and the FxFx hadronizers
+(\path{Hadronizer_TuneCP5_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_cff.py} and variants,
+\path{TTbar012Jets_5f_NLO_FXFX_Madgraph_LHE_13TeV_cfi.py}). The ten older \path{Hadronizer_MgmMatch*_13TeV_*} files,
+whose CMSSW matching code takes the scale from the LHE header (\code{MEMAIN\_qcut = -1}, lines 194--203 and 245 of
+\path{GeneratorInterface/PartonShowerVeto/src/JetMatchingMadgraph.cc}), and the two Herwig7 fragments named below are
+$13\TeV$ too; the only $14\TeV$ matching configuration is a Pythia6 + Alpgen legacy used by test configurations only,
+\path{GeneratorInterface/AlpgenInterface/python/generator_cfi.py} (\code{etMin = 25.}, \code{drMin = 0.7}). Of the 24
+gridpack paths written in the python files of the release, 23 are $13\TeV$ gridpacks (\path{2017/13TeV/},
+\path{UL/13TeV/}, \dots; the MLM and FxFx ones are MadGraph5\_aMC@NLO 2.6 built with \code{CMSSW\_7\_1\_30} to
+\code{CMSSW\_10\_6\_4}) and one is the $5.36\TeV$ Starlight gridpack. The MLM file carries the comment ``Copied from
+https://github.com/cms-sw/genproductions for RelVal June 5, 2014'' and imports the tune from
 \path{MCTunes2017/PythiaCP5Settings_cfi.py}; the Run~3 tune directory \path{MCTunesRun3ECM13p6TeV/} differs from it
 only in \code{SigmaTotal:sigmaEl} ($21.89\to22.08\mb$) and \code{SigmaTotal:sigmaTot} ($100.309\to101.037\mb$), and
-there is no $14\TeV$ tune directory at all. No fragment with \code{Merging:} (CKKW-L, UMEPS, UNLOPS) exists anywhere
-under \path{*/*/python/}: the \code{amcnlo\_unitarised\_interface} branch of \path{Pythia8Hadronizer.cc} is not
+there is no $14\TeV$ tune directory at all. No python file of the release contains \code{Merging:} (CKKW-L, UMEPS,
+UNLOPS): the \code{amcnlo\_unitarised\_interface} branch of \path{Pythia8Hadronizer.cc} (lines 494--519) is not
 exercised by any configuration of the release.
 
 \paragraph{The Phase-2 validation workflows contain no merged sample.}
-The 152 generator fragments of \path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}, which
-define the \code{Run4} (Phase-2) relval workflows, are all standalone generators: Pythia8 processes (\path{TTbar_14TeV_TuneCP5_cfi}, \path{QCD_Pt_80_120_14TeV_TuneCP5_cfi},
-\path{MinBias_14TeV_pythia8_TuneCP5_cfi}, \dots), particle guns, Hydjet, ExHuME and cosmics; none has
-\code{LHE}, \code{MLM} or \code{FXFX} in its name. The $pp$ LHE workflows of \path{relval_steps.py}
-(\code{step1LHEGenSimDefault}) run with \code{--conditions auto:run2\_mc}, \code{--era Run2\_2016} and
-\code{--beamspot Realistic25ns13TeV2016Collision}, i.e.\ the Run~2 detector, and their 2017 and 2018
-variants use the Run~2 detector of those years; the only LHE workflows with Run~3 settings are three Starlight samples of heavy-ion and ultra-peripheral
-collisions. The Phase-2 production of multi-jet
-samples (MadGraph5\_aMC@NLO + Pythia8 with FxFx or MLM) is therefore configured entirely outside the release, in the
-gridpacks and fragments of the \code{genproductions} repository, and I could not verify in the release which merging
-scales it uses at $14\TeV$.
+\path{relval_upgrade.py} runs each of the 152 generator fragments of \code{upgradeFragments}
+(\path{Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py}, lines 3256--3407) for every upgrade
+key, the Phase-1 ones (2017 to 2025) and the \code{Run4} (Phase-2) ones, of which \path{relval_Run4.py} takes
+\code{Run4D110} (era \code{Phase2C17I13M9}) as default. All 152 are standalone generators: 89 Pythia8 processes
+(\path{TTbar_14TeV_TuneCP5_cfi}, \path{QCD_Pt_80_120_14TeV_TuneCUETP8M1_cfi}, \dots), 3 Pythia6 processes, 54 particle
+guns, 3 Hydjet, 1 ExHuME, cosmics and beam halo; none has \code{LHE}, \code{MLM} or \code{FXFX} in its name. The $pp$
+LHE workflows of \path{relval_steps.py} have Run~2 settings: \code{step1LHEGenSimDefault} (lines 1789--1797) runs with
+\code{-{}-conditions auto:run2\_mc}, \code{-{}-era Run2\_2016} and \code{-{}-beamspot Realistic25ns13TeV2016Collision}, its
+2017 and 2018 variants with the Run~2 detector of those years, the generator-only LHE steps (line 1671, also for the
+Herwig7 merged samples of lines 1911--1912) with \code{auto:run2\_mc}; the only LHE workflows with Run~3 settings are
+three Starlight samples of heavy-ion and ultra-peripheral collisions (lines 1336--1338). A Phase-2 multi-jet sample
+has no fragment, gridpack or workflow in the release to start from, and nothing in the release fixes the merging
+scales it would use at $14\TeV$.
 
 \paragraph{The merging scale is a fixed number of GeV, chosen at $13\TeV$.}
 In the fragments of table~\ref{tab:mnm_settings} the scale is \code{JetMatching:qCut = 20.} (MLM) and
-\code{JetMatching:qCut = 40.}, \code{JetMatching:qCutME = 20.} (FxFx), with the comment ``this must match the ptj cut in
-the lhe generation step'': the consistency between the parton cut inside the gridpack and the scale in the fragment is
-not checked by any code of the release, it rests on the person who writes the fragment. The jet cross sections and the
-parton luminosities change from $13$ to $14\TeV$ and the range of jet \pt{} that an analysis uses grows with the
-luminosity, but the merging scale has no energy dependence built in; the Run~2 and Run~3 campaigns kept $20$ and
-$40\GeV$ at $13$ and $13.6\TeV$ (the release has no $13.6\TeV$ matching fragment either), and whether the same values
-are adequate at $14\TeV$ has to be established by the merging-scale variation of each Phase-2 sample. The same holds
-for the aMC@NLO shower settings of \path{Configuration/Generator/python/Pythia8aMCatNLOSettings_cfi.py}
-(\code{SpaceShower:pTmaxMatch = 1}, \code{TimeShower:MEcorrections = off}, \code{TimeShower:globalRecoil = on}), which
-have no energy or era variant.
+\code{JetMatching:qCut = 40.}, \code{JetMatching:qCutME = 20.} (FxFx), with the comment ``this must match the ptj cut
+in the lhe generation step''. Both set \code{JetMatching:setMad = off}, which tells Pythia8 not to take the matching
+parameters from the LHE header (line 69 of \path{JetMatching.xml} in the Pythia~8.311 of the release): the consistency
+between the parton cut inside the gridpack and the scale in the fragment is checked by no code, it rests on the person
+who writes the fragment. The jet cross sections and the parton luminosities change from $13$ to $14\TeV$ and the range
+of jet \pt{} that an analysis uses grows with the luminosity, but the merging scale has no energy dependence built in,
+and the release has no $13.6$ or $14\TeV$ value to compare with: whether $20$ and $40\GeV$ are adequate at $14\TeV$
+has to be established by the merging-scale variation of each Phase-2 sample. The same holds for the aMC@NLO shower
+settings of \path{Configuration/Generator/python/Pythia8aMCatNLOSettings_cfi.py} (\code{SpaceShower:pTmaxMatch = 1},
+\code{TimeShower:MEcorrections = off}, \code{TimeShower:globalRecoil = on}), which have no energy variant; nor can an
+era change them: no file of \path{Configuration/Generator/python/} or \path{GeneratorInterface/*/python/} calls
+\code{toModify}.
 
 \paragraph{The forward reach of the matching.}
-MLM matching clusters the showered partons into jets up to \code{JetMatching:etaJetMax = 5.} with
-\code{coneRadius = 1.} (the Pythia8 defaults are $2.5$ and $0.7$); FxFx uses \code{etaJetMax = 999.}. The matching is
-done at parton level and knows nothing about the detector, so the HGCal region $1.5<\abseta<3.0$ and the forward
-calorimeter are covered by both recipes as far as the algorithm is concerned. What the release cannot tell is whether
-the matrix-element versus shower description of forward jets, which is where the merging-scale dependence is largest
-for $W/Z$ + jets at high rapidity, has been validated against the Phase-2 jet reconstruction: the Phase-2 relvals use
-no merged sample (previous paragraph), so no such comparison exists in the release.
+MLM matching clusters the showered partons into jets up to \code{JetMatching:etaJetMax = 5.} with \code{coneRadius =
+1.} (the Pythia8 defaults are $2.5$ and $0.7$); FxFx uses \code{etaJetMax = 999.}, the Herwig7 merging block
+\code{EtaClusMax 10} and \code{RClus 1.0}. The matching is done at parton level and knows nothing about the detector,
+so the HGCal region $1.5<\abseta<3.0$ (the \code{\_hgcalSectors} of the Phase-2 Level-1 correlator, lines 119--129 of
+\path{L1Trigger/Phase2L1ParticleFlow/python/l1ctLayer1_cff.py}) and the forward calorimeter are covered by all recipes
+as far as the algorithm is concerned. No Phase-2 workflow of the release has a merged sample, so the release cannot
+test the matrix-element versus shower description of forward jets against the Phase-2 jet reconstruction.
 
-\paragraph{Parameters that say they were not retuned.}
-The two fragments of table~\ref{tab:mnm_settings} (2 of the 22 matching fragments) import the shower weights of
-\path{PythiaPSweightsSettings_cfi.py} in \path{Configuration/Generator/python/PSweightsPythia/}, a file that ends with \code{UncertaintyBands:ISRpTmin2Fac = 20} and the comment ``for consistency with UL and
-P8.240 set to 20, to be optimized and changed for Run 3 re-MC'': the shower-variation weights that accompany the
-merging-scale systematics are explicitly marked as a Run~2 (UL, Pythia 8.240) choice, in a release that ships
-Pythia~8.311. The EWK FxFx plugin \code{JetMatchingEWKFxFx} of
-\path{GeneratorInterface/Pythia8Interface/python/FxFxEWK.py} (\code{qCut = 42.}, \code{nJetMax = 1}) points to a
-gridpack on a personal AFS path built with \code{CMSSW\_12\_0\_2}, a test configuration rather than a production one.
+\paragraph{Parameters that say they were not tuned.}
+The two fragments of table~\ref{tab:mnm_settings} (2 of the 22) import the shower weights of
+\path{PSweightsPythia/PythiaPSweightsSettings_cfi.py}, whose line 51 is \code{UncertaintyBands:ISRpTmin2Fac = 20} with
+the comment ``for consistency with UL and P8.240 set to 20, to be optimized and changed for Run 3 re-MC'': the
+shower-variation weights that accompany the merging-scale systematics are marked as a Run~2 (UL, Pythia 8.240) choice,
+in a release that ships Pythia~8.311. The two Herwig7 merged fragments of the release,
+\path{DYToLL012Jets_5FS_TuneCH3_13TeV_amcatnloFxFx_herwig7_cff.py} (FxFx) and
+\path{DYToLL01234Jets_5FS_TuneCH3_13TeV_madgraphMLM_herwig7_cff.py} (MLM), take their merging settings from
+\path{Herwig7Settings/Herwig7MGMergingSettings_cfi.py}, whose line 64 sets the merging scale, \code{FxFxHandler:ETClus
+20*GeV}, with the comment ``Note this is the default, but this parameter should be tuned in future''; the FxFx one
+reads a gridpack of \path{2017/13TeV/} built with \code{CMSSW\_10\_6\_4}.
 
-\paragraph{What I could and could not establish.}
-I could establish, from the files named above, that the release has no $13.6$ or $14\TeV$ matching or merging
-fragment, no Phase-2 relval with a merged sample, no CKKW-L configuration, and merging scales fixed at their 2014--2017
-values. I could not establish the merging scales and the gridpack versions of the Phase-2 production campaigns
-(they live in \code{genproductions}, not in \code{CMSSW}), nor whether a merging-scale study at $14\TeV$ in the
-HGCal region has been done: no file of the release records one.
+\paragraph{What the release establishes and what it does not.}
+\code{CMSSW\_15\_0\_5} has no $13.6$ or $14\TeV$ Pythia8 or Herwig7 matching fragment or gridpack, no Phase-2 workflow
+with a merged sample, no CKKW-L configuration, merging scales fixed at their $13\TeV$ values (the MLM fragment copied
+in June 2014), and two parameters marked ``to be optimized'' or ``should be tuned''. No file of the release records a
+merging-scale study at $14\TeV$ or in the HGCal region, or fixes the merging scales of a Phase-2 production.
