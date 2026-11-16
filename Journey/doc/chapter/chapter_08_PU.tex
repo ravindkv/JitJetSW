@@ -76,11 +76,12 @@ first library event & 1 & 72 & 140 & 194 & 253 & 305 & 366 & 442 & 501 & 566 & 6
 \end{tabular}
 \end{table}
 
-Chapters~\ref{ch:09_G4} to \ref{ch:13_HLT} have not been moved to the 16 crossings yet: they mix the three
-crossings $-1$ to $+1$ (library events 1--193, in time 72--139), and their outputs were made from a library of
-250 events, which are, collision by collision, the first 250 of these 1000: the same seeds give the same events
-in the same order whatever the length of the run (checked particle by particle), so nothing of theirs changes,
-but until they are moved their in-time collisions are not the 64 of this chapter. Only in-time
+Chapter~\ref{ch:09_G4} hands all 1000 collisions to Geant4 and counts these 64 in its ledger. Chapters~\ref{ch:10_SIM}
+to \ref{ch:13_HLT} have not been moved to the 16 crossings yet: they mix the three crossings $-1$ to $+1$ (library
+events 1--193, in time 72--139), and their outputs were made from a library of 250 events, which are, collision by
+collision, the first 250 of these 1000: the same seeds give the same events in the same order whatever the length
+of the run (checked particle by particle), so nothing of theirs changes, but until they are moved their in-time
+collisions are not the 64 of this chapter. Only in-time
 collisions matter at generator level: a list of particles has no time axis, so the 931 early and late
 collisions can only act through the time response of the detector.
 
@@ -213,37 +214,41 @@ hard process.}
 
 \begin{table}[!tb]
 \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
-\caption{The ledger of the overlay: the final state (status 1) of the signal, of the 64 in-time pileup
-collisions and of the sum, by kind and by region, and the anti-$k_{\mathrm{T}}$ $R=0.4$ jets before and after
-the overlay.}
+\caption{The ledger of the overlay: the final state (status 1) of the signal, of its 64 in-time pileup collisions,
+of the 931 out-of-time collisions of the draw (bunch crossings $-12$ to $-1$ and $+1$ to $+3$,
+table~\ref{tab:draw}) and of the signal with its in-time pileup, by kind and by region, number and scalar \pt{}; and
+the anti-$k_{\mathrm{T}}$ $R=0.4$ jets before and after the overlay. The out-of-time pileup is not overlaid: it is
+removed later from the ECAL and HCAL signals by their local reconstruction, as the in-time pileup is removed at the
+reconstruction stage by CHS and PUPPI (text).}
 \label{tab:ledger}
-\begin{tabular}{lrrrrrrrrr}
+\begin{tabular}{lrrrrrrrr}
 \toprule
- & \multicolumn{3}{c}{signal} & \multicolumn{3}{c}{pileup (64 collisions)} & \multicolumn{3}{c}{signal + pileup} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
-final state & $n$ & $E$ [GeV] & \pt{} [GeV] & $n$ & $E$ [GeV] & \pt{} [GeV] & $n$ & $E$ [GeV] & \pt{} [GeV] \\
+ & \multicolumn{2}{c}{signal} & \multicolumn{2}{c}{in-time pileup} & \multicolumn{2}{c}{out-of-time pileup} & \multicolumn{2}{c}{signal +} \\
+ & \multicolumn{2}{c}{} & \multicolumn{2}{c}{(64 collisions)} & \multicolumn{2}{c}{(931 collisions)} & \multicolumn{2}{c}{in-time pileup} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+final state & $n$ & \pt{} [GeV] & $n$ & \pt{} [GeV] & $n$ & \pt{} [GeV] & $n$ & \pt{} [GeV] \\
 \midrule
-charged hadrons & 303 & 7168 & 259.1 & 5081 & 516\,149 & 2697.2 & 5384 & 523\,317 & 2956.4 \\
-neutral hadrons & 56 & 3450 & 84.7 & 880 & 207\,302 & 587.4 & 936 & 210\,752 & 672.1 \\
-photons & 273 & 2876 & 142.7 & 4852 & 145\,397 & 1210.6 & 5125 & 148\,273 & 1353.2 \\
-electrons, muons & 1 & 11 & 5.0 & 79 & 1261 & 11.6 & 80 & 1272 & 16.6 \\
-neutrinos & 1 & 96 & 37.5 & 1 & 291 & 0.5 & 2 & 386 & 37.9 \\
+charged hadrons & 303 & 259.1 & 5081 & 2697.2 & 80\,092 & 41\,710.2 & 5384 & 2956.4 \\
+neutral hadrons & 56 & 84.7 & 880 & 587.4 & 14\,309 & 9908.2 & 936 & 672.1 \\
+photons & 273 & 142.7 & 4852 & 1210.6 & 80\,717 & 19\,893.3 & 5125 & 1353.2 \\
+electrons, muons & 1 & 5.0 & 79 & 11.6 & 1078 & 182.4 & 80 & 16.6 \\
+neutrinos & 1 & 37.5 & 1 & 0.5 & 70 & 53.7 & 2 & 37.9 \\
 \midrule
-$\abseta<2.5$ & 316 & 734 & 278.7 & 4252 & 4794 & 1922.1 & 4568 & 5527 & 2200.9 \\
-$2.5<\abseta<3.0$ & 55 & 193 & 24.6 & 911 & 3216 & 404.4 & 966 & 3409 & 429.1 \\
-$3.0<\abseta<5.2$ & 189 & 5020 & 197.4 & 3230 & 44\,254 & 1320.1 & 3419 & 49\,274 & 1517.5 \\
-$5.2<\abseta<5.5$ & 16 & 836 & 7.8 & 347 & 13\,646 & 129.7 & 363 & 14\,483 & 137.5 \\
-$\abseta>5.5$ & 58 & 6817 & 20.3 & 2153 & 804\,490 & 731.0 & 2211 & 811\,307 & 751.3 \\
+$\abseta<2.5$ & 316 & 278.7 & 4252 & 1922.1 & 66\,309 & 29\,013.2 & 4568 & 2200.9 \\
+$2.5<\abseta<3.0$ & 55 & 24.6 & 911 & 404.4 & 13\,954 & 6056.2 & 966 & 429.1 \\
+$3.0<\abseta<5.2$ & 189 & 197.4 & 3230 & 1320.1 & 54\,120 & 22\,581.6 & 3419 & 1517.5 \\
+$5.2<\abseta<5.5$ & 16 & 7.8 & 347 & 129.7 & 5949 & 2310.8 & 363 & 137.5 \\
+$\abseta>5.5$ & 58 & 20.3 & 2153 & 731.0 & 35\,934 & 11\,785.9 & 2211 & 751.3 \\
 \midrule
-all & 634 & 13\,600 & 528.9 & 10\,893 & 870\,400 & 4507.4 & 11\,527 & 884\,000 & 5036.3 \\
-visible ($\abseta<5.2$, no $\nu$) & 559 & 5851 & 463.4 & 8393 & 52\,264 & 3646.6 & 8952 & 58\,115 & 4110.0 \\
+all & 634 & 528.9 & 10\,893 & 4507.4 & 176\,266 & 71\,747.8 & 11\,527 & 5036.3 \\
+visible ($\abseta<5.2$, no $\nu$) & 559 & 463.4 & 8393 & 3646.6 & 134\,323 & 57\,603.4 & 8952 & 4110.0 \\
 \bottomrule
 \end{tabular}
 
 \medskip
 \begin{tabular}{lrrr}
 \toprule
-jets \code{ak4GenJets} $\to$ \code{ak4GenJetsPU} & signal (ch.~07) & signal + pileup & difference \\
+jets \code{ak4GenJets} $\to$ \code{ak4GenJetsPU} & signal (ch.~07) & signal + in-time pileup & difference \\
 \midrule
 jets with $\pt>3\GeV$ & 27 & 261 & $+234$ \\
 jets with $\pt>20$ / $>30$ / $>50\GeV$ & 2 / 2 / 2 & 99 / 45 / 7 & \\
@@ -305,8 +310,9 @@ alone is figure~\ref{fig:07_ak4} of chapter~\ref{ch:07_GenJet}.}
 \label{fig:overlay}
 \end{figure}
 
-Table~\ref{tab:ledger} is the ledger of the overlay: the final state of the signal, of the 64 pileup
-collisions and of the sum, by kind and by region, and the jets before and after.\footnote{From
+Table~\ref{tab:ledger} is the ledger of the overlay: the final state of the signal, of the 64 in-time pileup
+collisions, of the 931 out-of-time ones and of the signal with its in-time pileup, by kind and by region, and the
+jets before and after.\footnote{From
 \code{test/08\_PU/out/ledger\_08\_PU.txt} (\code{common/genLedger.py --pu}) and \code{genJetPileup\_08\_PU.log};
 the signal column is the ledger of chapter~\ref{ch:07_GenJet}. The jet counts above 20 / 30 / $50\GeV$, the
 dijet masses and the signal / pileup split of the constituents are computed from the jet lists of the two
@@ -319,6 +325,20 @@ units and so collects about $31\GeV$ wherever it is put; the $b$ jet collected 3
 $29.5\GeV$ (78 and 68 pileup constituents from 33 and 30 different collisions, on top of 23 and 18 signal
 particles: the $\bar b$ jet kept the 18 of chapter~\ref{ch:07_GenJet}, the $b$ jet lost one of its 24, a
 $0.48\GeV$ pion at its edge, to a $3.4\GeV$ pileup jet next to it).
+
+The out-of-time columns are the 931 collisions that the draw puts into the twelve crossings before ours and the
+three after it (table~\ref{tab:draw}): $176\,266$ stable particles and $71\,748\GeV$ of scalar \pt{}, 189
+particles and $77\GeV$ per collision, as full as the in-time ones and 14.5 times as many. They are not overlaid.
+They happened 25 to 300\,ns before or up to 75\,ns after the signal, and a list of particles has no time: they
+reach our event only through the detector, mostly through the pulses of the calorimeters, which last several bunch
+crossings. That is also where they are removed: the local reconstruction of ECAL and HCAL fits every pulse with one
+template per bunch crossing and keeps the in-time amplitude (the ECAL multifit over bunch crossings $-5$ to $+4$,
+\path{EcalUncalibRecHitWorkerMultiFit.cc}, line 736; MAHI for the HCAL barrel and endcaps over $-3$ to $+4$,
+\path{HBHEMahiParameters_cfi.py}, line 12). The in-time pileup is removed later still, at the reconstruction stage
+of the jets: charged-hadron subtraction (CHS, \path{CommonTools/ParticleFlow/python/pfCHS_cff.py}) drops the
+charged particles of the other vertices, and PUPPI (\path{CommonTools/PileupAlgos/plugins/PuppiProducer.cc}) weights
+every particle by how likely it is to come from pileup. Until then the overlay keeps the in-time collisions, which
+no timing can separate from the signal, and leaves the out-of-time ones for the detector chapters.
 
 Figure~\ref{fig:overlay} shows three things. The $\bar b$ jet kept all its signal particles and the $b$ jet
 all but one soft pion, but their axes moved by 0.05 and 0.03 in $\Delta R$ towards the pileup inside the cone

@@ -2,8 +2,11 @@
 # g4Ledger.py: the ledger of the hand-over to Geant4 (chapter 09, G4), FWLite: which of the stable generator particles
 # of an event Geant4 accepted as primaries and which it dropped, with the energy and pT that went with them.
 #
-#   python3 g4Ledger.py <SIM file> [--events 1:1:1 | --events 1:1:67-1:1:121] [--label signal]
+#   python3 g4Ledger.py <SIM file> [--events 1:1:1 | --events 1:1:67-1:1:121 | --events 1:1:1-1:1:746,1:1:811-1:1:995]
+#                       [--label signal] [--totals]
 #
+# --events: one event, a range, or several of them separated by commas (the out-of-time collisions of chapter 09: the
+# library events before and after the in-time ones); --totals: no line per event, only the totals and the tables.
 # For every selected event the HepMC record (generatorSmeared) gives the status 1 particles; the SimTracks of g4SimHits
 # with a generator link (genpartIndex = HepMC barcode) are the primaries Geant4 tracked. The particles without a
 # SimTrack are classified with the cuts of the SIM step (SimG4Core/Application/python/g4SimHits_cfi.py, Generator PSet
@@ -25,6 +28,9 @@ def opt(name, default=None):
     return default
 events = opt('--events', '')
 label = opt('--label', '')
+totals_only = '--totals' in args
+if totals_only:
+    args.remove('--totals')
 fname = args[0]
 
 def parse_range(s):
@@ -37,7 +43,7 @@ def parse_range(s):
     else:
         r2, l2, e2 = r, l, e
     return (r, l, e), (r2, l2, e2)
-rng = parse_range(events)
+rngs = [parse_range(x) for x in events.split(',') if x]
 neutrinos = {12, 14, 16}
 
 class Sum:
@@ -68,7 +74,7 @@ worst = 0.  # the largest relative energy difference of a PPS match
 for ev in Events(fname):
     aux = ev.eventAuxiliary()
     key = (aux.run(), aux.luminosityBlock(), aux.event())
-    if rng and not (rng[0] <= key <= rng[1]):
+    if rngs and not any(lo <= key <= hi for lo, hi in rngs):
         continue
     ev.getByLabel('generatorSmeared', hHep)
     ev.getByLabel('g4SimHits', hTrk)
@@ -120,9 +126,10 @@ for ev in Events(fname):
     for k, v in s.items():
         tot[k].n += v.n; tot[k].e += v.e; tot[k].pt += v.pt
     nev += 1
-    print('%-9s %7d %9.1f %8.1f | %7d %9.1f %8.1f | %d (%.1f) / %d (%.1f) / %d (%.1f) / %d (%.1f) | %d (%.1f)' % (
-        '%d:%d:%d' % key, s['status1'].n, s['status1'].e, s['status1'].pt, s['primary'].n, s['primary'].e, s['primary'].pt,
-        s['eta'].n, s['eta'].e, s['p'].n, s['p'].e, s['nu'].n, s['nu'].e, s['other'].n, s['other'].e, s['pps'].n, s['pps'].e))
+    if not totals_only:
+        print('%-9s %7d %9.1f %8.1f | %7d %9.1f %8.1f | %d (%.1f) / %d (%.1f) / %d (%.1f) / %d (%.1f) | %d (%.1f)' % (
+            '%d:%d:%d' % key, s['status1'].n, s['status1'].e, s['status1'].pt, s['primary'].n, s['primary'].e, s['primary'].pt,
+            s['eta'].n, s['eta'].e, s['p'].n, s['p'].e, s['nu'].n, s['nu'].e, s['other'].n, s['other'].e, s['pps'].n, s['pps'].e))
 print('%-9s %7d %9.1f %8.1f | %7d %9.1f %8.1f | %d (%.1f) / %d (%.1f) / %d (%.1f) / %d (%.1f) | %d (%.1f)' % (
     'total(%d)' % nev, tot['status1'].n, tot['status1'].e, tot['status1'].pt, tot['primary'].n, tot['primary'].e, tot['primary'].pt,
     tot['eta'].n, tot['eta'].e, tot['p'].n, tot['p'].e, tot['nu'].n, tot['nu'].e, tot['other'].n, tot['other'].e, tot['pps'].n, tot['pps'].e))

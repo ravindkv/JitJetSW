@@ -6,7 +6,7 @@
 # Geant4 accepted as primaries, which it dropped (|eta| > 5.5, p < 40 MeV, neutrinos: the Generator and StackingAction cuts
 # of SimG4Core/Application/python/g4SimHits_cfi.py), and where they would go if nothing happened to them.
 #   (9a) the signal: the bbbar event of chapter 07 through the transport-only Geant4
-#   (9b) the pileup: all library collisions of chapter 08 through the same transport-only Geant4 (fast: nothing interacts)
+#   (9b) the pileup: all library collisions of chapter 08 (1000) through the same transport-only Geant4 (fast: nothing interacts)
 #   (9a+9b) the ledger of signal + the NPU in-time collisions (library events SKIP+1 .. SKIP+NPU): what enters Geant4
 # Input (Rule E): test/07_GenJet/out/step2_GENJET_07_GenJet.root (signal), test/08_PU/out/step1_GEN_MinBias_08_PU.root (pileup).
 # Output in test/09_G4/out/:
@@ -14,18 +14,22 @@
 #   step2_G4_pileup_09_G4.root, .log, .driver.log     (9b), all PUEVENTS collisions, config step2_G4_pileup_09_G4_cfg.py
 #   simAnalyzer_signal_09_G4.pdf, .root, .log         (9a) 5 generator pages + primaries, boundary, secondaries (none), hits + PNG
 #   simAnalyzer_pileup_09_G4.pdf, .root, .log         (9b) the same pages for library event SKIP+1
-#   ledger_09_G4.txt                                  (9a), (9b: the NPU in-time collisions) and the sum (common/g4Ledger.py)
+#   ledger_09_G4.txt                                  (9a), (9b: the NPU in-time collisions, then the out-of-time ones of the draw
+#                                                     of chapter 08, totals only) (common/g4Ledger.py)
 #   extras_09_G4.txt                                  boundary surfaces, eta-cut lines, HF photoelectrons, hits per track (g4Extras_09_G4.py)
-# Variables: NPU=68 SKIP=71 (jitjet_common.sh, as in chapter 08), PUSEED=20241 (g4SimHits seed of the library = PUSEED + 2).
+# Variables: NPU=64 SKIP=746 (jitjet_common.sh, as in chapter 08: the draw of bx -12..3), PUSEED=20241 (g4SimHits seed of the
+# library = PUSEED + 2).
 set -euo pipefail
 CHAPTER=09_G4
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../common/jitjet_common.sh"
 jitjet_init
 jitjet_build
-# NPU, SKIP: the in-time collisions of the mixing of chapter 10 (jitjet_common.sh, jitjet_init)
+# NPU, SKIP: the in-time collisions of the draw of chapter 08 (draw_08_PU.txt; jitjet_common.sh, jitjet_init)
 PUSEED=${PUSEED:-20241}
 signal=$(jitjet_prev 07_GenJet step2_GENJET_07_GenJet.root)
 library=$(jitjet_prev 08_PU step1_GEN_MinBias_08_PU.root)
+# the library events the draw of chapter 08 uses in all: SKIP early, NPU in time, the rest late (draw_08_PU.txt)
+total=$(awk '/^skip / { print $6 }' "$(jitjet_prev 08_PU draw_08_PU.txt)")
 # transportation only: our physics list (all particles, no process), no field, no multiple-scattering coupling, no gamma
 # general process, and the tracker records every sensor crossing as a hit with zero energy loss
 transport="process.g4SimHits.UseMagneticField = cms.bool(False)"
@@ -64,6 +68,9 @@ draw pileup "1:1:$((SKIP + 1))" "chapter $CHAPTER (9b): one pileup collision han
   python3 "$COMMON/g4Ledger.py" "$OUT/step2_G4_signal_${CHAPTER}.root" --events "$EVENT" --label "(9a) signal"
   echo
   python3 "$COMMON/g4Ledger.py" "$OUT/step2_G4_pileup_${CHAPTER}.root" --events "1:1:$((SKIP + 1))-1:1:$((SKIP + NPU))" --label "(9b) the $NPU in-time pileup collisions"
+  echo
+  python3 "$COMMON/g4Ledger.py" "$OUT/step2_G4_pileup_${CHAPTER}.root" --events "1:1:1-1:1:$SKIP,1:1:$((SKIP + NPU + 1))-1:1:$total" --totals \
+    --label "(9b') the $((total - NPU)) out-of-time pileup collisions (bx ${BUNCHES%,*}..-1 and 1..${BUNCHES#*,} of the draw of chapter 08)"
 } > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" || { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
 grep -E '^== |^total' "$OUT/ledger_${CHAPTER}.txt"
 echo "  Ledger: ledger_${CHAPTER}.txt"

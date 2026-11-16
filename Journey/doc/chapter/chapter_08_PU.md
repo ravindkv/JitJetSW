@@ -12,7 +12,7 @@ RUN=0 ./08_PU/run_08_PU.sh           # only write step1_GEN_MinBias_08_PU_cfg.py
 ANALYZE=0 ./08_PU/run_08_PU.sh       # the library and gencheck_08_PU.log only (no catalogue, no plots, no overlay)
 PUSEED=777 ./08_PU/run_08_PU.sh      # another 1000 collisions (seeds 777 / 778; the draw then still gives 746 / 64 / 185)
 NPU=20 SKIP=0 ./08_PU/run_08_PU.sh   # overlay library events 1-20 instead of 747-810 (WARNING_intime_08_PU.txt: not the draw)
-BUNCHES=-1,1 SKIP=71 NPU=68 ./08_PU/run_08_PU.sh   # the three crossings of chapters 09-13: the draw gives 71 / 68 / 54
+BUNCHES=-1,1 SKIP=71 NPU=68 ./08_PU/run_08_PU.sh   # the three crossings of chapters 10-13: the draw gives 71 / 68 / 54
 PUTYPE=poisson ./08_PU/run_08_PU.sh  # draw the number of in-time collisions from Poisson(NPU) with seed 20243
 JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./08_PU/run_08_PU.sh   # three overlay pages (9, 10, 11)
 ```
@@ -20,8 +20,8 @@ JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./08_PU/run_08_PU.sh   # three o
 Variables (defaults): `PUEVENTS=1000 PUSEED=20241 MIXSEED=12345 PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30`, plus
 the common ones of `common/jitjet_common.sh` (`YEAR=2025 CONDITIONS=auto:phase1_2025_realistic ERA=Run3_2025
 GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0 EVENT=1:1:1 RUN=1 ANALYZE=1 PNG=0` (the .tex of chapters 01-08 include the PDFs), and the pileup
-convention of the book, set per chapter in `jitjet_init` like `YEAR`: for 08 `PU=60 BUNCHES=-12,3 SKIP=746 NPU=64`,
-for 09-13 still `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up by the
+convention of the book, set per chapter in `jitjet_init` like `YEAR`: for 08 and 09 `PU=60 BUNCHES=-12,3 SKIP=746 NPU=64`,
+for 10-13 still `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up by the
 early bunch crossings and the in-time collisions of bunch crossing 0 in the draw of the MixingModule for this
 signal event (seed `MIXSEED` = 12345, Poisson(60) per bunch crossing, the library read in sequence, early
 crossings first): with bx -12..3, events 1-746 in the twelve early crossings, 747-810 in bx 0, 811-995 in the
@@ -32,7 +32,8 @@ Run-3 scenario of the release (`SimGeneral/MixingModule/python/mix_probFunction_
 none of which overrides it; chapter 08 uses it since 16 November 2026, before that bx -1..1 with a 250-event
 library). The first 250 events of the 1000 are those of the 250-event library, collision by collision (same
 seeds; `genParticles` compared particle by particle with FWLite, and the 250 catalogue lines identical), so the
-outputs of chapters 09-13, made from the 250-event library, are unchanged.
+outputs of chapters 10-13, made from the 250-event library, are unchanged; chapter 09 was moved the same day (all
+1000 collisions through Geant4, the ledger of library events 747-810).
 
 ## 1. The cmsDriver.py commands
 
@@ -239,10 +240,16 @@ matching; section 4), the EDM file `step2_GENJETPU_08_PU.root` (section 2); `gen
 
 ```bash
 python3 common/genLedger.py 08_PU/out/step2_GENJETPU_08_PU.root --event 1:1:1 --pu --jets ak4GenJetsPU > 08_PU/out/ledger_08_PU.txt
+echo >> 08_PU/out/ledger_08_PU.txt
+python3 common/genLedger.py 08_PU/out/step1_GEN_MinBias_08_PU.root --events 1:1:1-1:1:746,1:1:811-1:1:995 \
+  --label "out-of-time pileup (931 collisions, bx -12..-1 and 1..3)" >> 08_PU/out/ledger_08_PU.txt
 ```
 
 Prints the record by status group and the final state by kind and region, each for the signal
-(`collisionId` 0), the pileup (`collisionId` > 0) and the sum, and the `ak4GenJetsPU` summary (section 4).
+(`collisionId` 0), the in-time pileup (`collisionId` > 0) and the sum, and the `ak4GenJetsPU` summary; then, with
+`--events` (since 16 November 2026), the final state of the out-of-time pileup summed over the library events of
+the draw outside bunch crossing 0 (1 to `SKIP`, `SKIP + NPU + 1` to the total of `draw_08_PU.txt`), read from the
+library file itself: it is never overlaid (section 4).
 
 ## 4. The tables
 
@@ -266,7 +273,7 @@ Filter efficiency (event-level)= (1000) / (1000) = 1.000e+00 +- 0.000e+00    [TO
 Derived: sigma_inel = 100.309 - 21.89 = 78.419 mb (the CP5 `SigmaTotal` settings, `PythiaCP5Settings_cfi.py`);
 shares ND 55.42 / 78.42 = 70.7 %, SD 12.864 / 78.42 = 16.4 %, DD 8.848 / 78.42 = 11.3 %, CD 1.285 / 78.42 = 1.6 %;
 expected in 1000 events: 706.7, 164.0, 112.8, 16.4; pulls (n - expected) / sqrt(expected): ND +0.57, SD -0.24, DD -0.74,
-CD -1.08. The first 250 events alone (the library of chapters 09-13: 183 / 45 / 19 / 3 against 176.7 / 41.0 / 28.2 / 4.1)
+CD -1.08. The first 250 events alone (the library of chapters 10-13: 183 / 45 / 19 / 3 against 176.7 / 41.0 / 28.2 / 4.1)
 had a DD deficit of (28.2 - 19) / sqrt(28.2) = 1.7 sigma.
 
 ```
@@ -577,6 +584,23 @@ jets ak4GenJetsPU: n=261 sumPt=4815.5 GeV sumE=511052.8 GeV constituents=10988
   [1] pT=144.7 eta=-3.77 phi=1.01 mass=42.9 nConst=86
   [2] pT=72.2 eta=-2.20 phi=1.24 mass=39.4 nConst=109
   [3] pT=68.6 eta=0.44 phi=-2.84 mass=26.6 nConst=94
+
+== genLedger step1_GEN_MinBias_08_PU.root events 1:1:1-1:1:746,1:1:811-1:1:995: 931 events summed (genParticles)
+final state (status 1) of the out-of-time pileup (931 collisions, bx -12..-1 and 1..3): n=176266 sumE=12661600.1 GeV sumPt=71747.8 GeV
+  by kind                 n    E[GeV]  pT[GeV]
+  charged hadron      80092 7800297.9  41710.2
+  neutral hadron      14309 2373526.0   9908.2
+  photon              80717 2467116.5  19893.3
+  electron             1036   16157.7    147.3
+  muon                   42    2992.7     35.1
+  neutrino               70    1509.3     53.7
+  by region               n    E[GeV]  pT[GeV]     E_nu
+  |eta|<2.5           66309   73558.3  29013.2     54.3
+  2.5-3.0             13954   48338.8   6056.2     27.6
+  3.0-5.2             54120  781316.4  22581.6    475.8
+  5.2-5.5              5949  242976.3   2310.8    370.2
+  >5.5                35934 11515410.2  11785.9    581.4
+  visible (|eta|<5.2, no neutrinos): n=134323 E=902655.8 GeV pT=57603.4 GeV; neutrinos: n=70 E=1509.3 GeV pT=53.7 GeV
 ```
 
 In the chapter's ledger table the rows "electrons, muons" are electron + muon (pileup 78 + 1 = 79, E
@@ -586,6 +610,16 @@ unit of eta-phi area; mean pT of a pileup particle there 1922.1 / 4252 = 0.45 Ge
 pi R^2 = 0.503) collects 30.8 GeV (the pileup inside the cones around the two partons of the ledger: 27.5 GeV for
 the b, 30.9 GeV for the bbar; in the jets 34.2 and 29.5 GeV); the signal block equals
 `test/07_GenJet/out/ledger_07_GenJet.txt` (diff). At PU 200 (x 200 / 64 = 3.1): 191 GeV per unit area, 96 GeV per cone.
+
+The out-of-time block (since 16 November 2026; the table of the chapter gives n and pT only, without the E column):
+931 collisions, 176 266 stable particles (189.3 per collision, against 10 893 / 64 = 170.2 in time), 71 747.8 GeV of
+pT (77.1 per collision, against 70.4), 12 661 600 GeV = 931 x 13 600 GeV; "electrons, muons" 1036 + 42 = 1078 with
+147.3 + 35.1 = 182.4 GeV of pT; 931 / 64 = 14.5 times as many collisions as in time. Not overlaid: the jets and the
+sum column are signal + in-time pileup. Release files of the text: `RecoLocalCalo/EcalRecProducers/plugins/
+EcalUncalibRecHitWorkerMultiFit.cc` line 736 (`activeBXs` default {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4});
+`RecoLocalCalo/HcalRecProducers/python/HBHEMahiParameters_cfi.py` line 12 (`activeBXs = cms.vint32(-3, -2, -1, 0, 1,
+2, 3, 4)`); `CommonTools/ParticleFlow/python/pfCHS_cff.py` (`pfCHS`, a `CandPtrSelector` with `fromPV(0)>0 || ...`);
+`CommonTools/PileupAlgos/plugins/PuppiProducer.cc`.
 
 ### 4.8 The release files quoted in "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`)
 

@@ -15,7 +15,7 @@ the LHC experiments simulate how particles cross matter. In CMSSW this is the \c
 \path{SimG4Core/Application/python/g4SimHits_cfi.py}). Its first job is the \emph{hand-over}: it reads the HepMC
 record \code{generatorSmeared}, decides which of the stable particles are worth simulating, turns them into Geant4
 \emph{primaries} and only then starts tracking them. This chapter is about that decision alone, for the signal and
-for its 68 in-time pileup collisions: the detector the decision is made for (section~\ref{sec:09_detector}), the
+for its 64 in-time pileup collisions: the detector the decision is made for (section~\ref{sec:09_detector}), the
 cuts that hand a stable particle over or drop it (section~\ref{sec:09_cuts}), and the decays that Pythia already
 made (section~\ref{sec:09_decays}). What Geant4 then does with the primaries, the magnetic field, the decays in
 flight, the showers and the hits, is chapter~\ref{ch:10_SIM}.
@@ -23,7 +23,7 @@ flight, the showers and the hits, is chapter~\ref{ch:10_SIM}.
 The hand-over is done before Geant4 takes its first step, so the list of primaries does not depend on the physics
 that follows. The job of this chapter therefore runs Geant4 with the physics reduced to the transportation (no
 magnetic field, no process registered: the physics list \code{JourneyTransportPhysics} of
-\path{JitJetSW/Journey/plugins/JourneyTransportPhysics.cc}), about a minute and a half for the 250 library
+\path{JitJetSW/Journey/plugins/JourneyTransportPhysics.cc}), about three and a half minutes for the 1000 library
 collisions, and its files are the ones on which chapter~\ref{ch:10_SIM} switches the physics on, piece by piece,
 with the same 571 primaries. Figure~\ref{fig:09_chain} is the chain the particles go through, and
 table~\ref{tab:09_glance} what each link of it does to our event.
@@ -89,14 +89,14 @@ box.}
 \begin{table}[!htb]
 \centering\small\setlength{\tabcolsep}{4pt}
 \caption{The chapter at a glance: one subsection of section~\ref{sec:09_numbers} per ingredient of
-figure~\ref{fig:09_chain}, what it does and what it gives for the signal and for the 68 in-time pileup collisions.}
+figure~\ref{fig:09_chain}, what it does and what it gives for the signal and for the 64 in-time pileup collisions.}
 \label{tab:09_glance}
 \begin{tabular}{@{}c>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{6.4cm}>{\raggedright\arraybackslash}p{5.3cm}@{}}
 \toprule
 section & what & what it does & in our event \\
 \midrule
-\ref{sec:09_detector} & the detector & the 2024 geometry of the global tag: where the material starts (the beam pipe) and where the detector ends (the hole of the HF at $\abseta=5.18$--$5.32$, the beam line) & signal: 58 of 634 stable particles beyond $\abseta=5.5$; pileup: 2660 of $12\,993$ \\
-\ref{sec:09_cuts} & the hand-over cuts & keeps a stable particle with $p>40\MeV$ whose straight line leaves a $2.9\cm$ cylinder before $|z|=354.8\cm$; kills the neutrinos & signal: 571 primaries, 63 dropped; pileup: $10\,387$ primaries and 27 protons at the Roman pots \\
+\ref{sec:09_detector} & the detector & the 2024 geometry of the global tag: where the material starts (the beam pipe) and where the detector ends (the hole of the HF at $\abseta=5.18$--$5.32$, the beam line) & signal: 58 of 634 stable particles beyond $\abseta=5.5$; pileup: 2153 of $10\,893$ \\
+\ref{sec:09_cuts} & the hand-over cuts & keeps a stable particle with $p>40\MeV$ whose straight line leaves a $2.9\cm$ cylinder before $|z|=354.8\cm$; kills the neutrinos & signal: 571 primaries, 63 dropped; pileup: 8786 primaries and 18 protons at the Roman pots \\
 \ref{sec:09_decays} & the decays Pythia made & keeps the generator decays inside the $2.9\cm$ cylinder; the daughters start where the parent decayed & 29 \code{SimVertex}s, the farthest $25.8\cm$ from the collision \\
 \bottomrule
 \end{tabular}
@@ -107,11 +107,11 @@ section & what & what it does & in our event \\
 Two inputs enter (Rule E): the signal, \path{test/07_GenJet/out/step2_GENJET_07_GenJet.root}, the full
 generator event of chapter~\ref{ch:06_Decay} with its generator jets, 634 stable particles carrying
 $13\,600\GeV$ and $528.9\GeV$ of scalar \pt{}; and the pileup library,
-\path{test/08_PU/out/step1_GEN_MinBias_08_PU.root}, the 250 minimum-bias collisions of chapter~\ref{ch:08_PU},
-of which library events 72 to 139 are the 68 in-time collisions of our bunch crossing (the ones the
-\code{MixingModule} of chapter~\ref{ch:10_SIM} draws into bunch crossing 0 for this signal event: seed 12345,
-Poisson with mean 60, library events 1--71 going to bunch crossing $-1$), $12\,993$ stable particles with
-$924.8\TeV$ and $5315\GeV$ of \pt{}.\footnote{All numbers of this chapter are in
+\path{test/08_PU/out/step1_GEN_MinBias_08_PU.root}, the 1000 minimum-bias collisions of chapter~\ref{ch:08_PU},
+of which library events 747 to 810 are the 64 in-time collisions of our bunch crossing (the draw of
+chapter~\ref{ch:08_PU} over the 16 bunch crossings $-12$ to $+3$ of the Run-3 scenarios of the release: seed 12345,
+Poisson with mean 60, library events 1--746 going to the twelve early crossings, table~\ref{tab:draw}),
+$10\,893$ stable particles with $870.4\TeV$ and $4507\GeV$ of \pt{}.\footnote{All numbers of this chapter are in
 \path{test/09_G4/out/ledger_09_G4.txt} (the output of \code{common/g4Ledger.py}),
 \path{extras_09_G4.txt} (the output of \path{test/09_G4/g4Extras_09_G4.py}), \path{simAnalyzer_signal_09_G4.log}
 and \path{simAnalyzer_pileup_09_G4.log}; the few extra ones (the dropped particles by kind, the displaced vertices)
@@ -120,7 +120,7 @@ companion lists them all in section~4.} Nothing in the generator record changes:
 \code{genParticles}, \code{generatorSmeared} and the jets unchanged and adds its own products under the
 process name \code{SIM}: the \code{SimTrack}s and \code{SimVertex}s that this chapter counts, and the hit
 collections of the tracker, the muon system and the calorimeters, which chapter~\ref{ch:10_SIM} explains. The smeared primary vertex of the signal, drawn in chapter~\ref{ch:06_Decay}, is where all
-primaries start: $(0.028, -0.017, 3.11)\cm$ for the signal, $(0.029, -0.017, -0.48)\cm$ for library event~72. The
+primaries start: $(0.028, -0.017, 3.11)\cm$ for the signal, $(0.028, -0.018, 2.16)\cm$ for library event~747. The
 $3.11\cm$ of the signal will matter for the $\eta$ cut (section~\ref{sec:09_cuts}).
 
 The \code{SIM} job runs with the 2025 settings of the release (global tag \code{auto:phase1\_2025\_realistic},
@@ -132,6 +132,9 @@ modifiers that \code{Run3\_2025} adds to \code{Run3\_2024} appears in \code{g4Si
 2025 settings, both files of this chapter are the 2024 ones, primary for primary and hit for hit (companion,
 section~4): the 2025 detector of CMSSW\_15\_0\_5 differs from that of 2024 only in conditions and modifiers
 that the simulation does not read.
+
+Chapters~\ref{ch:10_SIM}--\ref{ch:13_HLT}, not yet moved to the 16 crossings, still mix events 72--139 in time,
+from a 250-event file equal, hit for hit, to the first 250 events here.
 
 The two objects to follow are the $b$ and $\bar b$ systems of chapter~\ref{ch:07_GenJet}: the nine stable
 decay products of the $B^-$ ($\pt=94.3\GeV$, $\eta=-1.57$, among them the $95.5\GeV$ antineutrino) and the
@@ -222,8 +225,8 @@ $2.9\cm$ and $\abseta=5.5$ and $8.2$, are parameters of \code{g4SimHits\_cfi.py}
 the detector (figure~\ref{fig:09_rz}): the $b$ system at $\eta=-1.55$ towards the barrel calorimeters, close to the
 corner where the barrel meets the endcap, the $\bar b$ system at $\eta=-3.75$ along the nose of the tracker into
 the HF. The edges matter for the remnants of the beams: 58 of the 634 stable particles of the signal, with
-$6817\GeV$ of its $13\,600\GeV$, and 2660 of the $12\,993$ of the 68 pileup collisions, with $840\TeV$ of their
-$925\TeV$, fly beyond $\abseta=5.5$, into the hole of the HF and down the beam line (table~\ref{tab:09_ledger}).
+$6817\GeV$ of its $13\,600\GeV$, and 2153 of the $10\,893$ of the 64 pileup collisions, with $804\TeV$ of their
+$870\TeV$, fly beyond $\abseta=5.5$, into the hole of the HF and down the beam line (table~\ref{tab:09_ledger}).
 
 \subsection{The hand-over cuts}
 \label{sec:09_cuts}
@@ -239,28 +242,28 @@ treated in section~\ref{sec:09_decays}. The \code{StackingAction}, which sees ev
 then kills the neutrinos.
 
 \textbf{The parameters.} Table~\ref{tab:09_cuts} lists the four reasons for which a stable particle gets no
-\code{SimTrack}, with the parameter that implements it and its effect on the signal and on the 68 pileup
+\code{SimTrack}, with the parameter that implements it and its effect on the signal and on the 64 pileup
 collisions.
 
 \begin{table}[htb]
 \centering\small\setlength{\tabcolsep}{4pt}
 \caption{Why a stable particle gets no \code{SimTrack}: the cuts of \code{g4SimHits\_cfi.py} and what they remove
-from the signal and from the 68 in-time pileup collisions (\code{ledger\_09\_G4.txt}; the split by kind from the
+from the signal and from the 64 in-time pileup collisions (\code{ledger\_09\_G4.txt}; the split by kind from the
 \code{g4Ledger.py}). The row PPS is the forward protons that the beam-line transport hands to Geant4 at the
 Roman pots; the last line counts the primaries beyond $\abseta=5.5$, mostly the very forward neutrals that an
 exception keeps.}
 \label{tab:09_cuts}
 \begin{tabular}{p{1.9cm}p{3.5cm}p{4.0cm}p{4.7cm}}
 \toprule
-cut & parameter & signal (634 stable) & 68 collisions ($12\,993$ stable) \\
+cut & parameter & signal (634 stable) & 64 collisions ($10\,893$ stable) \\
 \midrule
-$\abseta>5.5$ & \code{Generator}: \code{ApplyEtaCuts}, \code{MinEtaCut} / \code{MaxEtaCut} $=\mp5.5$; the line inside $r<2.9\cm$ at $|z|=355\cm$ & 56, $6581\GeV$, $19.6\GeV$ \pt{}: 27 charged hadrons (3869, of which 4 protons 1277), 8 neutral hadrons (1580), 21 photons (1132); $5.52<\abseta<8.04$ & 2466, $562.8\TeV$, $809.2\GeV$ \pt{}: 1202 charged hadrons ($373.7\TeV$, 106 protons with $82.9\TeV$), 251 neutral hadrons (98.7), 994 photons (89.4), 19 electrons (0.9); 185 beyond $\abseta=8.2$ ($221.6\TeV$) \\
-$p<40\MeV$ & \code{ApplyPCuts}, \code{MinPCut = 0.04} & 6 photons from $\pi^0$, $0.2\GeV$ & 98 (94 photons, 2 charged hadrons, 2 electrons), $2.7\GeV$ \\
-neutrino & \code{StackingAction}: \code{TrackNeutrino = False} & 1 ($\bar\nu_e$ of the $B^-$: $95.5\GeV$, $\pt=37.5$) & 7, $57.5\GeV$ \\
-other & the $\eta$ line from a displaced vertex & 0 & 8 ($166.4\GeV$): 4 photons, 4 charged hadrons at $\abseta=5.48$--$5.50$ \\
-PPS & \code{LHCTransport} (\code{run3\_common}): the beam line to the Roman pots, Geant4 from $|z|=203$\,m on & 0 & 27 protons, $150.1\TeV$, $11.2\GeV$ \pt{}, $8.48<\abseta<11.55$ \\
+$\abseta>5.5$ & \code{Generator}: \code{ApplyEtaCuts}, \code{MinEtaCut} / \code{MaxEtaCut} $=\mp5.5$; the line inside $r<2.9\cm$ at $|z|=355\cm$ & 56, $6581\GeV$, $19.6\GeV$ \pt{}: 27 charged hadrons (3869, of which 4 protons 1277), 8 neutral hadrons (1580), 21 photons (1132); $5.52<\abseta<8.04$ & 1981, $519.4\TeV$, $682.3\GeV$ \pt{}: 1047 charged hadrons ($371.8\TeV$, 111 protons and antiprotons with $85.2\TeV$), 203 neutral hadrons (83.7), 710 photons (62.6), 19 electrons (0.9), a $\mu^+$ and a $\nu_\mu$ (0.4); 192 beyond $\abseta=8.2$ ($239.9\TeV$) \\
+$p<40\MeV$ & \code{ApplyPCuts}, \code{MinPCut = 0.04} & 6 photons from $\pi^0$, $0.2\GeV$ & 102 (93 photons, 3 charged hadrons, 6 electrons), $3.0\GeV$ \\
+neutrino & \code{StackingAction}: \code{TrackNeutrino = False} & 1 ($\bar\nu_e$ of the $B^-$: $95.5\GeV$, $\pt=37.5$) & 0 (the one $\nu_\mu$, at $\eta=7.11$, is in the row above) \\
+other & the $\eta$ line from a displaced vertex & 0 & 6 ($292.0\GeV$): 4 photons, 2 charged hadrons at $\abseta=5.48$--$5.50$ \\
+PPS & \code{LHCTransport} (\code{run3\_common}): the beam line to the Roman pots, Geant4 from $|z|=203$\,m on & 0 & 18 protons, $104.9\TeV$, $5.6\GeV$ \pt{}, $9.52<\abseta<11.97$ \\
 \midrule
-kept beyond 5.5 & forward $n$, $\bar n$, $\gamma$ inside $r<2.9\cm$ at $|z|=52.8$\,m; the $\eta$ line from a displaced vertex & 2: a neutron ($151\GeV$, $\eta=9.72$), a $\pi^+$ ($84.6\GeV$, $\eta=-5.50$) & 167, $127.4\TeV$: 160 forward $n$, $\bar n$, $\gamma$ ($127.3\TeV$), 7 at $\abseta=5.50$--$5.52$ \\
+kept beyond 5.5 & forward $n$, $\bar n$, $\gamma$ inside $r<2.9\cm$ at $|z|=52.8$\,m; the $\eta$ line from a displaced vertex & 2: a neutron ($151\GeV$, $\eta=9.72$), a $\pi^+$ ($84.6\GeV$, $\eta=-5.50$) & 154, $180.2\TeV$: 147 forward $n$, $\bar n$, $\gamma$ ($179.7\TeV$), 7 at $\abseta=5.50$--$5.52$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -279,15 +282,16 @@ $30\um$. The very-forward rule uses the same construction with $\eta=8.2$: $2.9\
 \end{plainwords}
 
 \textbf{The numbers of the event.} The $\eta$ cut is where almost all the energy goes: 56 particles with
-$6581\GeV$ of the signal, at $5.52<\abseta<8.04$, and in the pileup eight particles at $\abseta = 5.48$--$5.50$
-with vertices displaced by $1$--$6\cm$ in $z$ are dropped although their momentum points just inside $5.5$ (the
+$6581\GeV$ of the signal, at $5.52<\abseta<8.04$, and in the pileup six particles at $\abseta = 5.48$--$5.50$
+with vertices displaced by $1.8$--$7.3\cm$ in $z$, towards the side they fly to, are dropped although their
+momentum points just inside $5.5$ (the
 ``other'' column of the ledger, the box above at work). The very-forward rule
-(\code{EtaCutForHector = 8.2}) hands the $151\GeV$ neutron at $\eta = 9.72$ of the signal and 160 neutrons,
-antineutrons and photons with $127.3\TeV$ of the 68 pileup collisions to Geant4 for the Zero Degree Calorimeter (whether they reach
+(\code{EtaCutForHector = 8.2}) hands the $151\GeV$ neutron at $\eta = 9.72$ of the signal and 147 neutrons,
+antineutrons and photons with $179.7\TeV$ of the 64 pileup collisions to Geant4 for the Zero Degree Calorimeter (whether they reach
 it is section~\ref{sec:09_open}). The other 7
 pileup primaries beyond $\abseta=5.5$ are border particles ($\abseta=5.50$--$5.52$) whose line from a displaced
-vertex leaves the cylinder. A last group never meets the cut: the PPS transport (\code{LHCTransport}) carries 27
-forward protons of the 68 collisions, $150.1\TeV$ at $8.48<\abseta<11.55$, along the beam line and hands them to
+vertex leaves the cylinder. A last group never meets the cut: the PPS transport (\code{LHCTransport}) carries 18
+forward protons of the 64 collisions, $104.9\TeV$ at $9.52<\abseta<11.97$, along the beam line and hands them to
 Geant4 at the Roman pots, $|z|=203$\,m (their \code{SimTrack}s point into the record of the transport, not into the
 generator record, so the ledger finds them by their vertex and matches them to their generator protons by
 energy). The $40\MeV$ cut removes six
@@ -346,47 +350,63 @@ $\bar D^0$ (from the $B^+$) & 911.9 & 42.4 & $-3.76$ & 489 & 6.0 & 14.1 & $(1.21
 
 \section{Ledger and display}
 
-Table~\ref{tab:09_ledger} is the ledger of the hand-over, by region and by kind, for the signal, for the 68
+Table~\ref{tab:09_ledger} is the ledger of the hand-over, by region and by kind, for the signal, for the 64
 collisions and for their sum. For the signal the stage removes 63 of 634 particles, but $6677\GeV$ of
 $13\,600$: 90\,\% of the particles, 89\,\% of the \pt{} and 51\,\% of the energy go into Geant4. Everything in
 $2.5<\abseta<5.5$ passes untouched; the central region loses the six soft photons and the neutrino; beyond
 $5.5$ only the forward neutron and the border $\pi^+$ survive. For the pileup the picture is more extreme:
-80\,\% of the particles and 84\,\% of the \pt{} enter, but only 23\,\% of the energy, because $840$ of the
-$925\TeV$ of a bunch crossing's minimum-bias collisions sit beyond $\abseta=5.5$ in the beam remnants:
-$563\TeV$ of them never enter Geant4, and $150\TeV$, 27 forward protons, enter only at the Roman pots, $203$\,m
-from the collision. What remains per collision is on average 153 primaries, $3.1\TeV$
-and $66\GeV$ of \pt{}, of which 70 particles and $32\GeV$ of \pt{} in the tracker region. The sum of signal and
-68 collisions is what chapter~\ref{ch:10_SIM} will mix: $10\,958$ primaries with $219\TeV$ and $4957\GeV$ of
-\pt{}, the signal being 5\,\% of the particles and 10\,\% of the \pt{} of its own bunch crossing.
+81\,\% of the particles and 85\,\% of the \pt{} enter, but only 28\,\% of the energy, because $804$ of the
+$870\TeV$ of a bunch crossing's minimum-bias collisions sit beyond $\abseta=5.5$ in the beam remnants:
+$519\TeV$ of them never enter Geant4, and $105\TeV$, 18 forward protons, enter only at the Roman pots, $203$\,m
+from the collision. What remains per collision is on average 137 primaries, $3.8\TeV$
+and $60\GeV$ of \pt{}, of which 65 particles and $30\GeV$ of \pt{} in the tracker region. The sum of signal and
+64 collisions is what the in-time bunch crossing of our event hands to Geant4: 9357 primaries with $253\TeV$ and
+$4287\GeV$ of \pt{}, the signal being 6\,\% of the particles and 11\,\% of the \pt{} of its own bunch crossing.
+The 931 out-of-time collisions pass the same hand-over in the same proportions ($140\,749$ primaries, 341 Roman-pot
+protons); they are kept out of the sum (caption of table~\ref{tab:09_ledger}).
+
+\begin{plainwords}[What the pileup brings into Geant4]
+A minimum-bias collision carries $13.6\TeV$, the same as the signal, but almost all of it goes down the beam
+pipe: in the 64 collisions $804\TeV$ of $870$ are beyond $\abseta=5.5$, where there is no detector, and the
+hand-over drops $519\TeV$ of them before Geant4 does a single step (another $105\TeV$, 18 protons, reach Geant4
+only at the Roman pots). What enters is small per collision, 137
+particles and $60\GeV$ of \pt{}, but there are 64 of them: $3815\GeV$ of \pt{} against the $472$ of the
+signal. In the tracker region alone the pileup primaries carry $1920\GeV$ of \pt{} to the signal's $241$,
+$1920/(5\times2\pi) = 61\GeV$ per unit of $\eta$--$\phi$ area; at the HL-LHC, with 200 collisions, the same
+hand-over would deliver about $190\GeV$.
+\end{plainwords}
+
 
 \begin{table}[htbp]
 \centering\scriptsize\setlength{\tabcolsep}{2.5pt}
-\caption{The ledger of the hand-over (\code{ledger\_09\_G4.txt}, with the regions and kinds): the stable
-particles before and the Geant4 primaries after, $n$ / $E$ [GeV] / \pt{} [GeV],
-for the signal and for the 68 in-time pileup collisions; the last block gives the fractions handed over, the dropped
-particles by the reasons of table~\ref{tab:09_cuts}, and the sum.}
+\caption{The ledger of the hand-over (\code{ledger\_09\_G4.txt}): stable particles before and Geant4 primaries
+after, $n$ and \pt{} [GeV], for the signal, its 64 in-time and the 931 out-of-time pileup collisions (bunch crossings
+$-12$ to $-1$, $+1$ to $+3$); below, the fractions handed over, the drops of table~\ref{tab:09_cuts} ($E$ in GeV) and
+the sum of the signal and its in-time pileup. The out-of-time pileup stays out of the sum: the local reconstruction of
+ECAL and HCAL removes it later, as CHS and PUPPI remove the in-time pileup at the reconstruction stage
+(chapter~\ref{ch:08_PU}).}
 \label{tab:09_ledger}
-\begin{tabular}{lrrrrrrcrrrrrr}
+\begin{tabular}{lrrrrcrrrrcrrrr}
 \toprule
- & \multicolumn{6}{c}{signal} & & \multicolumn{6}{c}{68 pileup collisions} \\
-\cmidrule(lr){2-7}\cmidrule(lr){9-14}
- & \multicolumn{3}{c}{before: stable} & \multicolumn{3}{c}{after: primaries} & & \multicolumn{3}{c}{before: stable} & \multicolumn{3}{c}{after: primaries} \\
- & $n$ & $E$ & \pt{} & $n$ & $E$ & \pt{} & & $n$ & $E$ & \pt{} & $n$ & $E$ & \pt{} \\
+ & \multicolumn{4}{c}{signal} & & \multicolumn{4}{c}{in-time pileup (64 collisions)} & & \multicolumn{4}{c}{out-of-time pileup (931 collisions)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){7-10}\cmidrule(lr){12-15}
+ & \multicolumn{2}{c}{before: stable} & \multicolumn{2}{c}{after: primaries} & & \multicolumn{2}{c}{before: stable} & \multicolumn{2}{c}{after: primaries} & & \multicolumn{2}{c}{before: stable} & \multicolumn{2}{c}{after: primaries} \\
+ & $n$ & \pt{} & $n$ & \pt{} & & $n$ & \pt{} & $n$ & \pt{} & & $n$ & \pt{} & $n$ & \pt{} \\
 \midrule
-$\abseta<2.5$     & 316 & 733.8 & 278.7 & 309 & 638.1 & 241.1 & & 4864 & 5519 & 2179.4 & 4765 & 5506 & 2173.6 \\
-$2.5<\abseta<3.0$ & 55 & 193.1 & 24.6 & 55 & 193.1 & 24.6 & & 1037 & 3597 & 449.2 & 1035 & 3597 & 449.2 \\
-$3.0<\abseta<5.2$ & 189 & 5019.6 & 197.4 & 189 & 5019.6 & 197.4 & & 3996 & 58\,413 & 1674.3 & 3992 & 58\,367 & 1672.7 \\
-$5.2<\abseta<5.5$ & 16 & 836.4 & 7.8 & 16 & 836.4 & 7.8 & & 436 & 17\,054 & 160.3 & 428 & 16\,888 & 158.9 \\
-$\abseta>5.5$     & 58 & 6817.1 & 20.3 & 2 & 235.9 & 0.7 & & 2660 & 840\,217 & 851.4 & 167 & 127\,396 & 31.0 \\
+$\abseta<2.5$     & 316 & 278.7 & 309 & 241.1 & & 4252 & 1922.1 & 4152 & 1920.0 & & 66\,309 & 29\,013.2 & 64\,570 & 28\,951.7 \\
+$2.5<\abseta<3.0$ & 55 & 24.6 & 55 & 24.6 & & 911 & 404.4 & 910 & 404.4 & & 13\,954 & 6056.2 & 13\,927 & 6052.8 \\
+$3.0<\abseta<5.2$ & 189 & 197.4 & 189 & 197.4 & & 3230 & 1320.1 & 3229 & 1320.1 & & 54\,120 & 22\,581.6 & 54\,086 & 22\,566.6 \\
+$5.2<\abseta<5.5$ & 16 & 7.8 & 16 & 7.8 & & 347 & 129.7 & 341 & 127.3 & & 5949 & 2310.8 & 5847 & 2271.1 \\
+$\abseta>5.5$     & 58 & 20.3 & 2 & 0.7 & & 2153 & 731.0 & 154 & 43.1 & & 35\,934 & 11\,785.9 & 2319 & 489.0 \\
 \midrule
-charged hadrons & 303 & 7167.7 & 259.1 & 276 & 3298.6 & 247.8 & & 5911 & 572\,735 & 3087.8 & 4676 & 48\,864 & 2596.2 \\
-neutral hadrons & 56 & 3449.9 & 84.7 & 48 & 1869.8 & 81.1 & & 1088 & 179\,328 & 749.7 & 837 & 80\,592 & 627.3 \\
-photons         & 273 & 2875.9 & 142.7 & 246 & 1743.7 & 137.9 & & 5900 & 171\,676 & 1458.8 & 4808 & 82\,175 & 1251.9 \\
-electrons, muons & 1 & 10.9 & 5.0 & 1 & 10.9 & 5.0 & & 87 & 1004 & 12.6 & 66 & 121.4 & 10.1 \\
-neutrinos       & 1 & 95.5 & 37.5 & 0 & 0 & 0 & & 7 & 57.5 & 5.6 & 0 & 0 & 0 \\
+charged hadrons & 303 & 259.1 & 276 & 247.8 & & 5081 & 2697.2 & 4011 & 2260.8 & & 80\,092 & 41\,710.2 & 62\,943 & 34\,767.7 \\
+neutral hadrons & 56 & 84.7 & 48 & 81.1 & & 880 & 587.4 & 677 & 491.0 & & 14\,309 & 9908.2 & 11\,185 & 8354.3 \\
+photons         & 273 & 142.7 & 246 & 137.9 & & 4852 & 1210.6 & 4045 & 1053.3 & & 80\,717 & 19\,893.3 & 65\,835 & 17\,053.2 \\
+electrons, muons & 1 & 5.0 & 1 & 5.0 & & 79 & 11.6 & 53 & 9.9 & & 1078 & 182.4 & 786 & 156.1 \\
+neutrinos       & 1 & 37.5 & 0 & 0 & & 1 & 0.5 & 0 & 0 & & 70 & 53.7 & 0 & 0 \\
 \midrule
-all & 634 & 13\,600.0 & 528.9 & 571 & 6923.0 & 471.7 & & 12\,993 & 924\,800 & 5314.6 & 10\,387 & 211\,753 & 4485.5 \\
-\multicolumn{7}{l}{\quad and at the Roman pots (PPS): protons} & & & & & 27 & 150\,058 & 11.2 \\
+all & 634 & 528.9 & 571 & 471.7 & & 10\,893 & 4507.4 & 8786 & 3815.0 & & 176\,266 & 71\,747.8 & 140\,749 & 60\,331.2 \\
+\multicolumn{5}{l}{\quad and at the Roman pots (PPS): protons} & & & & 18 & 5.6 & & & & 341 & 133.5 \\
 \bottomrule
 \end{tabular}
 
@@ -395,30 +415,31 @@ all & 634 & 13\,600.0 & 528.9 & 571 & 6923.0 & 471.7 & & 12\,993 & 924\,800 & 53
 \toprule
 signal & handed over: 90.1\,\% of the particles, 50.9\,\% of $E$, 89.2\,\% of \pt{}; \\
  & dropped ($E$ in GeV): 56 beyond $\abseta=5.5$ (6581.3), 6 below $40\MeV$ (0.2), 1 neutrino (95.5) \\
-68 collisions & handed over at the vertex: 79.9\,\% of the particles, 22.9\,\% of $E$, 84.4\,\% of \pt{}; \\
- & dropped: 2466 beyond $\abseta=5.5$ ($562\,763$), 98 below $40\MeV$ (2.7), 7 neutrinos (57.5), 8 other (166.4); \\
- & at the Roman pots (PPS): 27 protons ($150\,058$) \\
-signal + pileup & before: $13\,627$ stable particles, $938\,400\GeV$, $5843.5\GeV$ of \pt{}; \\
- & after: $10\,958$ primaries, $218\,676\GeV$, $4957.2\GeV$ of \pt{} (80.4\,\%, 23.3\,\%, 84.8\,\%), and 27 PPS protons; \\
- & dropped: 2522 beyond $\abseta=5.5$ ($569\,344$), 104 below $40\MeV$ (2.9), 8 neutrinos (153.0), 8 other (166.4) \\
+in-time pileup & at the vertex: 80.7\,\% of $n$, 28.2\,\% of $E$, 84.6\,\% of \pt{}; at the Roman pots: 18 protons ($104\,857$); \\
+ & dropped: 1981 beyond $\abseta=5.5$ ($519\,402$), 102 below $40\MeV$ (3.0), 0 neutrinos, 6 other (292.0) \\
+out-of-time pileup & at the vertex: 79.9\,\% of $n$, 25.4\,\% of $E$, 84.1\,\% of \pt{}; at the Roman pots: 341 protons ($1\,820\,634$); \\
+ & dropped: $33\,274$ at $\abseta>5.5$ ($7\,623\,374$), 1742 below $40\MeV$ (47), 63 $\nu$ (928), 97 other (4398) \\
+signal + in-time pileup & before: $11\,527$ stable particles, $884\,000\GeV$, $5036.3\GeV$ of \pt{}; \\
+ & after: 9357 primaries, $252\,769\GeV$, $4286.7\GeV$ of \pt{} (81.2\,\%, 28.6\,\%, 85.1\,\%), and 18 PPS protons; \\
+ & dropped: 2037 beyond $\abseta=5.5$ ($525\,983$), 108 below $40\MeV$ (3.2), 1 neutrino (95.5), 6 other (292.0) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Figure~\ref{fig:09_prim} is the $\eta$--$\phi$ display of the hand-over, for the signal and for library
-event~72, the first in-time pileup collision: the primaries in the colour of their kind, marker size growing with
+event~747, the first in-time pileup collision: the primaries in the colour of their kind, marker size growing with
 \pt{}, and the stable particles without a \code{SimTrack} as grey crosses. For the signal the $b$ system is in red
 at $(\eta,\phi) = (-1.55, -2.09)$ and the $\bar b$ system in blue at $(-3.75, 1.01)$, and the 63 crosses are where
 the ledger says: a column at each border of the plot (37 of the 56 forward particles sit beyond the $|\eta|=6$ edge
 of the display and are drawn on it), six faint ones scattered over the centre (the photons below $40\MeV$) and one
 at the $b$ system (the neutrino). Compared with page~5 of the same PDF, the stage-5 display of
-chapter~\ref{ch:06_Decay}, nothing has moved: the hand-over is a selection, not a transformation. Library event~72
-has 192 stable particles, of which 164 become primaries: 27 beyond $\abseta=5.5$ with $9041$ of its $13\,600\GeV$
-are dropped (three of them beyond $8.2$, among them a $\Lambda$ of $3414\GeV$ at $\eta=9.85$), and one photon below
-$40\MeV$; four forward neutrals with $3749\GeV$ are kept by the very-forward rule. No jet, no $b$ system: an even
-spray of soft particles, with its crosses again at the borders. Over the 68 collisions the number of primaries runs
-from 0 (library event 124, a diffractive collision with 6 stable particles, all beyond $\abseta=5.5$) to 470
-(event 94, 547 stable particles), 153 on average.
+chapter~\ref{ch:06_Decay}, nothing has moved: the hand-over is a selection, not a transformation. Library event~747,
+the single-diffractive collision of chapter~\ref{ch:08_PU}, has 37 stable particles, of which 21 become primaries,
+all at $\eta>0$: 15 beyond $\abseta=5.5$ with $6449$ of its $13\,600\GeV$ are dropped, and the proton that
+survived the collision, $6799.8\GeV$ at $\eta=-11.97$, is carried by the PPS transport to the Roman pots and handed
+to Geant4 there (the grey cross on the left border). No jet, no $b$ system, nothing between $\eta=-12$ and $0$: the
+rapidity gap of chapter~\ref{ch:08_PU} as Geant4 receives it. Over the 64 collisions the number of primaries runs
+from 0 (event 774: 4 stable particles, all beyond $\abseta=5.5$) to 754 (event 760), 137 on average.
 
 \begin{figure}[htbp]
 \centering
@@ -428,7 +449,8 @@ from 0 (library event 124, a diffractive collision with 6 stable particles, all 
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.495\textwidth}
 \includegraphics[width=\textwidth]{09_G4/out/simAnalyzer_pileup_09_G4_page-06.png}
-\caption{library event 72: 164 primaries, 28 grey crosses.}
+\caption{library event 747: 21 primaries, 16 grey crosses (the header's 22 counts the \code{SimTrack} of the
+Roman-pot proton, whose link points into the record of the transport).}
 \end{subfigure}
 \caption{The hand-over in the $\eta$--$\phi$ plane, page 6 of \code{simAnalyzer\_signal\_09\_G4.pdf} and of
 \code{simAnalyzer\_pileup\_09\_G4.pdf} (\code{\_page-06.png}): the primaries (\code{SimTrack}s with a generator
@@ -437,17 +459,6 @@ for the signal the $b$ and $\bar b$ systems in red and blue with their vector su
 page names the SIM stage of the sample: transport only.}
 \label{fig:09_prim}
 \end{figure}
-
-\begin{plainwords}[What the pileup brings into Geant4]
-A minimum-bias collision carries $13.6\TeV$, the same as the signal, but almost all of it goes down the beam
-pipe: in the 68 collisions $840\TeV$ of $925$ are beyond $\abseta=5.5$, where there is no detector, and the
-hand-over drops $563\TeV$ of them before Geant4 does a single step (another $150\TeV$, 27 protons, reach Geant4
-only at the Roman pots). What enters is small per collision, 153
-particles and $66\GeV$ of \pt{}, but there are 68 of them: $4486\GeV$ of \pt{} against the $472$ of the
-signal. In the tracker region alone the pileup primaries carry $2174\GeV$ of \pt{} to the signal's $241$,
-$2174/(5\times2\pi) = 69\GeV$ per unit of $\eta$--$\phi$ area; at the HL-LHC, with 200 collisions, the same
-hand-over would deliver about $200\GeV$.
-\end{plainwords}
 
 \FloatBarrier
 \section{Open problems for Phase-2}
@@ -467,7 +478,7 @@ section~\ref{sec:09_detector}). Phase-2 keeps the hole: \path{cmsExtendedGeometr
 from the same \path{hcalforwardalgo.xml} and the same constants of \path{cms.xml} (\code{ForwdVcalZ1 = 11.1495\,m},
 \code{ForwdVcalZ2 = 12.8005\,m}, inner radius \code{ForwdBeamR1 = 12.495\,cm}), i.e.\ $\abseta = 5.18$ at its front
 face and $5.32$ at its back, while the Phase-2 Level-1 regions (\path{l1ctLayer1_cff.py}) assume the HF up to $5.5$.
-The very-forward rule (\code{EtaCutForHector = 8.2}; 160 primaries with $127\TeV$ in our 68 collisions) is unchanged
+The very-forward rule (\code{EtaCutForHector = 8.2}; 147 primaries with $180\TeV$ in our 64 collisions) is unchanged
 too. With \code{SteppingAction.CMStoZDCtransport = False} these neutrons and photons are killed when they enter the
 beam-line volume \code{CMStoZDC} ($|z|=27.5$ to $139$\,m, the dead region \code{InterimRegion} of
 \path{extend/v2/cmsextent.xml}, as in 2025), in front of the ZDC at $|z|=140$\,m (\path{cmszdc.xml}), and the
@@ -493,6 +504,6 @@ calorimeters record, \code{phase2\_common} sets the lists of sensitive detectors
 source of the geometry. Nothing is era-modified in the parameter sets \code{Generator} and \code{StackingAction}.
 One change touches the hand-over: without \code{LHCTransport} (which \code{run3\_common} switches on) the forward
 protons are no longer carried to the Roman pots, and the very-forward rule, which beyond $\abseta=8.2$ keeps only
-neutrons, antineutrons and photons (\code{Generator.cc}, line 309), drops them with the other beam remnants: the 27
-protons with $150\TeV$ of our 68 collisions would not enter Geant4 at all. Apart from the Roman pots, the hand-over
+neutrons, antineutrons and photons (\code{Generator.cc}, line 309), drops them with the other beam remnants: the 18
+protons with $105\TeV$ of our 64 collisions would not enter Geant4 at all. Apart from the Roman pots, the hand-over
 of the HL-LHC is, parameter for parameter, the hand-over of this chapter.

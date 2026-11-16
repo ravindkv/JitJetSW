@@ -1,0 +1,10 @@
+Propagte the bx = -12 +3 to 09_G4.
+
+I noticed that in the ledger table of the two chapters
+  ../doc/chapter/chapter_08_PU.tex, ../doc/chapter/chapter_09_G4.tex, we just have
+  in-time pileup. Please add corresponding columns for out-time pilep. Then to fit
+  things,  we can drop E (Energy) column. The signal + pileup column can be renamed as
+  signal + in-time pileup. Then in the caption/text, we can mention that the out-time
+  pileup is removed at later stage from ECAL/HCAL so we do not overlap for now. Maybe we
+  can mention that the intime-pileup is also removed later at RECO stage of CHS/PUPPI.
+

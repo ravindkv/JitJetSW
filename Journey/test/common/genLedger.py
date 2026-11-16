@@ -19,6 +19,12 @@
 #   with --jets the jets of each collection: number, scalar sum of pT, the two leading jets, the clustered final state.
 # With --pu the collection carries a collisionId (genParticlesPU of chapter 08): every final-state line is given for
 # the signal (collisionId 0), for the pileup collisions (collisionId > 0) and for the sum.
+#
+#   python3 genLedger.py <GEN library> --events 1:1:1-1:1:746,1:1:811-1:1:995 [--label 'out-of-time pileup']
+#
+# With --events (ranges of events, comma-separated) the final state of all the selected events of the file is summed
+# and printed in the same format, as one sample: the out-of-time pileup collisions of chapter 08, the library events
+# that the draw puts into the bunch crossings before and after the signal's.
 import sys, math, collections
 from DataFormats.FWLite import Events, Handle
 
@@ -34,6 +40,8 @@ pu = '--pu' in args
 if pu:
     args.remove('--pu')
 event = opt('--event', '')
+sum_events = opt('--events', '')
+sum_label = opt('--label', 'selected events')
 collection = opt('--collection', 'genParticlesPU' if pu else 'genParticles')
 jets = [j for j in opt('--jets', '').split(',') if j]
 cone_r = float(opt('--cone', '0.4'))
@@ -89,6 +97,47 @@ class Sum:
 
 hGen = Handle('std::vector<reco::GenParticle>')
 hJet = Handle('std::vector<reco::GenJet>')
+
+def parse_range(r):
+    lo, _, hi = r.partition('-')
+    a = tuple(int(x) for x in lo.split(':'))
+    return a, (tuple(int(x) for x in hi.split(':')) if hi else a)
+if sum_events:   # the summed final state of several events (e.g. the out-of-time pileup), then stop
+    rngs = [parse_range(r) for r in sum_events.split(',') if r]
+    tot = Sum(); byk = collections.defaultdict(Sum); byr = collections.defaultdict(Sum); nur = collections.Counter()
+    vis = Sum(); inv = Sum(); nev = 0
+    for ev in Events(fname):
+        aux = ev.eventAuxiliary()
+        key = (aux.run(), aux.luminosityBlock(), aux.event())
+        if not any(lo <= key <= hi for lo, hi in rngs):
+            continue
+        nev += 1
+        ev.getByLabel(collection, hGen)
+        for p in hGen.product():
+            if p.status() != 1:
+                continue
+            tot.add(p); byk[kind(p)].add(p)
+            for name, lo, hi in regions:
+                if lo <= abs(p.eta()) < hi:
+                    byr[name].add(p)
+                    if abs(p.pdgId()) in neutrinos:
+                        nur[name] += p.energy()
+            if abs(p.pdgId()) in neutrinos:
+                inv.add(p)
+            elif abs(p.eta()) < 5.2:
+                vis.add(p)
+    print('== genLedger %s events %s: %d events summed (%s)' % (fname.split('/')[-1], sum_events, nev, collection))
+    print('final state (status 1) of the %s: n=%d sumE=%.1f GeV sumPt=%.1f GeV' % (sum_label, tot.n, tot.e, tot.pt))
+    print('  %-18s %6s %9s %8s' % ('by kind', 'n', 'E[GeV]', 'pT[GeV]'))
+    for k in kinds:
+        if byk[k].n:
+            print('  %-18s %s' % (k, byk[k]))
+    print('  %-18s %6s %9s %8s %8s' % ('by region', 'n', 'E[GeV]', 'pT[GeV]', 'E_nu'))
+    for name, lo, hi in regions:
+        print('  %-18s %s %8.1f' % (name, byr[name], nur[name]))
+    print('  visible (|eta|<5.2, no neutrinos): n=%d E=%.1f GeV pT=%.1f GeV; neutrinos: n=%d E=%.1f GeV pT=%.1f GeV'
+          % (vis.n, vis.e, vis.pt, inv.n, inv.e, inv.pt))
+    sys.exit(0 if nev else 1)
 for ev in Events(fname):
     aux = ev.eventAuxiliary()
     tag = '%d:%d:%d' % (aux.run(), aux.luminosityBlock(), aux.event())

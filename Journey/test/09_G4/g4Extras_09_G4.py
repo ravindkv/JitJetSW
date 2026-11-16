@@ -9,12 +9,12 @@
 #       signal near |eta| = 5.5, the radius of the straight line from their production vertex at |z| = 2.9 cm * sinh(5.5);
 #   (3) the HF shower library: photoelectrons per GeV of the tracks entering the HF;
 #   (4) the tracker crossings per primary, by |eta|.
-#   python3 g4Extras_09_G4.py <signal SIM file> <pileup SIM file> [pileup event, default 1:1:72] > out/extras_09_G4.txt
+#   python3 g4Extras_09_G4.py <signal SIM file> <pileup SIM file> [pileup event, default 1:1:747] > out/extras_09_G4.txt
 import sys, math, collections
 from DataFormats.FWLite import Events, Handle
 
 signal, pileup = sys.argv[1], sys.argv[2]
-puevent = tuple(int(x) for x in (sys.argv[3] if len(sys.argv) > 3 else '1:1:72').split(':'))
+puevent = tuple(int(x) for x in (sys.argv[3] if len(sys.argv) > 3 else '1:1:747').split(':'))
 R_CUT, ETA_CUT = 2.9, 5.5                     # Generator: RDecLenCut [cm], MaxEtaCut
 Z_LMAX = R_CUT * math.sinh(ETA_CUT)           # 354.8 cm
 Z_HECTOR = R_CUT * math.sinh(8.2)             # 5279 cm: EtaCutForHector

@@ -9,7 +9,8 @@
 #   (8b) the draw: the MixingModule (seed MIXSEED, Poisson(PU) per bunch crossing, the library in sequence, early crossings
 #        first) in the bunch crossings BUNCHES = -12..3 of the Run-3 scenarios of the release, at generator level
 #        (common/pileupDraw_cfg.py): which library events go into which crossing; SKIP and NPU must be its early and
-#        in-time counts (WARNING_intime_08_PU.txt otherwise). Chapters 09-13 still mix bx -1..1 (jitjet_common.sh).
+#        in-time counts (WARNING_intime_08_PU.txt otherwise). Chapter 09 uses the same SKIP/NPU; chapters 10-13 still
+#        mix bx -1..1 (jitjet_common.sh).
 #   (8a+8b) the overlay: the stable particles of the NPU in-time collisions (library events SKIP+1 .. SKIP+NPU, the ones
 #        the draw puts into bunch crossing 0 of this signal event) are added to the signal
 #        final state with the MixingModule restricted to the HepMC record (python/genJetPileup_cff.py), and the anti-kT
@@ -24,11 +25,12 @@
 #   genJetPileup_08_PU.root, .log                     (8a+8b) the jets of the overlay (histograms, printout)
 #   genJetAnalyzer_08_PU.pdf                          (8a+8b) the overlay, one page per jet collection in JETS (signal circles,
 #                                                     pileup triangles)
-#   ledger_08_PU.txt                                  the ledger of the overlay: signal / pileup / sum (common/genLedger.py --pu)
+#   ledger_08_PU.txt                                  the ledger of the overlay: signal / in-time pileup / sum (common/genLedger.py
+#                                                     --pu), then the out-of-time pileup of the draw (genLedger.py --events)
 # Variables: PUEVENTS=1000 PUSEED=20241 MIXSEED=12345 PU=60 BUNCHES=-12,3 SKIP=746 NPU=64 (jitjet_common.sh) PUTYPE=fixed
 #            JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30
 # PUEVENTS: the draw of bx -12..3 uses 995 library events; the first 250 are those of the 250-event library of
-# chapters 09-13 (same seeds, the events come out in the same order).
+# chapters 10-13 (same seeds, the events come out in the same order). Chapter 09 hands all 1000 to Geant4.
 # REGEN=0 keeps the existing library step1_GEN_MinBias_08_PU.root (read by chapter 09) and redoes only the analysis.
 set -euo pipefail
 CHAPTER=08_PU
@@ -82,7 +84,7 @@ run_cmsrun "$COMMON/pileupDraw_cfg.py" "$OUT/$draw.log" inputFiles="file:$signal
 python3 "$COMMON/pileupDraw.py" "$OUT/$draw.root" --bunches="$BUNCHES" --library "$PUEVENTS" > "$OUT/$draw.txt" 2>> "$OUT/$draw.log" ||
   { tail -20 "$OUT/$draw.log" >&2; exit 1; }
 grep -E "^early|^library" "$OUT/$draw.txt"
-read -r early intime < <(awk '/^skip / { print $2, $4 }' "$OUT/$draw.txt")
+read -r early intime total < <(awk '/^skip / { print $2, $4, $6 }' "$OUT/$draw.txt")
 rm -f "$OUT/WARNING_intime_${CHAPTER}.txt"
 if [[ $early != "$SKIP" || $intime != "$NPU" ]]; then
   echo "WARNING: the draw puts library events $((early + 1))-$((early + intime)) in time, this run uses SKIP=$SKIP NPU=$NPU; set SKIP=$early NPU=$intime for $CHAPTER in common/jitjet_common.sh and rerun" | tee "$OUT/WARNING_intime_${CHAPTER}.txt"
@@ -108,4 +110,10 @@ grep -E "^== GenJetAnalyzer|^  ak|^    (b|bbar) quark|^    net" "$OUT/$prefix.lo
 pdf_pages_png "$OUT/$book"
 python3 "$COMMON/genLedger.py" "$OUT/$edm" --event "$EVENT" --pu --jets "$JETS" > "$OUT/ledger_${CHAPTER}.txt" 2> "$OUT/ledger_${CHAPTER}.log" ||
   { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
+# the out-of-time pileup of the draw, for the ledger only (never overlaid: it is in other bunch crossings): the library
+# events before the in-time ones (bx bx_min..-1) and after them (bx 1..bx_max), summed
+oot="1:1:1-1:1:$SKIP,1:1:$((SKIP + NPU + 1))-1:1:$total"
+echo >> "$OUT/ledger_${CHAPTER}.txt"
+python3 "$COMMON/genLedger.py" "$OUT/$lib" --events "$oot" --label "out-of-time pileup ($((total - NPU)) collisions, bx $bx_min..-1 and 1..$bx_max)" \
+  >> "$OUT/ledger_${CHAPTER}.txt" 2>> "$OUT/ledger_${CHAPTER}.log" || { tail -20 "$OUT/ledger_${CHAPTER}.log" >&2; exit 1; }
 echo "  Ledger: ledger_${CHAPTER}.txt"
