@@ -10,20 +10,29 @@ from `test/08_PU/out/`. All commands are run from `JitJetSW/Journey/test` in an 
 ./08_PU/run_08_PU.sh                 # everything below: the library, the catalogue, the drawn collision, the overlay, the ledger
 RUN=0 ./08_PU/run_08_PU.sh           # only write step1_GEN_MinBias_08_PU_cfg.py
 ANALYZE=0 ./08_PU/run_08_PU.sh       # the library and gencheck_08_PU.log only (no catalogue, no plots, no overlay)
-PUSEED=777 ./08_PU/run_08_PU.sh      # another 250 collisions (seeds 777 / 778)
-NPU=20 SKIP=0 ./08_PU/run_08_PU.sh   # overlay library events 1-20 instead of 72-139
+PUSEED=777 ./08_PU/run_08_PU.sh      # another 1000 collisions (seeds 777 / 778; the draw then still gives 746 / 64 / 185)
+NPU=20 SKIP=0 ./08_PU/run_08_PU.sh   # overlay library events 1-20 instead of 747-810 (WARNING_intime_08_PU.txt: not the draw)
+BUNCHES=-1,1 SKIP=71 NPU=68 ./08_PU/run_08_PU.sh   # the three crossings of chapters 09-13: the draw gives 71 / 68 / 54
 PUTYPE=poisson ./08_PU/run_08_PU.sh  # draw the number of in-time collisions from Poisson(NPU) with seed 20243
 JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./08_PU/run_08_PU.sh   # three overlay pages (9, 10, 11)
 ```
 
-Variables (defaults): `PUEVENTS=250 PUSEED=20241 PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30`, plus
+Variables (defaults): `PUEVENTS=1000 PUSEED=20241 MIXSEED=12345 PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30`, plus
 the common ones of `common/jitjet_common.sh` (`YEAR=2025 CONDITIONS=auto:phase1_2025_realistic ERA=Run3_2025
 GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0 EVENT=1:1:1 RUN=1 ANALYZE=1 PNG=0` (the .tex of chapters 01-08 include the PDFs), and the pileup
-convention of the book `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up
-by bunch crossing -1 and the in-time collisions of bunch crossing 0 in the mixing of chapter 10 for this
-signal event (MixingModule seed 12345, Poisson(60) per bunch crossing, the library read in sequence: events
-1-71 in bx -1, 72-139 in bx 0, 140-193 in bx +1); chapter 10 checks its draw against them and chapter 11
-replays it with the MixingModule playback.
+convention of the book, set per chapter in `jitjet_init` like `YEAR`: for 08 `PU=60 BUNCHES=-12,3 SKIP=746 NPU=64`,
+for 09-13 still `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up by the
+early bunch crossings and the in-time collisions of bunch crossing 0 in the draw of the MixingModule for this
+signal event (seed `MIXSEED` = 12345, Poisson(60) per bunch crossing, the library read in sequence, early
+crossings first): with bx -12..3, events 1-746 in the twelve early crossings, 747-810 in bx 0, 811-995 in the
+three late ones (section 4.4). The script makes the draw itself (`common/pileupDraw_cfg.py`, `draw_08_PU.txt`) and
+writes `WARNING_intime_08_PU.txt` if it does not give `SKIP` and `NPU`. `BUNCHES=-12,3` is the window of every
+Run-3 scenario of the release (`SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py`:
+`minBunch = cms.int32(-12)`, `maxBunch = cms.int32(3)`, imported by all the `Run3_*` and `mix_202*` profiles,
+none of which overrides it; chapter 08 uses it since 16 November 2026, before that bx -1..1 with a 250-event
+library). The first 250 events of the 1000 are those of the 250-event library, collision by collision (same
+seeds; `genParticles` compared particle by particle with FWLite, and the 250 catalogue lines identical), so the
+outputs of chapters 09-13, made from the 250-event library, are unchanged.
 
 ## 1. The cmsDriver.py commands
 
@@ -33,7 +42,7 @@ configuration (`# with command line options: ...`):
 
 ```bash
 cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2025_realistic --era Run3_2025 \
-  --geometry DB:Extended --beamspot DBrealistic -n 250 -s GEN --datatier GEN --eventcontent FEVTDEBUG \
+  --geometry DB:Extended --beamspot DBrealistic -n 1000 -s GEN --datatier GEN --eventcontent FEVTDEBUG \
   --fileout file:step1_GEN_MinBias_08_PU.root \
   --customise_commands "process.generator.comEnergy = cms.double(13600.0)\nprocess.RandomNumberGeneratorService.generator.initialSeed = 20241\nprocess.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242" \
   --python_filename 08_PU/step1_GEN_MinBias_08_PU_cfg.py --no_exec
@@ -46,7 +55,7 @@ cmsDriver.py MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2025_rea
 | `--era Run3_2025` | the era modifiers (`Configuration/Eras/python/Era_Run3_2025_cff.py`: `Run3_2024` plus `run3_GEM_2025`, `run3_CSC_2025`, `run3_SiPixel_2025`, `stage2L1Trigger_2025`, `ecal_cctiming`, which act only in the reconstruction and the Level-1 trigger); in a GEN job they switch on the PPS proton transport (`LHCTransport`, `run3_common`) |
 | `--geometry DB:Extended` | not used by the generator; carried in the configuration so that the SIM step of chapter 09 inherits it |
 | `--beamspot DBrealistic` | the vertex-smearing module: `IOMC/EventVertexGenerators/python/VtxSmearedRealistic_cfi.py`, a `BetafuncEvtVtxGenerator` with `readDB = True` |
-| `-n 250` | events to generate (`PUEVENTS`); the filter accepts every event, so 250 are written |
+| `-n 1000` | events to generate (`PUEVENTS`); the filter accepts every event, so 1000 are written: the draw of the 16 crossings uses 995 |
 | `-s GEN` | the step: the generator sequence `pgen` of `Configuration/StandardSequences/python/Generator_cff.py` |
 | `--datatier GEN --eventcontent FEVTDEBUG` | the label of the output and the list of kept products (everything the GEN step makes) |
 | `--fileout file:step1_GEN_MinBias_08_PU.root` | the output file, written in `out/` (`cmsRun` runs there) |
@@ -64,7 +73,7 @@ seeds, or library event k would get the vertex of signal event k.
 ## 2. The cmsRun on the python config
 
 ```bash
-cd 08_PU/out && cmsRun ../step1_GEN_MinBias_08_PU_cfg.py > step1_GEN_MinBias_08_PU.log 2>&1 && cd ../..   # about 1 min
+cd 08_PU/out && cmsRun ../step1_GEN_MinBias_08_PU_cfg.py > step1_GEN_MinBias_08_PU.log 2>&1 && cd ../..   # about 3 min
 ```
 
 The generated configuration `08_PU/step1_GEN_MinBias_08_PU_cfg.py`, part by part:
@@ -74,7 +83,7 @@ The generated configuration `08_PU/step1_GEN_MinBias_08_PU_cfg.py`, part by part
   GEN job), `GeometryRecoDB_cff`, `MagneticField_cff`, `Generator_cff`, `VtxSmearedRealistic_cfi`,
   `genFilterSummary_cff`, `EndOfProcess_cff`, `FrontierConditions_GlobalTag_cff`).
 - **source and events**: `process.source = cms.Source("EmptySource")` (a generator job makes its own events,
-  run 1, lumi 1, events 1 to 250); `process.maxEvents.input = 250`.
+  run 1, lumi 1, events 1 to 1000); `process.maxEvents.input = 1000`.
 - **output**: `process.FEVTDEBUGoutput`, a `PoolOutputModule` with `SelectEvents = ['generation_step']` (only
   events that pass the generator filter) and `fileName = 'file:step1_GEN_MinBias_08_PU.root'`.
 - **global tag**: `process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2025_realistic', '')`.
@@ -101,12 +110,12 @@ The generated configuration `08_PU/step1_GEN_MinBias_08_PU_cfg.py`, part by part
   `customiseEarlyDelete`.
 
 The checks the script writes into `out/gencheck_08_PU.log`: the process, geometry, vertex-smearing and
-global-tag lines of the configuration, the seeds, `edmFileUtil -e` (250 events), the Pythia8 statistics and
+global-tag lines of the configuration, the seeds, `edmFileUtil -e` (1000 events), the Pythia8 statistics and
 the `GenXsecAnalyzer` cross section (section 4).
 
 **The output ROOT file** (`edmDumpEventContent file:08_PU/out/step1_GEN_MinBias_08_PU.root`), 31 products
-per event, all from the process `GEN`; 11 MB for 250 events, 44 kB per event (`edmEventSize -v`: 29.0 kB the
-HepMC record, 11.5 kB the `GenParticle`s, 0.8 kB the engine states):
+per event, all from the process `GEN`; 40 MB for 1000 events, 40 kB per event (`edmEventSize -v`, compressed: 26.9 kB
+the HepMC record, 10.7 kB the `GenParticle`s, 0.5 kB the engine states):
 
 ```
 Type                                  Module                      Label      Process
@@ -131,22 +140,26 @@ The unsmeared record `generator:unsmeared` is not kept by the FEVTDEBUG event co
 
 ```
 CrossingFramePlaybackInfoNew          "mix"                       ""         "GENJETPU"   which library events went in
-PileupMixingContent                   "mix"                       ""         "GENJETPU"   bunch crossings [0], collisions [68], true mean [68.0]
-vector<reco::GenParticle>             "genParticlesPU"            ""         "GENJETPU"   36 218 particles, collisionId 0 = signal, 1..68 = pileup
+PileupMixingContent                   "mix"                       ""         "GENJETPU"   bunch crossings [0], collisions [64], true mean [64.0]
+vector<reco::GenParticle>             "genParticlesPU"            ""         "GENJETPU"   30 295 particles, collisionId 0 = signal, 1..64 = pileup
 vector<int>, xyz0, t0                 "genParticlesPU"                       "GENJETPU"
 edm::PtrVector<reco::Candidate>       "genParticlesForJetsPU", "genParticlesForJetsNoNuPU"   "GENJETPU"   the status 1 inputs (without neutrinos for NoNu)
 vector<reco::GenJet>                  "ak4GenJetsPU", "ak4GenJetsNoNuPU", "ak8GenJetsPU", "ak8GenJetsNoNuPU"   "GENJETPU"   + rho, sigma, rhos, sigmas
 ```
 
+**The draw** is a third `cmsRun` (section 3), whose output `draw_08_PU.root` holds one product,
+`CrossingFramePlaybackInfoNew "mix" "" "DRAW"`: the number of library events in each of the 16 bunch crossings and
+their event ids, for signal event 1:1:1.
+
 ## 3. The analyzer configs
 
-Four steps after the GEN job, all run by the script (`ANALYZE=1`):
+Five steps after the GEN job, all run by the script (`ANALYZE=1`):
 
 **(8b) the catalogue**, `common/minBiasGenStats.py` (FWLite, no `cmsRun`):
 
 ```bash
 python3 common/minBiasGenStats.py 08_PU/out/step1_GEN_MinBias_08_PU.root > 08_PU/out/genstats_08_PU.txt 2> 08_PU/out/genstats_08_PU.log
-python3 common/minBiasGenStats.py 08_PU/out/step1_GEN_MinBias_08_PU.root --event 72 132    # + the stable particles of events 72 and 132
+python3 common/minBiasGenStats.py 08_PU/out/step1_GEN_MinBias_08_PU.root --event 747 774   # + the stable particles of events 747 and 774
 ```
 
 One line per collision (process from `signal_process_id()` of the HepMC record, interactions = 1 + the
@@ -155,14 +168,37 @@ hardest particle, the scalar sum of pT, ak4 jets above 10 GeV, protons at the PP
 summary (process shares, means, species, |eta| and pT distributions, multiplicity against interactions, the
 SD masses). Section 4 copies the summary and the lines of the in-time collisions.
 
-**(8b) one collision drawn**, `common/genPartAnalyzer_cfg.py` on library event 72 (`SKIP + 1`), the five
+**(8b) the draw**, `common/pileupDraw_cfg.py` (the MixingModule of `python/genJetPileup_cff.py` with `type =
+poisson`, `averageNumber = PU`, `minBunch`/`maxBunch` from `BUNCHES`, `skipEvents = 0`, the `mix` engine seeded with
+`MIXSEED` = 12345 and `MixMaxRng` like every cmsDriver configuration, `IOMC/RandomEngine/python/IOMC_cff.py`; only
+`CrossingFramePlaybackInfoNew` is written), then `common/pileupDraw.py` (FWLite: `getNumberOfEvents(bx, 0)` and
+`getEventId(offset)` of the record) for the table:
+
+```bash
+cd 08_PU/out && cmsRun ../../common/pileupDraw_cfg.py inputFiles=file:../../07_GenJet/out/step2_GENJET_07_GenJet.root \
+  pileupFiles=file:step1_GEN_MinBias_08_PU.root eventsToProcess=1:1:1 nPileup=60 minBunch=-12 maxBunch=3 mixSeed=12345 \
+  outputFile=draw_08_PU.root > draw_08_PU.log 2>&1
+python3 ../../common/pileupDraw.py draw_08_PU.root --bunches=-12,3 --library 1000 > draw_08_PU.txt
+cd ../..
+```
+
+The draw does not depend on the detector or on the library content: `MixingModule::produce` calls
+`PileUp::CalculatePileup` (`SimGeneral/MixingModule/plugins/MixingModule.cc` 445), which draws the number of collisions
+of every crossing in order from `minBunch` to `maxBunch` (`Mixing/Base/src/PileUp.cc` 456-479; `type = poisson`
+without `manage_OOT`: `poissonDistribution(streamID)->fire()`, line 479), before any event is read (`readPileUp`,
+`MixingModule.cc` 541). Validated against chapter 10:
+`minBunch=-1 maxBunch=1` gives `-1:71[1-71] 0:68[72-139] 1:54[140-193]`, the `events per bx: -1:71 0:68 1:54` of
+`test/10_SIM/out/simHits_mixed_10_SIM.log` (the SimHit mixing of cmsDriver `--pileup AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)}`).
+The script reads the last line, `skip 746 intime 64 total 995`, and compares it with `SKIP` and `NPU`.
+
+**(8b) one collision drawn**, `common/genPartAnalyzer_cfg.py` on library event 747 (`SKIP + 1`), the five
 generator pages of chapters 01-06:
 
 ```bash
 cd 08_PU/out && cmsRun ../../common/genPartAnalyzer_cfg.py inputFiles=file:step1_GEN_MinBias_08_PU.root \
-  outputFile=genPartAnalyzer_MinBias_08_PU.root maxEvents=1 eventsToProcess=1:1:72 maxStage=5 \
+  outputFile=genPartAnalyzer_MinBias_08_PU.root maxEvents=1 eventsToProcess=1:1:747 maxStage=5 \
   pdfFile=genPartAnalyzer_MinBias_08_PU.pdf \
-  sampleLabel="chapter 08_PU (8b): one minimum-bias collision|library event 72 of 250|SoftQCD inelastic, CP5, 13.6 TeV|no hard process" \
+  sampleLabel="chapter 08_PU (8b): one minimum-bias collision|library event 747 of 1000|SoftQCD inelastic, CP5, 13.6 TeV|no hard process" \
   > genPartAnalyzer_MinBias_08_PU.log 2>&1
 cd ../..
 ```
@@ -176,10 +212,10 @@ hadronisation, hadron decays; page 5 is figure 8.1 of the chapter, `\includegrap
 
 ```bash
 cd 08_PU/out && cmsRun ../../common/genJetPileup_cfg.py inputFiles=file:../../07_GenJet/out/step2_GENJET_07_GenJet.root \
-  pileupFiles=file:step1_GEN_MinBias_08_PU.root eventsToProcess=1:1:1 nPileup=68 skipPileup=71 pileupType=fixed \
+  pileupFiles=file:step1_GEN_MinBias_08_PU.root eventsToProcess=1:1:1 nPileup=64 skipPileup=746 pileupType=fixed \
   pileupSeed=20243 jetPtMin=3 labelPtMin=30 jets=ak4GenJetsPU outputFile=genJetPileup_08_PU.root \
   edmOutput=step2_GENJETPU_08_PU.root pdfFile=genJetAnalyzer_08_PU.pdf maxEvents=-1 \
-  sampleLabel="chapter 08_PU (8a+8b): signal + pileup|+ 68 minimum-bias collisions in time|library events 72-139 (bx 0)|bbbar pTHat > 100 GeV, 13.6 TeV|jet pT > 3 GeV, drawn > 30 GeV" \
+  sampleLabel="chapter 08_PU (8a+8b): signal + pileup|+ 64 minimum-bias collisions in time|library events 747-810 (bx 0)|bbbar pTHat > 100 GeV, 13.6 TeV|jet pT > 3 GeV, drawn > 30 GeV" \
   > genJetPileup_08_PU.log 2>&1
 cd ../..
 ```
@@ -217,19 +253,21 @@ Prints the record by status group and the final state by kind and region, each f
  *-------  PYTHIA Event and Cross Section Statistics  -------------------------------------------------------------*
  | Subprocess                                    Code |            Number of events       |      sigma +- delta    |
  |                                                    |       Tried   Selected   Accepted |     (estimated) (mb)   |
- | non-diffractive                                101 |         183        183        183 |   5.542e+01  2.991e-07 |
- | A B -> X B single diffractive                  103 |          27         27         27 |   6.432e+00  0.000e+00 |
- | A B -> A X single diffractive                  104 |          18         18         18 |   6.432e+00  0.000e+00 |
- | A B -> X X double diffractive                  105 |          19         19         19 |   8.848e+00  4.737e-08 |
- | A B -> A X B central diffractive               106 |           3          3          3 |   1.285e+00  0.000e+00 |
- | sum                                                |         250        250        250 |   7.842e+01  3.028e-07 |
-Before Filter: total cross section = 7.842e+10 +- 3.028e+02 pb
-Filter efficiency (event-level)= (250) / (250) = 1.000e+00 +- 0.000e+00    [TO BE USED IN MCM]
+ | non-diffractive                                101 |         722        722        722 |   5.542e+01  0.000e+00 |
+ | A B -> X B single diffractive                  103 |          74         74         74 |   6.432e+00  2.400e-08 |
+ | A B -> A X single diffractive                  104 |          87         87         87 |   6.432e+00  2.858e-08 |
+ | A B -> X X double diffractive                  105 |         105        105        105 |   8.848e+00  0.000e+00 |
+ | A B -> A X B central diffractive               106 |          12         12         12 |   1.285e+00  6.083e-09 |
+ | sum                                                |        1000       1000       1000 |   7.842e+01  3.781e-08 |
+Before Filter: total cross section = 7.842e+10 +- 3.781e+01 pb
+Filter efficiency (event-level)= (1000) / (1000) = 1.000e+00 +- 0.000e+00    [TO BE USED IN MCM]
 ```
 
 Derived: sigma_inel = 100.309 - 21.89 = 78.419 mb (the CP5 `SigmaTotal` settings, `PythiaCP5Settings_cfi.py`);
 shares ND 55.42 / 78.42 = 70.7 %, SD 12.864 / 78.42 = 16.4 %, DD 8.848 / 78.42 = 11.3 %, CD 1.285 / 78.42 = 1.6 %;
-expected in 250 events: 176.7, 41.0, 28.2, 4.1 (DD deficit (28.2 - 19) / sqrt(28.2) = 1.7 sigma).
+expected in 1000 events: 706.7, 164.0, 112.8, 16.4; pulls (n - expected) / sqrt(expected): ND +0.57, SD -0.24, DD -0.74,
+CD -1.08. The first 250 events alone (the library of chapters 09-13: 183 / 45 / 19 / 3 against 176.7 / 41.0 / 28.2 / 4.1)
+had a DD deficit of (28.2 - 19) / sqrt(28.2) = 1.7 sigma.
 
 ```
  |                   sigmaNonDiffractive =    55.42 mb              |
@@ -238,8 +276,10 @@ expected in 250 events: 176.7, 41.0, 28.2, 4.1 (DD deficit (28.2 - 19) / sqrt(28
 
 pT0 = pT0Ref x (E_cm / 7 TeV)^ecmPow = 1.41 x (13.6 / 7)^0.03344 = 1.44 GeV; 492.18 / 55.42 = 8.9 interactions
 per ND collision on average. Pythia version: 8.311; PDF: NNPDF31_nnlo_as_0118 (LHAPDF ID 303600), LHAPDF 6.4.0.
-Pythia warnings: 1 `BeamRemnants::setKinematics` kinematics failure (retried), 44 `pT2nextQCD: weight above
-unity`, 3 `MultipartonInteractions::init: maximum increased`, 2 `TimeShower::init: pTmin too low`.
+Pythia warnings (the last "Error and Warning Messages Statistics" of the log): 1 `BeamRemnants::setKinematics`
+kinematics failure (retried), 169 `SimpleSpaceShower::pT2nextQCD: weight above unity`, 124 `SimpleSpaceShower::pT2nextQCD:
+small daughter PDF`, 3 `MultipartonInteractions::init: maximum increased`, 2 `SimpleTimeShower::init: pTmin too low`,
+1 `Pythia::check: energy-momentum not quite conserved`.
 
 ### 4.2 The configuration checks (`gencheck_08_PU.log`)
 
@@ -252,158 +292,188 @@ process.generator.comEnergy = cms.double(13600.0)
 process.RandomNumberGeneratorService.generator.initialSeed = 20241
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242
 == events in the file
-250 events
+1000 events
 ```
 
-### 4.3 The catalogue summary (`genstats_08_PU.txt`, lines 253-268)
+### 4.3 The catalogue summary (`genstats_08_PU.txt`, lines 1003-1023)
 
 ```
-== 250 events, beam energy 6800 GeV
-process shares: ND 183 (73.2%), SD 45 (18.0%), DD 19 (7.6%), CD 3 (1.2%)
-interactions mean    7.03  median    3.00  min    1.00  max   39.00
-stable       mean  193.75  median  132.00  min    3.00  max  723.00
-charged      mean   89.02  median   59.00  min    2.00  max  320.00
-central      mean   21.19  median    9.50  min    0.00  max  126.00
-|eta|>5.5    mean   38.92  median   36.50  min    3.00  max   93.00
-lead pT      mean    2.20  median    1.81  min    0.23  max    8.08
-sum pT       mean   79.25  median   44.65  min    0.46  max  376.09
-jets>10      mean    0.15  median    0.00  min    0.00  max    3.00
-PPS protons  mean    0.37  median    0.00  min    0.00  max    2.00
+== 1000 events, beam energy 6800 GeV
+process shares: ND 722 (72.2%), SD 161 (16.1%), DD 105 (10.5%), CD 12 (1.2%)
+interactions mean    6.59  median    3.00  min    1.00  max   45.00
+stable       mean  187.68  median  119.00  min    3.00  max  857.00
+charged      mean   86.59  median   56.00  min    2.00  max  378.00
+central      mean   20.36  median    9.00  min    0.00  max  167.00
+|eta|>5.5    mean   38.25  median   35.00  min    2.00  max   93.00
+lead pT      mean    2.21  median    1.72  min    0.16  max   18.99
+sum pT       mean   76.45  median   41.25  min    0.33  max  498.28
+jets>10      mean    0.15  median    0.00  min    0.00  max    6.00
+PPS protons  mean    0.36  median    0.00  min    0.00  max    2.00
 per process (events, mean interactions, stable, charged, central, lead pT, sum pT):
-  ND  183    9.0  241.1  110.8  27.0  2.53   99.9
-  SD   45    2.0   69.5   32.8   7.0  1.41   26.2
-  DD   19    1.2   56.8   24.2   2.1  1.13   16.7
-  CD    3    2.0   35.0   16.0   2.3  0.84    9.4
-stable particles by species: gamma 45.9%, pi+- 37.1%, K+- 4.8%, p 2.7%, n 2.5%, K0L 2.4%, K0S 2.2%, Lambda 0.9%, e 0.6%, Sigma- 0.3%, Sigma+ 0.3%, Xi- 0.1%
-|eta| of the stable particles, per unit (last bin >= 10): 6950 7498 7816 7227 6406 5365 3509 2041 1039 419 167
-pT of the stable particles (<0.2, 0.2-0.5, 0.5-1, 1-2, 2-5, >5 GeV): 18209 17452 8978 3094 687 17
-ND: mean stable particles against the number of interactions: 1: 85 (44 ev), 2: 109 (17 ev), 3: 120 (10 ev), 4: 150 (7 ev), 5: 177 (7 ev), 6: 195 (11 ev), 7: 235 (8 ev), 8: 298 (3 ev), 9: 248 (6 ev), 10: 319 (6 ev), 11: 303 (10 ev), 12: 334 (4 ev), 13: 355 (2 ev), 14: 398 (4 ev), 15: 330 (4 ev), 16: 409 (5 ev), 17: 428 (2 ev), 18: 390 (5 ev), 19: 403 (3 ev), 20: 444 (2 ev), 22: 428 (2 ev), 23: 495 (5 ev), 24: 438 (2 ev), 25: 467 (4 ev), 26: 548 (2 ev), 27: 576 (2 ev), 28: 658 (1 ev), 30: 498 (1 ev), 31: 492 (1 ev), 32: 561 (1 ev), 36: 540 (1 ev), 39: 723 (1 ev)
-SD: diffractive mass M_X median 166.8 GeV (min 1.2, max 6754), xi = 1 - E_p/E_beam median 1.5e-04 (min 3.7e-09, max 0.25)
+  ND  722    8.5  236.1  108.8  26.3  2.58   97.7
+  SD  161    2.1   69.6   32.7   6.6  1.40   25.4
+  DD  105    1.3   54.6   24.9   2.8  1.12   16.8
+  CD   12    1.2   24.3   12.7   2.2  0.71    6.9
+stable particles by species: gamma 45.7%, pi+- 37.3%, K+- 4.8%, p 2.8%, n 2.5%, K0L 2.4%, K0S 2.3%, Lambda 0.9%, e 0.6%, Sigma+ 0.3%, Sigma- 0.3%, Xi- 0.1%
+|eta| of the stable particles, per unit (last bin >= 10): 26935 28804 29894 28086 24909 20449 13866 7961 4364 1752 664
+pT of the stable particles (<0.2, 0.2-0.5, 0.5-1, 1-2, 2-5, >5 GeV): 70499 67692 35172 11781 2463 77
+ND: mean stable particles against the number of interactions: 1: 87 (180 ev), 2: 113 (83 ev), 3: 143 (45 ev), 4: 161 (45 ev), 5: 183 (39 ev), 6: 205 (25 ev), 7: 251 (27 ev), 8: 245 (14 ev), 9: 245 (23 ev), 10: 282 (19 ev), 11: 294 (23 ev), 12: 346 (13 ev), 13: 310 (10 ev), 14: 384 (20 ev), 15: 363 (21 ev), 16: 385 (8 ev), 17: 439 (7 ev), 18: 402 (14 ev), 19: 456 (9 ev), 20: 441 (7 ev), 21: 516 (7 ev), 22: 459 (8 ev), 23: 495 (5 ev), 24: 521 (10 ev), 25: 511 (11 ev), 26: 533 (6 ev), 27: 588 (10 ev), 28: 566 (3 ev), 29: 563 (3 ev), 30: 588 (3 ev), 31: 562 (5 ev), 32: 588 (7 ev), 33: 536 (2 ev), 34: 712 (2 ev), 36: 555 (2 ev), 37: 634 (1 ev), 39: 692 (3 ev), 42: 826 (1 ev), 45: 805 (1 ev)
+SD: diffractive mass M_X median 242.9 GeV (min 1.2, max 7686), xi = 1 - E_p/E_beam median 3.2e-04 (min 3.4e-09, max 0.32)
 ```
 
-Derived from the per-event lines (columns z[cm], t[ns], jet10): vertex z mean 0.08 cm, median -0.05, r.m.s.
-3.56 cm, min -9.52, max 10.08; t mean -0.007 ns, median -0.015, r.m.s. 0.122 ns, min -0.392, max 0.365
-(the medians at full precision, FWLite on the `generatorSmeared` vertex of `step1_GEN_MinBias_08_PU.root`:
--0.0506 cm and -0.0153 ns; the sum-pT mean is 79.245 GeV, 79.2 in the chapter);
-21 of the 250 collisions have a jet above 10 GeV; total stable particles 250 x 193.75 = 48 437, of which
-18209 + 17452 = 35 661 below 0.5 GeV; beyond |eta| = 5.5: 38.92 / 193.75 = 20 %.
+Derived from the per-event lines (columns z[cm], t[ns], jet10) and, at full precision, from the `xyz0` and `t0`
+products of `genParticles` (FWLite): vertex z mean 0.378 cm, median 0.369, r.m.s. 3.566 cm, min -12.42, max 12.86;
+t mean 0.0006 ns, median -0.0059, r.m.s. 0.120 ns, min -0.392, max 0.380 (the beam-spot centre of the payload is
+z0 = 0.416 cm; the first 250 vertices had mean 0.08 cm, 1.5 sigma of their mean below it);
+85 of the 1000 collisions have a jet above 10 GeV; total stable particles 1000 x 187.684 = 187 684, of which
+70499 + 67692 = 138 191 below 0.5 GeV and 77 above 5 GeV; beyond |eta| = 5.5: 38.25 / 187.68 = 20 %. Largest collision:
+event 379 (ND, 27 interactions, 857 stable); most interactions: event 484 (ND, 45, 805 stable); hardest particle:
+event 985 (18.99 GeV).
 
-### 4.4 The in-time collisions, library events 72-139 (`genstats_08_PU.txt`, lines 73-140)
+### 4.4 The draw (`draw_08_PU.txt`, in full) and the in-time collisions, library events 747-810 (`genstats_08_PU.txt`, lines 748-811)
+
+```
+== the draw for signal event 1:1:1: bunch crossings -12 .. 3
+  bx  t [ns] collisions  library events
+ -12    -300         71  1-71
+ -11    -275         68  72-139
+ -10    -250         54  140-193
+  -9    -225         59  194-252
+  -8    -200         52  253-304
+  -7    -175         61  305-365
+  -6    -150         76  366-441
+  -5    -125         59  442-500
+  -4    -100         65  501-565
+  -3     -75         59  566-624
+  -2     -50         68  625-692
+  -1     -25         54  693-746
+   0       0         64  747-810
+   1      25         63  811-873
+   2      50         62  874-935
+   3      75         60  936-995
+early (bx -12 .. -1): 746   in time (bx 0): 64, library events 747-810   late (bx 1 .. 3): 185   all: 995
+library: 1000 events, every collision used at most once
+skip 746 intime 64 total 995
+```
+
+The same job with `minBunch=-1 maxBunch=1` (validation, not kept): `-1:71[1-71] 0:68[72-139] 1:54[140-193]`, total 193,
+the draw of chapter 10; the first three crossings of bx -12..3 get the same 71, 68, 54 (the same first three
+Poisson numbers of the engine). With the 2024 settings (`auto:phase1_2024_realistic`, `Run3_2024`) the draw is
+identical (section 4.9).
 
 ```
 event proc nInt stable  charg  centr |eta|>5.5  leadpT   sumpT jet10  PPS   z[cm]   t[ns]
-   72   ND    3    192     84     13     31    2.20    56.6     0    0   -0.48  -0.092
-   73   ND    4    113     56      4     40    1.65    31.2     0    0   -4.13  -0.195
-   74   ND    2    118     54     14     35    1.85    47.9     0    0   -3.66  -0.041
-   75   SD    1     53     22      1     20    0.93    14.7     0    1   -0.32   0.013
-   76   SD    1     29     16      3      7    0.76     9.1     0    2    1.52   0.198
-   77   SD    4    206     90     18     15    3.60    73.0     0    1   -6.74   0.064
-   78   ND    1     76     36      6     31    1.73    27.5     0    1    0.09  -0.013
-   79   ND    4    152     58      5     54    2.83    49.5     0    0   -5.42  -0.096
-   80   ND    2     75     34      3     22    1.26    26.1     0    0    0.54   0.031
-   81   ND   12    321    140     66     40    6.45   203.3     3    0   -0.34  -0.018
-   82   ND   10    352    160     57     43    4.51   157.5     0    0    1.49  -0.003
-   83   SD    2     86     44     14     19    1.32    33.6     0    1   -9.52   0.091
-   84   ND    3     71     34      8     20    1.36    22.2     0    1   -4.74   0.096
-   85   ND    5    105     42      3     27    1.07    33.4     0    0   -1.43  -0.106
-   86   SD    6    167     84     30     30    2.91    82.4     0    1    6.14   0.109
-   87   ND    2    114     52      5     36    1.30    31.6     0    0   -4.02  -0.118
-   88   ND   10    260    122     31     49    2.76   114.1     0    0   -3.17  -0.052
-   89   DD    1     24      6      0     14    0.98     6.2     0    1    3.24   0.066
-   90   ND    1     92     38      0     32    1.24    24.0     0    1   -0.72   0.193
-   91   SD    1     19      6      0     15    0.96     5.1     0    1   -1.03  -0.047
-   92   ND   25    434    188     57     64    3.64   191.0     0    0    5.51  -0.006
-   93   ND   11    250    126     16     63    2.20    84.9     0    0    0.76  -0.052
-   94   ND   26    547    242     81     76    5.31   262.7     0    0    2.50   0.117
-   95   ND   16    461    220     47     70    3.14   203.7     0    0    3.49  -0.005
-   96   ND    1     64     38      7     21    1.24    20.0     0    0   -0.36   0.262
-   97   ND    9    242    114     35     59    1.96    83.8     0    0    6.53   0.020
-   98   SD    1     66     38      6     18    1.33    21.7     0    2   -4.68   0.142
-   99   DD    1     39     20      1     22    0.97    11.8     0    1   -3.35  -0.161
-  100   SD    7    161     88     38     17    4.27    89.8     0    1   -0.08   0.051
-  101   ND   20    444    214     48     50    3.05   196.7     0    0   -2.87   0.135
-  102   ND   23    519    250    113     65    5.38   317.3     2    0   -5.45   0.092
-  103   ND   15    405    192     72     72    5.66   205.7     0    0    1.25  -0.179
-  104   SD    2     68     36      7     24    2.33    21.9     0    1   -1.00  -0.074
-  105   ND    6    283    122     25     51    5.98   119.0     0    0    3.34   0.091
-  106   ND   12    382    182     47     75    2.96   163.1     0    0    2.88   0.201
-  107   ND   36    540    252     90     71    4.91   281.4     2    0    0.36  -0.152
-  108   ND   15    279    134     22     61    2.04    98.5     0    0    4.67  -0.089
-  109   ND   24    479    202     49     55    3.35   213.4     0    0    0.27   0.155
-  110   SD    3    149     70     24     19    5.42    91.1     2    1   -2.05  -0.316
-  111   SD    1     12      4      0     11    0.64     3.6     0    1   -2.34   0.189
-  112   ND    1     88     38      2     36    1.03    22.9     0    0   -4.79  -0.074
-  113   ND    7    170     64      9     38    1.08    48.7     0    0   -4.66  -0.115
-  114   ND   11    315    162     36     93    4.41   124.1     2    0    2.08   0.331
-  115   ND    1     79     40      5     19    1.02    23.0     0    0   -2.34  -0.087
-  116   ND    1     90     46      3     36    0.90    25.7     0    0    4.18   0.040
-  117   DD    1     56     16      0     39    1.20    14.8     0    0   -1.38  -0.147
-  118   ND    6    241    108     14     47    3.32    79.7     0    0    2.08   0.182
-  119   ND    5    180     76      7     53    1.51    58.0     0    0    5.74   0.091
-  120   ND    1     62     28      6     24    1.35    23.1     0    2   -1.37   0.109
-  121   ND    2    109     54      4     43    1.45    36.7     0    0   -4.89  -0.000
-  122   ND   11    371    164     36     61    2.97   142.8     0    0   -2.82   0.196
-  123   ND    5    234     98     25     39    2.60    82.0     0    0   -2.05   0.078
-  124   SD    1      6      4      0      6    0.43     1.8     0    2    1.03  -0.053
-  125   DD    1     61     28      1     29    0.77    16.9     0    1    1.14  -0.119
-  126   ND    7    273    128     21     56    1.71    82.5     0    0   -1.06   0.143
-  127   SD    4    131     62     14     31    1.57    51.7     0    1   -1.03  -0.140
-  128   ND   13    262    112     16     52    2.31    92.2     0    0   -2.12   0.038
-  129   ND    7    249    108     23     78    2.33    92.4     0    0   -6.03  -0.079
-  130   ND    1     72     38      2     18    1.16    22.5     0    0    3.93   0.024
-  131   ND   24    397    164     41     75    3.50   157.9     0    0   -0.06  -0.244
-  132   SD    1      3      2      0      3    0.23     0.5     0    1    0.54   0.009
-  133   ND    2    198    106     27     35    1.53    72.5     0    0    3.82  -0.053
-  134   SD    2     45     26      0     10    0.85    12.5     0    1   -4.15  -0.098
-  135   ND    8    265    136     27     39    2.26   102.2     0    0   -4.16  -0.016
-  136   ND    1     89     38      5     24    1.45    27.7     0    0    4.76  -0.121
-  137   ND    1     98     48      5     38    1.80    29.5     0    0    5.01  -0.060
-  138   ND   12    304    148     14     63    2.00   111.7     0    0    4.36  -0.137
-  139   ND    1     96     46      5     31    0.96    28.7     0    1    3.51  -0.160
+  747   SD    1     37     20      0     16    1.08    13.9     0    1    2.16  -0.075
+  748   ND    2     91     44      5     31    1.15    32.3     0    0    0.21   0.115
+  749   ND    2    146     70     10     42    2.69    50.9     0    0    7.61   0.270
+  750   SD    4    161     88      9     25    1.91    60.0     0    1    3.21   0.058
+  751   DD    1     22     10      0     17    0.88     7.2     0    0   -1.45  -0.147
+  752   ND    1     58     24      4     16    1.16    18.3     0    0   -2.54  -0.025
+  753   DD    1     69     38      8     19    1.46    26.8     0    0    4.97   0.155
+  754   ND    4    158     78     27     26    2.50    69.9     0    0    5.81  -0.080
+  755   ND    3    215    106     13     43    1.82    73.0     0    1    4.84  -0.112
+  756   DD    1     50     26      1     30    1.88    15.1     0    0    6.28  -0.166
+  757   DD    1     11      6      0     11    0.47     2.9     0    0    8.33   0.090
+  758   ND    1     97     42      7     15    1.42    35.9     0    0    2.02  -0.003
+  759   ND   31    544    246     72     90    3.54   240.6     0    0    7.31  -0.090
+  760   ND   42    826    378    167     60    6.19   498.3     6    0    2.25   0.243
+  761   ND    2     69     28      4     17    1.34    23.4     0    0   -2.09   0.015
+  762   ND    1    104     58      5     36    1.08    36.6     0    0    1.96   0.046
+  763   ND    1    110     46      5     37    1.13    33.0     0    0    1.04  -0.127
+  764   ND    3    343    156     80     25   14.34   225.5     3    0    2.56   0.125
+  765   ND    4    133     66     17     35    2.15    52.2     0    0    6.04  -0.162
+  766   ND   12    414    214     56     53    2.00   148.7     0    0   -1.28   0.056
+  767   SD    1     32     16      4      9    2.31    11.8     0    1    2.35   0.077
+  768   DD    1     49     20      2     30    0.64    12.4     0    1   -0.38  -0.124
+  769   ND    5    201    110     29     29    2.82    84.1     0    0   -2.30   0.127
+  770   ND    8    272    134     36     50    3.31   110.0     0    0    2.74   0.196
+  771   ND    1    120     50      6     33    1.82    39.3     0    0   -0.16   0.004
+  772   ND   26    649    280    109     62    4.33   331.4     1    0   -1.83  -0.280
+  773   DD    1     59     32      4     23    0.76    17.0     0    0   -2.71  -0.081
+  774   SD    1      4      4      0      4    0.35     0.7     0    2   -0.33  -0.186
+  775   DD    1    106     44     10     34    1.15    29.8     0    0   -0.86  -0.185
+  776   ND    7    229    102     22     42    1.99    82.0     0    0    1.55  -0.042
+  777   ND    3    112     58      8     40    1.19    37.5     0    0    7.23  -0.036
+  778   ND    6    296    134     21     50    2.56   102.4     0    0    4.18  -0.196
+  779   ND    4    168     92     17     35    1.82    62.4     0    0   -1.84   0.163
+  780   ND    5    135     62     15     43    2.25    60.0     0    1    3.05  -0.019
+  781   ND   21    555    242     84     66    3.57   248.9     0    0   -3.62   0.040
+  782   DD    1     20      8      0     17    0.87     6.4     0    0    0.51  -0.160
+  783   SD    1     27     14      3      5    1.68     8.0     0    1   -1.85   0.248
+  784   DD    1     56     30      3     35    0.80    15.6     0    0   -2.68   0.260
+  785   DD    1     50     20      5     23    0.93    14.8     0    0   -2.64   0.170
+  786   SD    2     63     28      6     11    0.96    17.9     0    1   -5.60  -0.049
+  787   ND    1     72     34      1     32    0.81    18.7     0    0    4.59   0.130
+  788   ND    3    120     54      8     48    2.39    42.0     0    0   -0.18   0.212
+  789   ND    4     94     50     12     29    2.09    41.9     0    0   -3.67   0.123
+  790   SD    2    105     66      9     23    1.73    42.4     0    1   -1.22   0.054
+  791   SD    6    181     84     16     37    3.51    61.5     0    1    0.86  -0.075
+  792   SD    3     94     28     12     23    2.67    36.6     0    1    0.66   0.002
+  793   ND    8    232    104     15     42    1.75    71.6     0    0    1.63  -0.179
+  794   ND   10    261    138     20     49    2.05    88.5     0    0   -6.52   0.051
+  795   ND    5    157     76     26     37    2.72    70.3     0    1   -1.52   0.151
+  796   ND    1     82     40      3     26    0.88    21.3     0    0    2.89   0.262
+  797   ND   14    329    156     35     68    3.17   124.8     0    0   -2.37  -0.079
+  798   ND   14    480    248     61     70    8.51   225.6     2    0   -3.54  -0.027
+  799   ND    5    159     70     18     30    3.44    66.9     0    0   -2.97   0.054
+  800   SD    4    155     62     15     21    1.49    56.1     0    1   -1.19  -0.267
+  801   SD    1     24     18      1     13    1.08     8.3     0    1    2.01  -0.031
+  802   ND   13    239    114     19     35    2.22    87.6     0    0   -2.65  -0.069
+  803   ND   14    340    166     57     41    3.84   146.4     0    0    2.87  -0.170
+  804   ND    5    126     58      9     27    1.52    41.9     0    1   -4.85  -0.007
+  805   ND    1     94     40      5     29    1.41    29.4     0    0    1.31   0.016
+  806   SD    1     56     30      3     17    2.39    30.6     0    1    2.80   0.050
+  807   ND    3    175     84     11     39    1.51    58.3     0    0   -1.44   0.113
+  808   DD    1     51     24      0     36    0.74    13.0     0    0   -0.04   0.012
+  809   ND    2     45     24      3     22    0.77    13.4     0    0    4.13  -0.020
+  810   ND   14    361    168     39     74    3.85   152.9     0    0   -3.24  -0.173
 ```
 
-Sums over the 68 lines: 49 ND, 15 SD, 4 DD, 0 CD; 467 interactions; 12 993 stable particles (mean 191.1,
-median 150.5 = (149 + 152) / 2, min 3 = event 132 (SD), max 547 = event 94 (ND)); 5998 charged; 1414 central; 11 jets above 10 GeV.
-The neighbouring draws of the mixing of chapter 10 (seed 12345, Poisson(60) per bunch crossing, the library
-read in sequence): bunch crossing -1 = library events 1-71, bunch crossing +1 = events 140-193.
+Sums over the 64 lines: 41 ND, 12 SD, 11 DD, 0 CD; 350 interactions; 10 893 stable particles (mean 170.2,
+median 116 = (112 + 120) / 2, min 4 = event 774 (SD), max 826 = event 760 (ND, 42 interactions)); 5160 charged;
+1272 central; 12 jets above 10 GeV. For comparison, the early crossings (events 1-746) have 142 212 stable
+particles (190.6 per collision), the late ones (811-995) 34 054 (184.1).
 
-### 4.5 The drawn collision, library event 72 (`genPartAnalyzer_MinBias_08_PU.log`)
+### 4.5 The drawn collision, library event 747 (`genPartAnalyzer_MinBias_08_PU.log`)
 
 ```
-== GenPartAnalyzer run:lumi:event 1:1:72 nGenParticles=406 nStatus1=192 hard b idx=hard bbar idx=
+== GenPartAnalyzer run:lumi:event 1:1:747 nGenParticles=74 nStatus1=37 hard b idx=hard bbar idx=
   stage 1 (hardProcess): nParticles=2 | b: none | #bar{b}: none
-  stage 2 (partonShower): nParticles=10
-  stage 3 (mpiBeamRemnants): nParticles=26
-  stage 4 (hadronisation): nParticles=102
-  stage 5 (hadronDecays): nParticles=192
+  stage 2 (partonShower): nParticles=2
+  stage 3 (mpiBeamRemnants): nParticles=7
+  stage 4 (hadronisation): nParticles=24
+  stage 5 (hadronDecays): nParticles=37
 ```
 
-Catalogue line 72: ND, 3 interactions, 192 stable, 84 charged, 13 central, 31 beyond |eta| = 5.5, hardest
-particle 2.20 GeV, sum pT 56.6 GeV, no jet above 10 GeV, z = -0.48 cm, t = -0.092 ns. Page 1 of
-`genPartAnalyzer_MinBias_08_PU.pdf` draws the two hard-process partons without a pT label (both below the
-5 GeV label threshold); page 5 draws 192 particles, 47 primary hadrons and 145 decay products, 18 with
-|eta| > 6 on the border.
+Catalogue line 747: SD, 1 interaction, 37 stable, 20 charged, 0 central, 16 beyond |eta| = 5.5, hardest particle
+1.08 GeV (a K+-), sum pT 13.9 GeV, no jet above 10 GeV, 1 proton at the PPS, z = 2.16 cm, t = -0.075 ns.
+`GenEventInfoProduct::signalProcessID()` = 103 (A B -> X B). The record (`genParticles`, FWLite): [2] the diffractive
+system pdg 9902210, mass 76.89 GeV, eta 11.97, E 6800.2 GeV; [3] the surviving proton, status 1, pT 0.086 GeV,
+eta -11.97, E 6799.8 GeV (xi = 3e-5); [5] the Pomeron (pdg 990); [6], [7] the incoming gluons (status 21) of the
+proton and of the Pomeron; [8], [9] the outgoing gluons (status 23), pT 0.329 and 0.398 GeV: the two particles of the
+hard-process page. `minBiasGenStats.py --event 747`: the 37 stable particles have eta between 0.09 and 9.27 except the
+proton at -11.97; 13 have |eta| > 6 (drawn on the border of page 5 of `genPartAnalyzer_MinBias_08_PU.pdf`).
 
-### 4.6 The overlay (`genJetPileup_08_PU.log`, first lines and the 12 leading jets of 266)
+### 4.6 The overlay (`genJetPileup_08_PU.log`, first lines and the 12 leading jets of 261)
 
 ```
-== GenJetAnalyzer run:lumi:event 1:1:1 nGenParticles=36218 nStatus1=13627 (signal 634 + pileup 12993 from 68 collisions) | hard b: [5] pt=113.221 -> last copy [824] status=71 pt=91.7437 eta=-1.56979 phi=-2.08372 | hard bbar: [4] pt=113.221 -> last copy [964] status=71 pt=116.356 eta=-3.74787 phi=1.01139
-  ak4GenJetsPU (process GENJETPU, AntiKt R=0.4, jetPtMin=3 GeV, src=genParticlesForJetsPU): nJets=266 nClustered=13106/13627 status 1 particles (signal 627/634, pileup 12479/12993)
-    b quark -> jet [1] pt=150.895 eta=-1.62991 phi=-2.08378 nConst=114 dR=0.0601206 pt(jet)/pt(quark)=1.64474 pileupPt=33.9195 (22.4789%)
-    bbar quark -> jet [0] pt=152.028 eta=-3.77978 phi=1.00135 nConst=88 dR=0.033447 pt(jet)/pt(quark)=1.30657 pileupPt=36.7424 (24.1683%)
-    net b jet + bbar jet: |sum pT|=8.62555 (px=7.91221 py=-3.43469) scalar sum pT=302.922 dphi=3.08513
-    [0] pt=152.028 eta=-3.77978 phi=1.00135 mass=44.3279 nConst=88 pileupPt=36.7424 (24.1683%)
-    [1] pt=150.895 eta=-1.62991 phi=-2.08378 mass=51.3568 nConst=114 pileupPt=33.9195 (22.4789%)
-    [2] pt=60.9265 eta=-0.427131 phi=0.301034 mass=35.8603 nConst=94 pileupPt=59.1301 (97.0515%)
-    [3] pt=57.9195 eta=-1.41116 phi=3.03549 mass=35.9035 nConst=109 pileupPt=54.9782 (94.9218%)
-    [4] pt=56.1916 eta=-0.942531 phi=-2.72205 mass=30.7832 nConst=96 pileupPt=53.1819 (94.6437%)
-    [5] pt=54.6808 eta=2.54838 phi=-2.16859 mass=34.1365 nConst=114 pileupPt=52.4901 (95.9936%)
-    [6] pt=54.1034 eta=1.23233 phi=2.42233 mass=36.5441 nConst=95 pileupPt=40.9415 (75.6728%)
-    [7] pt=51.5411 eta=-2.43167 phi=-0.104322 mass=28.0673 nConst=106 pileupPt=51.0359 (99.0199%)
-    [8] pt=51.011 eta=0.24542 phi=-1.52298 mass=29.7201 nConst=92 pileupPt=51.3976 (100.758%)
-    [9] pt=48.7428 eta=-1.98297 phi=-1.42794 mass=28.2221 nConst=89 pileupPt=39.4301 (80.8941%)
-    [10] pt=48.2716 eta=1.5031 phi=-0.796267 mass=31.7833 nConst=100 pileupPt=40.5155 (83.9324%)
-    [11] pt=47.1941 eta=-1.079 phi=-0.140472 mass=27.0372 nConst=85 pileupPt=44.8704 (95.0763%)
+== GenJetAnalyzer run:lumi:event 1:1:1 nGenParticles=30295 nStatus1=11527 (signal 634 + pileup 10893 from 64 collisions) | hard b: [5] pt=113.221 -> last copy [824] status=71 pt=91.7437 eta=-1.56979 phi=-2.08372 | hard bbar: [4] pt=113.221 -> last copy [964] status=71 pt=116.356 eta=-3.74787 phi=1.01139
+  ak4GenJetsPU (process GENJETPU, AntiKt R=0.4, jetPtMin=3 GeV, src=genParticlesForJetsPU): nJets=261 nClustered=10988/11527 status 1 particles (signal 626/634, pileup 10362/10893)
+    b quark -> jet [0] pt=150.752 eta=-1.63804 phi=-2.07282 nConst=101 dR=0.0691127 pt(jet)/pt(quark)=1.64319 pileupPt=34.2175 (22.6978%)
+    bbar quark -> jet [1] pt=144.688 eta=-3.77367 phi=1.00923 nConst=86 dR=0.0258912 pt(jet)/pt(quark)=1.24349 pileupPt=29.5083 (20.3945%)
+    net b jet + bbar jet: |sum pT|=10.6807 (px=4.50565 py=-9.68382) scalar sum pT=295.44 dphi=3.08205
+    [0] pt=150.752 eta=-1.63804 phi=-2.07282 mass=50.5254 nConst=101 pileupPt=34.2175 (22.6978%)
+    [1] pt=144.688 eta=-3.77367 phi=1.00923 mass=42.8672 nConst=86 pileupPt=29.5083 (20.3945%)
+    [2] pt=72.2467 eta=-2.20474 phi=1.24018 mass=39.3864 nConst=109 pileupPt=70.254 (97.2418%)
+    [3] pt=68.613 eta=0.436581 phi=-2.83504 mass=26.6221 nConst=94 pileupPt=68.6471 (100.05%)
+    [4] pt=60.6734 eta=1.39986 phi=2.45011 mass=37.7583 nConst=101 pileupPt=48.0892 (79.2592%)
+    [5] pt=58.1092 eta=-2.57512 phi=-3.09456 mass=29.6635 nConst=91 pileupPt=56.0586 (96.4712%)
+    [6] pt=55.494 eta=0.772405 phi=-0.34326 mass=33.166 nConst=88 pileupPt=54.7552 (98.6688%)
+    [7] pt=46.3936 eta=1.20398 phi=-3.12776 mass=31.72 nConst=90 pileupPt=46.3674 (99.9435%)
+    [8] pt=45.0961 eta=2 phi=3.03012 mass=25.1327 nConst=78 pileupPt=42.0106 (93.1579%)
+    [9] pt=43.3509 eta=2.31988 phi=-0.483933 mass=27.9429 nConst=90 pileupPt=39.2179 (90.4661%)
+    [10] pt=42.9907 eta=-0.393213 phi=-2.07452 mass=23.4205 nConst=90 pileupPt=42.9312 (99.8616%)
+    [11] pt=42.4741 eta=-2.46808 phi=1.81364 mass=28.4894 nConst=83 pileupPt=38.9951 (91.8093%)
 ```
 
 The signal alone, for comparison (`test/07_GenJet/out/genJetAnalyzer_07_GenJet.log`, `ak4GenJets`):
@@ -419,31 +489,33 @@ The signal alone, for comparison (`test/07_GenJet/out/genJetAnalyzer_07_GenJet.l
     [3] pt=13.3261 eta=1.73863 phi=1.84424 mass=6.28552 nConst=12
 ```
 
-Derived from the two jet lists: jets above 10 / 20 / 30 / 50 GeV: 6 / 2 / 2 / 2 (signal) and 175 / 116 / 76 / 9
-(overlay); dijet mass m(jet [0] + jet [1]) from (pT, eta, phi, mass): 386.8 GeV (signal, also printed on the AK4 page
-of chapter 07 as "m = 386.8 GeV") and 521.7 GeV (overlay, printed on its page); the b jet (now jet [1]) gained
-150.895 - 117.788 = 33.1 GeV and the bbar jet (jet [0]) 152.028 - 115.944 = 36.1 GeV; the jet axes moved by
-Delta R = 0.041 (b) and 0.034 (bbar).
+Derived from the two jet lists: jets above 10 / 20 / 30 / 50 GeV: 6 / 2 / 2 / 2 (signal) and 163 / 99 / 45 / 7
+(overlay); dijet mass m(b jet + bbar jet) from (pT, eta, phi, mass): 386.8 GeV (signal, also printed on the AK4 page
+of chapter 07 as "m = 386.8 GeV") and 505.2 GeV (overlay, printed on its page); the b jet (jet [0] in both) gained
+150.752 - 117.788 = 33.0 GeV and the bbar jet (jet [1] in both) 144.688 - 115.944 = 28.7 GeV; the jet axes moved by
+Delta R = 0.050 (b) and 0.027 (bbar).
 From `step2_GENJETPU_08_PU.root` with FWLite (`Events` / `Handle('std::vector<reco::GenJet>')` on
-`ak4GenJetsPU`, then `jet.daughter(k).collisionId()` over `k < jet.numberOfDaughters()`, 0 = signal): jet [0]
-(bbar) 18 signal + 70 pileup constituents
-from 32 collisions, jet [1] (b) 24 + 90 from 41, jet [2] 5 + 89 from 34, jet [3] 8 + 101 from 44; 87 of the 266
-jets have no signal constituent; 74 of the 76 jets above 30 GeV have at least one. `PileupMixingContent` of
-`mix`: bunch crossing [0], 68 collisions, true mean 68.
+`ak4GenJetsPU`, then `jet.daughter(k).collisionId()` over `k < jet.numberOfDaughters()`, 0 = signal, inside the event
+loop): jet [0] (b) 23 signal + 78 pileup constituents from 33 collisions, jet [1] (bbar) 18 + 68 from 30, jet [2]
+7 + 102 from 35, jet [3] 1 + 93 from 33, jet [4] 9 + 92 from 34, jet [5] 6 + 85 from 35, jet [6] 3 + 85 from 36;
+79 of the 261 jets have no signal constituent; 44 of the 45 jets above 30 GeV have at least one; 626 signal
+particles are inside a jet. The bbar jet holds the 18 signal constituents of chapter 07; the b jet 23 of its 24:
+the pi+ of pT 0.478 GeV, eta -1.407 is now a constituent of jet [251] (pT 3.4 GeV, eta -1.48, phi -2.46, 4
+constituents). `PileupMixingContent` of `mix`: bunch crossings [0], collisions [64], true mean [64.0].
 
-### 4.7 The ledger (`ledger_08_PU.txt`, in full)
+### 4.7 The ledger (`ledger_08_PU.txt`, in full but for the `members` lines of the cones)
 
 ```
-== genLedger step2_GENJETPU_08_PU.root event 1:1:1: 36218 particles in genParticlesPU
+== genLedger step2_GENJETPU_08_PU.root event 1:1:1: 30295 particles in genParticlesPU
 record by status group (signal / pileup / all):
-  hard process (21-29)            4 /    267 /    271
-  MPI (31-39)                   124 /   1596 /   1720
-  ISR (41-49)                   190 /   3077 /   3267
-  FSR (51-59)                   192 /   3390 /   3582
-  beam remnants (61-69)         233 /   3855 /   4088
-  strings (71-79)               165 /   2882 /   3047
-  decayed (status 2)            302 /   6121 /   6423
-  final state (status 1)        634 /  12993 /  13627
+  hard process (21-29)            4 /    264 /    268
+  MPI (31-39)                   124 /   1144 /   1268
+  ISR (41-49)                   190 /   2505 /   2695
+  FSR (51-59)                   192 /   2838 /   3030
+  beam remnants (61-69)         233 /   3103 /   3336
+  strings (71-79)               165 /   2369 /   2534
+  decayed (status 2)            302 /   5127 /   5429
+  final state (status 1)        634 /  10893 /  11527
 hard process: incoming pdg -2 (E=14.8 GeV, x=0.0022) + pdg 2 (E=2652.9 GeV, x=0.3901) -> sqrt(s_hat) = 396.1 GeV
   outgoing pdg -5: pT=113.2 eta=-3.75 phi=0.99 E=2415.7 GeV
   outgoing pdg 5: pT=113.2 eta=-1.44 phi=-2.15 E=252.1 GeV
@@ -461,49 +533,59 @@ final state (status 1) of the signal: n=634 sumE=13600.0 GeV sumPt=528.9 GeV
   5.2-5.5                16     836.4      7.8      0.0
   >5.5                   58    6817.1     20.3      0.0
   visible (|eta|<5.2, no neutrinos): n=559 E=5851.0 GeV pT=463.4 GeV; neutrinos: n=1 E=95.5 GeV pT=37.5 GeV
-final state (status 1) of the pileup: n=12993 sumE=924800.0 GeV sumPt=5314.6 GeV
+  cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+    bbar axis [964] status 71 pT=116.4 eta=-3.75 phi=1.01: n=18 E=2457.4 GeV vector pT=115.9 GeV scalar pT=116.0 GeV
+    b    axis [824] status 71 pT=91.7 eta=-1.57 phi=-2.08: n=21 E=200.6 GeV vector pT=79.1 GeV scalar pT=79.5 GeV
+final state (status 1) of the pileup: n=10893 sumE=870400.0 GeV sumPt=4507.4 GeV
   by kind                 n    E[GeV]  pT[GeV]
-  charged hadron       5911  572734.9   3087.8
-  neutral hadron       1088  179327.8    749.7
-  photon               5900  171675.6   1458.8
-  electron               85     998.9     10.9
-  muon                    2       5.3      1.7
-  neutrino                7      57.5      5.6
+  charged hadron       5081  516149.1   2697.2
+  neutral hadron        880  207301.9    587.4
+  photon               4852  145397.3   1210.6
+  electron               78    1171.7     11.4
+  muon                    1      89.3      0.2
+  neutrino                1     290.6      0.5
   by region               n    E[GeV]  pT[GeV]     E_nu
-  |eta|<2.5            4864    5519.3   2179.4     11.0
-  2.5-3.0              1037    3597.0    449.2      0.0
-  3.0-5.2              3996   58413.2   1674.3     46.5
-  5.2-5.5               436   17054.0    160.3      0.0
-  >5.5                 2660  840216.5    851.4      0.0
-  visible (|eta|<5.2, no neutrinos): n=9890 E=67472.0 GeV pT=4297.3 GeV; neutrinos: n=7 E=57.5 GeV pT=5.6 GeV
-final state (status 1) of the all: n=13627 sumE=938400.0 GeV sumPt=5843.5 GeV
+  |eta|<2.5            4252    4793.6   1922.1      0.0
+  2.5-3.0               911    3216.1    404.4      0.0
+  3.0-5.2              3230   44254.3   1320.1      0.0
+  5.2-5.5               347   13646.3    129.7      0.0
+  >5.5                 2153  804489.7    731.0    290.6
+  visible (|eta|<5.2, no neutrinos): n=8393 E=52264.0 GeV pT=3646.6 GeV; neutrinos: n=1 E=290.6 GeV pT=0.5 GeV
+  cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+    bbar axis [964] status 71 pT=116.4 eta=-3.75 phi=1.01: n=75 E=668.0 GeV vector pT=30.9 GeV scalar pT=31.8 GeV
+    b    axis [824] status 71 pT=91.7 eta=-1.57 phi=-2.08: n=66 E=73.2 GeV vector pT=27.5 GeV scalar pT=28.2 GeV
+final state (status 1) of the all: n=11527 sumE=884000.0 GeV sumPt=5036.3 GeV
   by kind                 n    E[GeV]  pT[GeV]
-  charged hadron       6214  579902.7   3347.0
-  neutral hadron       1144  182777.7    834.4
-  photon               6173  174551.6   1601.4
-  electron               86    1009.8     15.9
-  muon                    2       5.3      1.7
-  neutrino                8     153.0     43.0
+  charged hadron       5384  523316.9   2956.4
+  neutral hadron        936  210751.8    672.1
+  photon               5125  148273.2   1353.2
+  electron               79    1182.7     16.4
+  muon                    1      89.3      0.2
+  neutrino                2     386.1     37.9
   by region               n    E[GeV]  pT[GeV]     E_nu
-  |eta|<2.5            5180    6253.1   2458.1    106.5
-  2.5-3.0              1092    3790.1    473.9      0.0
-  3.0-5.2              4185   63432.8   1871.7     46.5
-  5.2-5.5               452   17890.4    168.1      0.0
-  >5.5                 2718  847033.6    871.7      0.0
-  visible (|eta|<5.2, no neutrinos): n=10449 E=73323.0 GeV pT=4760.7 GeV; neutrinos: n=8 E=153.0 GeV pT=43.0 GeV
-jets ak4GenJetsPU: n=266 sumPt=5616.2 GeV sumE=555114.4 GeV constituents=13106
-  [0] pT=152.0 eta=-3.78 phi=1.00 mass=44.3 nConst=88
-  [1] pT=150.9 eta=-1.63 phi=-2.08 mass=51.4 nConst=114
-  [2] pT=60.9 eta=-0.43 phi=0.30 mass=35.9 nConst=94
-  [3] pT=57.9 eta=-1.41 phi=3.04 mass=35.9 nConst=109
+  |eta|<2.5            4568    5527.4   2200.9     95.5
+  2.5-3.0               966    3409.2    429.1      0.0
+  3.0-5.2              3419   49273.9   1517.5      0.0
+  5.2-5.5               363   14482.6    137.5      0.0
+  >5.5                 2211  811306.8    751.3    290.6
+  visible (|eta|<5.2, no neutrinos): n=8952 E=58115.0 GeV pT=4110.0 GeV; neutrinos: n=2 E=386.1 GeV pT=37.9 GeV
+  cone Delta R < 0.4 around the last copy of each outgoing parton (status 1, no neutrinos):
+    bbar axis [964] status 71 pT=116.4 eta=-3.75 phi=1.01: n=93 E=3125.4 GeV vector pT=146.8 GeV scalar pT=147.8 GeV
+    b    axis [824] status 71 pT=91.7 eta=-1.57 phi=-2.08: n=87 E=273.8 GeV vector pT=106.6 GeV scalar pT=107.6 GeV
+jets ak4GenJetsPU: n=261 sumPt=4815.5 GeV sumE=511052.8 GeV constituents=10988
+  [0] pT=150.8 eta=-1.64 phi=-2.07 mass=50.5 nConst=101
+  [1] pT=144.7 eta=-3.77 phi=1.01 mass=42.9 nConst=86
+  [2] pT=72.2 eta=-2.20 phi=1.24 mass=39.4 nConst=109
+  [3] pT=68.6 eta=0.44 phi=-2.84 mass=26.6 nConst=94
 ```
 
-In the chapter's ledger table the rows "electrons, muons" are electron + muon (pileup 85 + 2 = 87, E
-998.9 + 5.3 = 1004.2 GeV, pT 10.9 + 1.7 = 12.6 GeV; all 88, 1015.1, 17.6). Derived: pileup energy beyond
-|eta| = 5.5: 840 217 / 924 800 = 91 %; pileup pT density in |eta| < 2.5: 2179.4 / (5 x 2 pi) = 69.4 GeV per
-unit of eta-phi area; mean pT of a pileup particle there 2179.4 / 4864 = 0.45 GeV; an R = 0.4 cone (area
-pi R^2 = 0.503) collects 34.9 GeV; the signal column equals `test/07_GenJet/out/ledger_07_GenJet.txt`.
-At PU 200 (x 200 / 68 = 2.9): 204 GeV per unit area, 103 GeV per cone.
+In the chapter's ledger table the rows "electrons, muons" are electron + muon (pileup 78 + 1 = 79, E
+1171.7 + 89.3 = 1261.0 GeV, pT 11.4 + 0.2 = 11.6 GeV; all 80, 1272.0, 16.6). Derived: pileup energy beyond
+|eta| = 5.5: 804 490 / 870 400 = 92 %; pileup pT density in |eta| < 2.5: 1922.1 / (5 x 2 pi) = 61.2 GeV per
+unit of eta-phi area; mean pT of a pileup particle there 1922.1 / 4252 = 0.45 GeV; an R = 0.4 cone (area
+pi R^2 = 0.503) collects 30.8 GeV (the pileup inside the cones around the two partons of the ledger: 27.5 GeV for
+the b, 30.9 GeV for the bbar; in the jets 34.2 and 29.5 GeV); the signal block equals
+`test/07_GenJet/out/ledger_07_GenJet.txt` (diff). At PU 200 (x 200 / 64 = 3.1): 191 GeV per unit area, 96 GeV per cone.
 
 ### 4.8 The release files quoted in "Open problems for Phase-2" (`$CMSSW_RELEASE_BASE/src`)
 
@@ -517,7 +599,7 @@ Configuration/StandardSequences/python/Mixing.py (184, 159, 124):
     addMixingScenario("AVE_50_BX_25ns",{'file': 'SimGeneral.MixingModule.mix_POISSON_average_cfi','BX':25, 'B': (-12,3), 'N': 50})
     addMixingScenario("Run3_Flat55To75_PoissonOOTPU",{'file': 'SimGeneral.MixingModule.mix_Run3_Flat55To75_PoissonOOTPU_cfi'})
 SimGeneral/MixingModule/python/mix_POISSON_average_cfi.py (26) and mix_probFunction_25ns_PoissonOOTPU_cfi.py (42):
-    sequential = cms.untracked.bool(False),      (the overlay of this book: sequential = True, skipEvents = 71)
+    sequential = cms.untracked.bool(False),      (this book: sequential = True; the overlay skipEvents = 746, the draw skipEvents = 0)
 Configuration/StandardSequences/python/Mixing.py (139, 132): the profiles of 2025 and 2024
     "2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23" -> Run3_2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23_cfi
         probFunction over 0-99 collisions: mean 64.34, r.m.s. 11.70, median 65; header "A distribution for Run3 studies (2023)
@@ -573,8 +655,11 @@ RecoVertex/Configuration/python/RecoVertex_phase2_timing_cff.py (5, 33): unsorte
 ```
 
 Library sizes: PU 200 x 7 crossings (-3..3) = 1400 minimum-bias events per signal event; Run 3 scenario
-~65 x 16 crossings (-12..3) = 1040; this book's mixing (chapter 10, bunch crossings -1..1, mean 60) 193 for
-this event: 71 + 68 + 54 library events for bunch crossings -1, 0 and +1.
+~65 x 16 crossings (-12..3) = 1040; the draw of this chapter (bunch crossings -12..3, mean 60, 960 on average)
+995 for this event: 746 + 64 + 185 library events for the early crossings, bunch crossing 0 and the late ones;
+1000 / 1400 = 70 % of one PU-200 event. The mixing of chapters 10 and 11 (bunch crossings -1..1): 193, 71 + 68 + 54.
+In-time pedestal: 61.2 GeV per unit area (64 collisions) x 200 / 64 = 191 GeV; cone 30.8 x 200 / 64 = 96 GeV, against
+the 117.8 GeV of the b jet of chapter 07 (82 %).
 
 ### 4.9 The 2024 and the 2025 settings (`conddb`, and the rerun)
 
@@ -621,3 +706,8 @@ The rerun with the 2025 settings (12 November 2026) against the 2024 run (7 Nove
 `genstats_08_PU.txt` (every collision: process, interactions, particles, PPS protons, vertex z and t), the Pythia8 statistics of
 `step1_GEN_MinBias_08_PU.log`, `genPartAnalyzer_MinBias_08_PU.log` and `genJetPileup_08_PU.log` are identical line by
 line; `gencheck_08_PU.log` differs only in the era and global-tag lines. Every number of the chapter holds for both years.
+
+The 1000-collision library of 16 November 2026 was checked again: `step1_GEN_MinBias_08_PU_cfg.py` with the three
+year lines changed (`Era_Run3_2024_cff`, `cms.Process('GEN',Run3_2024)`, `auto:phase1_2024_realistic`), run on the
+same 1000 events: `genstats_08_PU.txt` (all 1000 catalogue lines and the summary), the draw `draw_08_PU.txt` and the
+Pythia8 "Event and Cross Section Statistics" are identical to the 2025 ones (`diff`).

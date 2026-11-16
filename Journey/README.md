@@ -16,7 +16,7 @@ quotes. `doc/chapter/README.md` says how a chapter is written.
 | `05_Had` | + hadronisation (Lund strings) | `step1_GEN_05_Had.root`, 4 pages (with the Delta R < 0.4 cones and a zoom on the B- cone), ledger |
 | `06_Decay` | + hadron decays: the full generator event | `step1_GEN_06_Decay.root`, 5 pages (with the Delta R < 0.4 cones, neutrinos not counted, and a zoom on each cone), ledger |
 | `07_GenJet` | anti-kT generator jets as a separate step (process GENJET) | `step2_GENJET_07_GenJet.root`, `genJetAnalyzer_07_GenJet_AK4/AK4NoNu/AK8.pdf` (one page each), ledger |
-| `08_PU` | pileup at generator level: 250 minimum-bias collisions (GEN), one drawn; the signal + its 68 in-time collisions re-clustered | `step1_GEN_MinBias_08_PU.root`, `genstats_08_PU.txt`, `genJetAnalyzer_08_PU.pdf`, ledger |
+| `08_PU` | pileup at generator level: 1000 minimum-bias collisions (GEN), one drawn; the draw of the 16 bunch crossings -12..3; the signal + its 64 in-time collisions re-clustered | `step1_GEN_MinBias_08_PU.root`, `genstats_08_PU.txt`, `draw_08_PU.txt`, `genJetAnalyzer_08_PU.pdf`, ledger |
 | `09_G4` | detector chapter (Rule J, 9 pages): the hand-over to Geant4 alone (the detector edges, the hand-over cuts, the decays Pythia made), for the signal and all library collisions; the transport-only SIM file is the input of 10_SIM | `step2_G4_signal_09_G4.root`, `step2_G4_pileup_09_G4.root`, SimAnalyzer pages, `ledger_09_G4.txt` (g4Ledger.py), `extras_09_G4.txt` (g4Extras_09_G4.py, FWLite) |
 | `10_SIM` | detector chapter (Rule J, 16 pages): full Geant4 physics switched on stage by stage (B, decays, EM, hadronic); the signal, the library and the mixing at SimHit level, station by station | `step2_SIM_{B,B_Decay,B_Decay_EM,signal,pileup}_10_SIM.root`, SimAnalyzer and SimHitAnalyzer pages (`signal/`, `pileup/`, `mixed/`), `step3_MIX_10_SIM.root` (the playback record of the mixing), ledger, `extras_10_SIM.txt` (simExtras_10_SIM.py, FWLite) |
 | `11_DIGI` | detector chapter (Rule J, 18 pages): digitisation: the signal alone, one collision alone, the signal with PU = 60 in bx -1..1 (the last chapter with signal and pileup apart); the calorimeter trigger primitives made here for the Level-1 trigger | `step3_DIGI_{signal,pileup,mixed}_11_DIGI.root`, DigiAnalyzer pages, `thresholds_11_DIGI.txt`, ledger, TrigPrimAnalyzer pages, `trigprim_11_DIGI.txt`, `examples_11_DIGI.txt` (digiExamples_11_DIGI.py, FWLite) |
@@ -32,8 +32,10 @@ quotes. `doc/chapter/README.md` says how a chapter is written.
 The output of every chapter is the input of the next (Rule E): 01-06 regenerate the same event with one more Pythia8
 step on (same fragment, same seeds, so the hard process is identical; MPI, hadronisation and decays leave the earlier
 steps untouched), 07 clusters the jets of the 06 file, 08 generates the library and overlays its in-time collisions on
-the 07 file (the 68 collisions that the MixingModule of chapter 10 draws into bunch crossing 0: `SKIP=71`, `NPU=68` in
-`jitjet_common.sh`), 09 runs the transport-only Geant4 (process `SIM`) on the 07 file and on the library, 10 runs the full
+the 07 file (the 64 collisions that the MixingModule draws into bunch crossing 0 when it mixes the 16 crossings -12..3
+of the Run-3 scenarios of the release: `SKIP=746`, `NPU=64` for 08 in `jitjet_common.sh`, made and checked by the draw
+job of 08, `common/pileupDraw_cfg.py`; chapters 09-13 still mix -1..1, `SKIP=71`, `NPU=68`, from the first 250 events
+of the library), 09 runs the transport-only Geant4 (process `SIM`) on the 07 file and on the library, 10 runs the full
 Geant4 as process `SIMFULL` on the 09 files (the transport-only products are dropped) and the MixingModule without
 digitisers (`python/mixOnly_cff.py`, which also writes the playback record of the draw), 11 runs the DIGI step three
 times on the 10 files, the mixed one replaying the draw of 10 (`process.mix.playback = True`). The common machinery is in

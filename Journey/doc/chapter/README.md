@@ -38,7 +38,8 @@ replace "2024" in its plot labels, rerun it, compare `out/` with the previous ru
 scratch area (`/tmp` is local to one lxplus node and is cleaned): a `test/<XX_YYY>/run_<XX_YYY>_2024.sh` that remakes it
 in `test/<XX_YYY>/out2024/` and writes the comparison, as `test/12_L1T/run_12_L1T_2024.sh` and
 `yearCompare_12_L1T.py` do (`out2024/compare_12_L1T.txt`). The pileup
-(PU = 60, bx -1..1, SKIP = 71, NPU = 68), the number of events and the seeds do not change with the year.
+(PU = 60, bx -1..1, SKIP = 71, NPU = 68; 08_PU since 16 November 2026: bx -12..3, SKIP = 746, NPU = 64, the window of
+the Run-3 scenarios of the release), the number of events and the seeds do not change with the year.
 
 ## The .tex chapter (Rule B): exactly five sections, 8 +- 2 pages (detector chapters: Rule J below)
 

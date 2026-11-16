@@ -6,8 +6,12 @@
 #        (YEAR=2025 of jitjet_common.sh; Run-3 vertex smearing from the database, the same beam-spot payload as the 2024
 #        global tag of the signal in chapter 07) with their own random seeds (PUSEED, +1): the generator-level pileup
 #        library of the book. One collision, library event SKIP+1 (the first in-time one of the mixing), is drawn.
+#   (8b) the draw: the MixingModule (seed MIXSEED, Poisson(PU) per bunch crossing, the library in sequence, early crossings
+#        first) in the bunch crossings BUNCHES = -12..3 of the Run-3 scenarios of the release, at generator level
+#        (common/pileupDraw_cfg.py): which library events go into which crossing; SKIP and NPU must be its early and
+#        in-time counts (WARNING_intime_08_PU.txt otherwise). Chapters 09-13 still mix bx -1..1 (jitjet_common.sh).
 #   (8a+8b) the overlay: the stable particles of the NPU in-time collisions (library events SKIP+1 .. SKIP+NPU, the ones
-#        the MixingModule puts into bunch crossing 0 of this signal event in chapter 10, replayed in 11) are added to the signal
+#        the draw puts into bunch crossing 0 of this signal event) are added to the signal
 #        final state with the MixingModule restricted to the HepMC record (python/genJetPileup_cff.py), and the anti-kT
 #        clustering of chapter 07 is run again on the sum: what pileup does to the jets before any detector.
 # Input (Rule E): test/07_GenJet/out/step2_GENJET_07_GenJet.root (signal; its jets alone are the pages of chapter 07).
@@ -15,21 +19,26 @@
 #   step1_GEN_MinBias_08_PU.root, .log, .driver.log   (8b) the library at generator level (config: step1_GEN_MinBias_08_PU_cfg.py)
 #   gencheck_08_PU.log, genstats_08_PU.txt            (8b) the checks and the catalogue of the library (common/minBiasGenStats.py)
 #   genPartAnalyzer_MinBias_08_PU.pdf, .root, .log    (8b) the five generator-stage pages of one minimum-bias collision
+#   draw_08_PU.root, .log, .txt                       (8b) the draw: library events per bunch crossing (common/pileupDraw.py)
 #   step2_GENJETPU_08_PU.root                         (8a+8b) the merged genParticlesPU (collisionId 0 = signal) and the PU jets
 #   genJetPileup_08_PU.root, .log                     (8a+8b) the jets of the overlay (histograms, printout)
 #   genJetAnalyzer_08_PU.pdf                          (8a+8b) the overlay, one page per jet collection in JETS (signal circles,
 #                                                     pileup triangles)
 #   ledger_08_PU.txt                                  the ledger of the overlay: signal / pileup / sum (common/genLedger.py --pu)
-# Variables: PUEVENTS=250 PUSEED=20241 NPU=68 SKIP=71 (jitjet_common.sh) PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30
+# Variables: PUEVENTS=1000 PUSEED=20241 MIXSEED=12345 PU=60 BUNCHES=-12,3 SKIP=746 NPU=64 (jitjet_common.sh) PUTYPE=fixed
+#            JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30
+# PUEVENTS: the draw of bx -12..3 uses 995 library events; the first 250 are those of the 250-event library of
+# chapters 09-13 (same seeds, the events come out in the same order).
 # REGEN=0 keeps the existing library step1_GEN_MinBias_08_PU.root (read by chapter 09) and redoes only the analysis.
 set -euo pipefail
 CHAPTER=08_PU
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../common/jitjet_common.sh"
 jitjet_init
 jitjet_build
-PUEVENTS=${PUEVENTS:-250}
+PUEVENTS=${PUEVENTS:-1000}
 PUSEED=${PUSEED:-20241}
-# NPU, SKIP: the in-time collisions of the mixing of chapter 10 for this signal event (jitjet_common.sh, jitjet_init)
+MIXSEED=${MIXSEED:-12345}  # the mix engine of every cmsDriver configuration (IOMC/RandomEngine/python/IOMC_cff.py)
+# PU, BUNCHES, SKIP, NPU: the draw of the mixing for this signal event and its in-time collisions (jitjet_common.sh)
 PUTYPE=${PUTYPE:-fixed}
 JETS=${JETS:-ak4GenJetsPU}
 JETPTMIN=${JETPTMIN:-3}
@@ -65,6 +74,19 @@ fi
 echo "  Cataloguing the collisions with minBiasGenStats.py"
 python3 "$COMMON/minBiasGenStats.py" "$OUT/$lib" > "$OUT/genstats_${CHAPTER}.txt" 2> "$OUT/genstats_${CHAPTER}.log" || { tail -20 "$OUT/genstats_${CHAPTER}.log" >&2; exit 1; }
 sed -n '/^== /,$p' "$OUT/genstats_${CHAPTER}.txt" | head -12
+draw=draw_${CHAPTER}
+bx_min=${BUNCHES%,*}; bx_max=${BUNCHES#*,}
+echo "(8b) the draw: Poisson($PU) per bunch crossing in $bx_min..$bx_max, mix seed $MIXSEED, the library in sequence"
+run_cmsrun "$COMMON/pileupDraw_cfg.py" "$OUT/$draw.log" inputFiles="file:$signal" pileupFiles="file:$OUT/$lib" eventsToProcess="$EVENT" \
+  nPileup="$PU" minBunch="$bx_min" maxBunch="$bx_max" mixSeed="$MIXSEED" outputFile="$draw.root"
+python3 "$COMMON/pileupDraw.py" "$OUT/$draw.root" --bunches="$BUNCHES" --library "$PUEVENTS" > "$OUT/$draw.txt" 2>> "$OUT/$draw.log" ||
+  { tail -20 "$OUT/$draw.log" >&2; exit 1; }
+grep -E "^early|^library" "$OUT/$draw.txt"
+read -r early intime < <(awk '/^skip / { print $2, $4 }' "$OUT/$draw.txt")
+rm -f "$OUT/WARNING_intime_${CHAPTER}.txt"
+if [[ $early != "$SKIP" || $intime != "$NPU" ]]; then
+  echo "WARNING: the draw puts library events $((early + 1))-$((early + intime)) in time, this run uses SKIP=$SKIP NPU=$NPU; set SKIP=$early NPU=$intime for $CHAPTER in common/jitjet_common.sh and rerun" | tee "$OUT/WARNING_intime_${CHAPTER}.txt"
+fi
 a=genPartAnalyzer_MinBias_${CHAPTER}
 run_cmsrun "$COMMON/genPartAnalyzer_cfg.py" "$OUT/$a.log" inputFiles="file:$OUT/$lib" outputFile="$a.root" maxEvents=1 \
   eventsToProcess="1:1:$((SKIP + 1))" maxStage=5 pdfFile="$a.pdf" \

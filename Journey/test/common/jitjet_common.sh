@@ -66,14 +66,19 @@ jitjet_init() {
   COMENERGY=${COMENERGY:-13600.0}
   PTHATMIN=${PTHATMIN:-100}
   # the pileup of the book (chapters 08 to 11): PU collisions per bunch crossing on average, in bunch crossings
-  # BUNCHES, the library read in sequence. The MixingModule of chapter 10 (seed 12345, Poisson(PU) per bunch crossing)
-  # draws for this signal event SKIP collisions in bx -1 (library events 1..SKIP) and NPU in bx 0 (library events
-  # SKIP+1..SKIP+NPU): chapters 08 and 09 use these NPU in-time collisions, chapter 10 checks the draw against them
-  # (WARNING_intime_10_SIM.txt if they differ) and chapter 11 replays the same draw (MixingModule playback).
+  # BUNCHES, the library read in sequence. The MixingModule (seed 12345, Poisson(PU) per bunch crossing, early crossings
+  # first) draws for this signal event SKIP collisions in the crossings before 0 (library events 1..SKIP) and NPU in
+  # bx 0 (library events SKIP+1..SKIP+NPU), the in-time collisions. The window is set per chapter, like YEAR:
+  #   08:     bx -12..3, the window of every Run-3 scenario of CMSSW_15_0_5 (mix_probFunction_25ns_PoissonOOTPU_cfi.py,
+  #           since 16 November 2026): 746 early, 64 in time (library events 747-810), 185 late, 995 in all; chapter 08
+  #           makes the draw itself at generator level (common/pileupDraw_cfg.py, draw_08_PU.txt) and checks it
+  #   09-13:  bx -1..1 until they are moved: 71 / 68 / 54 (in time: library events 72-139); chapter 10 checks its draw
+  #           (WARNING_intime_10_SIM.txt if it differs) and chapter 11 replays it (MixingModule playback).
   PU=${PU:-60}
-  BUNCHES=${BUNCHES:--1,1}
-  SKIP=${SKIP:-71}
-  NPU=${NPU:-68}
+  case $CHAPTER in
+    08_*) BUNCHES=${BUNCHES:--12,3}; SKIP=${SKIP:-746}; NPU=${NPU:-64} ;;
+    *)    BUNCHES=${BUNCHES:--1,1};  SKIP=${SKIP:-71};  NPU=${NPU:-68} ;;
+  esac
   EVENTS=${EVENTS:-1}
   EVENT=${EVENT:-1:1:1}
   RUN=${RUN:-1}

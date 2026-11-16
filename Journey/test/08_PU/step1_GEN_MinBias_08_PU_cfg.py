@@ -2,7 +2,7 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended --beamspot DBrealistic -n 250 -s GEN --datatier GEN --eventcontent FEVTDEBUG --fileout file:step1_GEN_MinBias_08_PU.root --customise_commands process.generator.comEnergy = cms.double(13600.0)\nprocess.RandomNumberGeneratorService.generator.initialSeed = 20241\nprocess.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242 --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/08_PU/step1_GEN_MinBias_08_PU_cfg.py --no_exec
+# with command line options: MinBias_14TeV_pythia8_TuneCP5_cfi --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended --beamspot DBrealistic -n 1000 -s GEN --datatier GEN --eventcontent FEVTDEBUG --fileout file:step1_GEN_MinBias_08_PU.root --customise_commands process.generator.comEnergy = cms.double(13600.0)\nprocess.RandomNumberGeneratorService.generator.initialSeed = 20241\nprocess.RandomNumberGeneratorService.VtxSmeared.initialSeed = 20242 --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/08_PU/step1_GEN_MinBias_08_PU_cfg.py --no_exec
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.Eras.Era_Run3_2025_cff import Run3_2025
@@ -24,7 +24,7 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(250),
+    input = cms.untracked.int32(1000),
     output = cms.optional.untracked.allowed(cms.int32,cms.PSet)
 )
 
@@ -65,7 +65,7 @@ process.options = cms.untracked.PSet(
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
-    annotation = cms.untracked.string('MinBias_14TeV_pythia8_TuneCP5_cfi nevts:250'),
+    annotation = cms.untracked.string('MinBias_14TeV_pythia8_TuneCP5_cfi nevts:1000'),
     name = cms.untracked.string('Applications'),
     version = cms.untracked.string('$Revision: 1.19 $')
 )

@@ -90,6 +90,9 @@ Rule I: The CMS chapters use the settings of the release year, 2025
          global tags
     (I2) only the CMS settings (global tag, era, the defaults of the analyzer configs, the labels) move to 2025: the event, the
          pileup (PU = 60, bunch crossings -1..1, SKIP = 71, NPU = 68), the number of events and the seeds stay the same
+         (the bunch crossings are not a year setting: since 16 November 2026 08_PU mixes the window -12..3 of every Run-3
+         scenario of the release, with SKIP = 746, NPU = 64 and a 1000-collision library whose first 250 events are those
+         of 09_G4 .. 13_HLT, which keep -1..1 until they are moved; per chapter in jitjet_init of jitjet_common.sh)
     (I3) a chapter moved to 2025 is rerun and compared with its 2024 output; what the 2025 conditions change in the event (or the
          fact that nothing changes, and why) is said in its .tex (B2 or B3) and listed with the evidence (conddb, the compared
          files) in its .md (C4). The compared files stay in the repository, never in a scratch area: a script of the chapter,
