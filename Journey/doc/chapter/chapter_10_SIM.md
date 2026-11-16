@@ -540,6 +540,33 @@ premixing lists below.
 
 The Geant4 version of every log: `geant4-11-02-patch-02 [MT] (21-June-2024)`.
 
+**Moved from chapter 09 on 16 November 2026** (when chapter 09 became the hand-over only): the box "The HF shower
+library" (section 3.5), table 10.3 of the production cuts (section 3.3) and the open problems "Physics list and Geant4
+version", "The StackingAction thresholds and the HGCal production cut", "The time windows and the timing detectors"
+(the parts of the last one already in "The calorimeter hit thresholds" were not repeated). Their release sources are
+listed in the chapter 09 companion, section 4.6 (`g4SimHits_cfi.py` values, `StackingAction.cc` lines 341 and 399,
+`RunManagerMT.cc` `runForPhase2()` lines 348 to 356, `CMSEmStandardPhysics.cc` lines 56-57, 112-113, 142-190,
+`MtdSD.cc` lines 47-48, `FTFPCMS_BERT_EMM.cc`, `hgcProdCutsv15.xml`), plus: `common_heavy_suppression`:
+`NeutronThreshold = ProtonThreshold = IonThreshold = 30.0` MeV, used only with `KillHeavy = True`, which is `False`
+(left out of the text). The HF box: `SimG4CMS/Calo/src/HCalSD.cc` (`getFromHFLibrary`), `HFShowerLibrary.cc`; the
+transport-only numbers it quotes (1511 photoelectrons in 459 cells) are the `Transport (09)` row of `ledger_10_SIM.txt`.
+
+Table 10.3 (production cuts), read from the nine `*ProdCuts.xml` files that
+`Geometry/CMSCommonData/data/dd4hep/cmsExtendedGeometry2024.xml` includes (`CMSCutsRegion`, `ProdCutsForGamma`,
+`ProdCutsForElectrons`, `ProdCutsForPositrons`, with their `PartSelector`s):
+
+| file | region: volumes -> gamma / e- / e+ |
+| --- | --- |
+| `Geometry/TrackerSimData/data/PhaseI/trackerProdCuts.xml` | `TrackerDeadRegion`: `//Tracker` -> 1 mm; `TrackerSensRegion`: 44 strip `*Active*` volumes -> 0.1 mm; `TrackerPixelDeadRegion`: `PixelBarrel`, `PixelForwardZplus/Zminus` -> 1 mm; `TrackerPixelSensRegion`: `PixelBarrelActiveFull0-3`, `PixelForwardSensor*` -> 0.01 mm |
+| `Geometry/TrackerSimData/data/trackerProdCutsBEAM.xml` | `BeamPipe`: `BeamTube1` -> 0.01 mm; `BeamPipeOutside`: `BEAM.*` -> 1 mm; `BeamPipeVacuum`: `BeamVacuum.*` -> 1 mm |
+| `Geometry/EcalSimData/data/EcalProdCuts.xml` | `EcalRegion`: `ECAL` -> 1 mm; `APDRegion`: `EAPD.*`, `EATJ.*` -> 0.005 mm |
+| `Geometry/EcalSimData/data/ESProdCuts.xml` | `PreshowerRegion`: `SF` -> 1 mm; `PreshowerSensRegion`: `SFSX`, `SFSY` -> 0.1 mm |
+| `Geometry/HcalSimData/data/HcalProdCuts/2021/v2/HcalProdCuts.xml` | `HcalRegion`: `CALO`, `MBAT`, `MBBT.*` (the HO, `hcalouteralgo.xml`), `VCAL` -> 1 mm |
+| `Geometry/MuonSimData/data/muonProdCuts/2021/v3/muonProdCuts.xml` | `Muon`: `MUON` -> 100 / 10 / 10 mm; `MuonIron`: `MGNT`, `YB*`, `COI*`, ... (17 selectors) -> 1 mm; `MuonChamber`: `MB.*N`, `MB.*P`, `ME.*Space`, `RR.*`, `GE.*` -> 1 / 0.002 / 0.002 mm; `MuonSensitive_DT-CSC`: `MB.*PhiGas`, `MB.*ZGas`, `ME.*ActiveGasVol` -> 25 mm / 1 mm / 2.5 m; `MuonSensitive_RPC` -> 8.5 m / 8 mm / 2.5 m (comment "10 keV for gamma/e-, 1 MeV for e+"); the `SpecPar` `MuonSensitive_GEM` (`GHA.*`, 1 / 0.002 / 0.002 mm) has no `CMSCutsRegion` and is not in the table |
+| `Geometry/ForwardSimData/data/ForwardShieldProdCuts.xml`, `bhmProdCuts/2021/v1/bhmProdCuts.xml`, `zdcProdCuts/2021/v3/zdcProdCuts.xml` | `QuadRegion` (`QuadInner/Coil/Outer`, `FixedShield10-12`) -> 10 / 1 / 1 mm; `BHMRegion` -> 10 / 1 / 1 mm; `ZDCRegion` (`ZDC`, `RPD`) -> 1 mm |
+
+Outside every region: `DefaultCutValue = 1.0` (cm), `g4SimHits_cfi.py` line 192.
+
 ### 4.7 The 2024 and the 2025 settings
 
 The chapter runs with `YEAR=2025` (`common/jitjet_common.sh`): `auto:phase1_2025_realistic` =

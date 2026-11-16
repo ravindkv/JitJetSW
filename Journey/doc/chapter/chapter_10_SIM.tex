@@ -110,7 +110,8 @@ of the shower library), not yet a signal of the electronics.
 Two thresholds keep the simulation finite. A \emph{production cut} decides whether a soft secondary is created
 at all: an electron or a photon is created only above an energy that Geant4 derives, material by material, from a
 range cut, 1\,mm in the ECAL and in the dead material of the tracker, $0.1$\,mm in the strip sensors, $10\,\mu$m
-in the pixel sensors, $5\,\mu$m in the photodiodes of the ECAL (the \code{ProdCuts.xml} files of \path{Geometry/*SimData}); below it, the energy is
+in the pixel sensors, $5\,\mu$m in the photodiodes of the ECAL (the \code{ProdCuts.xml} files of \path{Geometry/*SimData},
+table~\ref{tab:10_prodcuts}); below it, the energy is
 deposited along the step. A \emph{persistency} rule decides which of the tracked particles are written out: all primaries, the decay
 products and conversions of a primary (\code{SaveAllPrimaryDecayProductsAndConversions = True}), a particle that leaves
 a tracker hit with more than $0.2\GeV$ (\code{TrackerSD.EnergyThresholdForPersistencyInGeV}) and one that enters a
@@ -310,9 +311,40 @@ $\ln(44\,000/9)\approx8.5$ radiation lengths, $7.6\cm$, deep.
 
 \textbf{The parameters.} Stage \code{B\_Decay\_EM} adds \code{EMPhysics = True} to the previous stage and lets the
 tracker record the energy loss (\code{ZeroEnergyLoss} back to its default, \code{False}); the constructor is the CMS
-one, \code{CMSEmStandardPhysics} of \code{FTFP\_BERT\_EMM} (chapter~\ref{ch:09_G4}). The production cuts of the box
-above apply from here on; particles are tracked down to \code{G4TrackingCut = 0.025}\,MeV, and the ECAL keeps a
-\code{PCaloHit} only above $15$\,keV in the barrel and $10$\,keV in the endcap (\code{CaloSD.EminHits}, in MeV).
+one, \code{CMSEmStandardPhysics} of \code{FTFP\_BERT\_EMM} (\path{SimG4Core/PhysicsLists/plugins/FTFPCMS_BERT_EMM.cc}). The production cuts of the box
+above apply from here on, region by region (table~\ref{tab:10_prodcuts}); particles are tracked down to
+\code{G4TrackingCut = 0.025}\,MeV, and the ECAL keeps a \code{PCaloHit} only above $15$\,keV in the barrel and
+$10$\,keV in the endcap (\code{CaloSD.EminHits}, in MeV).
+
+\begin{table}[!htb]
+\centering\footnotesize\setlength{\tabcolsep}{4pt}
+\caption{The production cuts of the 2024 geometry, as ranges for photons and for electrons and positrons: the regions
+(\code{CMSCutsRegion}) of the nine \code{*ProdCuts.xml} files that \code{cmsExtendedGeometry2024.xml} includes, and
+the volumes they select; outside every region \code{DefaultCutValue = 1.0}\,cm of \code{g4SimHits\_cfi.py} applies.
+In a gas a range is a long distance: the $8.5$\,m for photons in the RPC gas is, by the comment of the file, a
+threshold of $10$\,keV.}
+\label{tab:10_prodcuts}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{5.4cm}ll@{}}
+\toprule
+region & volumes & $\gamma$ & $e^-$ / $e^+$ \\
+\midrule
+\code{BeamPipe}; \code{\ldots Outside}, \code{\ldots Vacuum} & the beryllium tube at the centre; the rest, the vacuum & $0.01$; $1\mm$ & $0.01$; $1\mm$ \\
+\code{TrackerPixelSensRegion} & the pixel sensors & $0.01\mm$ & $0.01\mm$ \\
+\code{TrackerSensRegion} & the strip sensors & $0.1\mm$ & $0.1\mm$ \\
+\code{Tracker(Pixel)DeadRegion} & the rest of the tracker: supports, cables, cooling & $1\mm$ & $1\mm$ \\
+\code{EcalRegion} & the crystals and their housing & $1\mm$ & $1\mm$ \\
+\code{APDRegion} & the photodiodes of the barrel ECAL & $0.005\mm$ & $0.005\mm$ \\
+\code{Preshower(Sens)Region} & the preshower; its silicon & $1$; $0.1\mm$ & $1$; $0.1\mm$ \\
+\code{HcalRegion} & \code{CALO}, the HF (\code{VCAL}), the HO (\code{MBAT}, \code{MBBT}) & $1\mm$ & $1\mm$ \\
+\code{Muon} & \code{MUON}, where no other region applies & $100\mm$ & $10\mm$ \\
+\code{MuonIron} & the yoke and the magnet & $1\mm$ & $1\mm$ \\
+\code{MuonChamber} & the chambers around their gas & $1\mm$ & $0.002\mm$ \\
+\code{MuonSensitive\_DT-CSC} & the gas of the DT and CSC chambers & $25\mm$ & $1\mm$ / $2.5$\,m \\
+\code{MuonSensitive\_RPC} & the gas of the RPC chambers & $8.5$\,m & $8\mm$ / $2.5$\,m \\
+\code{Quad/BHM/ZDCRegion} & forward quadrupoles and shielding, BHM, ZDC & $10\mm$; ZDC $1\mm$ & $1\mm$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \textbf{The numbers of the event.} The stage creates 666 secondaries (\code{extras\_10\_SIM.txt}, section 3): 430
 electrons and positrons of 230 conversions, 213 bremsstrahlung photons, 20 $\delta$ rays and 3 Compton electrons. The
@@ -501,6 +533,19 @@ the hadronic showers. The \emph{HCAL} has 2531 hits in 1353 cells (HB 173, HE 64
 the HF $\pi^+$ of the $\bar b$ jet alone puts 809 of the 1849 photoelectrons into 19 HF cells. The \emph{muon
 chambers} have nothing: no particle of the signal reached them. In all, 512 of the 571 primaries left a hit; the 59
 others are neutrals that neither converted nor interacted, and forward particles beside the calorimeters.
+
+\begin{plainwords}[The HF shower library]
+The HF is steel with quartz fibres in it, and it sees the Cherenkov light that the charged particles of a shower
+make in the fibres: far too many photons to follow one by one in every event. CMS simulated such showers once,
+electromagnetic and hadronic ones at a set of energies, and stored the light captured in the fibres
+(section~\ref{sec:10_phase2}). When a photon, electron or hadron (not a muon) takes its first step in
+the HF, \code{HCalSD} (\code{getFromHFLibrary}) takes one stored shower from each of the two library energies
+around the particle's energy, keeps their photons in proportion, turns them to the particle's direction and
+position, applies the attenuation along the fibre, books each surviving photon as a photoelectron, a hit of
+``$1\GeV$'' in its cell, and kills the particle. The library is called by the sensitive detector, not by a
+physics process, which is why the HF answers already in the transport-only run of chapter~\ref{ch:09_G4} (first
+line of table~\ref{tab:10_stages}: 1511 photoelectrons in 459 cells).
+\end{plainwords}
 
 \begin{figure}[!htbp]
 \centering
@@ -710,8 +755,28 @@ The problems below are the state of CMSSW\_15\_0\_5, the release of this book, a
 detectors, the physics list and the mixing are configured in \path{g4SimHits_cfi.py}, \path{HFParameters_cff.py},
 \path{SimGeneral/MixingModule/python/} and \path{Mixing.py}; as in chapter~\ref{ch:09_G4}, their parameters after
 all modifiers were compared between \code{Run3\_2025} and the default Phase-2 era \code{Phase2C17I13M9} (geometry
-D110), and the hand-over cuts, the \code{StackingAction} and the physics list (\code{FTFP\_BERT\_EMM}, with no
-\code{phase2} modifier) were covered there.
+D110); the hand-over cuts were covered there.
+
+\textbf{Physics list and Geant4 version.} The log of the full signal stage carries the
+banner ``Geant4 version Name: geant4-11-02-patch-02 [MT] (21-June-2024)'', the \code{geant4} tool 11.2.2 of this
+release, and the list is \code{FTFP\_BERT\_EMM} for every era: no modifier touches \code{Physics}, only
+customisation functions do, and the EM options (\code{G4TransportWithMSC = 2}, \code{G4GammaGeneralProcess = True},
+\code{G4HepEmActive = False}) are the same for Phase-2. Its electromagnetic constructor already knows the HGCal: \path{SimG4Core/PhysicsLists/src/CMSEmStandardPhysics.cc} gives
+the \code{HGCalRegion} the multiple scattering of the \code{HcalRegion} (lines 112--113 and 142--190, ``e-/e+ msc
+for HCAL and HGCAL using the Urban model'', with \code{G4MscRangeFactor = 0.04}, \code{G4MscStepLimit = UseSafety}),
+while everywhere else, the ECAL crystals included, the defaults of lines 56--57 apply (range factor $0.2$,
+\code{fMinimal}): the electromagnetic section of the HGCal is stepped like a hadron calorimeter.
+
+\textbf{The StackingAction thresholds and the HGCal production cut.} The Russian roulette of the
+\code{StackingAction} kills photons below \code{RusRoGammaEnergyLimit = 5} MeV and neutrons below
+\code{RusRoNeutronEnergyLimit = 10} MeV with a survival probability per region, $0.3$ and $0.1$ in the ECAL, HCAL,
+muon iron, preshower and world. The Phase-2 entries \code{RusRoHGcalGamma = 1.3} and \code{RusRoHGcalNeutron = 1.1}
+are not probabilities: \path{SimG4Core/Application/src/StackingAction.cc} applies the roulette only below 1 (line
+341, \code{prob < 1.0}) and registers the \code{HGCalRegion} only then (line 399), so they switch it off in the
+HGCal. There every photon and every neutron is tracked, down to the smallest production cut of the calorimeters,
+$0.03\mm$ for electrons, positrons, photons and protons in the whole HGCal, absorbers included
+(\path{hgcProdCutsv15.xml} of D110), against $1\mm$ in the ECAL and HCAL regions (table~\ref{tab:10_prodcuts}); at
+PU 200 the CPU cost of both choices is paid in full.
 
 \textbf{The calorimeter hit thresholds stop at the Run-3 list.} \code{CaloSD} keeps a \code{PCaloHit} only above
 \code{EminHits = (0.015, 0.010, 0.0, 0.0, 0.0)} MeV (\path{SimG4CMS/Calo/src/CaloSD.cc} multiplies them by
@@ -723,9 +788,19 @@ calorimeters are not in it: a collection that is not listed falls back on a thre
 1000} ns (\code{CaloSD.cc}, lines 43, 59 and 87--99). The HGCal adds \code{HGCSD.EminHit = 0.0} and
 \code{HGCScintSD.EminHit = 0.0}, with \code{HGCSD.TimeSliceUnit = 0.001} ns for the silicon and the scintillator
 (\path{SimG4CMS/Calo/src/HGCScintSD.cc}, line 41), so every deposit of every step in its cells is kept, time-sliced to
-the picosecond, until the $500\ns$ after which the stepping of chapter~\ref{ch:09_G4} stops a track. The 68
+the picosecond, until the $500\ns$ after which the \code{SteppingAction} stops a track (\code{MaxTrackTime}). The 68
 in-time collisions alone deposit $3860\GeV$ in $34\,418$ ECAL cells here; at PU 200 the number of HGCal
 \code{PCaloHit}s per event is set by this zero, which no modifier changes: the default is ``keep everything''.
+
+\textbf{The time windows and the timing detectors.} The \code{SteppingAction} stops a track after
+\code{MaxTrackTime = 500} ns, \code{MaxTrackTimeForward = 2000} ns beyond \code{MaxZCentralCMS = 50} m, in
+every era but the test beam \code{h2tb}. Phase-2 changes the class, not the window:
+\path{SimG4Core/Application/src/RunManagerMT.cc} picks \code{Phase2SteppingAction} as soon as an
+HGCal or MTD region exists, which adds the tracker-to-BTL transition with the same time cuts. The MTD gets
+\code{MtdSD.TimeSliceUnit = 0.01} ns and \code{phase2\_timing} gives the ECAL \code{TimeSliceUnit = 0.001} ns with
+\code{StoreLayerTimeSim = True}, but \code{MtdSD.EnergyThresholdForPersistencyInGeV} and \code{ForHistoryInGeV} are
+$10^9$, ``keep temporarily old behaviour'', where \path{MtdSD.cc} (lines 47--48) says ``default
+must be 0.5'' and ``0.05'': no MTD hit makes its track persistent.
 
 \textbf{The Birks constants of 1970.} The saturation of the scintillator light is applied with
 \code{HCalSD.UseBirkLaw = True}, \code{BirkC1 = 0.0060}, \code{BirkC2 = 0.142}, \code{BirkC3 = 1.75}, with the

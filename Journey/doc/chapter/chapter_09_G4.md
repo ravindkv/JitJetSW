@@ -555,6 +555,16 @@ position and is identical.
 
 The chapter was rewritten in parts A to F (one per ingredient of the SIM step); the numbers it added are listed here.
 
+Since 16 November 2026 the chapter documents the hand-over alone, in three parts: A (the detector, now its edges:
+beam pipe `BeampipeRout1 = 2.25 cm`, HF hole at abs(eta) = 5.18 / 5.32 from `ForwdBeamR1 = 12.495 cm` of `cms.xml`, ZDC
+at 140 m, Roman pots at 203 m), B (the hand-over cuts) and C (the decays Pythia made); the signal and library event 72
+are shown side by side in the eta-phi display of B4. Parts D (straight lines to the calorimeters), E (hits without
+physics) and F (the pileup subsection) were dropped from the `.tex`: their numbers below stay as a record of the
+transport-only file that chapter 10 starts from, and the event-72 hand-over numbers of F moved to B4. The HF
+shower-library box, the production-cut table (rebuilt from the XML, with the regions the old table missed) and the open
+problems on the physics list, the StackingAction roulette and the time windows moved to chapter 10 (its companion,
+section 4.6); their release sources stay listed in section 4.6 here.
+
 **`extras_09_G4.txt`** (`python3 test/09_G4/g4Extras_09_G4.py ...`, section 3; quoted in parts B, D, E, F, table
 "Where the primaries cross into a calorimeter volume"):
 
@@ -705,3 +715,18 @@ TIB layers 1 and 2 and TOB layers 1 and 2 are double-sided (an r-phi and a stere
 (`extras_09_G4.txt`, section (4)). HF photoelectrons per GeV: 1511 / 4266.4 = 0.354; pi+ 321 / 642.9 = 0.50,
 K0L 84 / 241.0 = 0.35, pi+ 46 / 164.6 = 0.28.
 
+
+**The box "The hand-over", `genParticles` against HepMC** (all under `$CMSSW_RELEASE_BASE/src`):
+
+- `PhysicsTools/HepMCCandAlgos/python/genParticles_cfi.py`: `GenParticleProducer` with `src = generatorSmeared`
+  (`saveBarCodes = True` also stores the barcodes as a `vector<int>`).
+- `PhysicsTools/HepMCCandAlgos/plugins/GenParticleProducer.cc`: line 146 `mmToCm = 0.1`, line 337 the production
+  point `vertex()` converted from mm to cm, line 342 `fillGenStatusFlags` (the CMSSW `statusFlags()`); mothers and
+  daughters are filled from the HepMC production vertex through the barcode map (`fillDaughters`, `fillIndices`).
+- `SimDataFormats/GeneratorProducts/interface/HepMCProduct.h`: `edm::HepMCProduct` holds a `HepMC::GenEvent`
+  (HepMC2, `#include <HepMC/GenEvent.h>`).
+- `SimG4Core/Generators/src/Generator.cc`, `HepMC2G4`: line 146 the loop over the HepMC vertices, lines 216 to 219 the
+  vertex position in mm, lines 189 to 190 and 397 the end vertex of a decayed particle (decay length,
+  `particleAssignDaughters`).
+- Index `i` of `genParticles` = barcode `i + 1` (Pythia8 barcodes are consecutive from 1): the matching rule of the
+  b-system crossings in this section.

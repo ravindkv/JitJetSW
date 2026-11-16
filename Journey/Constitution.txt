@@ -126,8 +126,8 @@ Rule J: The detector chapters (09_G4, 10_SIM, 11_DIGI) teach how CMS is simulate
            a figure            an analyzer page of test/XYZ/out/, or a TikZ drawing made from numbers of out/ or of
                                the release (a schematic is labelled as such and carries no invented number)
          The ingredients:
-           09_G4    the detector given to Geant4, the hand-over cuts, the decays already made by the generator, the
-                    straight lines to the calorimeters, the hits without physics, the pileup collisions
+           09_G4    the detector given to Geant4, the hand-over cuts, the decays already made by the generator, each
+                    for the signal and the pileup (the hand-over only: what Geant4 does with the primaries is 10_SIM)
            10_SIM   the magnetic field, the decays in flight, the electromagnetic physics, the hadronic physics, the
                     signal station by station, the pileup library and one collision, the mixing, where the pileup goes
            11_DIGI  the mixing and the time windows of the digitisers, the pixels, the strips, the ECAL and the
@@ -152,7 +152,7 @@ List of chapters:
     06: Decay
     07: GenJet
     08: PU (2025 settings, Rule I)
-    09: G4 (detector chapter, Rule J: six subsections; 2025 settings, Rule I)
+    09: G4 (detector chapter, Rule J: three subsections, the hand-over only; 2025 settings, Rule I)
     10: SIM (detector chapter, Rule J: eight subsections; 2025 settings, Rule I)
     11: DIGI (detector chapter, Rule J: eight subsections; the last chapter with signal and pileup apart, Rule H; with the
         hand-over section (B6) on the TriggerPrimitiveDigis; 2025 settings, Rule I)
@@ -164,7 +164,7 @@ Length of each chapter:
     8 pdf pages +-2 (01_ME .. 08_PU)
     a chapter with a hand-over section (B6): 2-3 pdf pages more
     detector chapters (Rule J), 1-2 pages per subsection:
-        09_G4    10-13 pdf pages
+        09_G4    8-10 pdf pages
         10_SIM   14-17 pdf pages
         11_DIGI  16-19 pdf pages, the hand-over section (B6) included
     checkpoint chapters (Rule G): 20-25 pdf pages (2-3 pages per step)

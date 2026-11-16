@@ -1,0 +1,6 @@
+The  purpose  of ../doc/chapter/chapter_09_G4.tex is to JUST document the detector/hand-over/pythia cuts that Geant4 applies on signal and pileup (offcourse we will have the corresponding ledger table where we show what we had in “stable” and what we have as “primaries” and the eta-phi  plot showing the removable of particles). In  this sense, we do not need to document the transportation aspect in this chapter. We can have this a short chapter just focusing on the hand-over aspect. The next chapter is anyway there for SIM. In this sense, we can focus on the first three cuts of the \label{tab:09_glance} (“The chapter at a glance ..”): the detector, the hand-over cuts, the decays Pythia made
+
+In view of these, please clean ../doc/chapter/chapter_09_G4.tex
+
+and move the cleaned stuff to the next chapter
+

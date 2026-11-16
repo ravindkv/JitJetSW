@@ -93,7 +93,7 @@ Chapter 11 is the model: the calorimeter `TriggerPrimitiveDigis` (`simEcalTrigge
 `out/trigprim_11_DIGI.txt`). The section title must start with "Made here for the next stage"; `checkChapter.sh`
 then accepts six sections and 2-3 more pages. The later chapter recalls the result in a few lines and refers back.
 
-## A detector chapter (Rule J): 09_G4, 10_SIM, 11_DIGI, 10-19 pages
+## A detector chapter (Rule J): 09_G4, 10_SIM, 11_DIGI, 8-19 pages
 
 The three stages where the event meets the detector (the hand-over to Geant4, the physics in the material, the
 electronics) are written for learning, like a checkpoint chapter, but keep the sections of Rule B (and B6 in 11_DIGI);
@@ -122,7 +122,7 @@ B3 is split into numbered subsections (`secnumdepth` is 2 in `doc/JitJetSW.tex`)
   `run_<XX_YYY>.sh`: `test/09_G4/g4Extras_09_G4.py` (`out/extras_09_G4.txt`), `test/10_SIM/simExtras_10_SIM.py`
   (`out/extras_10_SIM.txt`), `test/11_DIGI/digiExamples_11_DIGI.py` (`out/examples_11_DIGI.txt`); no cmsRun job is
   rerun for them. The companion (C4) lists them with the script, the `conddb` payload or the release file.
-- Pages: 09_G4 10-13, 10_SIM 14-17, 11_DIGI 16-19 with its hand-over section; `checkChapter.sh` reports the
+- Pages: 09_G4 8-10 (the hand-over only: detector, cuts, generator decays), 10_SIM 14-17, 11_DIGI 16-19 with its hand-over section; `checkChapter.sh` reports the
   subsections and the range.
 
 ## A checkpoint chapter (Rule G): 12_L1T, 13_HLT, 20-25 pages
