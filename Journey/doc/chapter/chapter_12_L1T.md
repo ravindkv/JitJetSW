@@ -1,7 +1,8 @@
 # Chapter 12, L1T: technical companion
 
 The Level-1 trigger of the ONE event, in six steps. One sample: the event as CMS sees it, the signal with its pileup
-(PU = 60 per bunch crossing, bx -1..1). Chapter 11 (DIGI) is the last stage at which the signal and the pileup exist
+(PU = 60 per bunch crossing, the 16 bunch crossings -12..3 of the Run-3 production, 995 collisions; until 21 November
+2026 bx -1..1, see "The move to the 16 bunch crossings" at the end of section 4). Chapter 11 (DIGI) is the last stage at which the signal and the pileup exist
 apart (Rule H of the Constitution): there is no `signal`, `pileup` or `mixed` in the file names of this chapter, and
 what the chapter says about the signal alone is quoted from chapter 11. Script: `test/12_L1T/run_12_L1T.sh`;
 everything it produces is in `test/12_L1T/out/`. The chapter text is `doc/chapter/chapter_12_L1T.tex`, a checkpoint
@@ -58,7 +59,8 @@ The three customise lines.
 ./12_L1T/run_12_L1T_2024.sh            # after run_12_L1T.sh; REUSE=1 keeps the ROOT files of out2024/, ANALYZE=0 only the cmsRun jobs
 ```
 
-It runs four `cmsDriver.py` configurations, written next to the script, with the output in `test/12_L1T/out2024/`:
+It runs four `cmsDriver.py` configurations, written next to the script, with the output in `test/12_L1T/out2024/`
+(remade on 21 November 2026 on the 16-crossing mixing of chapter 10, in two minutes):
 
 | configuration | what it is |
 |---|---|
@@ -79,7 +81,7 @@ cd $J/test/12_L1T/out
 cmsRun ../step4_L1_12_L1T_cfg.py > step4_L1_12_L1T.log 2>&1      # about 30 s, most of it reading the conditions
 ```
 
-Or the whole chapter: `./12_L1T/run_12_L1T.sh` (68 s with the L1 job on 12 November 2026, under a minute when it is reused;
+Or the whole chapter: `./12_L1T/run_12_L1T.sh` (49 s with the L1 job on 21 November 2026, under a minute when it is reused;
 variables: `REUSE=1` keeps an existing `step4_L1_12_L1T.root`, `REUSE=0` remakes it, `RUN=0` only writes the
 configuration, `ANALYZE=0` skips the analyzers, `PNG=0` skips the PNG pages). The input (Rule E, Rule H2) is the mixed
 file of chapter 11 only; the `signal` and `pileup` DIGI files of chapter 11 are not read by any later chapter.
@@ -142,8 +144,8 @@ configured from the database, and the analyzers print what they can reach of it 
 
 ### The content of the output ROOT file
 
-`edmDumpEventContent file:$J/test/12_L1T/out/step4_L1_12_L1T.root | grep '"L1"'` (12.3 MB: the 12.2 MB of the input
-plus about 0.1 MB). The content of the chapter-11 file is copied. New under the process `L1`, in the order of the
+`edmDumpEventContent file:$J/test/12_L1T/out/step4_L1_12_L1T.root | grep '"L1"'` (31.0 MB: the 30.9 MB of the input,
+most of it the `TrackingParticle`s of the 16 crossings, plus about 0.1 MB). The content of the chapter-11 file is copied. New under the process `L1`, in the order of the
 steps:
 
 | step | product | what it is |
@@ -172,7 +174,7 @@ shared in `plugins/L1TDisplay.h`):
 cd $J/test/12_L1T/out
 cmsRun $J/test/common/l1tAnalyzer_cfg.py inputFiles=file:step4_L1_12_L1T.root maxEvents=1 eventsToProcess=1:1:1 \
   globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended pdfPrefix=l1t_12_L1T savePNG=1 \
-  sampleLabel="chapter 12: the Level-1 trigger of 2025|bbbar, pTHat > 100 GeV, 13.6 TeV|with PU = 60 per bx, bx -1..1" \
+  sampleLabel="chapter 12: the Level-1 trigger of 2025|bbbar, pTHat > 100 GeV, 13.6 TeV|with PU = 60 per bx, bx -12..3" \
   > l1t_12_L1T.log 2>&1                                        # under a minute
 ```
 
@@ -188,7 +190,7 @@ parameters, HCAL primitive scale: it loads `hcaltpdigi_cff` like the L1 job) and
 
 Each analyzer opens and closes its PDF inside its own `analyze()` (ROOT has one global PDF), so the three can share a
 job. The `L1Jet` lines check the emulator: the pileup estimate recomputed from the towers (`recomputedPu`) equals the
-`puEt` stored in the jet for all nine jets of the event. The `Layer1 top tower` lines print, besides the energies,
+`puEt` stored in the jet for all four jets of the event. The `Layer1 top tower` lines print, besides the energies,
 the 16-bit tower word as Layer-2 receives it (`tower word: et=... ratio=... flags=...`: 9 bits of ET in counts of
 0.5 GeV, 3 bits of E/H ratio, the flag bits), and the `fired:` lines the object map of every algorithm that fired.
 
@@ -202,7 +204,7 @@ the b jet):
 | `l1t_12_L1T_calo_jet1_hcaltp`, `_jet1_layer1` | step 2, the bbar jet in the HF: primitives and Layer-1 towers |
 | `l1t_12_L1T_calo_layer1` | step 2, the Layer-1 towers |
 | `l1t_12_L1T_calo_jet2_layer1`, `_jet1_layer1` | step 3, the two signal jets as the firmware sees them |
-| `l1t_12_L1T_calo_layer2` | step 3, the nine jets on the towers |
+| `l1t_12_L1T_calo_layer2` | step 3, the four jets on the towers |
 | `l1t_12_L1T_muon_etaphi`, `_muon_rz` | steps 4 and 5, the muon trigger |
 | `l1t_12_L1T_global_ladders` | step 6, the thresholds of the menu and the event |
 | `l1t_12_L1T_global_objects` | the display of B4: the event as the global trigger receives it |
@@ -226,7 +228,7 @@ those of chapter 11 and are listed at the end of this section with their source.
 ```
 == l1tLedger 12_L1T
 event: run:lumi:event 1:1:1
-menu L1Menu_Collisions2025_v1_0_0, 465 algorithms, 481 conditions; finalOR=1 fired=63
+menu L1Menu_Collisions2025_v1_0_0, 465 algorithms, 481 conditions; finalOR=1 fired=54
 caloParams: towerLsbSum=0.5 towerLsbE=0.5 towerLsbH=0.5 towerNBitsSum=9 jetLsb=0.5 jetSeedThreshold=4 jetNeighbourThreshold=0 jetBypassPUS=0 jetPUSUsePhiRing=1 jetPUSType=ChunkyDonut jetCalibrationTyp
 caloParams etSum (index: etaMin etaMax etThreshold): 0: 1 28 0; 1: 1 26 30; 2: 1 28 0; 3: 1 26 30; 4: 1 28 0;
 jet pileup estimate: PhiRing1
@@ -248,41 +250,49 @@ May 2024):
 ```
 -- 1. Steps 1 and 2: the transverse energy the trigger sees
                                    ET > 0 sum ET [GeV] max ET [GeV]
-ECAL primitives, EB                   683        468.0          5.5
-ECAL primitives, EE                   494        579.5          7.0
-ECAL primitives, all                 1177       1047.5          7.0
-HCAL primitives, HB                   233        183.0          7.5
-HCAL primitives, HE                   328        241.5         10.0
-HCAL primitives, HF                   741       1321.0         90.5
-HCAL primitives, all                 1302       1745.5         90.5
-Layer-1 towers, barrel                738        576.5          7.5
-Layer-1 towers, endcap                557        509.5         14.0
-Layer-1 towers, forward              1266       1095.0         45.0
-Layer-1 towers, all                  2561       2181.0         45.0
-all primitives (of 8856)             2479       2793.0
+ECAL primitives, EB                   428        292.0          4.5
+ECAL primitives, EE                   167        136.5          7.0
+ECAL primitives, all                  595        428.5          7.0
+HCAL primitives, HB                   190        155.0         15.5
+HCAL primitives, HE                   225        156.0         10.5
+HCAL primitives, HF                   705       1064.5         89.0
+HCAL primitives, all                 1120       1375.5         89.0
+Layer-1 towers, barrel                482        383.0         15.5
+Layer-1 towers, endcap                305        242.0         14.5
+Layer-1 towers, forward              1012        818.0         44.5
+Layer-1 towers, all                  1799       1443.0         44.5
+all primitives (of 8856)             1715       1804.0
 what Layer-1 changes (sum ET in -> out, difference):
-  ECAL (EB + EE)             1047.5 ->    740.5 (-307.0)
-  HCAL (HB + HE)              424.5 ->    345.5 (-79.0)
-  HF                         1321.0 ->   1095.0 (-226.0)
-  all                        2793.0 ->   2181.0 (-612.0)
-Layer1 top tower 0: ieta=-34 iphi=11 et=45 ecalTP=0 hcalTP=90.5 calibratedEm=0 calibratedHad=0 | tower word: et=90 ratio=0 flags=5
-Layer1 top tower 1: ieta=-34 iphi=12 et=45 ecalTP=0 hcalTP=90.5 calibratedEm=0 calibratedHad=0 | tower word: et=90 ratio=0 flags=5
-Layer1 top tower 2: ieta=-18 iphi=50 et=14 ecalTP=3.5 hcalTP=10 calibratedEm=4 calibratedHad=10 | tower word: et=28 ratio=1 flags=0
-Layer1 top tower 3: ieta=-19 iphi=48 et=10.5 ecalTP=7 hcalTP=3.5 calibratedEm=7 calibratedHad=3.5 | tower word: et=21 ratio=1 flags=2
-Layer1 top tower 4: ieta=-33 iphi=11 et=7.5 ecalTP=0 hcalTP=15.5 calibratedEm=0 calibratedHad=0 | tower word: et=15 ratio=0 flags=5
-Layer1 top tower 5: ieta=-33 iphi=12 et=7.5 ecalTP=0 hcalTP=15.5 calibratedEm=0 calibratedHad=0 | tower word: et=15 ratio=0 flags=5
-Layer1 top tower 6: ieta=11 iphi=20 et=7.5 ecalTP=0 hcalTP=7.5 calibratedEm=0 calibratedHad=7.5 | tower word: et=15 ratio=0 flags=1
-Layer1 top tower 7: ieta=-4 iphi=4 et=6 ecalTP=5.5 hcalTP=0 calibratedEm=6 calibratedHad=0 | tower word: et=12 ratio=0 flags=3
-Layer1 top tower 8: ieta=-19 iphi=49 et=6 ecalTP=6 hcalTP=0 calibratedEm=6 calibratedHad=0 | tower word: et=12 ratio=0 flags=3
-Layer1 top tower 9: ieta=-33 iphi=13 et=6 ecalTP=0 hcalTP=12 calibratedEm=0 calibratedHad=0 | tower word: et=12 ratio=0 flags=5
+  ECAL (EB + EE)              428.5 ->    379.0 (-49.5)
+  HCAL (HB + HE)              311.0 ->    246.0 (-65.0)
+  HF                         1064.5 ->    818.0 (-246.5)
+  all                        1804.0 ->   1443.0 (-361.0)
+Layer1 top tower 0: ieta=-34 iphi=11 et=44.5 ecalTP=0 hcalTP=89 calibratedEm=0 calibratedHad=0 | tower word: et=89 ratio=0 flags=5
+Layer1 top tower 1: ieta=-34 iphi=12 et=44.5 ecalTP=0 hcalTP=89 calibratedEm=0 calibratedHad=0 | tower word: et=89 ratio=0 flags=5
+Layer1 top tower 2: ieta=8 iphi=68 et=15.5 ecalTP=0 hcalTP=15.5 calibratedEm=0 calibratedHad=15.5 | tower word: et=31 ratio=0 flags=1
+Layer1 top tower 3: ieta=-18 iphi=50 et=14.5 ecalTP=3.5 hcalTP=10.5 calibratedEm=4 calibratedHad=10.5 | tower word: et=29 ratio=1 flags=0
+Layer1 top tower 4: ieta=-19 iphi=48 et=11 ecalTP=7 hcalTP=4 calibratedEm=7 calibratedHad=4 | tower word: et=22 ratio=0 flags=2
+Layer1 top tower 5: ieta=-33 iphi=11 et=6.5 ecalTP=0 hcalTP=13 calibratedEm=0 calibratedHad=0 | tower word: et=13 ratio=0 flags=5
+Layer1 top tower 6: ieta=-33 iphi=12 et=6.5 ecalTP=0 hcalTP=13 calibratedEm=0 calibratedHad=0 | tower word: et=13 ratio=0 flags=5
+Layer1 top tower 7: ieta=-19 iphi=50 et=5.5 ecalTP=5 hcalTP=0 calibratedEm=5.5 calibratedHad=0 | tower word: et=11 ratio=0 flags=3
+Layer1 top tower 8: ieta=-33 iphi=13 et=5.5 ecalTP=0 hcalTP=11 calibratedEm=0 calibratedHad=0 | tower word: et=11 ratio=0 flags=5
+Layer1 top tower 9: ieta=-33 iphi=14 et=5.5 ecalTP=0 hcalTP=11 calibratedEm=0 calibratedHad=0 | tower word: et=11 ratio=0 flags=5
 ```
 
-Derived for the chapter: the barrel (EB + HB) holds 468.0 + 183.0 = 651.0 GeV of primitives; the HF and the endcap
-ECAL together 1321.0 + 579.5 = 1900.5 GeV of the 2793.0 (68 %). No tower of tower ring 28 is among the ten largest
-Layer-1 towers (in 2024 seven of them were in rings 27 and 28). In a
+Derived for the chapter: the barrel (EB + HB) holds 292.0 + 155.0 = 447.0 GeV of primitives (447.5 by tower ring,
+section 2, where HB counts up to |ieta| 17), the endcaps (EE + HE) 136.5 + 156.0 = 292.5 GeV, the HF 1064.5 of the
+1804.0 (59 %). No tower of tower rings 26 to 28 is among the ten largest Layer-1 towers. The primitives of the two jet
+windows tower by tower (FWLite on `step4_L1_12_L1T.root`, `simEcalTriggerPrimitiveDigis` and
+`simHcalTriggerPrimitiveDigis`, 0.5 GeV per count, the 9 x 9 towers around the seed): b jet, seed (-18,50), ECAL 16
+primitives, 32.5 GeV, the largest (-19,48) 7.0, (-19,49) 5.0, (-19,50) 5.0, (-18,50) 3.5; HCAL 10 primitives, 23.0 GeV,
+the largest (-18,50) 10.5, (-19,48) 4.0, (-18,48) 3.5; bbar jet, seed (-34,12), HF primitives (-34,11) 89.0, (-33,11)
+13.0, (-33,13) 11.0, (-34,13) 9.0 (the analyzer, which shares an HF primitive among the towers it covers, gives 178.75
+GeV in the window). Around the generator axes chapter 11 (`trigprim_11_DIGI.txt`, section 5) has, for the signal alone
+and with the pileup: b jet ECAL 29.0 and 33.5, HCAL 22.5 and 26.5 GeV; bbar jet 123.75 and 178.75 GeV. In a
 `Layer1 top tower` line `et`, `ecalTP`, `hcalTP`, `calibratedEm`, `calibratedHad` are in GeV; the tower word is in
-counts: `et=28` is 14.0 GeV; `flags` is the upper four bits of the word (bit 12 of the word = 1, 13 = 2, 14 = 4,
-15 = 8), so `flags=3` is bits 12 and 13 and `flags=5` bits 12 and 14.
+counts: `et=29` is 14.5 GeV; `flags` is the upper four bits of the word (bit 12 of the word = 1, 13 = 2, 14 = 4,
+15 = 8), so `flags=3` is bits 12 and 13 and `flags=5` bits 12 and 14. The tower (-19,50), `ecalTP=5 hcalTP=0 calibratedEm=5.5`,
+has `flags=3`.
 
 The Layer-1 scale factors of the global tag (`l1t_12_L1T.log`; one row per ET bin of the primitive, one column per
 tower ring):
@@ -318,94 +328,97 @@ tower ring):
 Layer-1 in addition shares an HF primitive between the 2 (|ieta| 30-39) or 4 (40, 41) towers it covers, dividing by 2
 or 4 and truncating to 0.5 GeV (`L1TCaloLayer1FetchLUTs.cc`, "Divide by two (since two duplicate towers are sent)").
 
-Ring by ring (the bar chart of the chapter is drawn from this table). Rings 26 to 28 (both sides) receive 445.5 GeV,
-321.5 of it from the ECAL, and keep 134.5 GeV; in rings 27 and 28 the Layer-1 sum equals the HCAL sum: no ECAL
-primitive of these rings reaches the 6 GeV (27) or 9 GeV (28) below which the scale factor is 0 (the largest EE
-primitive of the event is 7.0 GeV). The barrel rings receive 655.0 GeV and keep 576.5 GeV:
+Ring by ring (the bar chart of the chapter is drawn from this table: one grey bar per ring for ecalTP + hcalTP, one
+coloured bar for layer1, 0.176 cm per ring and 0.026 cm per GeV). Rings 26 to 28 (both sides) receive 141.0 GeV, 59.0
+of it from the ECAL, and keep 89.5 GeV: of their ECAL only ring -26 (4.0 GeV) and ring 26 (3.5 GeV) keep something;
+in rings 27 and 28 the Layer-1 sum equals the HCAL sum (66.0 GeV), the largest ECAL primitive of these rings having
+2.0 GeV (`out2024/compare_12_L1T.txt`, section (2)), far below the 6 GeV (27) and 9 GeV (28) under which the scale factor
+is 0. The barrel rings (|ieta| <= 17) receive 447.5 GeV and keep 383.0 GeV; the endcap rings 292.0 and 242.0; the HF
+1064.5 and 818.0:
 
 ```
 -- 2. Ring by ring (72 towers in phi): ECAL primitives + HCAL primitives -> Layer-1 towers, sum ET in GeV
  ieta     ecalTP     hcalTP     layer1
-  -41        0.0       36.5       24.0
-  -40        0.0       38.5       26.0
-  -39        0.0       42.5       35.0
-  -38        0.0       41.0       34.0
-  -37        0.0       50.0       41.0
-  -36        0.0       64.5       58.0
-  -35        0.0       52.0       39.0
-  -34        0.0      148.5      137.0
-  -33        0.0       76.5       67.0
-  -32        0.0       50.0       41.0
-  -31        0.0       48.0       36.0
-  -30        0.0       36.5       29.0
-  -28       95.0       46.0       46.0
-  -27       36.0        9.0        9.0
-  -26       41.5       14.0       17.5
-  -25       36.5        9.0       46.0
-  -24       22.0        7.0       29.0
-  -23       16.0        4.0       20.0
-  -22       19.0        1.0       20.5
-  -21        7.5        5.0       12.5
-  -20       15.0        3.0       18.0
-  -19       31.5       10.5       42.5
-  -18        8.0       17.5       26.5
-  -17       14.5        2.5       17.0
-  -16        7.0        3.5       10.5
-  -15        9.0       13.0       19.5
-  -14        8.0        4.0        9.5
-  -13       13.5        3.5       16.5
-  -12       15.0        5.5       19.5
-  -11       13.0        4.0       15.0
-  -10       19.5        3.0       20.5
-   -9       21.5        3.5       21.5
-   -8       10.5        4.0       13.5
-   -7       11.5        4.0       11.5
-   -6       16.5        9.5       22.0
-   -5       14.5        7.0       19.0
-   -4       20.0       10.0       27.0
-   -3       19.0        8.0       24.0
-   -2       12.0        9.0       19.0
-   -1       16.0        8.0       19.5
-    1       18.5        2.0       20.5
-    2       17.0        5.0       17.0
-    3       18.0        6.0       18.0
-    4       13.0        4.0       14.0
-    5       13.5        5.5       16.0
-    6       14.0        4.5       15.5
-    7       12.5        2.0       13.5
-    8       12.5        1.5       12.5
-    9        7.0        0.0        7.0
-   10       12.5        5.0       15.0
-   11       14.0       15.5       27.0
-   12       12.0        7.0       15.0
-   13       18.0        7.5       24.0
-   14       12.0        5.5       14.5
-   15       10.0        9.5       15.0
-   16       11.0        3.0       14.0
-   17       11.5        1.5       13.0
-   18        0.0        5.0        5.0
-   19        5.0        4.0        9.0
-   20        7.0        4.5       11.5
-   21        8.0        4.0       12.0
-   22        8.5        3.0       11.5
-   23       15.5       12.0       27.5
-   24       29.5        6.0       36.5
-   25       29.0       18.0       47.0
-   26       44.0       11.0       18.0
-   27       37.0        8.0        8.0
-   28       68.0       36.0       36.0
-   30        0.0       38.5       28.0
-   31        0.0       46.0       38.0
-   32        0.0       45.0       36.0
-   33        0.0       57.0       51.0
-   34        0.0       54.0       46.0
-   35        0.0       57.0       48.0
-   36        0.0       62.0       55.0
-   37        0.0       61.0       53.0
-   38        0.0       63.5       54.0
-   39        0.0       49.5       41.0
-   40        0.0       54.0       42.0
-   41        0.0       49.0       36.0
+  -41        0.0       29.5       14.0
+  -40        0.0       32.0       16.0
+  -39        0.0       30.0       20.0
+  -38        0.0       31.5       23.0
+  -37        0.0       39.0       26.0
+  -36        0.0       48.0       40.0
+  -35        0.0       49.0       40.0
+  -34        0.0      145.5      136.0
+  -33        0.0       81.0       73.0
+  -32        0.0       40.5       31.0
+  -31        0.0       50.5       42.0
+  -30        0.0       28.5       18.0
+  -28       17.0       26.0       26.0
+  -27        9.0       15.0       15.0
+  -26        9.5       12.0       16.0
+  -25       10.0        9.0       19.0
+  -24        6.0        4.0       10.0
+  -23        4.0       13.0       17.0
+  -22        3.5        1.0        4.5
+  -21        1.5        1.0        2.5
+  -20        1.5        6.0        7.5
+  -19       22.0        5.5       28.5
+  -18        7.5       15.5       23.5
+  -17        8.5        0.5        9.0
+  -16        6.0        3.0        9.0
+  -15        5.5       14.0       17.0
+  -14        3.0        6.5        6.0
+  -13        3.0        2.5        3.0
+  -12        8.5        2.0        8.5
+  -11        5.0        2.0        5.0
+  -10        9.5        1.5        9.5
+   -9       11.0        2.0       12.0
+   -8        6.5        5.0       10.0
+   -7        9.0        5.5       12.5
+   -6       13.0        3.5       14.0
+   -5       10.5        2.0       10.5
+   -4       14.5        4.5       15.5
+   -3        9.0        7.0       10.5
+   -2       14.5        4.0       14.5
+   -1        8.5        2.0        8.5
+    1       12.5        4.5       13.5
+    2        9.0        3.0        9.0
+    3        5.0        4.0        7.0
+    4       12.0        3.0       14.0
+    5       13.5        7.0       19.5
+    6       14.0        2.5       15.0
+    7        8.5        4.0       11.5
+    8       11.0       21.5       30.5
+    9        7.0        4.0        8.0
+   10       16.0        4.0       18.0
+   11       11.0        2.5       12.0
+   12        8.5        4.5       10.5
+   13        5.0        7.5       11.0
+   14        5.0        2.5        7.0
+   15        1.5        8.0        9.0
+   16        3.0        5.5        8.5
+   17        4.0        0.0        4.0
+   18        1.0        0.5        1.5
+   19        2.0        0.5        2.5
+   20        2.5        2.5        5.0
+   21        1.0        0.0        1.0
+   22        5.0        0.0        5.0
+   23        4.0        2.0        6.0
+   24        3.0        5.0        8.0
+   25        3.0        8.0       11.0
+   26       11.5        4.0        7.5
+   27        9.0        6.0        6.0
+   28        3.0       19.0       19.0
+   30        0.0       24.5       14.0
+   31        0.0       41.5       31.0
+   32        0.0       43.5       36.0
+   33        0.0       45.0       37.0
+   34        0.0       34.5       26.0
+   35        0.0       41.5       33.0
+   36        0.0       44.0       36.0
+   37        0.0       38.0       28.0
+   38        0.0       38.0       31.0
+   39        0.0       39.0       29.0
+   40        0.0       39.0       22.0
+   41        0.0       31.0       16.0
 ```
 
 ### Step 3 (`ledger_12_L1T.txt`, sections 3 and 4)
@@ -413,55 +426,47 @@ primitive of the event is 7.0 GeV). The barrel rings receive 655.0 GeV and keep 
 ```
 -- 3. Step 3: the Layer-2 jets (GeV). window = sum of the 9 x 9 Layer-1 towers; pileup = the estimate subtracted;
       calib = the calibration factor; ET = (window - pileup) x calib; ecalTP / hcalTP = the primitives in the window
-9 L1 jets; GenJets: pt 117.8 eta -1.59 phi -2.08, pt 115.9 eta -3.75 phi 1.01
+4 L1 jets; GenJets: pt 117.8 eta -1.59 phi -2.08, pt 115.9 eta -3.75 phi 1.01
        ET    eta    phi  ieta  iphi   seed  window  pileup  win-pu  calib  ecalTP  hcalTP   GenJet
-    136.0  -3.74   1.00   -34    12   45.0   189.0    60.0   129.0   1.05     0.0   199.8    115.9
-          phi rings of the 9 eta columns of the window (72 towers each): 34 41 58 39 137 67 41 36 29; sum 482; x 9/72 = 60 (the emulator: 60.0)
-    108.5  -1.52  -1.98   -18    50   14.0    74.5    22.0    52.5   2.07    46.0    28.0    117.8
-          phi rings of the 9 eta columns of the window (72 towers each): 20.5 12.5 18 42.5 26.5 17 10.5 19.5 9.5; sum 176.5; x 9/72 = 22 (the emulator: 22.0)
-     23.0   0.91   1.70    11    20    7.5    25.0    17.5     7.5   3.07    16.5    11.5        -
-     20.0  -0.30   0.30    -4     4    6.0    28.5    22.0     6.5   3.08    23.0    10.0        -
-     17.5   1.52   0.91    18    11    4.0    17.0    13.0     4.0   4.38     8.5    10.0        -
-     15.0   0.91  -2.50    11    44    4.5    21.0    17.5     3.5   4.29    15.5     8.5        -
-     14.0  -2.26  -1.80   -25    52    4.0    32.5    28.5     4.0   3.50    31.0    20.5        -
-     13.0   1.09   2.74    13    32    4.0    20.5    18.0     2.5   5.20    12.5    11.0        -
-      9.5   2.39  -1.54    26    55    4.0    32.5    31.0     1.5   6.33    34.5    14.5        -
-   all jets: sum of the windows 440.5, of the pileup estimates 229.5, of the jet ET 356.5
+    122.5  -3.74   1.00   -34    12   44.5   170.0    53.5   116.5   1.05     0.0   178.8    115.9
+          phi rings of the 9 eta columns of the window (72 towers each): 23 26 40 40 136 73 31 42 18; sum 429; x 9/72 = 53.5 (the emulator: 53.5)
+     93.5  -1.52  -1.98   -18    50   14.5    56.0    13.0    43.0   2.17    32.5    23.0    117.8
+          phi rings of the 9 eta columns of the window (72 towers each): 4.5 2.5 7.5 28.5 23.5 9 9 17 6; sum 107.5; x 9/72 = 13 (the emulator: 13.0)
+     39.0   0.65  -0.41     8    68   15.5    33.0    17.0    16.0   2.44    16.5    19.0        -
+     28.0   0.39  -2.85     5    40    5.0    26.5    16.0    10.5   2.67    22.0     8.5        -
+   all jets: sum of the windows 285.5, of the pileup estimates 99.5, of the jet ET 283.0
 
 -- 4. Step 3: what Layer-2 sends to the global trigger
-jets 9, e/gamma 12, taus 12
-ETT (total ET, towers |ieta| <= 28)        1086.0
-ETTEM (ECAL only)                           730.0
-HTT (jets > 30 GeV, |ieta| <= 26)           108.5
-ETM                                          60.5
-ETMHF (with HF)                              79.0
-HTM                                         108.0
-HTMHF                                        34.5
-tower count                                1295.0
-L1EG 0: et=7.5 eta=-0.3045 phi=0.3045 iso=0 hwQual=7
-L1EG 1: et=7 eta=-0.696 phi=-2.71619 iso=3 hwQual=7
-L1EG 2: et=5.5 eta=1.131 phi=2.088 iso=0 hwQual=7
-L1EG 3: et=5 eta=0.957 phi=2.3055 iso=0 hwQual=7
-L1EG 4: et=4 eta=-0.261 phi=-1.54169 iso=0 hwQual=7
-L1EG 5: et=3.5 eta=2.3925 phi=-0.0626853 iso=0 hwQual=7
-L1EG 6: et=3.5 eta=-1.131 phi=-0.454185 iso=0 hwQual=7
-L1EG 7: et=3.5 eta=0.522 phi=-3.02069 iso=3 hwQual=7
-L1EG 8: et=3.5 eta=-1.914 phi=2.8275 iso=0 hwQual=7
-L1EG 9: et=3.5 eta=-0.87 phi=2.7405 iso=3 hwQual=7
-L1EG 10: et=2.5 eta=1.0875 phi=-2.23769 iso=0 hwQual=7
-L1EG 11: et=2.5 eta=0.3045 phi=0.6525 iso=0 hwQual=7
-L1Tau 0: et=58.5 eta=-1.566 phi=-1.93319 iso=1
-L1Tau 1: et=15 eta=-2.2185 phi=-1.75919 iso=1
-L1Tau 2: et=14 eta=0.9135 phi=1.653 iso=0
-L1Tau 3: et=13.5 eta=2.1315 phi=1.044 iso=1
-L1Tau 4: et=12.5 eta=1.9575 phi=-0.628186 iso=0
-L1Tau 5: et=12.5 eta=-2.262 phi=2.958 iso=0
-L1Tau 6: et=12.5 eta=-0.261 phi=1.218 iso=1
-L1Tau 7: et=11.5 eta=2.2185 phi=-2.36819 iso=1
-L1Tau 8: et=11.5 eta=-0.3045 phi=0.261 iso=0
-L1Tau 9: et=11 eta=-0.696 phi=-2.71619 iso=1
-L1Tau 10: et=11 eta=1.044 phi=2.697 iso=1
-L1Tau 11: et=11 eta=1.131 phi=2.088 iso=0
+jets 4, e/gamma 9, taus 12
+ETT (total ET, towers |ieta| <= 28)         625.0
+ETTEM (ECAL only)                           377.0
+HTT (jets > 30 GeV, |ieta| <= 26)           132.5
+ETM                                          48.0
+ETMHF (with HF)                              78.5
+HTM                                         101.0
+HTMHF                                        66.0
+tower count                                 787.0
+L1EG 0: et=6 eta=0.435 phi=-2.84669 iso=0 hwQual=7
+L1EG 1: et=4.5 eta=-2.3925 phi=-2.84669 iso=3 hwQual=7
+L1EG 2: et=3.5 eta=2.3925 phi=-0.0626853 iso=3 hwQual=7
+L1EG 3: et=3 eta=0.87 phi=3.0885 iso=0 hwQual=7
+L1EG 4: et=3 eta=0.9135 phi=2.3055 iso=0 hwQual=7
+L1EG 5: et=3 eta=-0.3045 phi=1.2615 iso=3 hwQual=7
+L1EG 6: et=2.5 eta=-1.305 phi=-0.845685 iso=3 hwQual=7
+L1EG 7: et=2.5 eta=-0.7395 phi=-2.67269 iso=3 hwQual=7
+L1EG 8: et=2.5 eta=-0.348 phi=2.0445 iso=3 hwQual=7
+L1Tau 0: et=54 eta=-1.566 phi=-1.93319 iso=1
+L1Tau 1: et=25 eta=0.6525 phi=-0.410685 iso=0
+L1Tau 2: et=20 eta=0.435 phi=-2.84669 iso=1
+L1Tau 3: et=11 eta=-1.218 phi=0.957 iso=1
+L1Tau 4: et=10 eta=1.305 phi=2.9145 iso=1
+L1Tau 5: et=7.5 eta=-0.609 phi=0.783 iso=1
+L1Tau 6: et=5.5 eta=0.87 phi=3.132 iso=1
+L1Tau 7: et=5.5 eta=-0.348 phi=2.001 iso=1
+L1Tau 8: et=5.5 eta=0.522 phi=0.0435 iso=1
+L1Tau 9: et=5 eta=-1.305 phi=-0.802185 iso=1
+L1Tau 10: et=5 eta=1.044 phi=2.001 iso=1
+L1Tau 11: et=5 eta=-2.088 phi=1.479 iso=1
 ```
 
 The generator jets and the directions of the sums (`l1t_12_L1T.log`):
@@ -469,18 +474,24 @@ The generator jets and the directions of the sums (`l1t_12_L1T.log`):
 ```
   GenJet: pt=117.788 eta=-1.58908 phi=-2.08403 energy=301.021
   GenJet: pt=115.944 eta=-3.74635 phi=1.00816 energy=2457.41
-  L1Sums: ETT=1086 ETTEM=730 HTT=108.5 ETM=60.5 ETMphi=1.044 ETMHF=79 ETMHFphi=-2.32469 HTM=108 HTMphi=1.131 HTMHF=34.5 towerCount=1295 minBiasHFP0=15 minBiasHFM0=15 minBiasHFP1=0 minBiasHFM1=0
+  L1Sums: ETT=625 ETTEM=377 HTT=132.5 ETM=48 ETMphi=0.957 ETMHF=78.5 ETMHFphi=-2.28119 HTM=101 HTMphi=1.5225 HTMHF=66 towerCount=787 minBiasHFP0=15 minBiasHFM0=15 minBiasHFP1=0 minBiasHFM1=0
 ```
 
-Sums of the chapter's ledger table: windows of the nine jets 440.5 GeV; pileup estimates 229.5 GeV; jet ET
-356.5 GeV, of which the two signal jets 136.0 + 108.5 = 244.5 GeV. The b jet: 74.5 / 8 = 9.3 GeV of its own window
-in its pileup estimate of 22.0 GeV; dR to the generator jet sqrt((1.5225 - 1.5891)^2 + (1.9767 - 2.0840)^2) = 0.13.
-The seven other jets are 9.5 to 23.0 GeV, all with |eta| < 2.4, none seeded in tower ring 28. HTMHF is the imbalance
-of the two signal jets: the vector sum of (136.0, phi 1.0005) and (108.5, phi -1.9767) is 34.0 GeV (the trigger:
-34.5). Invariant mass of the two signal jets, M^2/2 = ET1 ET2 (cosh(deta) - cos(dphi)) with (136.0, -3.741, 1.0005)
-and (108.5, -1.5225, -1.9767): 83 200 GeV^2, M = 408 GeV. They are the only two jets above 35 GeV, so every
-`DoubleJet_..._DoubleJet35_Mass_Min...` algorithm fails (the lowest cut, MASS_MIN_500, is 125 000 GeV^2). In 2024
-the HF jet and the ring-28 jet of 56.0 GeV at eta = 2.74 made 2 501 000 GeV^2, M = 2237 GeV.
+Sums of the chapter's ledger table: windows of the four jets 285.5 GeV; pileup estimates 99.5 GeV; jet ET 283.0 GeV,
+of which the two signal jets 122.5 + 93.5 = 216.0 GeV. The b jet: 56.0 / 8 = 7.0 GeV of its own window in its pileup
+estimate of 13.0 GeV; window / visible jet 56.0 / 79.8 = 0.70; 93.5 / 117.8 = 0.79, 93.5 / 79.8 = 1.17; dR to the
+generator jet sqrt((1.5225 - 1.5891)^2 + (1.9767 - 2.0840)^2) = 0.13. The bbar jet: 122.5 / 115.9 = 1.06. The two other
+jets, 39.0 GeV at (0.65, -0.41) and 28.0 GeV at (0.39, -2.85), are in the barrel; none is in the endcap or seeded in
+tower ring 28. The seed of the first, (8,68), is an HB primitive of 15.5 GeV with nothing in the samples before it
+(`trigprim_11_DIGI.txt`, section 6: `hcalSamples=0,0,15.5,1`, the third the sample of interest); the seed of the
+second, (5,40), is the barrel tower that chapter 11 found flagged high interest (ECAL primitive 4.5 GeV). HTT = 93.5 +
+39.0 = 132.5 GeV (jets above 30 GeV within |ieta| <= 26). HTMHF: the vector sum of (122.5, phi 1.0005), (93.5, -1.9767)
+and (39.0, -0.4107) is 65.0 GeV (the trigger: 66.0), of the two signal jets alone 33.9 GeV. Invariant masses, M^2/2 =
+ET1 ET2 (cosh(deta) - cos(dphi)): bbar jet and 39.0 GeV jet 192 600 GeV^2, M = 620.6 GeV; the two signal jets 64 570
+GeV^2, M = 359.4 GeV; b jet and 39.0 GeV jet 180.2 GeV; bbar jet and 28.0 GeV jet (below 35 GeV for the mass
+conditions) 468.1 GeV. So `DoubleJet_70_35_DoubleJet35_Mass_Min500/550/600_ETMHF65` fire on the bbar jet and the 39.0
+GeV pileup jet (MASS_MIN_600 = 180 000 GeV^2), `Min700` fails, and every `DoubleJet_110_35_..._Mass_Min800` and above
+fails.
 
 The generator truth quoted with the jets is that of the earlier chapters, read from the same file: the b jet has
 117.8 GeV with its neutrino and 79.8 GeV without (`ak4GenJetsNoNu`, chapter 07); the neutrino is the missing
@@ -492,101 +503,94 @@ transverse energy of the event, 37.5 GeV at phi = -2.10 (`genMetTrue`, chapter 0
 -- 5. Steps 4 and 5: the muon trigger
 DT phi segments                                   0
 DT theta segments                                 0
-CSC anode patterns (ALCT)                        11
-CSC cathode patterns (CLCT)                       8
-CSC stubs (LCT)                                   8
-GEM pads                                         11
-GEM pad clusters                                  7
-stubs given to the EMTF                          16
-   of which neighbour copies                      4
-   of which copies with no own-sector twin        1
-distinct stubs (drawn)                           13
-EMTF tracks                                       2
+CSC anode patterns (ALCT)                        10
+CSC cathode patterns (CLCT)                       9
+CSC stubs (LCT)                                   5
+GEM pads                                         72
+GEM pad clusters                                 44
+stubs given to the EMTF                           5
+   of which neighbour copies                      0
+   of which copies with no own-sector twin        0
+distinct stubs (drawn)                            5
+EMTF tracks                                       0
 BMTF (Kalman) candidates, all bx / bx 0         0/0
 OMTF candidates                                 0/0
-EMTF candidates                                 2/2
-uGMT muons                                        1
+EMTF candidates                                 0/0
+uGMT muons                                        0
 muon showers                                      0
-EMTF input stubs: all=16 neighbourCopies=4 copiesWithoutTwin=1 distinct=13 CSC=8 (bx0 6) RPC=5 (bx0 3) GEM=0 (bx0 0)
-EMTFHit: subsystem=CSC endcap=1 station=1 ring=4 sector=2 chamber=11 bx=0 neighbour=0 eta=2.35422 phi=1.71534 rho=118.004 z=615.68 quality=3 pattern=8
-EMTFHit: subsystem=RPC endcap=-1 station=3 ring=2 sector=1 chamber=7 bx=-2 neighbour=0 eta=-1.483 phi=1.0718 rho=466.691 z=-975.2 quality=1 pattern=0
-EMTFHit: subsystem=CSC endcap=-1 station=1 ring=4 sector=6 chamber=2 bx=0 neighbour=1 eta=-2.20308 phi=0.198793 rho=131.146 z=-586.38 quality=5 pattern=6
-EMTFHit: subsystem=RPC endcap=-1 station=1 ring=2 sector=3 chamber=15 bx=0 neighbour=0 eta=-1.28302 phi=2.35879 rho=435.962 z=-725.95 quality=1 pattern=0
-EMTFHit: subsystem=CSC endcap=-1 station=1 ring=1 sector=3 chamber=20 bx=0 neighbour=0 eta=-2.08396 phi=-2.96624 rho=148.229 z=-586.38 quality=7 pattern=6
-EMTFHit: subsystem=CSC endcap=-1 station=2 ring=1 sector=3 chamber=10 bx=0 neighbour=0 eta=-2.07297 phi=-2.87505 rho=208.388 z=-815.062 quality=3 pattern=10
-EMTFHit: subsystem=CSC endcap=-1 station=1 ring=4 sector=4 chamber=25 bx=-1 neighbour=0 eta=-2.29134 phi=-2.14766 rho=125.815 z=-615.68 quality=3 pattern=9
-EMTFHit: subsystem=RPC endcap=-1 station=1 ring=2 sector=4 chamber=25 bx=0 neighbour=0 eta=-1.39743 phi=-2.12451 rho=382.323 z=-725.95 quality=4 pattern=0
-EMTFHit: subsystem=CSC endcap=-1 station=3 ring=1 sector=4 chamber=11 bx=0 neighbour=0 eta=-2.06941 phi=-2.85873 rho=237.143 z=-924.138 quality=3 pattern=10
-EMTFHit: subsystem=CSC endcap=-1 station=4 ring=1 sector=4 chamber=11 bx=0 neighbour=0 eta=-2.06722 phi=-2.85873 rho=260.817 z=-1014.1 quality=3 pattern=10
-EMTFHit: subsystem=CSC endcap=-1 station=1 ring=1 sector=3 chamber=20 bx=0 neighbour=1 eta=-2.08396 phi=-2.96624 rho=148.229 z=-586.38 quality=7 pattern=6
-EMTFHit: subsystem=CSC endcap=-1 station=2 ring=1 sector=3 chamber=10 bx=0 neighbour=1 eta=-2.07297 phi=-2.87505 rho=208.388 z=-815.062 quality=3 pattern=10
-EMTFHit: subsystem=RPC endcap=-1 station=3 ring=3 sector=6 chamber=34 bx=-3 neighbour=0 eta=-1.35977 phi=-0.5318 rho=533.618 z=-970.8 quality=1 pattern=0
-EMTFHit: subsystem=CSC endcap=-1 station=1 ring=4 sector=6 chamber=33 bx=-1 neighbour=0 eta=-2.34761 phi=-0.766924 rho=118.801 z=-615.68 quality=3 pattern=3
-EMTFHit: subsystem=CSC endcap=-1 station=1 ring=4 sector=6 chamber=2 bx=0 neighbour=0 eta=-2.20308 phi=0.198793 rho=131.146 z=-586.38 quality=5 pattern=6
-EMTFHit: subsystem=RPC endcap=-1 station=4 ring=3 sector=5 chamber=32 bx=0 neighbour=1 eta=-1.24382 phi=-0.869931 rho=667.652 z=-1061.76 quality=1 pattern=0
-EMTFTrack: endcap=-1 sector=3 mode=12 bx=0 pt=2 eta=-2.08277 phi=-2.87514 charge=-1 nHits=2 quality=7
-EMTFTrack: endcap=-1 sector=4 mode=15 bx=0 pt=3 eta=-2.08277 phi=-2.87514 charge=-1 nHits=4 quality=15
-TFCand: tf=EMTF bx=0 processor=2 pt=2 eta=-2.088 phi=-2.87979 quality=7 hwPt=5 hwEta=-192 hwPhi=96 sign=1
-TFCand: tf=EMTF bx=0 processor=3 pt=3 eta=-2.088 phi=-2.87979 quality=15 hwPt=7 hwEta=-192 hwPhi=0 sign=1
-uGMT muon: bx=0 pt=3 eta=-2.088 phi=-2.87989 charge=-1 quality=15 iso=3 etaAtVtx=-2.06625 phiAtVtx=3.09787 tfMuonIndex=99
+EMTF input stubs: all=5 neighbourCopies=0 copiesWithoutTwin=0 distinct=5 CSC=5 (bx0 0) RPC=0 (bx0 0) GEM=0 (bx0 0)
+EMTFHit: subsystem=CSC endcap=1 station=1 ring=1 sector=1 chamber=4 bx=-1 neighbour=0 eta=2.46164 phi=0.514006 rho=100.764 z=586.38 quality=3 pattern=2
+EMTFHit: subsystem=CSC endcap=1 station=1 ring=1 sector=1 chamber=3 bx=1 neighbour=0 eta=1.99501 phi=0.385331 rho=170.637 z=615.68 quality=3 pattern=2
+EMTFHit: subsystem=CSC endcap=1 station=1 ring=1 sector=1 chamber=5 bx=1 neighbour=0 eta=2.01729 phi=0.728477 rho=166.741 z=615.68 quality=7 pattern=3
+EMTFHit: subsystem=CSC endcap=-1 station=1 ring=1 sector=1 chamber=7 bx=-1 neighbour=0 eta=-2.09847 phi=1.03464 rho=153.325 z=-615.68 quality=5 pattern=2
+EMTFHit: subsystem=CSC endcap=-1 station=1 ring=1 sector=1 chamber=6 bx=1 neighbour=0 eta=-1.96951 phi=0.834962 rho=166.879 z=-586.38 quality=7 pattern=4
 truth: genMuons(pt>1)=0 genJets(pt>30)=2
 ```
 
-The EMTF received 16 stubs of which 4 are neighbour copies: 12 in their own sector, 8 CSC and 4 RPC, 8 of them in
-bunch crossing 0 (6 CSC, 2 RPC). Three of the copies repeat stubs of these 12 (CSC station 1 ring 4 chamber 2 of
-sector 6, station 1 ring 1 chamber 20 and station 2 ring 1 chamber 10 of sector 3); the fourth (RPC station 4 ring 3
-chamber 32 of sector 5, bx 0, eta -1.24) has no own-sector entry: 13 distinct stubs, 8 CSC and 5 RPC, 9 in bunch
-crossing 0. `L1TMuonAnalyzer` counts and draws a copy only when no stub of the same chamber, bunch crossing and
-position arrives in its own sector (until 13 November 2026 it skipped every copy, and this RPC hit was missing from
-the counts and the displays). Steps 4 and 5 are identical, line for line, to those of the 2024 run. `pt = (hwPt - 1) x 0.5 GeV`, `eta = hwEta x 0.010875`, global phi =
-(processor x 96 + hwPhi + 24) x 2 pi / 576 for the OMTF and EMTF (`l1t::MicroGMTConfiguration::calcGlobalPhi`). EMTF
-mode: bit 8 ME1, 4 ME2, 2 ME3, 1 ME4. The extrapolation to the vertex moves the muon from phi = -2.880 to 3.098, that
-is by 2 pi - 2.880 - 3.098 = 0.31.
+The EMTF received 5 stubs, all CSC, all in the inner ring of the first station (ME1/1, `station=1 ring=1`), in
+sector 1 of both endcaps, none of them in bunch crossing 0 (two in -1, three in +1); no neighbour copy, no RPC and no
+GEM stub. No two stubs are in different stations, so the EMTF builds no track (a track needs two stations), the
+BMTF and the OMTF have no input, and the uGMT sends no muon. Steps 4 and 5 are identical, line for line, to those of
+the 2024 run (`out2024/ledger_12_L1T.txt`, section 5). In the chapter the stubs are listed with |z| and r = `rho` rounded
+to the centimetre. `L1TMuonAnalyzer` counts and draws a neighbour copy only when no stub of the same chamber, bunch
+crossing and position arrives in its own sector. EMTF mode: bit 8 ME1, 4 ME2, 2 ME3, 1 ME4.
 
-The truth behind the L1 muon (`truth_12_L1T.txt`, in full):
+The truth near the stubs (FWLite on `step4_L1_12_L1T.root`, `std::vector<TrackingParticle>` `mix:MergedTrackTruth`;
+for each stub, the charged particles of the same bunch crossing (`eventId().bunchCrossing()`) with pT > 0.8 GeV and at
+least one hit outside the tracker (`numberOfHits() - numberOfTrackerHits() > 0`) within dR < 0.3 in (eta, phi) at the
+vertex; done with a few lines of python in a scratch area, not part of the chapter scripts):
+
+```
+TrackingParticles 211377; by bx: -12:14528 -11:14729 -10:15026 -9:11503 -8:11141 -7:9542 -6:18800 -5:14691 -4:12132 -3:13077 -2:13691 -1:11345 0:13384 1:15425 2:11416 3:10947
+muons pT > 1 GeV: 52; by bx: -5: 9, 0: 4, -11: 4, -8: 4, -7: 4, -6: 4, 1: 4, -12: 3, -10: 3, -9: 3, -4: 3, -3: 3, 3: 3, -1: 1
+stub eta 2.46 phi 0.51 bx -1: (none)
+stub eta 2.00 phi 0.39 bx 1: pdg -13 pT 1.25 bx 1 coll 24 muonHits 8 dR 0.20 (produced at r 92.6 cm, z 282.9 cm)
+stub eta 2.02 phi 0.73 bx 1: pdg 13 pT 1.17 bx 1 coll 31 muonHits 8 dR 0.20 (produced at r 102.0 cm, z 315.0 cm)
+stub eta -2.10 phi 1.03 bx -1: (none)
+stub eta -1.97 phi 0.83 bx 1: (none)
+```
+
+The kaon muon of the version with three crossings (below) is the TrackingParticle `mu pT 2.78 eta -2.08 phi -3.04 |
+bx -11 coll 21 | vertex r 58.5 z -214.4 | 35 hits, 6 in the tracker`: library event 92, in time in the draw of three
+crossings (library events 72-139), is in bunch crossing -11 in the draw of 16 (library events 72-139 again: the draw
+fills the earliest crossing first, chapter 10). The four muons above 1 GeV of bunch crossing 0 have 1.81, 1.70 (a decay
+in flight in the signal, collision 0, one tracker hit), 1.07 and 1.01 GeV; none made a stub.
+
+The truth behind the L1 muons (`truth_12_L1T.txt`, in full: there is none):
 
 ```
 == l1tTruth 12_L1T
-1 L1 muon(s); 45282 TrackingParticles
-  L1 muon bx 0: pt 3.0 eta -2.088 phi -2.880 (at the vertex: eta -2.066 phi 3.098) charge -1 quality 15
-    charged pdgId    211 pt   2.38 eta -2.091 phi  3.087 charge +1 | bx 1, collision 33 (0 = the signal) | produced at r 0.03 cm, z 1.6 cm | hits 25 (tracker 25) | dR 0.03
-    charged pdgId   -321 pt   3.27 eta -2.035 phi  3.026 charge -1 | bx 0, collision 21 (0 = the signal) | produced at r 0.03 cm, z 5.5 cm | hits 19 (tracker 19) | dR 0.08
-    charged pdgId    211 pt   2.58 eta -1.986 phi  3.130 charge +1 | bx 1, collision 14 (0 = the signal) | produced at r 0.03 cm, z 3.7 cm | hits 25 (tracker 25) | dR 0.09
-    charged pdgId  -2212 pt   3.93 eta -1.965 phi  3.081 charge -1 | bx 1, collision 9 (0 = the signal) | produced at r 0.03 cm, z -3.8 cm | hits 10 (tracker 10) | dR 0.10
-    charged pdgId  -2212 pt   1.97 eta -2.049 phi -3.062 charge -1 | bx 1, collision 9 (0 = the signal) | produced at r 29.88 cm, z -108.6 cm | hits 14 (tracker 14) | dR 0.12
-    charged pdgId   -321 pt   2.40 eta -2.018 phi  2.978 charge -1 | bx 0, collision 36 (0 = the signal) | produced at r 0.02 cm, z 0.3 cm | hits 24 (tracker 24) | dR 0.13
-    MUON    pdgId     13 pt   2.78 eta -2.083 phi -3.043 charge -1 | bx 0, collision 21 (0 = the signal) | produced at r 58.52 cm, z -214.4 cm | hits 35 (tracker 6) | dR 0.14
-    charged pdgId  -2212 pt   2.29 eta -2.269 phi -3.082 charge -1 | bx 0, collision 60 (0 = the signal) | produced at r 0.03 cm, z -0.1 cm | hits 18 (tracker 18) | dR 0.23
-    charged pdgId     11 pt   1.97 eta -1.809 phi  3.065 charge -1 | bx 0, collision 36 (0 = the signal) | produced at r 11.55 cm, z -34.0 cm | hits 22 (tracker 22) | dR 0.26
-    charged pdgId   -211 pt   2.55 eta -1.850 phi  2.954 charge -1 | bx 0, collision 36 (0 = the signal) | produced at r 27.20 cm, z -77.6 cm | hits 20 (tracker 20) | dR 0.26
-    charged pdgId    211 pt   2.10 eta -2.207 phi  2.853 charge +1 | bx 1, collision 33 (0 = the signal) | produced at r 75.41 cm, z -299.5 cm | hits 0 (tracker 0) | dR 0.28
+0 L1 muon(s); 211377 TrackingParticles
 ```
 
-The muon is produced at r = 58.52 cm, z = -214.4 cm; a straight line from the K- vertex (z = 5.5 cm) at eta = -2.035
-reaches r = (214.4 + 5.5) / sinh(2.035) = 58.5 cm at that z: the muon is the daughter of the kaon. Its 35 hits are 6 in
-the tracker and 29 in the muon chambers. "Collision 21" is the 21st of the 68 in-time pileup collisions (0 is the
-signal).
+The version with three crossings (`test/tmp/out_bx-1to1/12_L1T/out/`, 12 November 2026) had one L1 muon, the kaon
+muon above; its EMTF tracks and candidates and the uGMT muon, quoted in step 5 of the chapter (table 12.8):
+
+```
+  EMTFTrack: endcap=-1 sector=3 mode=12 bx=0 pt=2 eta=-2.08277 phi=-2.87514 charge=-1 nHits=2 quality=7
+  EMTFTrack: endcap=-1 sector=4 mode=15 bx=0 pt=3 eta=-2.08277 phi=-2.87514 charge=-1 nHits=4 quality=15
+  TFCand: tf=EMTF bx=0 processor=2 pt=2 eta=-2.088 phi=-2.87979 quality=7 hwPt=5 hwEta=-192 hwPhi=96 sign=1
+  TFCand: tf=EMTF bx=0 processor=3 pt=3 eta=-2.088 phi=-2.87979 quality=15 hwPt=7 hwEta=-192 hwPhi=0 sign=1
+  uGMT muon: bx=0 pt=3 eta=-2.088 phi=-2.87989 charge=-1 quality=15 iso=3 etaAtVtx=-2.06625 phiAtVtx=3.09787 tfMuonIndex=99
+```
+
+`pt = (hwPt - 1) x 0.5 GeV`, `eta = hwEta x 0.010875`, global phi = (processor x 96 + hwPhi + 24) x 2 pi / 576 for the
+OMTF and EMTF (`l1t::MicroGMTConfiguration::calcGlobalPhi`). The extrapolation to the vertex moved the muon from
+phi = -2.880 to 3.098, that is by 2 pi - 2.880 - 3.098 = 0.31.
 
 ### Step 6 (`ledger_12_L1T.txt`, section 6)
 
 ```
 -- 6. Step 6: the decision of the global trigger
-FinalOR 1; 63 of 465 algorithms fire (63 after prescales and masks); CICADA score: 88.2617
-uGT inputs (bx 0): jets=9 egammas=12 taus=12 muons=1 etSums=19 | ETT=1086 ETTEM=730 HTT=108.5 ETM=60.5 ETMHF=79 HTM=108 HTMHF=34.5
-the 63 algorithms that fire, with their expression:
-     0 L1_SingleMuCosmics                                         MU0
-     3 L1_SingleMuCosmics_EMTF                                    MU0[MU-INDEX_EMTF_NEG,MU-INDEX_EMTF_POS]
-     4 L1_SingleMuOpen                                            MU0[MU-QLTY_OPEN]
-     7 L1_SingleMuOpen_EMTF                                       MU0[MU-INDEX_EMTF_NEG,MU-INDEX_EMTF_POS,MU-QLTY_OPEN]
-     8 L1_SingleMu0_DQ                                            MU0[MU-QLTY_DBLE]
-    11 L1_SingleMu0_EMTF                                          MU0[MU-INDEX_EMTF_NEG,MU-INDEX_EMTF_POS,MU-QLTY_SNGL]
-    19 L1_SingleMu3                                               MU3[MU-QLTY_SNGL]
-   137 L1_Mu3_Jet30er2p5                                          MU3[MU-QLTY_SNGL] AND JET30[JET-ETA_2p52]
+FinalOR 1; 54 of 465 algorithms fire (54 after prescales and masks); CICADA score: 55.0781
+uGT inputs (bx 0): jets=4 egammas=9 taus=12 muons=0 etSums=19 | ETT=625 ETTEM=377 HTT=132.5 ETM=48 ETMHF=78.5 HTM=101 HTMHF=66
+the 54 algorithms that fire, with their expression:
    296 L1_SingleJet35                                             JET35
    298 L1_SingleJet60er1p3to2p5                                   JET60[JET-ETA_2p52] AND  NOT JET60[JET-ETA_1p3]
    301 L1_SingleJet60                                             JET60
    302 L1_SingleJet90                                             JET90
    303 L1_SingleJet120                                            JET120
+   306 L1_SingleJet35er1p3                                        JET35[JET-ETA_1p3]
    307 L1_SingleJet35er2p5                                        JET35[JET-ETA_2p52]
    313 L1_SingleJet35_FWD2p5                                      JET35[JET-ETA_FWD_2p48_NEG] OR JET35[JET-ETA_FWD_2p48_POS]
    314 L1_SingleJet60_FWD2p5                                      JET60[JET-ETA_FWD_2p48_NEG] OR JET60[JET-ETA_FWD_2p48_POS]
@@ -597,12 +601,13 @@ the 63 algorithms that fire, with their expression:
    319 L1_SingleJet8erHE                                          JET8[JET-ETA_1p392_2p958_NEG,JET-ETA_1p392_2p958_POS]
    320 L1_SingleJet10erHE                                         JET10[JET-ETA_1p392_2p958_NEG,JET-ETA_1p392_2p958_POS]
    321 L1_SingleJet12erHE                                         JET12[JET-ETA_1p392_2p958_NEG,JET-ETA_1p392_2p958_POS]
+   369 L1_DoubleJet_70_35_DoubleJet35_Mass_Min500_ETMHF65         comb{JET70,JET35} AND mass_inv{JET35,JET35}[MASS_MIN_500] AND ETMHF65
+   370 L1_DoubleJet_70_35_DoubleJet35_Mass_Min550_ETMHF65         comb{JET70,JET35} AND mass_inv{JET35,JET35}[MASS_MIN_550] AND ETMHF65
+   371 L1_DoubleJet_70_35_DoubleJet35_Mass_Min600_ETMHF65         comb{JET70,JET35} AND mass_inv{JET35,JET35}[MASS_MIN_600] AND ETMHF65
+   388 L1_HTT120er                                                HTT120
    400 L1_ETMHF70                                                 ETMHF70
    409 L1_ETMHF70_HTT60er                                         ETMHF70 AND HTT60
    428 L1_CICADA_VLoose                                           CICADA[CICADA-CSCORE_50]
-   429 L1_CICADA_Loose                                            CICADA[CICADA-CSCORE_60]
-   430 L1_CICADA_Medium                                           CICADA[CICADA-CSCORE_70]
-   431 L1_CICADA_Tight                                            CICADA[CICADA-CSCORE_80]
    444 L1_SingleJet8_BptxAND                                      JET8 AND EXT_ZeroBias_BPTX_AND_VME
    445 L1_SingleJet12_BptxAND                                     JET12 AND EXT_ZeroBias_BPTX_AND_VME
    446 L1_SingleJet16_BptxAND                                     JET16 AND EXT_ZeroBias_BPTX_AND_VME
@@ -612,21 +617,18 @@ the 63 algorithms that fire, with their expression:
    450 L1_SingleJet12er1p3_BptxAND                                JET12[JET-ETA_1p3] AND EXT_ZeroBias_BPTX_AND_VME
    451 L1_SingleJet16er1p3_BptxAND                                JET16[JET-ETA_1p3] AND EXT_ZeroBias_BPTX_AND_VME
    452 L1_SingleJet20er1p3_BptxAND                                JET20[JET-ETA_1p3] AND EXT_ZeroBias_BPTX_AND_VME
+   453 L1_SingleJet24er1p3_BptxAND                                JET24[JET-ETA_1p3] AND EXT_ZeroBias_BPTX_AND_VME
    454 L1_SingleJet8                                              JET8
    455 L1_SingleJet8er1p3                                         JET8[JET-ETA_1p3]
    456 L1_SingleJet8er2p13                                        JET8[JET-ETA_2p13]
    457 L1_SingleEG5_BptxAND                                       EG5 AND EXT_ZeroBias_BPTX_AND_VME
-   458 L1_SingleEG7_BptxAND                                       EG7 AND EXT_ZeroBias_BPTX_AND_VME
    459 L1_SingleEG5                                               EG5
-   460 L1_SingleEG7                                               EG7
    461 L1_SingleEG5er1p52                                         EG5[EG-ETA_1p52_HASHFIX]
-   462 L1_SingleEG7er1p52                                         EG7[EG-ETA_1p52_HASHFIX]
    463 L1_DoubleEG2_BptxAND                                       comb{EG2,EG2} AND EXT_ZeroBias_BPTX_AND_VME
    464 L1_DoubleEG2er2p13_BptxAND                                 comb{EG2[EG-ETA_2p13],EG2[EG-ETA_2p13]} AND EXT_ZeroBias_BPTX_AND_VME
    465 L1_DoubleEG3_BptxAND                                       comb{EG3,EG3} AND EXT_ZeroBias_BPTX_AND_VME
    466 L1_DoubleEG3er2p13_BptxAND                                 comb{EG3[EG-ETA_2p13],EG3[EG-ETA_2p13]} AND EXT_ZeroBias_BPTX_AND_VME
    467 L1_DoubleEG4_BptxAND                                       comb{EG4,EG4} AND EXT_ZeroBias_BPTX_AND_VME
-   468 L1_DoubleEG4er2p13_BptxAND                                 comb{EG4[EG-ETA_2p13],EG4[EG-ETA_2p13]} AND EXT_ZeroBias_BPTX_AND_VME
    469 L1_DoubleEG2                                               comb{EG2,EG2}
    470 L1_DoubleEG2er2p13                                         comb{EG2[EG-ETA_2p13],EG2[EG-ETA_2p13]}
    472 L1_AlwaysTrue                                              EXT_ZeroBias_BPTX_AND_VME OR ( NOT EXT_ZeroBias_BPTX_AND_VME)
@@ -638,61 +640,52 @@ the 63 algorithms that fire, with their expression:
    480 L1_BptxPlus                                                EXT_BPTX_B1_VME
    481 L1_BptxMinus                                               EXT_BPTX_B2_VME
 the objects behind the conditions that are true (at most two combinations per condition):
-  L1_SingleMuCosmics                             | SingleMU_i0=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
-  L1_SingleMuCosmics_EMTF                        | SingleMU_i3=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
-  L1_SingleMuOpen                                | SingleMU_i4=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
-  L1_SingleMuOpen_EMTF                           | SingleMU_i7=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
-  L1_SingleMu0_DQ                                | SingleMU_i8=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
-  L1_SingleMu0_EMTF                              | SingleMU_i11=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
-  L1_SingleMu3                                   | SingleMU_i12=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
-  L1_Mu3_Jet30er2p5                              | SingleMU_i12=1 (1 combination): Mu[0](3.0,-2.09,-2.88) | SingleJET_i103=1 (1 combination): Jet[1](108.5,-1.52,-1.98)
-  L1_SingleJet35                                 | SingleJET_i218=1 (2 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98)
-  L1_SingleJet60er1p3to2p5                       | SingleJET_i131=1 (1 combination): Jet[1](108.5,-1.52,-1.98) | SingleJET_i470=0
-  L1_SingleJet60                                 | SingleJET_i219=1 (2 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98)
-  L1_SingleJet90                                 | SingleJET_i220=1 (2 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98)
-  L1_SingleJet120                                | SingleJET_i221=1 (1 combination): Jet[0](136.0,-3.74,1.00)
-  L1_SingleJet35er2p5                            | SingleJET_i224=1 (1 combination): Jet[1](108.5,-1.52,-1.98)
-  L1_SingleJet35_FWD2p5                          | SingleJET_i229=1 (1 combination): Jet[0](136.0,-3.74,1.00) | SingleJET_i230=0
-  L1_SingleJet60_FWD2p5                          | SingleJET_i231=1 (1 combination): Jet[0](136.0,-3.74,1.00) | SingleJET_i232=0
-  L1_SingleJet90_FWD2p5                          | SingleJET_i233=1 (1 combination): Jet[0](136.0,-3.74,1.00) | SingleJET_i234=0
-  L1_SingleJet120_FWD2p5                         | SingleJET_i235=1 (1 combination): Jet[0](136.0,-3.74,1.00) | SingleJET_i236=0
-  L1_SingleJet35_FWD3p0                          | SingleJET_i237=1 (1 combination): Jet[0](136.0,-3.74,1.00) | SingleJET_i238=0
-  L1_SingleJet120_FWD3p0                         | SingleJET_i239=1 (1 combination): Jet[0](136.0,-3.74,1.00) | SingleJET_i240=0
-  L1_SingleJet8erHE                              | SingleJET_i241=1 (4 combinations): Jet[1](108.5,-1.52,-1.98) or Jet[4](17.5,1.52,0.91)
-  L1_SingleJet10erHE                             | SingleJET_i242=1 (3 combinations): Jet[1](108.5,-1.52,-1.98) or Jet[4](17.5,1.52,0.91)
-  L1_SingleJet12erHE                             | SingleJET_i243=1 (3 combinations): Jet[1](108.5,-1.52,-1.98) or Jet[4](17.5,1.52,0.91)
+  L1_SingleJet35                                 | SingleJET_i218=1 (3 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98)
+  L1_SingleJet60er1p3to2p5                       | SingleJET_i131=1 (1 combination): Jet[1](93.5,-1.52,-1.98) | SingleJET_i470=0
+  L1_SingleJet60                                 | SingleJET_i219=1 (2 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98)
+  L1_SingleJet90                                 | SingleJET_i220=1 (2 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98)
+  L1_SingleJet120                                | SingleJET_i221=1 (1 combination): Jet[0](122.5,-3.74,1.00)
+  L1_SingleJet35er1p3                            | SingleJET_i343=1 (1 combination): Jet[2](39.0,0.65,-0.41)
+  L1_SingleJet35er2p5                            | SingleJET_i224=1 (2 combinations): Jet[1](93.5,-1.52,-1.98) or Jet[2](39.0,0.65,-0.41)
+  L1_SingleJet35_FWD2p5                          | SingleJET_i229=1 (1 combination): Jet[0](122.5,-3.74,1.00) | SingleJET_i230=0
+  L1_SingleJet60_FWD2p5                          | SingleJET_i231=1 (1 combination): Jet[0](122.5,-3.74,1.00) | SingleJET_i232=0
+  L1_SingleJet90_FWD2p5                          | SingleJET_i233=1 (1 combination): Jet[0](122.5,-3.74,1.00) | SingleJET_i234=0
+  L1_SingleJet120_FWD2p5                         | SingleJET_i235=1 (1 combination): Jet[0](122.5,-3.74,1.00) | SingleJET_i236=0
+  L1_SingleJet35_FWD3p0                          | SingleJET_i237=1 (1 combination): Jet[0](122.5,-3.74,1.00) | SingleJET_i238=0
+  L1_SingleJet120_FWD3p0                         | SingleJET_i239=1 (1 combination): Jet[0](122.5,-3.74,1.00) | SingleJET_i240=0
+  L1_SingleJet8erHE                              | SingleJET_i241=1 (1 combination): Jet[1](93.5,-1.52,-1.98)
+  L1_SingleJet10erHE                             | SingleJET_i242=1 (1 combination): Jet[1](93.5,-1.52,-1.98)
+  L1_SingleJet12erHE                             | SingleJET_i243=1 (1 combination): Jet[1](93.5,-1.52,-1.98)
+  L1_DoubleJet_70_35_DoubleJet35_Mass_Min500_ETMHF65 | DoubleJET_i373=1 (6 combinations): Jet[0](122.5,-3.74,1.00) Jet[1](93.5,-1.52,-1.98) or Jet[0](122.5,-3.74,1.00) Jet[2](39.0,0.65,-0.41) | InvariantMass_i374=1 (2 combinations): Jet[0](122.5,-3.74,1.00) Jet[2](39.0,0.65,-0.41) or Jet[2](39.0,0.65,-0.41) Jet[0](122.5,-3.74,1.00) | SingleETMHF_i375=1 (1 combination): ETMHF
+  L1_DoubleJet_70_35_DoubleJet35_Mass_Min550_ETMHF65 | DoubleJET_i373=1 (6 combinations): Jet[0](122.5,-3.74,1.00) Jet[1](93.5,-1.52,-1.98) or Jet[0](122.5,-3.74,1.00) Jet[2](39.0,0.65,-0.41) | InvariantMass_i382=1 (2 combinations): Jet[0](122.5,-3.74,1.00) Jet[2](39.0,0.65,-0.41) or Jet[2](39.0,0.65,-0.41) Jet[0](122.5,-3.74,1.00) | SingleETMHF_i375=1 (1 combination): ETMHF
+  L1_DoubleJet_70_35_DoubleJet35_Mass_Min600_ETMHF65 | DoubleJET_i373=1 (6 combinations): Jet[0](122.5,-3.74,1.00) Jet[1](93.5,-1.52,-1.98) or Jet[0](122.5,-3.74,1.00) Jet[2](39.0,0.65,-0.41) | InvariantMass_i349=1 (2 combinations): Jet[0](122.5,-3.74,1.00) Jet[2](39.0,0.65,-0.41) or Jet[2](39.0,0.65,-0.41) Jet[0](122.5,-3.74,1.00) | SingleETMHF_i375=1 (1 combination): ETMHF
+  L1_HTT120er                                    | SingleHTT_i270=1 (1 combination): HTT
   L1_ETMHF70                                     | SingleETMHF_i287=1 (1 combination): ETMHF
   L1_ETMHF70_HTT60er                             | SingleETMHF_i287=1 (1 combination): ETMHF | SingleHTT_i130=1 (1 combination): HTT
   L1_CICADA_VLoose                               | CicadaTrigger_i410=1 (0 combinations)
-  L1_CICADA_Loose                                | CicadaTrigger_i411=1 (0 combinations)
-  L1_CICADA_Medium                               | CicadaTrigger_i412=1 (0 combinations)
-  L1_CICADA_Tight                                | CicadaTrigger_i413=1 (0 combinations)
-  L1_SingleJet8_BptxAND                          | SingleJET_i449=1 (9 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet12_BptxAND                         | SingleJET_i450=1 (8 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet16_BptxAND                         | SingleJET_i451=1 (5 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet20_BptxAND                         | SingleJET_i452=1 (4 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet24_BptxAND                         | SingleJET_i453=1 (2 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet8er1p3_BptxAND                     | SingleJET_i454=1 (4 combinations): Jet[2](23.0,0.91,1.70) or Jet[3](20.0,-0.30,0.30) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet12er1p3_BptxAND                    | SingleJET_i455=1 (4 combinations): Jet[2](23.0,0.91,1.70) or Jet[3](20.0,-0.30,0.30) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet16er1p3_BptxAND                    | SingleJET_i456=1 (2 combinations): Jet[2](23.0,0.91,1.70) or Jet[3](20.0,-0.30,0.30) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet20er1p3_BptxAND                    | SingleJET_i457=1 (2 combinations): Jet[2](23.0,0.91,1.70) or Jet[3](20.0,-0.30,0.30) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleJet8                                  | SingleJET_i449=1 (9 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98)
-  L1_SingleJet8er1p3                             | SingleJET_i454=1 (4 combinations): Jet[2](23.0,0.91,1.70) or Jet[3](20.0,-0.30,0.30)
-  L1_SingleJet8er2p13                            | SingleJET_i459=1 (6 combinations): Jet[1](108.5,-1.52,-1.98) or Jet[2](23.0,0.91,1.70)
-  L1_SingleEG5_BptxAND                           | SingleEG_i460=1 (4 combinations): EG[0](7.5,-0.30,0.30) or EG[1](7.0,-0.70,-2.72) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleEG7_BptxAND                           | SingleEG_i461=1 (2 combinations): EG[0](7.5,-0.30,0.30) or EG[1](7.0,-0.70,-2.72) | SingleEXT_i302=1 (1 combination): External
-  L1_SingleEG5                                   | SingleEG_i460=1 (4 combinations): EG[0](7.5,-0.30,0.30) or EG[1](7.0,-0.70,-2.72)
-  L1_SingleEG7                                   | SingleEG_i461=1 (2 combinations): EG[0](7.5,-0.30,0.30) or EG[1](7.0,-0.70,-2.72)
-  L1_SingleEG5er1p52                             | SingleEG_i462=1 (4 combinations): EG[0](7.5,-0.30,0.30) or EG[1](7.0,-0.70,-2.72)
-  L1_SingleEG7er1p52                             | SingleEG_i463=1 (2 combinations): EG[0](7.5,-0.30,0.30) or EG[1](7.0,-0.70,-2.72)
-  L1_DoubleEG2_BptxAND                           | DoubleEG_i464=1 (132 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09) | SingleEXT_i302=1 (1 combination): External
-  L1_DoubleEG2er2p13_BptxAND                     | DoubleEG_i465=1 (110 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09) | SingleEXT_i302=1 (1 combination): External
-  L1_DoubleEG3_BptxAND                           | DoubleEG_i466=1 (90 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09) | SingleEXT_i302=1 (1 combination): External
-  L1_DoubleEG3er2p13_BptxAND                     | DoubleEG_i468=1 (72 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09) | SingleEXT_i302=1 (1 combination): External
-  L1_DoubleEG4_BptxAND                           | DoubleEG_i467=1 (20 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09) | SingleEXT_i302=1 (1 combination): External
-  L1_DoubleEG4er2p13_BptxAND                     | DoubleEG_i469=1 (20 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09) | SingleEXT_i302=1 (1 combination): External
-  L1_DoubleEG2                                   | DoubleEG_i464=1 (132 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09)
-  L1_DoubleEG2er2p13                             | DoubleEG_i465=1 (110 combinations): EG[0](7.5,-0.30,0.30) EG[1](7.0,-0.70,-2.72) or EG[0](7.5,-0.30,0.30) EG[2](5.5,1.13,2.09)
+  L1_SingleJet8_BptxAND                          | SingleJET_i449=1 (4 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet12_BptxAND                         | SingleJET_i450=1 (4 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet16_BptxAND                         | SingleJET_i451=1 (4 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet20_BptxAND                         | SingleJET_i452=1 (4 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet24_BptxAND                         | SingleJET_i453=1 (4 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet8er1p3_BptxAND                     | SingleJET_i454=1 (2 combinations): Jet[2](39.0,0.65,-0.41) or Jet[3](28.0,0.39,-2.85) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet12er1p3_BptxAND                    | SingleJET_i455=1 (2 combinations): Jet[2](39.0,0.65,-0.41) or Jet[3](28.0,0.39,-2.85) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet16er1p3_BptxAND                    | SingleJET_i456=1 (2 combinations): Jet[2](39.0,0.65,-0.41) or Jet[3](28.0,0.39,-2.85) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet20er1p3_BptxAND                    | SingleJET_i457=1 (2 combinations): Jet[2](39.0,0.65,-0.41) or Jet[3](28.0,0.39,-2.85) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet24er1p3_BptxAND                    | SingleJET_i458=1 (2 combinations): Jet[2](39.0,0.65,-0.41) or Jet[3](28.0,0.39,-2.85) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleJet8                                  | SingleJET_i449=1 (4 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98)
+  L1_SingleJet8er1p3                             | SingleJET_i454=1 (2 combinations): Jet[2](39.0,0.65,-0.41) or Jet[3](28.0,0.39,-2.85)
+  L1_SingleJet8er2p13                            | SingleJET_i459=1 (3 combinations): Jet[1](93.5,-1.52,-1.98) or Jet[2](39.0,0.65,-0.41)
+  L1_SingleEG5_BptxAND                           | SingleEG_i460=1 (1 combination): EG[0](6.0,0.44,-2.85) | SingleEXT_i302=1 (1 combination): External
+  L1_SingleEG5                                   | SingleEG_i460=1 (1 combination): EG[0](6.0,0.44,-2.85)
+  L1_SingleEG5er1p52                             | SingleEG_i462=1 (1 combination): EG[0](6.0,0.44,-2.85)
+  L1_DoubleEG2_BptxAND                           | DoubleEG_i464=1 (72 combinations): EG[0](6.0,0.44,-2.85) EG[1](4.5,-2.39,-2.85) or EG[0](6.0,0.44,-2.85) EG[2](3.5,2.39,-0.06) | SingleEXT_i302=1 (1 combination): External
+  L1_DoubleEG2er2p13_BptxAND                     | DoubleEG_i465=1 (42 combinations): EG[0](6.0,0.44,-2.85) EG[3](3.0,0.87,3.09) or EG[0](6.0,0.44,-2.85) EG[4](3.0,0.91,2.31) | SingleEXT_i302=1 (1 combination): External
+  L1_DoubleEG3_BptxAND                           | DoubleEG_i466=1 (30 combinations): EG[0](6.0,0.44,-2.85) EG[1](4.5,-2.39,-2.85) or EG[0](6.0,0.44,-2.85) EG[2](3.5,2.39,-0.06) | SingleEXT_i302=1 (1 combination): External
+  L1_DoubleEG3er2p13_BptxAND                     | DoubleEG_i468=1 (12 combinations): EG[0](6.0,0.44,-2.85) EG[3](3.0,0.87,3.09) or EG[0](6.0,0.44,-2.85) EG[4](3.0,0.91,2.31) | SingleEXT_i302=1 (1 combination): External
+  L1_DoubleEG4_BptxAND                           | DoubleEG_i467=1 (2 combinations): EG[0](6.0,0.44,-2.85) EG[1](4.5,-2.39,-2.85) or EG[1](4.5,-2.39,-2.85) EG[0](6.0,0.44,-2.85) | SingleEXT_i302=1 (1 combination): External
+  L1_DoubleEG2                                   | DoubleEG_i464=1 (72 combinations): EG[0](6.0,0.44,-2.85) EG[1](4.5,-2.39,-2.85) or EG[0](6.0,0.44,-2.85) EG[2](3.5,2.39,-0.06)
+  L1_DoubleEG2er2p13                             | DoubleEG_i465=1 (42 combinations): EG[0](6.0,0.44,-2.85) EG[3](3.0,0.87,3.09) or EG[0](6.0,0.44,-2.85) EG[4](3.0,0.91,2.31)
   L1_AlwaysTrue                                  | SingleEXT_i302=1 (1 combination): External | SingleEXT_i302=1 (1 combination): External
   L1_ZeroBias                                    | SingleEXT_i302=1 (1 combination): External
   L1_ZeroBias_copy                               | SingleEXT_i302=1 (1 combination): External
@@ -702,70 +695,75 @@ the objects behind the conditions that are true (at most two combinations per co
   L1_BptxPlus                                    | SingleEXT_i305=1 (1 combination): External
   L1_BptxMinus                                   | SingleEXT_i306=1 (1 combination): External
 the ladders: the event against the thresholds of the single-object families (GeV); margin = value - threshold
-   SingleJet            value   136.0   highest passed: 120 (margin +16.0)   lowest failed: 180 (margin -44.0)
-   SingleJet..er2p5     value   108.5   highest passed: 35 (margin +73.5)   lowest failed: 120 (margin -11.5)
-   SingleJet.._FWD3p0   value   136.0   highest passed: 120 (margin +16.0)   lowest failed: none
-   DoubleJet..er2p5     value    23.0   highest passed: none   lowest failed: 40 (margin -17.0)
-   HTT..er              value   108.5   highest passed: none   lowest failed: 120 (margin -11.5)
-   ETT                  value  1086.0   highest passed: none   lowest failed: 2000 (margin -914.0)
-   ETMHF                value    79.0   highest passed: 70 (margin +9.0)   lowest failed: 80 (margin -1.0)
-   SingleEG..er2p5      value     7.5   highest passed: none   lowest failed: 8 (margin -0.5)
-   SingleTau..er2p1     value    58.5   highest passed: none   lowest failed: 120 (margin -61.5)
-   SingleMu             value     3.0   highest passed: 3 (margin +0.0)   lowest failed: 5 (margin -2.0)
+   SingleJet            value   122.5   highest passed: 120 (margin +2.5)   lowest failed: 180 (margin -57.5)
+   SingleJet..er2p5     value    93.5   highest passed: 35 (margin +58.5)   lowest failed: 120 (margin -26.5)
+   SingleJet.._FWD3p0   value   122.5   highest passed: 120 (margin +2.5)   lowest failed: none
+   DoubleJet..er2p5     value    39.0   highest passed: none   lowest failed: 40 (margin -1.0)
+   HTT..er              value   132.5   highest passed: 120 (margin +12.5)   lowest failed: 160 (margin -27.5)
+   ETT                  value   625.0   highest passed: none   lowest failed: 2000 (margin -1375.0)
+   ETMHF                value    78.5   highest passed: 70 (margin +8.5)   lowest failed: 80 (margin -1.5)
+   SingleEG..er2p5      value     6.0   highest passed: none   lowest failed: 8 (margin -2.0)
+   SingleTau..er2p1     value    54.0   highest passed: none   lowest failed: 120 (margin -66.0)
+   SingleMu             value     0.0   highest passed: none   lowest failed: 3 (margin -3.0)
 ```
 
-How the 63 are counted in the chapter. 8 do not look at any object (`L1_AlwaysTrue`, `L1_ZeroBias`, `L1_ZeroBias_copy`,
+How the 54 are counted in the chapter. 8 do not look at any object (`L1_AlwaysTrue`, `L1_ZeroBias`, `L1_ZeroBias_copy`,
 `L1_BptxOR`, `L1_BptxPlus`, `L1_BptxMinus`, and the two `L1_MinimumBiasHF0*`, which ask for one HF tower on each side);
-55 do. Of these, 22 are satisfied by the two signal jets alone (`SingleJet35/60/90/120`, `SingleJet60er1p3to2p5`,
+46 do. Of these, 22 are satisfied by the two signal jets alone (`SingleJet35/60/90/120`, `SingleJet60er1p3to2p5`,
 `SingleJet35er2p5`, the six `_FWD2p5` / `_FWD3p0`, the three `erHE`, `SingleJet8`, `SingleJet8er2p13` and the five
-`SingleJet8/12/16/20/24_BptxAND`); 33 need an object without a generator jet or signal particle behind it: 7
-single-muon and 1 muon + jet (the kaon decay); 5 barrel jets (`SingleJet8er1p3` and `SingleJet8/12/16/20er1p3_BptxAND`:
-the pileup jets of 23.0 GeV at eta = 0.91 and 20.0 GeV at eta = -0.30); 14 e/gamma (`SingleEG5/7`, `SingleEG5/7er1p52`,
-`SingleEG5/7_BptxAND`, `DoubleEG2`, `DoubleEG2er2p13`, `DoubleEG2/3/4_BptxAND`, `DoubleEG2/3/4er2p13_BptxAND`: e/gamma
-candidates of 7.5 and 7.0 GeV in the barrel and the ones below them); 2 missing-energy (`ETMHF70`, `ETMHF70_HTT60er`);
-4 `CICADA` (`VLoose` to `Tight`, thresholds 50, 60, 70, 80; `VTight`, 90, fails by 1.7). 27 of the 63 are algorithms
-the 2024 menu did not have (26 low-threshold jet and e/gamma algorithms, `SingleJet8...`, `SingleEG5/7...`,
-`DoubleEG2/3/4...`, and `SingleJet60er1p3to2p5`); the other 36 fired in 2024 too. The 21 that fired in 2024 and do
-not now: `SingleEG8er2p5` (the largest e/gamma candidate is 7.5 GeV), the 8 `DoubleJet...Mass` algorithms (no jet in
-ring 28), `ETMHF80/90/100` and the same with `_HTT60er` (ETMHF 79.0), the 5 `HTMHF` (34.5) and `CICADA_VTight`.
+`SingleJet8/12/16/20/24_BptxAND`; `out2024/compare_12_L1T.txt`, section (6)); 24 need an object without a generator jet
+or signal particle behind it: 7 barrel jets (`SingleJet35er1p3`, the 39.0 GeV jet alone; `SingleJet8er1p3` and
+`SingleJet8/12/16/20/24er1p3_BptxAND`: the pileup jets of 39.0 GeV at eta = 0.65 and 28.0 GeV at eta = 0.39);
+`HTT120er` (HTT = 93.5 + 39.0); the 3 `DoubleJet_70_35_DoubleJet35_Mass_Min500/550/600_ETMHF65` (the bbar jet and the
+39.0 GeV jet, M = 621 GeV, and ETMHF 78.5 > 65); 2 missing-energy (`ETMHF70`, `ETMHF70_HTT60er`); 10 e/gamma
+(`SingleEG5`, `SingleEG5er1p52`, `SingleEG5_BptxAND`, `DoubleEG2`, `DoubleEG2er2p13`, `DoubleEG2/3/4_BptxAND`,
+`DoubleEG2/3er2p13_BptxAND`: the e/gamma candidates of 6.0 GeV at eta = 0.44, 4.5 GeV at eta = -2.39 and the ones
+below them); `CICADA_VLoose` (score 55.08, threshold 50; `Loose`, 60, fails by 4.9). No muon algorithm fires. 25 of the
+54 are algorithms the 2024 menu did not have (23 low-threshold jet and e/gamma algorithms, `SingleJet60er1p3to2p5` and
+`DoubleJet_70_35_DoubleJet35_Mass_Min600_ETMHF65`); 26 of the other 29 fire in the 2024 run too, and `ETMHF70`,
+`ETMHF70_HTT60er`, `CICADA_VLoose` only in 2025 (`out2024/compare_12_L1T.txt`, section (3)).
 
 The thresholds of the ladders and three of the object maps as the analyzer prints them (`l1t_12_L1T.log`):
 
 ```
-  ladder SingleJet: value=136 thresholds(fired): 8(1) 35(1) 60(1) 90(1) 120(1) 180(0) 200(0)
-  ladder SingleJet..er2p5: value=108.5 thresholds(fired): 35(1) 120(0) 140(0) 160(0) 180(0)
-  ladder SingleJet.._FWD3p0: value=136 thresholds(fired): 35(1) 120(1)
-  ladder DoubleJet..er2p5: value=23 thresholds(fired): 40(0) 100(0) 120(0) 150(0)
-  ladder HTT..er: value=108.5 thresholds(fired): 120(0) 160(0) 200(0) 255(0) 280(0) 320(0) 360(0) 400(0) 450(0)
-  ladder ETT: value=1086 thresholds(fired): 2000(0)
-  ladder ETMHF: value=79 thresholds(fired): 70(1) 80(0) 90(0) 100(0) 110(0) 120(0) 130(0) 140(0) 150(0)
-  ladder SingleEG..er2p5: value=7.5 thresholds(fired): 8(0) 10(0) 15(0) 26(0) 28(0) 34(0) 36(0) 38(0) 40(0) 42(0) 45(0)
-  ladder SingleTau..er2p1: value=58.5 thresholds(fired): 120(0) 130(0)
-  ladder SingleMu: value=3 thresholds(fired): 3(1) 5(0) 7(0) 18(0) 20(0) 22(0) 25(0)
-  fired: bit=302 name=L1_SingleJet90 final=1 expression="JET90" | SingleJET_i220=1 (2 combinations): Jet[0](136.0,-3.74,1.00) or Jet[1](108.5,-1.52,-1.98)
-  fired: bit=307 name=L1_SingleJet35er2p5 final=1 expression="JET35[JET-ETA_2p52]" | SingleJET_i224=1 (1 combination): Jet[1](108.5,-1.52,-1.98)
-  fired: bit=19 name=L1_SingleMu3 final=1 expression="MU3[MU-QLTY_SNGL]" | SingleMU_i12=1 (1 combination): Mu[0](3.0,-2.09,-2.88)
+  ladder SingleJet: value=122.5 thresholds(fired): 8(1) 35(1) 60(1) 90(1) 120(1) 180(0) 200(0)
+  ladder SingleJet..er2p5: value=93.5 thresholds(fired): 35(1) 120(0) 140(0) 160(0) 180(0)
+  ladder SingleJet.._FWD3p0: value=122.5 thresholds(fired): 35(1) 120(1)
+  ladder DoubleJet..er2p5: value=39 thresholds(fired): 40(0) 100(0) 120(0) 150(0)
+  ladder HTT..er: value=132.5 thresholds(fired): 120(1) 160(0) 200(0) 255(0) 280(0) 320(0) 360(0) 400(0) 450(0)
+  ladder ETT: value=625 thresholds(fired): 2000(0)
+  ladder ETMHF: value=78.5 thresholds(fired): 70(1) 80(0) 90(0) 100(0) 110(0) 120(0) 130(0) 140(0) 150(0)
+  ladder SingleEG..er2p5: value=6 thresholds(fired): 8(0) 10(0) 15(0) 26(0) 28(0) 34(0) 36(0) 38(0) 40(0) 42(0) 45(0)
+  ladder SingleTau..er2p1: value=54 thresholds(fired): 120(0) 130(0)
+  ladder SingleMu: value=0 thresholds(fired): 3(0) 5(0) 7(0) 18(0) 20(0) 22(0) 25(0)
+  fired: bit=302 name=L1_SingleJet90 final=1 expression="JET90" | SingleJET_i220=1 (2 combinations): Jet[0](122.5,-3.74,1.00) or Jet[1](93.5,-1.52,-1.98)
+  fired: bit=307 name=L1_SingleJet35er2p5 final=1 expression="JET35[JET-ETA_2p52]" | SingleJET_i224=1 (2 combinations): Jet[1](93.5,-1.52,-1.98) or Jet[2](39.0,0.65,-0.41)
+  fired: bit=388 name=L1_HTT120er final=1 expression="HTT120" | SingleHTT_i270=1 (1 combination): HTT
 ```
 
 Some conditions as the menu defines them (`l1t_12_L1T.log`, `condition:` lines, printed for the conditions that are
-true; cut type 0 = threshold in GeV, 1 = eta window, 4 = quality bit mask, 11 = count, 25 = CICADA score; no mass
-condition is true in 2025): the muon quality masks are 61440 = bits 12-15 (`MU-QLTY_SNGL`), 65280 = bits 8-15
-(`DBLE`), 65520 = bits 4-15 (`OPEN`). `L1_SingleJet60er1p3to2p5` is `JET60[JET-ETA_2p52] AND NOT JET60[JET-ETA_1p3]`:
-the first condition is true for the b jet, the second false (no jet above 60 GeV within |eta| < 1.305). The external
-condition `EXT_ZeroBias_BPTX_AND_VME` of the `_BptxAND` algorithms is the beam pick-up, true in every simulated event.
+true; cut type 0 = threshold in GeV, 1 = eta window, 9 = the mass cut as M^2/2 in GeV^2, 11 = count, 25 = CICADA
+score). `L1_SingleJet60er1p3to2p5` is `JET60[JET-ETA_2p52] AND NOT JET60[JET-ETA_1p3]`: the first condition is true for
+the b jet, the second false (no jet above 60 GeV within |eta| < 1.305). `MASS_MIN_600` is stored as 180 000 = 600^2 / 2.
+The external condition `EXT_ZeroBias_BPTX_AND_VME` of the `_BptxAND` algorithms is the beam pick-up, true in every
+simulated event. (The muon conditions of the version with three crossings: quality masks 61440 = bits 12-15
+(`MU-QLTY_SNGL`), 65280 = bits 8-15 (`DBLE`), 65520 = bits 4-15 (`OPEN`).)
 
 ```
-  condition: name=SingleMU_i12 type=0 | object MU3 bx 0: MU-ET_3[type 0: 3..1.79769e+308] MU-QLTY_SNGL[type 4: 0..0 data 61440]
   condition: name=SingleJET_i131 type=12 | object JET60 bx 0: JET-ET_60[type 0: 60..1.79769e+308] JET-ETA_2p52[type 1: -2.523..2.523]
   condition: name=SingleJET_i470 type=12 | object JET60 bx 0: JET-ET_60[type 0: 60..1.79769e+308] JET-ETA_1p3[type 1: -1.305..1.305]
   condition: name=SingleJET_i220 type=12 | object JET90 bx 0: JET-ET_90[type 0: 90..1.79769e+308]
+  condition: name=SingleJET_i343 type=12 | object JET35 bx 0: JET-ET_35[type 0: 35..1.79769e+308] JET-ETA_1p3[type 1: -1.305..1.305]
   condition: name=SingleJET_i224 type=12 | object JET35 bx 0: JET-ET_35[type 0: 35..1.79769e+308] JET-ETA_2p52[type 1: -2.523..2.523]
-  condition: name=SingleJET_i233 type=12 | object JET90 bx 0: JET-ET_90[type 0: 90..1.79769e+308] JET-ETA_FWD_2p48_NEG[type 1: -5..-2.4795]
-  condition: name=SingleJET_i239 type=12 | object JET120 bx 0: JET-ET_120[type 0: 120..1.79769e+308] JET-ETA_FWD_3p00_NEG[type 1: -5..-3.0015]
+  condition: name=DoubleJET_i373 type=13 | object JET70 bx 0: JET-ET_70[type 0: 70..1.79769e+308] | object JET35 bx 0: JET-ET_35[type 0: 35..1.79769e+308]
+  condition: name=SingleETMHF_i375 type=32 | object ETMHF65 bx 0: ETMHF-ET_65[type 0: 65..1.79769e+308]
+  condition: name=InvariantMass_i349 type=26 | object JET35 bx 0: JET-ET_35[type 0: 35..1.79769e+308] | object JET35 bx 0: JET-ET_35[type 0: 35..1.79769e+308] | condition cuts: MASS_MIN_600[type 9: 180000..1.15493e+10]
+  condition: name=SingleHTT_i270 type=17 | object HTT120 bx 0: HTT-ET_120[type 0: 120..1.79769e+308]
   condition: name=SingleETMHF_i287 type=32 | object ETMHF70 bx 0: ETMHF-ET_70[type 0: 70..1.79769e+308]
-  condition: name=CicadaTrigger_i413 type=75 | object CICADA bx 0: CICADA-CSCORE_80[type 25: 80..0]
+  condition: name=CicadaTrigger_i410 type=75 | object CICADA bx 0: CICADA-CSCORE_50[type 25: 50..0]
   condition: name=SingleJET_i449 type=12 | object JET8 bx 0: JET-ET_8[type 0: 8..1.79769e+308]
   condition: name=SingleEXT_i302 type=20 | object EXT_ZeroBias_BPTX_AND_VME bx 0:
+  condition: name=SingleEG_i460 type=4 | object EG5 bx 0: EG-ET_5[type 0: 5..1.79769e+308]
   condition: name=DoubleEG_i464 type=5 | object EG2 bx 0: EG-ET_2[type 0: 2..1.79769e+308] | object EG2 bx 0: EG-ET_2[type 0: 2..1.79769e+308]
   condition: name=SingleMBT0HFP_i303 type=27 | object MBT0HFP1 bx 0: MBT0HFP-COUNT_1[type 11: 1..1.79769e+308]
 ```
@@ -795,8 +793,8 @@ The HLT paths seeded by the single-jet algorithms (`HLTrigger/Configuration/pyth
 `hltL1s*` modules): `L1_ZeroBias` -> `HLT_PFJet40/60/80`, `HLT_PFJetFwd40/60`; `L1_SingleJet90` -> `HLT_PFJet110`,
 `HLT_PFJet140`; `L1_SingleJet120` -> `HLT_PFJet200`; `L1_SingleJet60_FWD2p5`, `90_FWD2p5`, `120_FWD2p5` ->
 `HLT_PFJetFwd80`, `140`, `200`; `L1_SingleJet160er2p5 OR L1_SingleJet180 OR L1_SingleJet200` -> `HLT_PFJet260` to
-`550` and `HLT_PFJetFwd260` to `500`. Margins of the seed of the book, `L1_SingleJet90`: 136.0 - 90 = 46.0 GeV on the
-bbar jet, 108.5 - 90 = 18.5 GeV on the b jet.
+`550` and `HLT_PFJetFwd260` to `500`. Margins of the seed of the book, `L1_SingleJet90`: 122.5 - 90 = 32.5 GeV on the
+bbar jet, 93.5 - 90 = 3.5 GeV on the b jet; of `L1_SingleJet120`: 122.5 - 120 = 2.5 GeV.
 
 ### What is quoted from chapter 11 (the signal alone, the digis)
 
@@ -804,11 +802,15 @@ This chapter has one sample; these numbers of the text come from the output of c
 
 | number in the chapter | value | source |
 |---|---|---|
-| digis of the mixed event, of which tracker, muon | 544 407, 514 881, 2016 | `ledger_11_DIGI.txt` |
-| collisions in bx -1, 0, +1 | 71, 68, 54 | `ledger_11_DIGI.txt` (the playback of the chapter 10 mixing) |
-| primitives the signal alone would have sent | 620, 536.5 GeV (of 2479, 2793.0 GeV with the pileup) | `trigprim_11_DIGI.txt`, section 1 |
-| primitives in the 9 x 9 towers of the bbar jet without pileup | 123.75 GeV (199.75 GeV with it) | `trigprim_11_DIGI.txt`, section 5 |
-| noise: one tower in nine sends a count | 445 ECAL primitives of 4032 in library event 72 | `trigprim_11_DIGI.txt`, sections 1 and 4 |
+| digis of the mixed event, of which tracker, muon | 475 110, 440 664 (PXB 44 725 + PXF 22 048 + TIB 79 535 + TID 30 739 + TOB 93 705 + TEC 169 912), 7611 (DT 24 + CSC strips 7216 + CSC wires 263 + RPC 7 + GEM 101) | `ledger_11_DIGI.txt` |
+| collisions in the 16 bunch crossings -12..3 | 746 early, 64 in bx 0, 185 late (71 68 54 59 52 61 76 59 65 59 68 54, 64, 63 62 60) | `ledger_11_DIGI.txt` (the playback of the chapter 10 mixing) |
+| the ECAL primitives of the signal alone (noise included) | 499, 328.5 GeV (595, 428.5 GeV with the pileup) | `trigprim_11_DIGI.txt`, section 1 |
+| primitives the signal alone would have sent | 620, 536.5 GeV (of 1715, 1804.0 GeV with the pileup) | `trigprim_11_DIGI.txt`, section 1 |
+| primitives in the 9 x 9 towers of the bbar jet without pileup | 123.75 GeV (178.75 GeV with it) | `trigprim_11_DIGI.txt`, section 5 |
+| the 9 x 9 towers around the b-jet axis, ECAL / HCAL, without and with pileup | 29.0 / 22.5 GeV, 33.5 / 26.5 GeV | `trigprim_11_DIGI.txt`, section 5 |
+| the seed of the 39.0 GeV pileup jet, HB (8,68): samples -2..+1 | 0, 0, [15.5], 1 GeV | `trigprim_11_DIGI.txt`, section 6 |
+| the barrel tower flagged high interest | (5,40), 4.5 GeV | `trigprim_11_DIGI.txt`, section 3 |
+| noise: one tower in nine sends a count | 443 ECAL primitives of 4032 in library event 747, which deposits 0.4 GeV in the ECAL | `trigprim_11_DIGI.txt`, sections 1 and 4 |
 
 ### The conditions behind the emulation (section B5 of the chapter)
 
@@ -866,9 +868,9 @@ step once more on each input with the CICADA model of the other year (`cicada_in
 `cicada_input2025_v2p1p2.root`), and compares the two years with `test/12_L1T/yearCompare_12_L1T.py`
 (`out2024/compare_12_L1T.txt`: (1) the ledger lines that differ, (2) the ECAL primitives by tower ring, (3) the
 algorithms that fire, (4) the CICADA scores, (5) the ECAL conditions by tower ring, (6) the menus and the fired
-algorithms classified). Every 2024 number below and in the chapter is in these files; the 13 November run reproduces
-the first, 2024 version of the chapter line for line (ledger, CICADA scores, fired algorithms). Cost: about two
-minutes. What changed for this chapter:
+algorithms classified). Since 21 November 2026 both years are made with the 16 bunch crossings -12..3 (the run of 21
+November, two minutes; the comparison with three crossings is in `test/tmp/out_bx-1to1/12_L1T/out2024/`). Every 2024
+number below and in the chapter is in these files. What changed for this chapter:
 
 | what | 2024 | 2025 | where it acts |
 |---|---|---|---|
@@ -883,37 +885,40 @@ muon payloads, the pass-through prescales, `HcalTPParameters_2019_v1.0_mc`, `Hca
 modules of `SimL1Emulator` and every other parameter of `settings_12_L1T.txt`. The input changed as well: the digis and
 the primitives of chapter 11 were made with the 2025 calorimeter conditions (chapter 11 compares them).
 
-The event, step by step (`out2024/ledger_12_L1T.txt` and `out/ledger_12_L1T.txt`; `out2024/compare_12_L1T.txt`; GeV):
+The event, step by step (`out2024/ledger_12_L1T.txt` and `out/ledger_12_L1T.txt`; `out2024/compare_12_L1T.txt`; GeV;
+both years with the 16 crossings):
 
 | | 2024 | 2025 |
 |---|---|---|
-| step 1: primitives with ET > 0, sum ET | 2417, 3411.5 | 2479, 2793.0 |
-| ECAL EB: n, sum ET, largest | 594, 408.0, 5.0 | 683, 468.0, 5.5 |
-| ECAL EE: n, sum ET, largest | 594, 1273.5, 11.5 | 494, 579.5, 7.0 |
-| ECAL in tower rings 26-28 (both sides); ring +28 / -28 | 991.0; 315.0 / 304.0 | 321.5; 68.0 / 95.0 |
-| HCAL HB / HE / HF: n, sum ET | 153, 129.5 / 335, 271.5 / 741, 1329.0 | 233, 183.0 / 328, 241.5 / 741, 1321.0 |
-| step 2: Layer-1, ECAL in -> out | 1681.5 -> 985.5 | 1047.5 -> 740.5 |
-| HCAL (HB + HE) in -> out; HF in -> out | 401.0 -> 353.5; 1329.0 -> 1102.0 | 424.5 -> 345.5; 1321.0 -> 1095.0 |
-| all in -> out (towers with ET > 0) | 3411.5 -> 2441.0 (2535) | 2793.0 -> 2181.0 (2561) |
-| rings 26-28 in -> out; barrel rings in -> out | 1154.0 -> 452.0; 541.5 -> 494.5 | 445.5 -> 134.5; 655.0 -> 576.5 |
-| step 3: L1 jets (seeded in tower ring 28) | 12 (6) | 9 (0) |
-| bbar jet: seed, window, phi rings, pileup, calibration, ET | 44.5, 190.5, 487, 60.5, 1.05, 137.0 | 45.0, 189.0, 482, 60.0, 1.05, 136.0 |
-| b jet: seed, window, phi rings, pileup, calibration, ET | 14.0, 71.0, 158, 19.5, 2.07, 106.5 | 14.0, 74.5, 176.5, 22.0, 2.07, 108.5 |
-| all jets: windows, pileup estimates, jet ET | 792.5, 500.5, 524.5 | 440.5, 229.5, 356.5 |
-| e/gamma, tau: number, largest | 12 (15.5 at eta 2.52), 12 (59.5) | 12 (7.5 at eta -0.30), 12 (58.5) |
-| ETT / ETTEM / HTT | 1339.0 / 965.5 / 106.5 | 1086.0 / 730.0 / 108.5 |
-| ETM / ETMHF / HTM / HTMHF | 50.0 / 106.5 / 106.0 / 170.0 | 60.5 / 79.0 / 108.0 / 34.5 |
-| steps 4 and 5: stubs, EMTF candidates, muon | 16 given, 13 distinct (8 CSC + 5 RPC), 2, one of 3.0 GeV (the pileup kaon) | identical |
-| step 6: algorithms fired (on an object; by the two signal jets alone) | 57 of 408 (49; 14) | 63 of 465 (55; 22) |
-| VBF `DoubleJet...Mass`, `ETMHF...`, `HTMHF...` fired | 8, 8, 5 | 0, 2, 0 |
-| CICADA score; thresholds of the menu | 181.7; 113, 116, 121, 127, 131 (5 fired) | 88.3; 50, 60, 70, 80, 90, 110, 125, 135 (4 fired) |
-| `L1_SingleJet90`, the seed of `HLT_PFJet110`: margin on the bbar / b jet | 47.0 / 16.5 | 46.0 / 18.5 |
+| step 1: primitives with ET > 0, sum ET | 1529, 1701.5 | 1715, 1804.0 |
+| ECAL EB: n, sum ET, largest | 304, 202.5, 4.0 | 428, 292.0, 4.5 |
+| ECAL EE: n, sum ET, largest | 143, 158.0, 7.0 | 167, 136.5, 7.0 |
+| ECAL in tower rings 26-28 (both sides): n, sum, largest; ring +28 / -28 | 53, 78.0, 4.0; 13.0 / 41.0 | 74, 59.0, 3.5; 3.0 / 17.0 |
+| HCAL HB / HE / HF: n, sum ET | 120, 107.0 / 261, 192.0 / 701, 1042.0 | 190, 155.0 / 225, 156.0 / 705, 1064.5 |
+| step 2: Layer-1, ECAL in -> out | 360.5 -> 284.0 | 428.5 -> 379.0 |
+| HCAL (HB + HE) in -> out; HF in -> out | 299.0 -> 262.5; 1042.0 -> 804.0 | 311.0 -> 246.0; 1064.5 -> 818.0 |
+| all in -> out (towers with ET > 0) | 1701.5 -> 1350.5 (1693) | 1804.0 -> 1443.0 (1799) |
+| rings 26-28 in -> out; barrel rings in -> out | 196.0 -> 118.0; 310.5 -> 274.0 | 141.0 -> 89.5; 447.5 -> 383.0 |
+| step 3: L1 jets (seeded in tower ring 28) | 4 (0) | 4 (0) |
+| bbar jet: seed, window, phi rings, pileup, calibration, ET | 44.5, 166.0, 418, 52.0, 1.05, 120.0 | 44.5, 170.0, 429, 53.5, 1.05, 122.5 |
+| b jet: seed, window, phi rings, pileup, calibration, ET | 14.0, 56.0, 91, 11.0, 2.17, 97.5 | 14.5, 56.0, 107.5, 13.0, 2.17, 93.5 |
+| the two other jets: ET (eta, phi) | 40.0 (0.65, -0.41), 32.0 (0.48, -2.76) | 39.0 (0.65, -0.41), 28.0 (0.39, -2.85) |
+| all jets: windows, pileup estimates, jet ET | 277.0, 89.0, 289.5 | 285.5, 99.5, 283.0 |
+| e/gamma, tau: number, largest | 3 (3.0), 11 (54.5) | 9 (6.0), 12 (54.0) |
+| ETT / ETTEM / HTT | 546.5 / 281.5 / 169.5 | 625.0 / 377.0 / 132.5 |
+| ETM / ETMHF / HTM / HTMHF | 59.5 / 69.0 / 121.0 / 38.0 | 48.0 / 78.5 / 101.0 / 66.0 |
+| steps 4 and 5: stubs, EMTF candidates, muons | 5 CSC stubs (none in bx 0), 0, 0 | identical |
+| step 6: algorithms fired (on an object; by the two signal jets alone) | 30 of 408 (22; 14) | 54 of 465 (46; 22) |
+| fired in one year only | 4: `DoubleIsoTau26er2p1_Jet55/70_RmOvlp_dR0p5` (not in the 2025 menu), `DoubleJet40er2p5` (the 40.0 GeV jet), `HTT160er` (HTT 169.5 with the 32.0 GeV jet) | 28: 25 new in the 2025 menu, `ETMHF70`, `ETMHF70_HTT60er` (ETMHF 78.5; 2024: 69.0), `CICADA_VLoose` |
+| CICADA score; thresholds of the menu | 82.3; 113, 116, 121, 127, 131 (none fired) | 55.1; 50, 60, 70, 80, 90, 110, 125, 135 (1 fired) |
+| `L1_SingleJet120`, `L1_SingleJet90`: margin on the bbar jet | 0.0, 30.0 | 2.5, 32.5 |
 
-Why the jets of tower ring 28 are gone. In 2024 six of the twelve L1 jets were seeded in ring 28, in the pileup of
-the last endcap rings; in 2025 the ECAL primitives of rings 26 to 28 hold a third of their 2024 energy, the largest is
-7.0 GeV, and none of rings 27 and 28 passes the Layer-1 zero suppression (6 and 9 GeV, the same `L1TCaloParams` in both
-years), so the towers of those rings carry only their HCAL energy. The cause is in the DIGI job of chapter 11, where
-the primitives are made, and it is in two payloads that changed together. The ECAL digitiser divides the light of
+The last rings of the endcap. In neither year does an ECAL primitive of rings 27 and 28 pass the Layer-1 zero
+suppression (6 and 9 GeV, the same `L1TCaloParams` in both years): with the 16 crossings the ECAL primitives of rings
+26 to 28 sum to 78.0 GeV in 2024 and 59.0 GeV in 2025, the largest 4.0 and 3.5 GeV (with the three crossings of the
+earlier version: 991.0 and 321.5 GeV, up to 11.5 GeV, and six of the twelve 2024 L1 jets were seeded in ring 28). What
+the year changes there is in two payloads that changed together, read by the DIGI job of chapter 11 where the
+primitives are made. The ECAL digitiser divides the light of
 every crystal by its laser correction (`SimCalorimetry/EcalSimAlgos/src/EcalHitResponse.cc`, line 186, with
 `UseLCcorrection = True` in `ecalDigiParameters_cff.py`): the crystal delivers the fraction (p/ref)^alpha of its light,
 p from `EcalLaserAPDPNRatios` (2024: `..._2024_outliers_cleaned_3sigma_mc`, 2025:
@@ -924,7 +929,7 @@ multiplies the amplitude of every crystal by its linearisation factor mult_x12 /
 `conddb dump` of the payloads of the two global tags; the tower ring of a barrel crystal from `EBDetId`, of an endcap
 crystal from the crystal-to-tower map of the release, `Geometry/EcalMapping/data/EndCap_TTMap.txt`; the linear
 corrections `EcalLinearCorrections_mc` are 1 in both tags, and the light is (p/p_ref)^alpha as in
-`EcalLaserDbService::getLaserCorrection`):
+`EcalLaserDbService::getLaserCorrection`; conditions, not the event: unchanged by the move to 16 crossings):
 
 | tower ring | light delivered, 2024 | 2025 | linearisation factor, 2025 / 2024 | primitive per GeV deposited, 2025 / 2024 |
 |---|---|---|---|---|
@@ -951,14 +956,41 @@ not established (both payloads are named `TL470fb_moy`).
 
 The CICADA score. Both the model and its input changed. The L1 job was run once more on each input with each model
 (`out2024/cicada_input2024_v2p2p0.root`, `out2024/cicada_input2025_v2p1p2.root`, only `simCaloStage2Layer1Summary`
-kept; `out2024/compare_12_L1T.txt`, section (4)): 2024 input with `v2p1p2` 181.684, with `v2p2p0` 126.375; 2025
-input with `v2p1p2` 127.695, with `v2p2p0` 88.262. Each change alone lowers the score by 30 %, and the 2025 menu lowered
-the thresholds with the model.
+kept; `out2024/compare_12_L1T.txt`, section (4)): 2024 input with `v2p1p2` 82.258, with `v2p2p0` 51.508; 2025 input
+with `v2p1p2` 86.188, with `v2p2p0` 55.078. The model lowers the score by a third; the input of 2025 raises it a little
+(with the three crossings: 181.684, 126.375, 127.695, 88.262). The 2025 menu lowered the thresholds with the model: in
+2025 `VLoose` (50) fires, in 2024 nothing comes near 113.
 
-The HCAL. The HB primitives of the event go from 153 (129.5 GeV) to 233 (183.0 GeV); the payloads behind them that
-changed are `HcalTPChannelParameters` and, in the DIGI job, the HCAL pedestals, widths, response corrections, SiPM
-parameters and zero-suppression levels of the 2025 tag. Which of them makes the extra primitives is not established.
+The barrel ECAL and the HCAL. The EB primitives of the event go from 304 (202.5 GeV) to 428 (292.0 GeV) and the HB ones
+from 120 (107.0 GeV) to 190 (155.0 GeV), with the same deposits: the barrel crystals of 2025 are noisier (pedestal width
+3.31 instead of 2.85 ADC counts at gain 12, chapter 11, section 4.9) and their linearisation factor is 1.09 to 1.13
+times larger (the table above), and the HCAL payloads that changed are `HcalTPChannelParameters` and, in the DIGI job,
+the HCAL pedestals, widths, response corrections, SiPM parameters and zero-suppression levels of the 2025 tag. Which of
+them makes the extra HB primitives is not established. The e/gamma candidates (3 in 2024, 9 in 2025, up to 3.0 and 6.0
+GeV) follow the barrel ECAL primitives.
 
-What did not change: the muon (steps 4 and 5, line for line, and `truth_12_L1T.txt`), the arithmetic of the two
-signal jets to 2 GeV, and the door into chapter 13: `L1_SingleJet90` fires in both, and the HLT seeds of the jet
-paths are the same in `HLT_GRun_cff.py` and `HLT_2025v10_cff.py`.
+What did not change: the muon trigger (steps 4 and 5, line for line, and `truth_12_L1T.txt`), the four jets to 4 GeV,
+and the door into chapter 13: `L1_SingleJet90` fires in both, and the HLT seeds of the jet paths are the same in
+`HLT_GRun_cff.py` and `HLT_2025v10_cff.py`.
+
+### The move to the 16 bunch crossings (21 November 2026)
+
+Until 21 November 2026 the chapter ran on the mixed DIGI of chapter 11 made with the three bunch crossings -1..1 (71,
+68, 54 collisions, library events 1-193, in time 72-139); its outputs, and those of the 2024 comparison, are kept in
+`test/tmp/out_bx-1to1/12_L1T/out/` and `out2024/` (not in git). Since then chapters 10-13 mix the 16 crossings -12..3 of
+the Run-3 production (`jitjet_common.sh`; the draw of chapter 08). Two things change for the trigger: the in-time
+collisions are other ones (library events 747-810; the 68 of before now sit in bunch crossing -11), and the pulses of
+746 earlier collisions reach the samples of our crossing (chapter 11, the section on the trigger primitives). The 2025 run,
+three crossings -> 16 crossings:
+
+| | bx -1..1 | bx -12..3 |
+|---|---|---|
+| step 1: primitives with ET > 0, sum ET; ECAL / HCAL+HF | 2479, 2793.0; 1047.5 / 1745.5 | 1715, 1804.0; 428.5 / 1375.5 |
+| step 2: Layer-1 towers, sum ET | 2561, 2181.0 | 1799, 1443.0 |
+| step 3: L1 jets; bbar / b jet | 9; 136.0 / 108.5 | 4; 122.5 / 93.5 |
+| e/gamma, tau; ETT, HTT, ETMHF, HTMHF | 12, 12; 1086.0, 108.5, 79.0, 34.5 | 9, 12; 625.0, 132.5, 78.5, 66.0 |
+| steps 4, 5: stubs to the EMTF, candidates, muons | 16 (13 distinct, 9 in bx 0), 2, 1 (the pileup kaon decay, 3.0 GeV) | 5 (none in bx 0), 0, 0 |
+| step 6: algorithms fired (on an object; by the two signal jets alone) | 63 (55; 22) | 54 (46; 22) |
+| CICADA score | 88.3 | 55.1 |
+| `L1_SingleJet90` margin, bbar / b jet | 46.0 / 18.5 | 32.5 / 3.5 |
+| 2024 run: algorithms fired; L1 jets (in ring 28) | 57 of 408; 12 (6) | 30 of 408; 4 (0) |

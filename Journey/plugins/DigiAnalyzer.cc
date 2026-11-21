@@ -20,7 +20,8 @@
 // The generator jets of the signal (ak4GenJets above jetPtMin) are drawn as circles of radius 0.4 so
 // that the digis can be compared with the jets of the GenJet chapter.
 //
-// One multi-page PDF per job (pdfFile; one PNG per page with savePNG), the counts in the log.
+// One multi-page PDF per job (pdfFile; one PNG per page with savePNG, made from the PDF by pdftoppm at the end of the
+// job, PdfPng.h), the counts in the log.
 #include <cmath>
 #include <map>
 #include <memory>
@@ -91,6 +92,7 @@
 #include "SimDataFormats/TrackerDigiSimLink/interface/PixelDigiSimLink.h"
 #include "SimDataFormats/TrackerDigiSimLink/interface/StripDigiSimLink.h"
 
+#include "PdfPng.h"
 #include "TCanvas.h"
 #include "TEllipse.h"
 #include "TGraph.h"
@@ -207,6 +209,7 @@ private:
   double etaMax_, jetPtMin_, ecalMinAmp_, hcalMinAmp_;
   int hcalSignalTS_, hcalNSumTS_, maxDrawn_;
   std::unique_ptr<TCanvas> canvas_;
+  jitjet::PdfPngs pngs_;  // the PNGs of the pages, made from the PDF when it is closed (endJob)
   TPad *pad_ = nullptr, *side_ = nullptr;
 };
 
@@ -788,15 +791,20 @@ void DigiAnalyzer::draw(const edm::Event& ev, const std::map<std::string, std::v
       text(Form("tracker / muon digis thinned for drawing (at most %d per subdetector)", maxDrawn_), 0.02, kGray + 2);
     c->cd();
     c->Update();
+    std::string png = savePNG_ ? Form("%s_%s_run%u_event%llu.png", pngPrefix_.c_str(), view == 0 ? "etaphi" : "rz", ev.id().run(), ev.id().event())
+                               : std::string();
     if (!pdfFile_.empty()) {
       if (!pdfOpen_) {
         c->Print((pdfFile_ + "[").c_str());
         pdfOpen_ = true;
+        pngs_.open();
       }
       c->Print(pdfFile_.c_str());
+      if (!pngs_.add(png))
+        c->SaveAs(png.c_str());  // no pdftoppm: ROOT's PNG
+    } else if (!png.empty()) {
+      c->SaveAs(png.c_str());  // no PDF to make it from
     }
-    if (savePNG_)
-      c->SaveAs(Form("%s_%s_run%u_event%llu.png", pngPrefix_.c_str(), view == 0 ? "etaphi" : "rz", ev.id().run(), ev.id().event()));
     pad->Clear();
     side->Clear();
     keep.clear();
@@ -804,8 +812,10 @@ void DigiAnalyzer::draw(const edm::Event& ev, const std::map<std::string, std::v
 }
 
 void DigiAnalyzer::endJob() {
-  if (pdfOpen_)
+  if (pdfOpen_) {
     canvas_->Print((pdfFile_ + "]").c_str());
+    pngs_.convert(pdfFile_, canvas_.get());
+  }
 }
 
 DEFINE_FWK_MODULE(DigiAnalyzer);

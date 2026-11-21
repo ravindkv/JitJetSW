@@ -20,7 +20,8 @@
 // tracker / calorimeter boundary (SimTrack::trackerSurfacePosition) is drawn as a cross (drawCaloEntry).
 // Output per station <name> and event: <outputDir>/<name>/<prefix>_<name>_run<R>_event<E>.pdf with the three
 // pages (ROOT can keep only one multi-page PDF open, so one PDF per station and event), and with savePNG also
-// one PNG per page (<prefix>_<name>_<view>_run<R>_event<E>.png). The per-station hit counts per subdetector,
+// one PNG per page (<prefix>_<name>_<view>_run<R>_event<E>.png), made from the closed PDF by pdftoppm (PdfPng.h:
+// ROOT's own PNG of the 2.1 million hits of the mixed event of chapter 10 took hours). The per-station hit counts per subdetector,
 // layer / station and kind go to std::cout.
 // Calorimeter cells are summed per cell over the hits; a cell takes the kind of the primary with the largest
 // energy share. HCAL hit ids in the simulation test numbering are relabelled (hcalTestNumbering).
@@ -43,6 +44,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "PdfPng.h"
 #include "TCanvas.h"
 #include "TGraph.h"
 #include "TH2D.h"
@@ -242,6 +244,7 @@ private:
   std::vector<GeoPoly> geoPolys_;
   std::map<int, int> geoCount_;  // elements per subdetector (before subsampling)
   std::unique_ptr<TCanvas> canvas_;
+  jitjet::PdfPngs pngs_;  // the PNGs of the open station PDF, made from it by pdftoppm when it is closed
 };
 
 SimHitAnalyzer::SimHitAnalyzer(const edm::ParameterSet& ps)
@@ -325,7 +328,7 @@ void SimHitAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   desc.add<std::string>("outputDir", ".")->setComment("<outputDir>/<station>/ receives the PDF and PNGs of the station");
   desc.add<std::string>("prefix", "simHits");
   desc.add<std::string>("sampleLabel", "")->setComment("text printed in the right panel of every page, '|' separates lines");
-  desc.add<bool>("savePNG", true)->setComment("also save every page as PNG");
+  desc.add<bool>("savePNG", true)->setComment("also save every page as PNG (pdftoppm from the PDF, ROOT without it)");
   desc.add<bool>("hcalTestNumbering", true)->setComment("HCAL PCaloHit ids are in the simulation test numbering (relabelled to HcalDetId)");
   desc.add<bool>("printHits", false)->setComment("print every primary with its hit counts per station");
   desc.add<int>("highlight", 1)->setComment("leading primaries per kind whose hits are connected and labelled (0: none)");
@@ -1355,13 +1358,20 @@ void SimHitAnalyzer::finish(View& v, Station& st, const edm::Event& ev, const ch
   std::filesystem::create_directories(dir);
   std::string pdf = (dir / Form("%s_%s_run%u_event%llu.pdf", prefix_.c_str(), st.name.c_str(), ev.id().run(), ev.id().event())).string();
   // the three views of a station go into one PDF: opened with the first view ("rz"), closed with the last ("etaphi")
-  if (std::string(view) == "rz")
+  if (std::string(view) == "rz") {
     c->Print((pdf + "[").c_str());
+    pngs_.open();
+  }
   c->Print(pdf.c_str());
-  if (std::string(view) == "etaphi")
+  std::string png =
+      savePNG_ ? (dir / Form("%s_%s_%s_run%u_event%llu.png", prefix_.c_str(), st.name.c_str(), view, ev.id().run(), ev.id().event())).string()
+               : std::string();
+  if (!pngs_.add(png))
+    c->SaveAs(png.c_str());  // no pdftoppm: ROOT's PNG
+  if (std::string(view) == "etaphi") {
     c->Print((pdf + "]").c_str());
-  if (savePNG_)
-    c->SaveAs((dir / Form("%s_%s_%s_run%u_event%llu.png", prefix_.c_str(), st.name.c_str(), view, ev.id().run(), ev.id().event())).string().c_str());
+    pngs_.convert(pdf, c);  // the three PNGs of the station from its PDF
+  }
 }
 
 DEFINE_FWK_MODULE(SimHitAnalyzer);

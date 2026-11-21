@@ -2,7 +2,7 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: step3 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/step2_SIM_signal_10_SIM.root --pileup AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)} --pileup_input file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/step2_SIM_pileup_10_SIM.root --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended -n -1 -s DIGI:pdigi_valid --processName MIX --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_MIX_10_SIM.root --outputCommands drop *_mix_*_*,keep CrossingFramePlaybackInfoNew_mix_*_* --customise_commands process.mix.input.sequential = cms.untracked.bool(True)\nprocess.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')\nfrom JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -1..1|library in sequence, no digitisers|2025 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False) --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/step3_MIX_10_SIM_cfg.py --no_exec
+# with command line options: step3 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/step2_SIM_signal_10_SIM.root --pileup AVE_60_BX_25ns,{'N': 60, 'B': (-12, 3)} --pileup_input file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/step2_SIM_pileup_10_SIM.root --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended -n -1 -s DIGI:pdigi_valid --processName MIX --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_MIX_10_SIM.root --outputCommands drop *_mix_*_*,keep CrossingFramePlaybackInfoNew_mix_*_* --customise_commands process.mix.input.sequential = cms.untracked.bool(True)\nprocess.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')\nfrom JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -12..3|library in sequence, no digitisers|2025 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False) --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/step3_MIX_10_SIM_cfg.py --no_exec
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.Eras.Era_Run3_2025_cff import Run3_2025
@@ -108,8 +108,8 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 # Other statements
 process.mix.input.nbPileupEvents.averageNumber = cms.double(60.000000)
 process.mix.bunchspace = cms.int32(25)
-process.mix.minBunch = cms.int32(-1)
-process.mix.maxBunch = cms.int32(1)
+process.mix.minBunch = cms.int32(-12)
+process.mix.maxBunch = cms.int32(3)
 process.mix.input.fileNames = cms.untracked.vstring(['file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/step2_SIM_pileup_10_SIM.root'])
 process.mix.digitizers = cms.PSet(process.theDigitizersValid)
 from Configuration.AlCa.GlobalTag import GlobalTag
@@ -133,7 +133,7 @@ associatePatAlgosToolsTask(process)
 
 process.mix.input.sequential = cms.untracked.bool(True)
 process.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')
-from JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -1..1|library in sequence, no digitisers|2025 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False)
+from JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -12..3|library in sequence, no digitisers|2025 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False)
 # Add early deletion of temporary data products to reduce peak memory need
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
 process = customiseEarlyDelete(process)

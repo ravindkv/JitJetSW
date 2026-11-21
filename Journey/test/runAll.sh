@@ -5,8 +5,10 @@
 #   ./runAll.sh                      all thirteen chapters
 #   CHAPTERS="09_G4 10_SIM" ./runAll.sh      a subset (their inputs must exist)
 #   FROM=08_PU ./runAll.sh           from a chapter on
-# Rough cost on one core: chapters 01-08 a few minutes, 09 about 5 minutes, 10 about one hour (library of 250 collisions
-# through Geant4, SimHitAnalyzer pages of three samples, the mixing), 11 about one hour (the PU = 60 DIGI step), 12 one minute, 13 three minutes (DIGI2RAW + the HLT menu).
+# Rough cost on one core: chapters 01-08 a few minutes, 09 about 5 minutes, 10 about 40 minutes (the library of 1000
+# collisions through Geant4, half an hour; the pages 5 minutes, their PNGs rendered from the PDFs by pdftoppm,
+# plugins/PdfPng.h: ROOT's own PNGs of the mixed event took four and a half hours), 11 about six minutes (the PU = 60 DIGI
+# step, bx -12..3), 12 one minute, 13 two minutes (DIGI2RAW + the HLT menu).
 set -euo pipefail
 test_dir=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 all="01_ME 02_PS 03_MnM 04_MPI 05_Had 06_Decay 07_GenJet 08_PU 09_G4 10_SIM 11_DIGI 12_L1T 13_HLT"

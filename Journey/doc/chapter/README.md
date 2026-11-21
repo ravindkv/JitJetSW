@@ -37,11 +37,16 @@ replace "2024" in its plot labels, rerun it, compare `out/` with the previous ru
 150X_mcRun3_2025_realistic_v1`, the compared files) in C4 of the .md. Keep the 2024 run in the repository, not in a
 scratch area (`/tmp` is local to one lxplus node and is cleaned): a `test/<XX_YYY>/run_<XX_YYY>_2024.sh` that remakes it
 in `test/<XX_YYY>/out2024/` and writes the comparison, as `test/12_L1T/run_12_L1T_2024.sh` and
-`yearCompare_12_L1T.py` do (`out2024/compare_12_L1T.txt`). The pileup
-(PU = 60, bx -1..1, SKIP = 71, NPU = 68; 08_PU and 09_G4 since 16 November 2026: bx -12..3, SKIP = 746, NPU = 64, the
-window of the Run-3 scenarios of the release), the number of events and the seeds do not change with the year.
+`yearCompare_12_L1T.py` do (`out2024/compare_12_L1T.txt`; `test/11_DIGI/run_11_DIGI_2024.sh` digitises the signal and the library collision, its
+mixed file is made by the 12 script; `test/13_HLT/run_13_HLT_2024.sh` runs the HLT on the 2024 L1 file). The pileup
+(PU = 60, bx -12..3, SKIP = 746, NPU = 64, the window of the Run-3 scenarios of the release: 08_PU and 09_G4 since
+16 November 2026, 10_SIM .. 13_HLT since 21 November 2026; before, bx -1..1, SKIP = 71, NPU = 68), the number of events
+and the seeds do not change with the year.
 
 ## The .tex chapter (Rule B): exactly five sections, 8 +- 2 pages (detector chapters: Rule J below)
+
+The page counts in this file are targets, not limits (Constitution, "Length of each chapter"): the physics of our event
+comes first and may take more pages, never by repeating a number that is explained elsewhere.
 
 ```latex
 \chapter{XX -- Name: one line that says what happens to the event here}
@@ -124,7 +129,7 @@ B3 is split into numbered subsections (`secnumdepth` is 2 in `doc/JitJetSW.tex`)
   (`out/extras_10_SIM.txt`), `test/11_DIGI/digiExamples_11_DIGI.py` (`out/examples_11_DIGI.txt`); no cmsRun job is
   rerun for them. The companion (C4) lists them with the script, the `conddb` payload or the release file.
 - Pages: 09_G4 8-10 (the hand-over only: detector, cuts, generator decays), 10_SIM 14-17, 11_DIGI 16-19 with its hand-over section; `checkChapter.sh` reports the
-  subsections and the range.
+  subsections and the target, and how far over it the chapter is.
 
 ## A checkpoint chapter (Rule G): 12_L1T, 13_HLT, 20-25 pages
 

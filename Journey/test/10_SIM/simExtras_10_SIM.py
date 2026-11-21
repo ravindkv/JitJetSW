@@ -6,7 +6,7 @@
 # (2) the decays in flight: parents, daughters, decay radii; (3) the EM physics: conversions and bremsstrahlung,
 # where they happen, the followed photon; (4) the hadronic physics: inelastic interactions in the tracker; (5) the
 # b system: its energy and where it goes; (6) the followed photon: its crystals in two runs; (7) the vertices of
-# the 193 mixed collisions (from simHits_mixed_10_SIM.log); (8) the library collisions with a vertex at |z| = 203 m.
+# the mixed collisions (from simHits_mixed_10_SIM.log); (8) the library collisions with a vertex at |z| = 203 m.
 import math, os, re, sys
 from collections import Counter, defaultdict
 import ROOT
@@ -324,7 +324,7 @@ for stage in ('B_Decay_EM', 'signal'):
         sum(e > 1 for e in es), sum(e for (c, _), e in cells.items() if c == 'EcalHitsES'), nTrk))
 
 # ---------------------------------------------------------------------------------------------------- (7) the vertices of the mixing
-print('\n-- (7) the 193 mixed collisions (simHits_mixed_10_SIM.log, lines "pileup event")')
+print('\n-- (7) the mixed collisions (simHits_mixed_10_SIM.log, lines "pileup event")')
 zs = defaultdict(list); prims = defaultdict(list)
 for line in open(os.path.join(out, 'simHits_mixed_10_SIM.log')):
     m = re.match(r'\s+pileup event (\d+) in bx (-?\d+): (\d+) primaries, (\d+) SimTracks, (\d+) SimVertices, vertex z = (\S+) cm', line)
@@ -338,20 +338,35 @@ print('  %d collisions with |z| < 1 m: mean z = %.2f cm, rms %.2f cm, min %.2f, 
     len(allz), mean, rms, min(allz), max(allz), sum(abs(z - 3.11) < 0.1 for z in allz)))
 for b, k, z in far:
     print('  outside: bx %+d pileup event %d at z = %.0f cm (%d primary)' % (b, k, z, prims[b][k - 1]))
+def median(p):
+    p = sorted(p)
+    return p[len(p) // 2] if len(p) % 2 else 0.5 * (p[len(p) // 2 - 1] + p[len(p) // 2])
 for b in sorted(prims):
     p = sorted(prims[b])
-    med = p[len(p) // 2] if len(p) % 2 else 0.5 * (p[len(p) // 2 - 1] + p[len(p) // 2])
-    print('  bx %+d: %d collisions, primaries per collision: min %d, median %g, max %d, sum %d' % (b, len(p), p[0], med, p[-1], sum(p)))
+    print('  bx %+d: %d collisions, primaries per collision: min %d, median %g, max %d, sum %d' % (b, len(p), p[0], median(p), p[-1], sum(p)))
+for lab, sel in (('early (bx < 0)', lambda b: b < 0), ('in time (bx 0)', lambda b: b == 0), ('late (bx > 0)', lambda b: b > 0), ('all', lambda b: True)):
+    p = sorted(x for b in prims if sel(b) for x in prims[b])
+    if p:
+        print('  %-15s: %d collisions, primaries per collision: min %d, median %g, max %d, sum %d' % (lab, len(p), p[0], median(p), p[-1], sum(p)))
 
 # ---------------------------------------------------------------------------------------------------- (8) far vertices
-print('\n-- (8) the library collisions with a vertex at |z| = 203 m (step2_SIM_pileup_10_SIM.root, library events 12, 124, 179)')
+# the forward protons that LHCTransport hands to Geant4 at the start of the PPS region (|z| = 203 m): how many library
+# events have one, and the events in which they are all Geant4 gets (diffractive collisions with nothing central)
+print('\n-- (8) the library collisions with a vertex at |z| = 203 m (step2_SIM_pileup_10_SIM.root, all library events scanned)')
 lib = Events(os.path.join(out, 'step2_SIM_pileup_10_SIM.root'))
 ht, hv = Handle('std::vector<SimTrack>'), Handle('std::vector<SimVertex>')
-for k, e in enumerate(lib):
-    if e.eventAuxiliary().event() not in (12, 124, 179):
-        continue
+nfar, nprot, only = 0, 0, []
+for e in lib:
     e.getByLabel('g4SimHits', ht); e.getByLabel('g4SimHits', hv)
-    for t in ht.product():
-        v = hv.product()[t.vertIndex()].position() if t.vertIndex() >= 0 else None
-        print('  library event %d: SimTrack pdg %d, E = %.0f GeV, primary %s, vertex z = %s cm' % (
-            e.eventAuxiliary().event(), t.type(), t.momentum().e(), t.genpartIndex() > 0, '%.0f' % v.z() if v else '-'))
+    vs = hv.product()
+    prim = [t for t in ht.product() if t.genpartIndex() > 0]
+    far = [t for t in prim if t.vertIndex() >= 0 and abs(vs[t.vertIndex()].position().z()) > 10000.]
+    if far:
+        nfar += 1; nprot += len(far)
+    if far and len(far) == len(prim):
+        only.append(e.eventAuxiliary().event())
+        for t in far:
+            print('  library event %d: SimTrack pdg %d, E = %.0f GeV, primary True, vertex z = %.0f cm' % (
+                e.eventAuxiliary().event(), t.type(), t.momentum().e(), vs[t.vertIndex()].position().z()))
+print('  library events with a primary at |z| > 100 m: %d of %d (%d such primaries); with nothing else for Geant4: %d (%s)' % (
+    nfar, lib.size(), nprot, len(only), ' '.join(str(k) for k in only)))

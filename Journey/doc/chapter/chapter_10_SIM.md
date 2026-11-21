@@ -39,18 +39,18 @@ cmsDriver.py step2 --filein file:$IN $COMMON -n 1 --fileout file:step2_SIM_signa
   --customise_commands "process.g4SimHits.UseMagneticField = cms.bool(True)\nprocess.g4SimHits.Physics.EMPhysics = cms.untracked.bool(True)\nprocess.g4SimHits.Physics.HadPhysics = cms.untracked.bool(True)" \
   --python_filename $J/test/10_SIM/step2_SIM_signal_10_SIM_cfg.py --no_exec
 
-# (10b) the library: all 250 collisions, full physics, its own Geant4 seed
+# (10b) the library: all 1000 collisions, full physics, its own Geant4 seed
 cmsDriver.py step2 --filein file:$LIB $COMMON -n -1 --fileout file:step2_SIM_pileup_10_SIM.root \
   --customise_commands "process.g4SimHits.UseMagneticField = cms.bool(True)\nprocess.g4SimHits.Physics.EMPhysics = cms.untracked.bool(True)\nprocess.g4SimHits.Physics.HadPhysics = cms.untracked.bool(True)\nprocess.RandomNumberGeneratorService.g4SimHits.initialSeed = 20243" \
   --python_filename $J/test/10_SIM/step2_SIM_pileup_10_SIM_cfg.py --no_exec
 
 # (10a+10b) the mixing at SimHit level: the MixingModule of the DIGI step without digitisers, SimHitAnalyzer on the CrossingFrames
 cmsDriver.py step3 --filein file:$J/test/10_SIM/out/step2_SIM_signal_10_SIM.root \
-  --pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)}" --pileup_input file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root \
+  --pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-12, 3)}" --pileup_input file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root \
   --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended -n -1 -s DIGI:pdigi_valid --processName MIX \
   --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_MIX_10_SIM.root \
   --outputCommands "drop *_mix_*_*,keep CrossingFramePlaybackInfoNew_mix_*_*" \
-  --customise_commands "process.mix.input.sequential = cms.untracked.bool(True)\nprocess.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')\nfrom JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='$J/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -1..1|library in sequence, no digitisers|2025 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False)" \
+  --customise_commands "process.mix.input.sequential = cms.untracked.bool(True)\nprocess.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')\nfrom JitJetSW.Journey.mixOnly_cff import mixOnly; process = mixOnly(process, outputDir='$J/test/10_SIM/out/mixed', sampleLabel='chapter 10_SIM (10a+10b): signal + pileup at SimHit level|PU = 60 per bx (Poisson), bx -12..3|library in sequence, no digitisers|2025 detector, 13.6 TeV', prefix='simHits_mixed_10_SIM', highlight=1, highlightPtMin=2, savePNG=True, printHits=False)" \
   --python_filename $J/test/10_SIM/step3_MIX_10_SIM_cfg.py --no_exec
 ```
 
@@ -59,12 +59,12 @@ The arguments of the SIM steps:
 | argument | meaning |
 |---|---|
 | `step2` | the name of the configuration (free; `step1` was the GEN step of chapters 01 to 08) |
-| `--filein file:...` | the input (Rule E): the transport-only SIM file of chapter 09 (signal) or its 250-event library (pileup). The generator record is read from it; the SIM products of process `SIM` are read too but dropped from the output |
+| `--filein file:...` | the input (Rule E): the transport-only SIM file of chapter 09 (signal) or its 1000-event library (pileup). The generator record is read from it; the SIM products of process `SIM` are read too but dropped from the output |
 | `--conditions auto:phase1_2025_realistic` | the global tag of 2025 (`150X_mcRun3_2025_realistic_v1` through `Configuration/AlCa/python/autoCond.py`, line 107; `YEAR=2025` of `jitjet_common.sh`): geometry, field map, beam spot; the geometry `141DD4hepV2_Extended2024` and the field map are the same tags as in the 2024 global tag (chapter 09 companion, section 4) |
 | `--era Run3_2025` | the era modifiers of the 2025 detector (`Era_Run3_2025_cff.py`: `Run3_2024` plus five modifiers of the reconstruction and the Level-1 trigger, none used by `g4SimHits` or the `MixingModule`): through `Run3`, `run3_common` selects the Run-3 sensitive detectors and hit collections in `g4SimHits_cfi.py`, `run3_HFSL` the HF shower library `HFShowerLibrary_run3_v7.root` |
 | `--geometry DB:Extended` | the simulation geometry (DDD XML) from the database, label `Extended` |
 | `--beamspot DBrealistic` | only sets the `VtxSmeared` label in a SIM-only step; the smeared vertices are already in the input |
-| `-n 1` / `-n -1` | one event (the signal) / all events (the 250 library collisions) |
+| `-n 1` / `-n -1` | one event (the signal) / all events (the 1000 library collisions) |
 | `-s SIM` | the step: the `psim` sequence (`Configuration/StandardSequences/python/SimIdeal_cff.py` = `randomEngineStateProducer` + `g4SimHits`) |
 | `--processName SIMFULL` | the process name of this run; the input already holds a process `SIM` (chapter 09) and cmsRun refuses two processes of the same name in one file |
 | `--datatier GEN-SIM --eventcontent FEVTDEBUG` | the output tier and the full debug event content |
@@ -90,7 +90,7 @@ The arguments of the mixing job (step3) that differ:
 | argument | meaning |
 |---|---|
 | `--filein file:.../step2_SIM_signal_10_SIM.root` | the full-physics signal (10a) |
-| `--pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)}"` | the mixing scenario: `mix_POISSON_average_cfi` (`Configuration/StandardSequences/python/Mixing.py`, `AVE_60_BX_25ns` = `BX 25, B (-12,3), N 60`), overridden by the dictionary: Poisson with mean `N = 60` collisions per bunch crossing, bunch crossings `B = (-1, 1)`, 25 ns spacing |
+| `--pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-12, 3)}"` | the mixing scenario: `mix_POISSON_average_cfi` (`Configuration/StandardSequences/python/Mixing.py`, `AVE_60_BX_25ns` = `BX 25, B (-12,3), N 60`), with the dictionary: Poisson with mean `N = 60` collisions per bunch crossing, bunch crossings `B = (-12, 3)` (the default of the scenario and the window of the Run-3 production profiles, written out so that `BUNCHES` of the script decides it; `-1, 1` until 21 November 2026), 25 ns spacing |
 | `--pileup_input file:.../step2_SIM_pileup_10_SIM.root` | the library (10b) read by the secondary source `EmbeddedRootSource` of the module `mix` |
 | `-s DIGI:pdigi_valid` | the DIGI step; its `pdigi_valid` sequence is replaced by `mixOnly` with the `mix` module alone (section 2) |
 | `--processName MIX` | the process name of the mixing job (the input holds `GEN`, `GENJET`, `SIMFULL`) |
@@ -99,7 +99,8 @@ The arguments of the mixing job (step3) that differ:
 | `--fileout file:step3_MIX_10_SIM.root` | the output: the signal event with the playback record |
 | `--customise_commands` | `process.mix.input.sequential = True`: the library is read from its first event on, in order (the default picks a random start); `process.source.eventsToProcess = '1:1:1'`: the event of the book; `mixOnly(process, outputDir=..., sampleLabel=..., prefix=..., highlight=1, highlightPtMin=2, savePNG=True, printHits=False)`: `$J/python/mixOnly_cff.py`, section 2. With `ANALYZE=0` the script writes the same configuration with `mixOnly(process)` (no drawing): the mixing and its playback record only |
 
-Variables of the script: `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68` (the pileup convention of the book, `common/jitjet_common.sh`),
+Variables of the script: `PU=60 BUNCHES=-12,3 SKIP=746 NPU=64` (the pileup convention of the book, `common/jitjet_common.sh`;
+until 21 November 2026 `BUNCHES=-1,1 SKIP=71 NPU=68` with a 250-event library),
 `PUSEED=20241`, `STAGES="B B_Decay B_Decay_EM signal"`, `CASES="signal pileup mixed"`, `REUSE=1` (an existing SIM file is
 not re-run), `STATIONS=` (a subset of `TRK,ECAL,HCAL,MUON,ALL`), `HIGHLIGHT=1 HIGHLIGHT_PTMIN=2 PRINTHITS=0` (the
 SimHitAnalyzer options), `RUN=0` (write every configuration, the mixing one included, run nothing), `ANALYZE=0` (the SIM
@@ -115,7 +116,7 @@ env LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | grep -v '/biglib/'
 cmsRun ../step2_SIM_B_Decay_10_SIM_cfg.py    > step2_SIM_B_Decay_10_SIM.log 2>&1
 cmsRun ../step2_SIM_B_Decay_EM_10_SIM_cfg.py > step2_SIM_B_Decay_EM_10_SIM.log 2>&1
 cmsRun ../step2_SIM_signal_10_SIM_cfg.py     > step2_SIM_signal_10_SIM.log 2>&1
-cmsRun ../step2_SIM_pileup_10_SIM_cfg.py     > step2_SIM_pileup_10_SIM.log 2>&1     # 250 events, 7-12 minutes
+cmsRun ../step2_SIM_pileup_10_SIM_cfg.py     > step2_SIM_pileup_10_SIM.log 2>&1     # 1000 events, about 30 minutes
 cmsRun ../step3_MIX_10_SIM_cfg.py            > step3_MIX_10_SIM.log 2>&1            # the mixing, writes mixed/<station>/ and step3_MIX_10_SIM.root
 ```
 
@@ -125,8 +126,50 @@ node, so it depends on its load): the signal event through the full physics take
 2026 (`Begin processing ... 09:51:53`, `Closed file ... 09:52:01`, after 36 s of Geant4 initialisation) and 12 s in
 the 2025 rerun of 12 November 2026 (`10:15:10` to `10:15:22`, after 50 s of initialisation, load average 5-7); the 250
 library collisions 442 s (`09:49:57` to `09:57:19`), 1.8 s per collision, and 695 s (`10:12:15` to `10:23:51`), 2.8 s
-per collision. All logs carry the
+per collision; the 1000 collisions of 21 November 2026 1903 s (`12:58:12` to `13:29:55`, load average 5-6), 1.9 s per
+collision. All logs carry the
 banner `Geant4 version Name: geant4-11-02-patch-02 [MT] (21-June-2024)`.
+
+The pages, run of 21 November 2026, 19:36 (`run_10_SIM.log`, SIM files reused; the numbers of table "The jobs of
+run_10_SIM.sh" of the chapter). Every PNG is rendered from its PDF page by `pdftoppm` (`plugins/PdfPng.h`, section 3):
+
+| job | from | to | time |
+|---|---|---|---|
+| the four `SimAnalyzer` runs | 19:36:39 | 19:37:10 | 6 to 9 s each |
+| `SimHitAnalyzer` (10a), 5 stations x 3 views | 19:37:10 | 19:37:27 | 17 s |
+| `SimHitAnalyzer` (10b), library event 747 | 19:37:27 | 19:37:40 | 13 s |
+| the mixing with its pages (`cmsRun` start to the last PNG; `Begin processing` 19:37:49) | 19:37:43 | 19:41:14 | 3 min 31 s |
+| of which `TRK` (the mixing, the PDF closed at 19:38:55, the three PNGs) | 19:37:49 | 19:39:27 | 1 min 38 s |
+| `ECAL`, `HCAL`, `MUON` | 19:39:27 | 19:39:39 | 12 s |
+| `ALL` (the PDF closed at 19:40:40) | 19:39:39 | 19:41:14 | 1 min 35 s |
+| the ledger, the extras | 19:41:15 | 19:41:23 | 1 s, 8 s |
+| the whole run (`== 10_SIM`, `== 11_DIGI` of the wrapper) | 19:36:39 | 19:41:23 | 4 min 44 s |
+
+A run from scratch adds the 33 min of the library (the four stages run inside it): about 38 min; with `ANALYZE=0`
+(the SIM jobs and the mixing, 10 s, with its playback record) about 35 min. The outputs of this run are those of the run
+before it, number for number (`ledger_10_SIM.txt`, `extras_10_SIM.txt`, `simHits_mixed_10_SIM.log` identical; the
+other two logs differ in their time stamps only), and the PNGs have the size of ROOT's, 1396 x 872 pixels.
+
+The run before it, of 21 November 2026, 13:41, made the PNGs with ROOT (`TCanvas::SaveAs`); its logs are kept in
+`test/tmp/out_rootpng_10_SIM/` (`run_10_SIM.log`, `step3_MIX_10_SIM.log`, the three `simHits_*` logs):
+
+| job | from | to | time |
+|---|---|---|---|
+| `SimHitAnalyzer` (10a) | 13:42:13 | 13:51:57 | 9.7 min |
+| `SimHitAnalyzer` (10b) | 13:51:57 | 13:59:30 | 7.5 min |
+| the mixing with its pages (`Begin processing` 14:00:06) | 13:59:46 | 18:39:04 | 4 h 39 min |
+| of which `TRK` (PNG time stamps: r-z 14:53:26, x-y 15:16:19, eta-phi 16:07:18) | 14:00:06 | 16:07:18 | 2 h 07 min |
+| `ECAL` / `HCAL` / `MUON` | 16:07:18 | 16:22:00 | 11 min / 3.4 min / 4 s |
+| `ALL` (r-z 17:20:29, x-y 17:45:04, eta-phi 18:39:04) | 16:22:00 | 18:39:04 | 2 h 17 min |
+| the whole run | 13:41:43 | 18:39:15 | 4 h 58 min |
+
+Per marker: the tracker r-z view drew 2 106 681 hits in 53 min, the x-y view the 909 502 pileup hits of the barrel
+(685 160 + 54 572 + 169 770 in its legend) and those of the signal in 23 min, the eta-phi view 2 106 681 in 51 min:
+about 1.5 ms per marker and view ("1.5 ms" of the chapter). The time went into ROOT's PNG: per view the analyzer
+painted the canvas, printed the PDF page and saved the PNG, and closed the PDF of the station after the eta-phi page;
+`mixed/TRK/simHits_mixed_10_SIM_TRK_run1_event1.pdf` was last written at 15:16:47, 28 s after the x-y PNG, and the
+eta-phi PNG came 50 min later (`ALL`: 17:45:04, 17:45:34, 18:39:04; `ECAL`: 16:14:30, 16:14:32, 16:18:31).
+`pdftoppm -cropbox -png` made the three pages of that PDF in 32 s, which led to `plugins/PdfPng.h`.
 
 ### The SIM configuration, `step2_SIM_signal_10_SIM_cfg.py`
 
@@ -215,7 +258,7 @@ event): `TrackerHitsTECLowTof` 200 551, `SimTracks` 160 460, `EcalHitsEE` 153 36
 80 680, `TrackerHitsTIBLowTof` 48 720, `TrackerHitsTOBLowTof` 42 317, `TrackerHitsPixelEndcapLowTof` 41 971, `genParticles`
 41 860, `TrackerHitsPixelBarrelLowTof` 41 370, `TrackerHitsTIDLowTof` 40 296, `SimVertexs` 27 921, `HcalHits` 26 874,
 `EcalHitsES` 15 618, `TrackerHitsTECHighTof` 6861. File sizes: `step2_SIM_B` 0.58 MB, `B_Decay` 0.60 MB, `B_Decay_EM`
-0.91 MB, `signal` 1.19 MB, `pileup` 59.6 MB (250 events).
+0.91 MB, `signal` 1.19 MB, `pileup` 226 MB (1000 events; 59.6 MB for the 250 events until 21 November 2026).
 
 `edmDumpEventContent file:step3_MIX_10_SIM.root`: the `GEN` products `generator`, `LHCTransport`, `generatorSmeared`,
 `randomEngineStateProducer`, `TriggerResults` (the `genParticles`, `genMet*` and the `GENJET` jets are dropped by the
@@ -249,13 +292,13 @@ cmsRun ../../common/simHitAnalyzer_cfg.py inputFiles=file:$J/test/10_SIM/out/ste
   prefix=simHits_signal_10_SIM eventsToProcess=1:1:1 $ARGS \
   sampleLabel="chapter 10_SIM (10a): the signal|bbbar, pTHat > 100 GeV|full Geant4 physics, 2025 detector|no pileup" > simHits_signal_10_SIM.log 2>&1
 cmsRun ../../common/simHitAnalyzer_cfg.py inputFiles=file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root outputDir=$J/test/10_SIM/out/pileup \
-  prefix=simHits_pileup_10_SIM eventsToProcess=1:1:72 $ARGS \
-  sampleLabel="chapter 10_SIM (10b): one pileup collision|library event 72, full Geant4 physics|SoftQCD inelastic, 13.6 TeV|2025 detector, no signal" > simHits_pileup_10_SIM.log 2>&1
+  prefix=simHits_pileup_10_SIM eventsToProcess=1:1:747 $ARGS \
+  sampleLabel="chapter 10_SIM (10b): one pileup collision|library event 747, full Geant4 physics|SoftQCD inelastic, 13.6 TeV|2025 detector, no signal" > simHits_pileup_10_SIM.log 2>&1
 # the mixed sample is drawn inside the mixing job (section 2); its analyzer lines are extracted from the job log:
 grep -E "^SimHitAnalyzer|^  pileup mixed|^    pileup event|^  station|^    hits by|^    primaries with hits" step3_MIX_10_SIM.log > simHits_mixed_10_SIM.log
 # the ledger
 python3 ../../common/simLedger.py $J/test/10_SIM/out 10_SIM $J/test/09_G4/out/simAnalyzer_signal_09_G4.log > ledger_10_SIM.txt
-# the FWLite extras (no cmsRun; about 15 s): decays, conversions, nuclear interactions, the b-system budget, the
+# the FWLite extras (no cmsRun; about 10 s): decays, conversions, nuclear interactions, the b-system budget, the
 # followed photon in two runs, the vertices of the mixing; the last step of run_10_SIM.sh
 cd $J/test && python3 10_SIM/simExtras_10_SIM.py > 10_SIM/out/extras_10_SIM.txt 2> 10_SIM/out/extras_10_SIM.log
 ```
@@ -263,7 +306,9 @@ cd $J/test && python3 10_SIM/simExtras_10_SIM.py > 10_SIM/out/extras_10_SIM.txt 
 `simAnalyzer_cfg.py` (chapter 09, section 3, for the options): `simStage=N` highlights the stage in the right panel of every
 page (1 transport, 2 + B, 3 + decays, 4 + EM, 5 + hadronic); `genStages=5` draws the five generator pages first (signal
 stage only). `simHitAnalyzer_cfg.py`: `highlight=1` follows the leading primary of every kind (above `highlightPtMin=2` GeV)
-through the layers and labels it; `savePNG=1` writes every page as PNG next to the PDF; `printHits=1` would print every
+through the layers and labels it; `savePNG=1` writes every page as PNG next to the PDF, rendered from the closed PDF
+by `pdftoppm -cropbox` (`plugins/PdfPng.h`: the PNG keeps ROOT's size, 1396 x 872 pixels, and no resolution chunk, so the
+trims of the chapter stay valid; ROOT's own PNG painted the 2.1 million hits of the mixed event for hours); `printHits=1` would print every
 primary with its hit counts per station; `stations=TRK,ALL` would restrict the stations. The global tag, era and geometry
 give the reco geometry (`GeometryRecoDB`) for the hit positions and the detector elements drawn in grey.
 
@@ -275,13 +320,13 @@ What each run produces in `out/`:
 | `simAnalyzer_<stage>_10_SIM.log` | the per-page counts quoted in the chapter (section 4) |
 | `simAnalyzer_<stage>_10_SIM.root` | `TFileService` histograms per page |
 | `signal/<station>/simHits_signal_10_SIM_<station>_run1_event1.pdf`, `_<station>_{rz,xy,etaphi}_run1_event1.png` | (10a) one PDF of three pages per station (`TRK`, `ECAL`, `HCAL`, `MUON`, `ALL`): the r-z view, the transverse view of the barrel, the eta-phi view from the primary vertex; the detector elements of the station in grey, the hits coloured by the kind of the primary they descend from, the leading primary per kind connected through the layers; the header lists hits per subdetector and layer and the followed primaries |
-| `pileup/<station>/simHits_pileup_10_SIM_<station>_..._run1_event72.pdf/.png` | (10b) the same for library event 72 |
+| `pileup/<station>/simHits_pileup_10_SIM_<station>_..._run1_event747.pdf/.png` | (10b) the same for library event 747 |
 | `mixed/<station>/simHits_mixed_10_SIM_<station>_..._run1_event1.pdf/.png` | (10a+10b) the same for the mixed event: the signal hits by kind on top, the pileup hits underneath coloured by bunch crossing (olive early, blue in time, red late); a calorimeter cell takes the colour of the origin that deposited most of its energy |
 | `simHits_signal_10_SIM.log`, `simHits_pileup_10_SIM.log`, `simHits_mixed_10_SIM.log` | per station: hits and cells, hits by subdetector and layer, hits by kind of the primary (cells and their energy for the calorimeters), primaries with hits; the mixed log also lists every mixed collision with its bunch crossing, primaries, `SimTrack`s, `SimVertex`s, vertex z and time, and the "events per bx" line the script checks against `SKIP` / `NPU` |
-| `step3_MIX_10_SIM.log` | the full mixing job log (the analyzer lines above, the detector element extents); the job was run with the drawing, and the playback file came from the same configuration run again without it, so this log does not mention the output module |
+| `step3_MIX_10_SIM.log` | the full mixing job log (the analyzer lines above, the detector element extents); the same job draws the pages and writes `step3_MIX_10_SIM.root`, but the log names only the two input files it opens and closes, not the output file |
 | `step3_MIX_10_SIM.root` | the signal event with the `CrossingFramePlaybackInfoNew` (section 2), the input of (11a+11b) |
 | `ledger_10_SIM.txt` | the ledger of `common/simLedger.py`: table 1, the stages from the SimAnalyzer logs (with the transport-only run of chapter 09 as first line); table 2, the three samples station by station from the SimHitAnalyzer logs |
-| `extras_10_SIM.txt` | the output of `test/10_SIM/simExtras_10_SIM.py` (FWLite on `test/09_G4/out/step2_G4_signal_09_G4.root`, the four `step2_SIM_<stage>_10_SIM.root`, `step2_SIM_pileup_10_SIM.root` and `simHits_mixed_10_SIM.log`): (1) the field, (2) the decays in flight, (3) conversions and bremsstrahlung, (4) nuclear interactions, (5) the b and bbar systems in the calorimeters, (6) the followed photon in two runs, (7) the vertices of the 193 mixed collisions, (8) the library collisions at z = +-203 m; section 4.8 |
+| `extras_10_SIM.txt` | the output of `test/10_SIM/simExtras_10_SIM.py` (FWLite on `test/09_G4/out/step2_G4_signal_09_G4.root`, the four `step2_SIM_<stage>_10_SIM.root`, `step2_SIM_pileup_10_SIM.root` and `simHits_mixed_10_SIM.log`): (1) the field, (2) the decays in flight, (3) conversions and bremsstrahlung, (4) nuclear interactions, (5) the b and bbar systems in the calorimeters, (6) the followed photon in two runs, (7) the vertices and primaries of the 995 mixed collisions, (8) the library collisions at z = +-203 m; section 4.8 |
 | `step2_SIM_<stage>_10_SIM.log`, `step2_SIM_pileup_10_SIM.log` | the `cmsRun` logs of the SIM steps: the Geant4 banner and the event records |
 
 `simLedger.py` parses `nReaching`, `nSecondaries`, `decay/EM/hadronic`, `nHits`, `sumELoss`, `nCells`, the `E by subdetector`
@@ -319,50 +364,67 @@ sample signal: SimHitAnalyzer run 1 event 1: 1926 SimTracks, 571 primaries hande
   ALL   10272 PSimHits, 26793 PCaloHits in 14157 cells
         by kind: charged hadron=11272(1.42e+03 GeV) neutral hadron=2915(362 GeV) photon=7458(368 GeV) e^{#pm}=482(7.11 GeV) no stored ancestor=2302(53.9 GeV)
         primaries with hits: 512 of 571
-sample pileup: SimHitAnalyzer run 1 event 72: 534 SimTracks, 164 primaries handed to Geant4, PV = (0.0286612, -0.0165738, -0.482677) cm
-  TRK   2097 PSimHits, 0 PCaloHits in 0 cells
-        by kind: charged hadron=1061 neutral hadron=186 photon=474 no stored ancestor=376
-        primaries with hits: 79 of 164
-  ECAL  0 PSimHits, 4742 PCaloHits in 3388 cells
-        by kind: charged hadron=1448(29.4 GeV) neutral hadron=468(7.45 GeV) photon=1459(15.7 GeV) no stored ancestor=13(0.356 GeV)
-        primaries with hits: 108 of 164
-  HCAL  0 PSimHits, 392 PCaloHits in 262 cells
-        by kind: charged hadron=204(145 GeV) neutral hadron=33(10 GeV) photon=25(18 GeV)
-        primaries with hits: 52 of 164
-  MUON  11 PSimHits, 0 PCaloHits in 0 cells
-        by kind: no stored ancestor=11
-        primaries with hits: 0 of 164
-  ALL   2108 PSimHits, 5134 PCaloHits in 3650 cells
-        by kind: charged hadron=2713(175 GeV) neutral hadron=687(17.5 GeV) photon=1958(33.7 GeV) no stored ancestor=400(0.356 GeV)
-        primaries with hits: 142 of 164
+sample pileup: SimHitAnalyzer run 1 event 747: 55 SimTracks, 22 primaries handed to Geant4, PV = (0.0276303, -0.0177769, 2.1553) cm
+  TRK   136 PSimHits, 0 PCaloHits in 0 cells
+        by kind: charged hadron=69 photon=40 no stored ancestor=27
+        primaries with hits: 6 of 22
+  ECAL  0 PSimHits, 173 PCaloHits in 131 cells
+        by kind: charged hadron=70(0.798 GeV) photon=60(0.293 GeV) no stored ancestor=1(0.00266 GeV)
+        primaries with hits: 8 of 22
+  HCAL  0 PSimHits, 90 PCaloHits in 72 cells
+        by kind: charged hadron=66(87 GeV) photon=6(11 GeV)
+        primaries with hits: 13 of 22
+  MUON  0 PSimHits, 0 PCaloHits in 0 cells
+        by kind:
+        primaries with hits: 0 of 22
+  ALL   136 PSimHits, 263 PCaloHits in 203 cells
+        by kind: charged hadron=205(87.8 GeV) photon=106(11.3 GeV) no stored ancestor=28(0.00266 GeV)
+        primaries with hits: 18 of 22
 sample mixed: SimHitAnalyzer run 1 event 1: 1926 SimTracks, 571 primaries handed to Geant4, PV = (0.0276598, -0.0169037, 3.11193) cm
-  pileup mixed in (CrossingFrame, bunch crossings -1 .. 1): 193 events (early 71, in-time 68, late 54), 31060 primaries (10012, 10414, 10634), 97276 SimTracks; events per bx: -1:71 0:68 1:54
-  TRK   448315 PSimHits, 0 PCaloHits in 0 cells (signal: 10272 PSimHits, 0 PCaloHits)
-        by kind: charged hadron=4999 neutral hadron=890 photon=2013 e^{#pm}=138 no stored ancestor=2232 pileup, early (bx < 0)=139551 pileup, in-time (bx 0)=146028 pileup, late (bx > 0)=152464
+  pileup mixed in (CrossingFrame, bunch crossings -12 .. 3): 995 events (early 746, in-time 64, late 185), 149894 primaries (114093, 8804, 26997), 463662 SimTracks; events per bx: -12:71 -11:68 -10:54 -9:59 -8:52 -7:61 -6:76 -5:59 -4:65 -3:59 -2:68 -1:54 0:64 1:63 2:62 3:60
+  TRK   2106681 PSimHits, 0 PCaloHits in 0 cells (signal: 10272 PSimHits, 0 PCaloHits)
+        by kind: charged hadron=4999 neutral hadron=890 photon=2013 e^{#pm}=138 no stored ancestor=2232 pileup, early (bx < 0)=1588361 pileup, in-time (bx 0)=125625 pileup, late (bx > 0)=382423
         primaries with hits: 293 of 571
-  ECAL  0 PSimHits, 939254 PCaloHits in 106170 cells (signal: 0 PSimHits, 24262 PCaloHits; 2362 cells dominated by the signal, 103808 by pileup)
-        by kind: charged hadron=950(69.3 GeV) neutral hadron=345(32.4 GeV) photon=1011(129 GeV) e^{#pm}=56(5.64 GeV) pileup, early (bx < 0)=32941(3.95e+03 GeV) pileup, in-time (bx 0)=34418(3.86e+03 GeV) pileup, late (bx > 0)=36449(4.32e+03 GeV)
-        primaries with hits: 272 of 571
-  HCAL  0 PSimHits, 99833 PCaloHits in 11021 cells (signal: 0 PSimHits, 2531 PCaloHits; 258 cells dominated by the signal, 10763 by pileup)
-        by kind: charged hadron=224(897 GeV) neutral hadron=26(175 GeV) photon=6(0.0149 GeV) no stored ancestor=2(0.000918 GeV) pileup, early (bx < 0)=3322(1.55e+04 GeV) pileup, in-time (bx 0)=3529(1.65e+04 GeV) pileup, late (bx > 0)=3912(2.09e+04 GeV)
-        primaries with hits: 92 of 571
-  MUON  204 PSimHits, 0 PCaloHits in 0 cells (signal: 0 PSimHits, 0 PCaloHits)
-        by kind: pileup, early (bx < 0)=51 pileup, in-time (bx 0)=129 pileup, late (bx > 0)=24
+  ECAL  0 PSimHits, 4377663 PCaloHits in 158847 cells (signal: 0 PSimHits, 24262 PCaloHits; 699 cells dominated by the signal, 158148 by pileup)
+        by kind: charged hadron=237(21.8 GeV) neutral hadron=101(11.6 GeV) photon=341(111 GeV) e^{#pm}=20(6.07 GeV) pileup, early (bx < 0)=129238(5.29e+04 GeV) pileup, in-time (bx 0)=6980(797 GeV) pileup, late (bx > 0)=21930(2.73e+03 GeV)
+        primaries with hits: 182 of 571
+  HCAL  0 PSimHits, 459290 PCaloHits in 15791 cells (signal: 0 PSimHits, 2531 PCaloHits; 69 cells dominated by the signal, 15722 by pileup)
+        by kind: charged hadron=60(313 GeV) neutral hadron=7(58.1 GeV) photon=1(0.0024 GeV) no stored ancestor=1(0.000496 GeV) pileup, early (bx < 0)=13395(2.46e+05 GeV) pileup, in-time (bx 0)=553(28.2 GeV) pileup, late (bx > 0)=1774(406 GeV)
+        primaries with hits: 38 of 571
+  MUON  838 PSimHits, 0 PCaloHits in 0 cells (signal: 0 PSimHits, 0 PCaloHits)
+        by kind: pileup, early (bx < 0)=639 pileup, in-time (bx 0)=75 pileup, late (bx > 0)=124
         primaries with hits: 0 of 571
-  ALL   448519 PSimHits, 1039087 PCaloHits in 117191 cells (signal: 10272 PSimHits, 26793 PCaloHits; 2620 cells dominated by the signal, 114571 by pileup)
-        by kind: charged hadron=6173(967 GeV) neutral hadron=1261(208 GeV) photon=3030(129 GeV) e^{#pm}=194(5.64 GeV) no stored ancestor=2234(0.000918 GeV) pileup, early (bx < 0)=175865(1.94e+04 GeV) pileup, in-time (bx 0)=184104(2.03e+04 GeV) pileup, late (bx > 0)=192849(2.52e+04 GeV)
-        primaries with hits: 378 of 571
+  ALL   2107519 PSimHits, 4836953 PCaloHits in 174638 cells (signal: 10272 PSimHits, 26793 PCaloHits; 768 cells dominated by the signal, 173870 by pileup)
+        by kind: charged hadron=5296(334 GeV) neutral hadron=998(69.7 GeV) photon=2355(111 GeV) e^{#pm}=158(6.07 GeV) no stored ancestor=2233(0.000496 GeV) pileup, early (bx < 0)=1731633(2.98e+05 GeV) pileup, in-time (bx 0)=133233(825 GeV) pileup, late (bx > 0)=406251(3.14e+03 GeV)
+        primaries with hits: 353 of 571
 ```
 
 Reading the "by kind" lines: for the tracker and muon stations the numbers are hits; for the calorimeter stations they are
 cells (attributed to the kind of the primary that deposited most of the cell's energy) with the energy of those cells in
 parentheses; `ALL` adds the two. The HCAL "GeV" add the visible energy of HB, HE, HO (GeV) and the HF shower-library units
-(photoelectrons), as the analyzer sums them. In the chapter: the mixed-event ECAL energies 236 GeV (signal, 69.3 + 32.4 +
-129 + 5.64) and 12 130 GeV (pileup, 3950 + 3860 + 4320), total 12 366; the HCAL 1072 (signal) and 52 900 (pileup), total
-54 000 (rounded); the tracker pileup hits 139 551 + 146 028 + 152 464 = 438 043; per collision 139 551 / 71 = 1966 (1965.5),
-146 028 / 68 = 2147, 152 464 / 54 = 2823; the signal's share 10 272 / 448 315 = 2.3 % (of its own bunch crossing
-10 272 / (10 272 + 146 028) = 6.6 %); the signal cells lost to the pileup
-12 804 - 2362 = 10 442; 3860 / 68 = 57 GeV of ECAL energy per in-time collision.
+(photoelectrons), as the analyzer sums them. In the chapter: the mixed-event ECAL energies 150 GeV (signal, 21.8 +
+11.6 + 111 + 6.07) and 56 427 GeV (pileup, 52 900 + 797 + 2730), total 56 577, 56 600 in the ledger table of the chapter (the page header of
+`mixed/ECAL`, EB 1.21e+04 + EE 4.44e+04 + ES 43.4 = 56 543; the library sums of section 4.5, 12 068 + 44 126 + 43 = 56 237,
+plus the signal's 362 = 56 599); the HCAL 371 (signal, 313 + 58.1 + 0.0024 + 0.0005) and 246 434 (pileup, 246 000 + 28.2
++ 406), total 246 805, 246 800 in the table; the tracker pileup hits 1 588 361 + 125 625 + 382 423 = 2 096 409; per
+collision 1 588 361 / 746 = 2129, 125 625 / 64 = 1963, 382 423 / 185 = 2067; the signal's share 10 272 / 2 106 681 =
+0.49 % (of its own bunch crossing 10 272 / (10 272 + 125 625) = 7.6 %); the signal cells lost to the pileup 12 804 - 699
+= 12 105; the early share of the pileup cells 129 238 / 158 148 = 82 %; EE 44 400 / 293.66 = 151 times the signal; the
+in-time ECAL deposits of the library (section 4.5) 776.5 + 2650.6 + 2.6 = 3429.7 GeV in 91 425 + 159 272 + 11 522 =
+262 219 hits, 3430 / 64 = 54 GeV per collision.
+
+Tracker and muon `PSimHit`s of the library per bunch crossing of the draw (FWLite, `TrackerHits*` and `MuonDTHits`,
+`MuonCSCHits`, `MuonRPCHits`, `MuonGEMHits` of `g4SimHits` summed over the library events of each crossing; the class
+sums equal the mixed log, 1 588 361 / 125 625 / 382 423 and 639 / 75 / 124):
+
+| bx | -12 | -11 | -10 | -9 | -8 | -7 | -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| tracker | 139 551 | 146 028 | 152 464 | 121 527 | 108 480 | 95 664 | 190 508 | 140 200 | 122 216 | 128 879 | 130 258 | 112 586 | 125 625 | 153 911 | 116 155 | 112 357 |
+| muon | 51 | 129 | 24 | 74 | 80 | 77 | 43 | 33 | 64 | 7 | 12 | 45 | 75 | 72 | 31 | 21 |
+
+The first three columns are the tracker and muon hits of the bunch crossings -1, 0, +1 of the earlier version (139 551,
+146 028, 152 464; 51, 129, 24). Older than 75 ns (bx -12 to -4, library events 1-565): 1 216 638 tracker hits and 575 muon
+hits (DT 67, CSC 465, RPC 8, GEM 35), the numbers of the open problem "The mixing window of Phase-2".
 
 ### 4.2 The SimAnalyzer logs, page lines (`simAnalyzer_<stage>_10_SIM.log`)
 
@@ -411,37 +473,45 @@ same number up to rounding); the looper threshold 0.3 x 3.8 T x 1.29 m / 2 = 0.7
 ```
 PXB/1=397 PXB/2=221 PXB/3=179 PXB/4=132 PXF/1=323 PXF/2=319 PXF/3=331 TIB/1=587 TIB/2=354 TIB/3=119 TIB/4=122 TID/1=290 TID/2=305 TID/3=380 TOB/1=427 TOB/2=294 TOB/3=99 TOB/4=68 TOB/5=57 TOB/6=77 TEC/1=596 TEC/2=646 TEC/3=705 TEC/4=562 TEC/5=641 TEC/6=649 TEC/7=469 TEC/8=523 TEC/9=400 EB=5521 EE=6214 ES=1069 HB=173 HE=648 HO=1 HF=531
 ```
-`simHits_pileup_10_SIM.log` (library event 72), station `ALL`:
+`simHits_pileup_10_SIM.log` (library event 747), station `ALL`:
 ```
-PXB/1=80 PXB/2=72 PXB/3=81 PXB/4=44 PXF/1=43 PXF/2=67 PXF/3=66 TIB/1=97 TIB/2=46 TIB/3=14 TIB/4=30 TID/1=52 TID/2=56 TID/3=64 TOB/1=91 TOB/2=38 TOB/3=31 TOB/4=27 TOB/5=19 TOB/6=3 TEC/1=135 TEC/2=146 TEC/3=160 TEC/4=116 TEC/5=121 TEC/6=134 TEC/7=83 TEC/8=92 TEC/9=89 CSC/1=11 EB=1217 EE=1948 ES=223 HB=21 HE=122 HF=119
+PXB/1=3 PXB/2=5 PXF/1=6 PXF/2=7 PXF/3=6 TID/1=5 TID/2=9 TID/3=16 TOB/1=1 TOB/2=13 TOB/4=1 TEC/1=6 TEC/2=9 TEC/3=16 TEC/4=3 TEC/5=5 TEC/6=6 TEC/7=5 TEC/8=7 TEC/9=7 EB=60 EE=61 ES=10 HB=1 HE=17 HF=54
 ```
-The page header of `pileup/ALL/simHits_pileup_10_SIM_ALL_etaphi_run1_event72.png` gives the energies: `EB 1217 cells (9.45 GeV),
-EE 1948 cells (43.5 GeV), ES 223 cells (0.0463 GeV), HB 21 cells (0.0175 GeV), HE 122 cells (0.223 GeV), HF 119 cells
-(173, shower-library units)`; 9.45 + 43.5 + 0.05 = 53.0 GeV of ECAL energy, 0.0175 + 0.223 + 173 = 173.2 HCAL units;
-`5758 hits` = 2108 PSimHits + 3650 cells.
+The page header of `pileup/ALL/simHits_pileup_10_SIM_ALL_run1_event747.pdf` (`pdftotext`) gives the energies: `EB 60 cells
+(0.232 GeV), EE 61 cells (0.86 GeV), ES 10 cells (0.00141 GeV), HB 1 cells (0.000649 GeV), HE 17 cells (0.0413 GeV), HF 54
+cells (98, shower-library units)`; 0.232 + 0.86 + 0.001 = 1.09 GeV of ECAL energy, 0.0006 + 0.041 + 98 = 98.0 HCAL units;
+`339 hits` = 136 PSimHits + 203 cells. No hit in TIB or in the muon system: the collision is single diffractive, its
+charged particles leave at small angles (TID, TEC and PXF hold 113 of the 136 tracker hits, HF 54 of the 72 HCAL cells).
 
 `simHits_mixed_10_SIM.log`, station `ALL`:
 ```
-PXB/1=19053 PXB/2=13201 PXB/3=10078 PXB/4=8621 PXF/1=11399 PXF/2=12317 PXF/3=12984 TIB/1=29220 TIB/2=23887 TIB/3=10109 TIB/4=8725 TID/1=11910 TID/2=12594 TID/3=13393 TOB/1=23175 TOB/2=20098 TOB/3=8412 TOB/4=6786 TOB/5=5771 TOB/6=4898 TEC/1=22851 TEC/2=24335 TEC/3=25839 TEC/4=19769 TEC/5=20618 TEC/6=21515 TEC/7=15890 TEC/8=16975 TEC/9=13892 DT/1=37 DT/2=6 CSC/1=86 CSC/2=19 CSC/3=33 CSC/4=13 RPC/1=2 GEM/1=8 EB=59897 EE=14619 ES=31654 HB=3624 HE=4170 HO=15 HF=3212
+PXB/1=89824 PXB/2=62169 PXB/3=49310 PXB/4=41947 PXF/1=53296 PXF/2=58008 PXF/3=61808 TIB/1=135948 TIB/2=112600 TIB/3=47183 TIB/4=40499 TID/1=57198 TID/2=60106 TID/3=63394 TOB/1=111338 TOB/2=95803 TOB/3=39951 TOB/4=33408 TOB/5=29258 TOB/6=23397 TEC/1=107974 TEC/2=113398 TEC/3=119294 TEC/4=90905 TEC/5=94783 TEC/6=99128 TEC/7=73139 TEC/8=77488 TEC/9=64127 DT/1=62 DT/2=8 CSC/1=432 CSC/2=221 CSC/3=39 CSC/4=18 RPC/1=8 RPC/4=1 GEM/1=48 GEM/2=1 EB=61200 EE=14648 ES=82999 HB=6856 HE=5464 HO=66 HF=3405
 ```
-The page header of `mixed/ALL/simHits_mixed_10_SIM_ALL_etaphi_run1_event1.png`: `565710 hits: ... EB 59897 cells (2.63e+03 GeV),
-EE 14619 cells (9.72e+03 GeV), ES 31654 cells (9.49 GeV), HB 3624 cells (10.3 GeV), HE 4170 cells (60.1 GeV), HO 15 cells
-(0.0108 GeV), HF 3212 cells (5.39e+04, shower-library units)`; `signal + pileup (MixingModule): 12892 hits of the signal
-event + 552818 hits of the 193 mixed pileup events (31060 pileup primaries)`; the followed primaries `pi+ 31 GeV` and
-`K0S 16 GeV`. 565 710 = 448 519 PSimHits + 117 191 cells; 12 892 = 10 272 + 2620.
+The page header of `mixed/ALL/simHits_mixed_10_SIM_ALL_run1_event1.pdf` (`pdftotext`): `2282157 hits: PXB 243250, PXF 173112,
+TIB 336230, TID 180698, TOB 333155, TEC 840236, DT 70, CSC 710, RPC 9, GEM 49, EB 61200 cells (1.21e+04 GeV), EE 14648 cells
+(4.44e+04 GeV), ES 82999 cells (43.4 GeV), HB 6856 cells (43.7 GeV), HE 5464 cells (280 GeV), HO 66 cells (0.0614 GeV), HF 3405
+cells (2.46e+05, shower-library units)`; `signal + pileup (MixingModule): 11040 hits of the signal event + 2271117 hits of
+the 995 mixed pileup events (149894 pileup primaries)`; the legend `pileup, early (bx < 0) (1731633)`, `in-time (bx 0)
+(133233)`, `late (bx > 0) (406251)`; the followed primaries `π+ 31 GeV`, `K0S 16 GeV`, `γ 18 GeV`, `e- 5 GeV` (in the
+eta-phi view the labels of the photon and the electron overlap in the b jet). 2 282 157 = 2 107 519 PSimHits + 174 638
+cells; 11 040 = 10 272 + 768, one in 207 (2 282 157 / 11 040 = 206.7); the tracker 243 250 + 173 112 + 336 230 + 180 698 +
+333 155 + 840 236 = 2 106 681. In the eta-phi view the early crossings dominate 129 238 of the 158 847 ECAL cells (81 %,
+"four in five") and 13 395 of the 15 791 HCAL cells (85 %, "five in six").
 
-The per-collision list of the mixed log (193 lines, `pileup event <k> in bx <b>: <primaries> primaries, <SimTracks>
-SimTracks, <SimVertices> SimVertices, vertex z = <z> cm, t = <t> ns`), first and last of each bunch crossing:
+The per-collision list of the mixed log (995 lines, `pileup event <k> in bx <b>: <primaries> primaries, <SimTracks>
+SimTracks, <SimVertices> SimVertices, vertex z = <z> cm, t = <t> ns`), first and last of the earliest, of the in-time
+and of the latest bunch crossing:
 ```
-    pileup event 1 in bx -1: 178 primaries, 662 SimTracks, 271 SimVertices, vertex z = -3.30 cm, t = -25.0 ns
-    pileup event 71 in bx -1: 139 primaries, 445 SimTracks, 182 SimVertices, vertex z = -8.02 cm, t = -25.0 ns
-    pileup event 1 in bx 0: 164 primaries, 534 SimTracks, 208 SimVertices, vertex z = -0.48 cm, t = 0.0 ns
-    pileup event 68 in bx 0: 69 primaries, 201 SimTracks, 78 SimVertices, vertex z = 3.51 cm, t = 0.0 ns
-    pileup event 1 in bx 1: 175 primaries, 575 SimTracks, 219 SimVertices, vertex z = -2.53 cm, t = 25.0 ns
-    pileup event 54 in bx 1: 428 primaries, 1417 SimTracks, 543 SimVertices, vertex z = -3.04 cm, t = 25.0 ns
+    pileup event 1 in bx -12: 178 primaries, 662 SimTracks, 271 SimVertices, vertex z = -3.30 cm, t = -300.0 ns
+    pileup event 71 in bx -12: 139 primaries, 445 SimTracks, 182 SimVertices, vertex z = -8.02 cm, t = -300.0 ns
+    pileup event 1 in bx 0: 22 primaries, 55 SimTracks, 19 SimVertices, vertex z = 2.16 cm, t = 0.0 ns
+    pileup event 64 in bx 0: 285 primaries, 890 SimTracks, 348 SimVertices, vertex z = -3.24 cm, t = 0.0 ns
+    pileup event 1 in bx 3: 55 primaries, 138 SimTracks, 52 SimVertices, vertex z = -1.80 cm, t = 75.0 ns
+    pileup event 60 in bx 3: 167 primaries, 569 SimTracks, 222 SimVertices, vertex z = -3.07 cm, t = 75.0 ns
 ```
-Event 1 of bx 0 is library event 72
-(164 primaries, 534 SimTracks, z = -0.48 cm, as in the pileup sample); the pileup times are the bunch-crossing shift.
+Event 1 of bx 0 is library event 747 (22 primaries, 55 SimTracks, z = 2.16 cm, as in the pileup sample); the first two
+lines are the first and the last line of bx -1 of the earlier three-crossing version (library events 1 and 71, then at
+t = -25 ns); the pileup times are the bunch-crossing shift.
 
 ### 4.4 FWLite extras: time-of-flight windows and calorimeter times of the signal
 
@@ -467,29 +537,44 @@ the 7273 EB hits are below 15 MeV), show the `CaloSD.EminHits` thresholds of 15 
 
 ### 4.5 FWLite extras: the library and the reconciliation with chapter 09
 
-Over the 250 events of `step2_SIM_pileup_10_SIM.root`: `primaries (SimTracks with genpartIndex > 0) 38862, SimTracks 120574,
-tracker PSimHits 548028, EcalHitsEB 394627 hits (3149.2 GeV), EcalHitsEE 691000 hits (11616.1 GeV), HcalHits 119964`;
-the same loop on `test/09_G4/out/step2_G4_pileup_09_G4.root` gives `38862 primaries, 38862 SimTracks, 382523 tracker
-crossings`. For library events 72 to 139: `68 events, 10414 primaries, 32406 SimTracks, 146028 tracker hits` (full
-physics; 10 414 primaries, 10 414 SimTracks and 102 018 crossings transport-only); the smallest and largest events of the
-library have 1 (event 12) and 1897 (event 247) SimTracks.
+Over the 1000 events of `step2_SIM_pileup_10_SIM.root` (FWLite, 21 November 2026; `genpartIndex() > 0` for the
+primaries, the twelve `TrackerHits*` collections, the calorimeter collections of `g4SimHits`): `primaries 150266,
+SimTracks 464653, tracker PSimHits 2101876, EcalHitsEB 1514223 hits (12088.1 GeV), EcalHitsEE 2657171 hits (44222.2
+GeV), EcalHitsES 191874 hits (43.2 GeV), HcalHits 458101 (245080.1 GeV + HF units)`; the same loop on
+`test/09_G4/out/step2_G4_pileup_09_G4.root` gives `150266 primaries, 150266 SimTracks, 1469994 tracker crossings`. By the
+classes of the draw (`test/08_PU/out/draw_08_PU.txt`), full physics:
 
-Reconciliation of the 10 414 with the 10 387 primaries and 27 PPS protons of chapter 09 (events 72 to 139): FWLite
-gives `SimTracks with link 10414, duplicate links 1, distinct status-1 particles with a SimTrack 10388, other 25`. The 25 `SimTrack`s whose
-link is the barcode of a non-status-1 particle of `generatorSmeared` are all protons (`type() = 2212`) of 3040 to 6800 GeV
-with their vertex at z = +-20300 cm, r = 0.03 cm: the forward protons that `LHCTransport` delivers to the PPS region
-(section 4.8, (8)), not particles of the minimum-bias record. The `generatorSmeared` particle that happens to carry the
-same barcode is, by PDG id, `{21: 14, -1: 2, -2: 2, 2: 2, 1: 1, 213: 1, 2101: 1, 113: 1, 313: 1}` (e.g. event 78: a proton of
-4132 GeV, the barcode of a gluon of 495 GeV; event 124: protons of 6800 and 5539 GeV, the barcodes of a u quark of 171 GeV and
-a ud diquark of 6629 GeV); FWLite on events 72-139 of `step2_SIM_pileup_10_SIM.root`, `SimTrack::type()`, the vertex z and
-`HepMC::GenEvent::barcode_to_particle` of `generatorSmeared`. The `g4Ledger.py` of
-chapter 09 counts, since 13 November 2026, the PPS protons apart: it finds the `SimTrack`s with their vertex at
-|z| > 100 m and matches them to their generator protons by energy (27 protons, 150058.2 GeV), and counts as primaries
-the status-1 particles whose barcode is the `genpartIndex()` of a `SimTrack` from the collision (10 387; before the
-fix 10 388, the proton of event 132, whose link happens to equal its barcode, being counted as a primary). The
-`SimHitAnalyzer` counts all `SimTrack`s with `genpartIndex() > 0`: 10 387 + 27 = 10 414 (the 25 links above, the one
-of event 132, and the one of event 75 that coincides with the barcode of a stable proton of 6.0 GeV that is a primary
-as well, hence the "duplicate link"). For the signal both give 571.
+| library events | collisions | primaries | of which PPS protons (vertex at \|z\| > 100 m) | SimTracks | tracker hits | EB hits (GeV) | EE hits (GeV) | HCAL hits |
+|---|---|---|---|---|---|---|---|---|
+| 1-746, bx -12..-1 | 746 | 114 093 | 271 | 354 098 | 1 588 361 | 1 146 846 (9134.5) | 2 008 061 (33 410.2) | 349 246 |
+| 747-810, bx 0 | 64 | 8804 | 18 | 26 785 | 125 625 | 91 425 (776.5) | 159 272 (2650.6) | 26 556 |
+| 811-995, bx 1..3 | 185 | 26 997 | 70 | 82 779 | 382 423 | 273 080 (2157.0) | 483 363 (8064.7) | 80 957 |
+| 996-1000, not drawn | 5 | 372 | 1 | 991 | 5467 | 2872 (20.1) | 6475 (96.7) | 1342 |
+
+Transport only (chapter 09 file), tracker crossings 1 114 158 / 88 633 / 263 541 / 3662 for the same four classes. The
+smallest and the largest events of the library have 1 (event 12) and 2669 (event 760, in time) SimTracks. Library event
+747: `22 primaries (one a proton of 6800 GeV at z = -20300 cm), 55 SimTracks, 136 tracker hits, EcalHitsEB 79 hits
+(0.232 GeV), EcalHitsEE 84 (0.860 GeV), EcalHitsES 10, HcalHits 90 (98.0 GeV + HF units)`. The first 250 events are those
+of the 250-event library of the earlier version of the chapter: SimTracks, `TrackerHitsTECLowTof` and the `EcalHitsEE`
+energy compared event by event, 0 differences.
+
+The 64 in-time collisions: 8804 primaries = the 8786 primaries of chapter 09 (`ledger_09_G4.txt`, `g4Ledger.py`, which
+counts the PPS protons apart) + 18 forward protons of 3307 to 6800 GeV (104 857 GeV in all) that `LHCTransport` hands
+to Geant4 at z = +-203 m (section 4.8, (8)); the `SimHitAnalyzer` counts every `SimTrack` with `genpartIndex() > 0`. (In
+the earlier version, library events 72 to 139 of bx -1..1: 10 414 = 10 387 + 27; the `SimTrack` link of a PPS proton
+is the barcode of some non-status-1 particle of `generatorSmeared`, which is why `g4Ledger.py` matches them by energy
+since 13 November 2026.)
+
+Primaries per collision by bunch crossing (FWLite on the library, the ranges of the draw; the same numbers are in section
+(7) of `extras_10_SIM.txt`, from the mixed log):
+
+| bx | -12 | -11 | -10 | -9 | -8 | -7 | -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| collisions | 71 | 68 | 54 | 59 | 52 | 61 | 76 | 59 | 65 | 59 | 68 | 54 | 64 | 63 | 62 | 60 |
+| median primaries | 69 | 114.5 | 148.5 | 100 | 78 | 65 | 100 | 161 | 90 | 99 | 104 | 80 | 84 | 104 | 77.5 | 76.5 |
+| primaries | 10 012 | 10 414 | 10 634 | 8452 | 7926 | 7045 | 13 204 | 10 446 | 9017 | 9161 | 9813 | 7969 | 8804 | 10 972 | 8118 | 7907 |
+
+All 995: median 90, from 1 to 754, 149 894 primaries; the in-time crossing averages 137.6 per collision against 150.6.
 
 ### 4.6 The release parameters quoted in "Open problems for Phase-2"
 
@@ -576,7 +661,10 @@ field map and the simulated beam spot are the same tags as in 2024 (chapter 09 c
 companion, section 4.9); the five modifiers of `Run3_2025` occur neither in `g4SimHits_cfi.py` nor in
 `SimGeneral/MixingModule/python/`.
 
-The rerun with the 2025 settings (12 November 2026, `REUSE=0`) against the 2024 run (7 November 2026):
+The rerun with the 2025 settings (12 November 2026, `REUSE=0`) against the 2024 run (7 November 2026); both were made
+with the 250-event library and the window bx -1..1 of that time, so the playback and in-time rows quote the draw of then
+(the rerun of 21 November 2026 on bx -12..3, section 4.5, used the 2025 settings only: nothing of the SIM step depends on
+the year apart from the drawing alignment below, and the first 250 events of the new library are the old ones):
 
 | compared | result |
 |---|---|
@@ -692,20 +780,59 @@ reproduces the HB, HE and HF sums of the SimAnalyzer.
 -- (6) the followed photon: its own deposits in the EB/EE crystals (stage signal)
   photon pT 17.73 E 44.27: 466 EB/EE cells, 39.45 GeV (89 % of E); hottest 7.80 GeV (20 %), 5 hottest 18.56 GeV (47 %), 90 % in 38 cells; cells above 1 GeV: 10; ES 0.0039 GeV; tracker hits of its descendants (stored tracks) 171
 
--- (7) the 193 mixed collisions (simHits_mixed_10_SIM.log, lines "pileup event")
-  190 collisions with |z| < 1 m: mean z = 0.13 cm, rms 3.76 cm, min -9.52, max 10.08; within |z - 3.11| < 0.1 cm of the signal vertex: 2
-  outside: bx -1 pileup event 12 at z = -20300 cm (1 primary)
-  outside: bx +0 pileup event 53 at z = -20300 cm (2 primary)
-  outside: bx +1 pileup event 40 at z = 20300 cm (1 primary)
-  bx -1: 71 collisions, primaries per collision: min 1, median 69, max 537, sum 10012
-  bx +0: 68 collisions, primaries per collision: min 2, median 114.5, max 470, sum 10414
-  bx +1: 54 collisions, primaries per collision: min 1, median 148.5, max 574, sum 10634
+-- (7) the mixed collisions (simHits_mixed_10_SIM.log, lines "pileup event")
+  984 collisions with |z| < 1 m: mean z = 0.38 cm, rms 3.58 cm, min -12.42, max 12.86; within |z - 3.11| < 0.1 cm of the signal vertex: 13
+  outside: bx -12 pileup event 12 at z = -20300 cm (1 primary)
+  outside: bx -11 pileup event 53 at z = -20300 cm (2 primary)
+  outside: bx -10 pileup event 40 at z = 20300 cm (1 primary)
+  outside: bx -9 pileup event 3 at z = 20300 cm (1 primary)
+  outside: bx -4 pileup event 2 at z = 20300 cm (2 primary)
+  outside: bx -2 pileup event 8 at z = 20300 cm (1 primary)
+  outside: bx -2 pileup event 60 at z = -20300 cm (2 primary)
+  outside: bx +0 pileup event 28 at z = 20300 cm (2 primary)
+  outside: bx +1 pileup event 23 at z = -20300 cm (2 primary)
+  outside: bx +2 pileup event 6 at z = -20300 cm (1 primary)
+  outside: bx +3 pileup event 35 at z = -20300 cm (2 primary)
+  bx -12: 71 collisions, primaries per collision: min 1, median 69, max 537, sum 10012
+  bx -11: 68 collisions, primaries per collision: min 2, median 114.5, max 470, sum 10414
+  bx -10: 54 collisions, primaries per collision: min 1, median 148.5, max 574, sum 10634
+  bx -9: 59 collisions, primaries per collision: min 1, median 100, max 623, sum 8452
+  bx -8: 52 collisions, primaries per collision: min 2, median 78, max 736, sum 7926
+  bx -7: 61 collisions, primaries per collision: min 2, median 65, max 481, sum 7045
+  bx -6: 76 collisions, primaries per collision: min 3, median 100, max 752, sum 13204
+  bx -5: 59 collisions, primaries per collision: min 4, median 161, max 734, sum 10446
+  bx -4: 65 collisions, primaries per collision: min 2, median 90, max 610, sum 9017
+  bx -3: 59 collisions, primaries per collision: min 3, median 99, max 607, sum 9161
+  bx -2: 68 collisions, primaries per collision: min 1, median 104, max 542, sum 9813
+  bx -1: 54 collisions, primaries per collision: min 2, median 80, max 610, sum 7969
+  bx +0: 64 collisions, primaries per collision: min 2, median 84, max 754, sum 8804
+  bx +1: 63 collisions, primaries per collision: min 2, median 104, max 535, sum 10972
+  bx +2: 62 collisions, primaries per collision: min 1, median 77.5, max 589, sum 8118
+  bx +3: 60 collisions, primaries per collision: min 2, median 76.5, max 675, sum 7907
+  early (bx < 0) : 746 collisions, primaries per collision: min 1, median 93.5, max 752, sum 114093
+  in time (bx 0) : 64 collisions, primaries per collision: min 2, median 84, max 754, sum 8804
+  late (bx > 0)  : 185 collisions, primaries per collision: min 1, median 84, max 675, sum 26997
+  all            : 995 collisions, primaries per collision: min 1, median 90, max 754, sum 149894
 
--- (8) the library collisions with a vertex at |z| = 203 m (step2_SIM_pileup_10_SIM.root, library events 12, 124, 179)
+-- (8) the library collisions with a vertex at |z| = 203 m (step2_SIM_pileup_10_SIM.root, all library events scanned)
   library event 12: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
   library event 124: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
   library event 124: SimTrack pdg 2212, E = 5539 GeV, primary True, vertex z = 20300 cm
   library event 179: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = 20300 cm
+  library event 196: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = 20300 cm
+  library event 502: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = 20300 cm
+  library event 502: SimTrack pdg 2212, E = 3268 GeV, primary True, vertex z = -20300 cm
+  library event 632: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = 20300 cm
+  library event 684: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
+  library event 684: SimTrack pdg 2212, E = 3605 GeV, primary True, vertex z = 20300 cm
+  library event 774: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = 20300 cm
+  library event 774: SimTrack pdg 2212, E = 4783 GeV, primary True, vertex z = -20300 cm
+  library event 833: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
+  library event 833: SimTrack pdg 2212, E = 5577 GeV, primary True, vertex z = 20300 cm
+  library event 879: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
+  library event 970: SimTrack pdg 2212, E = 6800 GeV, primary True, vertex z = -20300 cm
+  library event 970: SimTrack pdg 2212, E = 5811 GeV, primary True, vertex z = 20300 cm
+  library events with a primary at |z| > 100 m: 318 of 1000 (360 such primaries); with nothing else for Geant4: 11 (12 124 179 196 502 632 684 774 833 879 970)
 ```
 
 The arithmetic of the chapter on these numbers:
@@ -732,12 +859,12 @@ The arithmetic of the chapter on these numbers:
 | 142 nuclear-interaction vertices: 4 + 13 + 85 + 26 + 14 | the location line of section (4); 14 = 9 (calorimeters) + 5 (preshower) |
 | b system: ECAL 63.58 GeV, HCAL 0.386 GeV in 122 cells, x sampling = 73 GeV | 6.229 + 57.323 + 0.024; 0.010 + 0.376; 17 + 105; 0.010 x 125 + 0.376 x 190 = 72.7 (HB and HE sampling factors of `test/11_DIGI/out/thresholds_11_DIGI.txt`: `hb.samplingFactors` 124.5-143.5, `he.samplingFactors` 186.1-210.6) |
 | bbar system: 9.9 GeV in the ECAL (9.4 in the EE) | 0.540 + 9.353 + 0.012 = 9.905 (the SimAnalyzer: 9.90505) |
-| the followed photon and pi+ in the mixed event: 80 crystals with 42.6 GeV, 8 with 3.9 GeV | the header of `mixed/ECAL/simHits_mixed_10_SIM_ECAL_run1_event1.pdf` (`pdftotext`): `π+ 13.3 GeV (η -1.54), 3.91 GeV in 8 cells; KS 15.7 GeV (η -3.77), 4.56 GeV in 63 cells; γ 17.7 GeV (η -1.57), 42.57 GeV in 80 cells` |
+| the followed photon and pi+ in the mixed event: 37 crystals with 41.7 GeV, 2 with 2.8 GeV; the HF pi+ 2 of its 19 cells | the header of `mixed/ECAL/simHits_mixed_10_SIM_ECAL_run1_event1.pdf` (`pdftotext`): `π+ 13.3 GeV (η -1.54), 2.78 GeV in 2 cells; KS 15.7 GeV (η -3.77), 1.44 GeV in 28 cells; γ 17.7 GeV (η -1.57), 41.69 GeV in 37 cells; e 5.0 GeV (η -1.43), 6.07 GeV in 20 cells`; of `mixed/HCAL/...`: `π+ 30.6 GeV (η -3.74), 311 (HF units) in 2 HF cells; KL 11.8 GeV (η -3.71), 54 (HF units) in 1 HF cells` |
 | the followed primaries of the signal: photon 270 cells with 42.0 GeV, pi+ 35 cells with 3.4 GeV, 171 tracker hits of the photon, 809 HF units in 19 cells of the HF pi+, K0S 203 hits | the headers of `signal/{TRK,ECAL,HCAL}/simHits_signal_10_SIM_<station>_run1_event1.pdf`: `π+ 13.3 GeV (η -1.54), 29 hits; KS 15.7 GeV (η -3.77), 203 hits; γ 17.7 GeV (η -1.57), 171 hits; e 5.0 GeV (η -1.43), 138 hits`; `π+ 13.3 GeV (η -1.54), 3.43 GeV in 35 cells; ...; γ 17.7 GeV (η -1.57), 42.03 GeV in 270 cells`; `π+ 30.6 GeV (η -3.74), 809 (HF units) in 19 HF cells`; the "GeV" of these labels is the pT of the primary (`plugins/SimHitAnalyzer.cc`, `highlightLine`) |
-| 98 % of the barrel crystals hit; EE 14 619 of 14 648; ES 31 654 of 137 216; HB 3624 of 9072; HF 3212 of 3456 | `simHits_mixed_10_SIM.log` (cells per subdetector) against the detector elements of `simHits_signal_10_SIM.log` (`EB=61200 EE=14648 ES=137216 HB=9072 HE=6768 HO=2160 HF=3456`); 59 897 / 61 200 = 97.9 % |
-| EE 9720 GeV, 33 times the signal | the header of `mixed/ECAL/...`: `EE 14619 cells (9.72e+03 GeV)`; 9720 / 293.66 = 33.1 |
-| PU vertices: r.m.s. 3.76 cm, -9.5 to +10.1 cm, 2 within 1 mm of z = 3.11 cm | section (7); the three collisions at z = +-203 m left out |
-| primaries per collision: median 69, 114.5, 148.5 in bx -1, 0, +1 | section (7) of `extras_10_SIM.txt`: for the even counts 68 and 54 the mean of the two middle values, (103 + 126) / 2 and (143 + 154) / 2 (the script printed the upper middle value, 126 and 154, until it was fixed; the same from the `pileup event` lines of `simHits_mixed_10_SIM.log`) |
+| every barrel and endcap crystal hit; ES 82 999 of 137 216; HB 6856 of 9072, HE 5464 of 6768, HF 3405 of 3456 | `simHits_mixed_10_SIM.log` (cells per subdetector: `EB=61200 EE=14648 ES=82999`, `HB=6856 HE=5464 HO=66 HF=3405`) against the detector elements of `simHits_signal_10_SIM.log` (`EB=61200 EE=14648 ES=137216 HB=9072 HE=6768 HO=2160 HF=3456`) |
+| EE 44 400 GeV, 151 times the signal | the header of `mixed/ECAL/...`: `EE 14648 cells (4.44e+04 GeV)`; 44 400 / 293.66 = 151 |
+| PU vertices: r.m.s. 3.58 cm, -12.4 to +12.9 cm, 13 of 984 within 1 mm of z = 3.11 cm, one of them in time | section (7); the 11 collisions at z = +-203 m left out (984 + 11 = 995) |
+| primaries per collision: median 90 of the 995, per crossing from 65 (bx -7) to 161 (bx -5), 84 in time; 137.6 per in-time collision against 150.6 | section (7) of `extras_10_SIM.txt` (for an even count the mean of the two middle values; the script printed the upper middle value until 13 November 2026); the same from FWLite on the library, section 4.5: 8804 / 64 = 137.6, 149 894 / 995 = 150.6 |
 | the PPS protons, `LHCTransport`, 203 m | section (8); `g4SimHits_cfi.py` line 694 `run3_common.toModify( g4SimHits, LHCTransport = True )`; `SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py` lines 10-11 `PPSRegionStart_45/56 = 203` |
 
 The release parameters quoted in the subsections (all under `$CMSSW_RELEASE_BASE/src`):

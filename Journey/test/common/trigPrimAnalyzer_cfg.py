@@ -28,7 +28,7 @@ options.register('eventsToProcess', '', VarParsing.multiplicity.singleton, VarPa
                  'run:lumi:event to draw, e.g. 1:1:1; empty: the first maxEvents events')
 options.register('pdfFile', 'trigPrim.pdf', VarParsing.multiplicity.singleton, VarParsing.varType.string, 'the multi-page PDF')
 options.register('pngPrefix', 'trigPrim', VarParsing.multiplicity.singleton, VarParsing.varType.string, 'prefix of the PNG of every page')
-options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG')
+options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG, rendered from the closed PDF by pdftoppm (plugins/PdfPng.h; ROOT without pdftoppm)')
 options.register('sampleLabel', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  "text printed in the right panel of every page, '|' separates lines")
 options.register('mixed', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,

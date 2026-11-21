@@ -27,7 +27,7 @@ options.register('pdfFile', 'digiAnalyzer.pdf', VarParsing.multiplicity.singleto
                  'the multi-page PDF (eta-phi page, r-z page per event)')
 options.register('pngPrefix', 'digiAnalyzer', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'prefix of the PNG of every page (<prefix>_etaphi_run<R>_event<E>.png, ..._rz_...)')
-options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG')
+options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG, rendered from the closed PDF by pdftoppm (plugins/PdfPng.h; ROOT without pdftoppm)')
 options.register('sampleLabel', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  "text printed in the right panel of every page, '|' separates lines")
 options.register('etaMax', 5.2, VarParsing.multiplicity.singleton, VarParsing.varType.float, 'eta axis range of the eta-phi page')

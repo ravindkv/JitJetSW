@@ -94,9 +94,12 @@ for l in lines('  zoom gen jet ')[2:]:
 print('\n-- 5. Step 5: the decision')
 acc = [kv(l) for l in lines('  path: ') if ' accept=1 ' in l]
 names = [a['name'] for a in acc]
-# what satisfies each accepted HLT_/DST_ path (the reasons are those of the chapter: the muon is the kaon decay of a
-# pileup collision found in chapter 12, the calorimeter MET is several times the neutrino of the signal); the values
-# are read from the objects of the last filter of the two paths
+# what satisfies each accepted HLT_/DST_ path. 'signal jets': the jet paths, whose last filter objects are the two
+# jets of the signal in our event (checked in the filter: lines); 'a pileup object': paths that can only accept on
+# something the hard collision did not make (since the bx -12..3 rerun of 21 November 2026 none accepts: the calorimeter
+# MET is 66.4 GeV, below the 90 of HLT_CaloMET90_NotCleaned, and no Level-1 muon fires HLT_Mu3_PFJet40; with bx -1..1
+# both accepted, on a MET of 138.5 GeV and on the muon of a pileup kaon decay). The values are read from the objects of
+# the last filter of the paths
 def filterValue(label, default='?'):
     for l in lines('  filter: label=%s ' % label):
         m = re.search(r'\(([\d.]+),', l)
@@ -105,11 +108,10 @@ def filterValue(label, default='?'):
     return default
 
 signalJets = re.compile(r'^HLT_(PFJet|PFJetFwd|AK8PFJet|AK8PFJetFwd|DiPFJetAve)\d+_v\d+$')
-pileupObject = {'HLT_Mu3_PFJet40': 'the muon of a pileup kaon decay (%s GeV at L2, %s GeV at L3) and the b jet'
+pileupObject = {'HLT_Mu3_PFJet40': 'a muon (%s GeV at L2, %s GeV at L3; in the bx -1..1 version the decay of a pileup kaon) and a PF jet'
                                    % (filterValue('hltL2fL1sMu3L1f0L2Filtered0'), filterValue('hltL3fL1sMu3L1f0L2f0L3Filtered3')),
-                'HLT_CaloMET90_NotCleaned': 'a calorimeter MET of %s GeV (the neutrino has 37.5)' % filterValue('hltMET90')}
-l1only = {'HLT_L1ETMHadSeeds': 'the L1 seed alone (ETMHF)', 'HLT_L1SingleMuCosmics': 'the L1 seed alone (the pileup muon)',
-          'HLT_L1AlwaysTrue': 'the L1 seed alone (always true)'}
+                'HLT_CaloMET90_NotCleaned': 'a calorimeter MET of %s GeV (the neutrino of the signal has 37.5)' % filterValue('hltMET90')}
+l1only = {'HLT_L1ETMHadSeeds': 'the L1 seed alone (ETMHF)', 'HLT_L1SingleMuCosmics': 'the L1 seed alone (an L1 muon)', 'HLT_L1AlwaysTrue': 'the L1 seed alone (always true)'}
 groups = {'signal jets': [], 'a pileup object': [], 'the L1 seed alone': [], 'no object (zero bias, random, calibration, monitoring)': [],
           'scouting (DST_)': []}
 for n in names:
@@ -135,7 +137,7 @@ for g, v in groups.items():
 # the paths whose seed fired (they start their reconstruction): by kind, accepted or stopped, and by which filter type
 from collections import Counter, OrderedDict
 cats = [('single jets, dijets', r'^HLT_(AK8)?PFJet(Fwd)?\d+_v|^HLT_DiPFJetAve'), ('multijets', r'^HLT_QuadPFJet'),
-        ('VBF (two jets far apart in eta)', r'^HLT_VBF'), ('missing energy, HT', r'MET|MHT|^HLT_HT|ECALHT'),
+        ('VBF (two jets far apart in eta)', r'^HLT_VBF'), ('missing energy, HT', r'MET|MHT|^HLT_HT|^HLT_PFHT|ECALHT'),
         ('muons', r'^HLT_(L2|L3|DoubleL2)?Mu|^HLT_Mu'), ('electrons', r'^HLT_Ele'), ('scouting', r'^DST_'),
         ('no object, L1 seed only, calibration', r'ZeroBias|Physics|Random|Calibration|HcalNZS|HcalPhiSym|PPSRandom|^HLT_L1'),
         ('others (isolated tracks, PPS, monitoring)', r'.')]

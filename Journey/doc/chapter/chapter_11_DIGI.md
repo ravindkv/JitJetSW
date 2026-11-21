@@ -12,6 +12,11 @@ worked examples come from `test/11_DIGI/digiExamples_11_DIGI.py` (section 3 belo
 payloads and release files of section 4.11. All commands below are run from
 `test/` of an initialized CMSSW_15_0_5 (`cmsenv`), with `J=$CMSSW_BASE/src/JitJetSW/Journey`.
 
+Since 21 November 2026 the chapter mixes the sixteen bunch crossings -12..3 of the Run-3 production (995 library
+collisions: 746 early, 64 in time, 185 late; the pileup sample (11b) is library event 747), as chapters 08-10 do. Until
+then it mixed bx -1..1 (193 collisions, 71 / 68 / 54, sample (11b) = library event 72); the outputs of that version are
+kept in `test/tmp/out_bx-1to1/11_DIGI/out/`.
+
 ## 1. The cmsDriver.py commands
 
 The script runs `cmsDriver.py` three times through `run_driver` of `test/common/jitjet_common.sh`. The commands,
@@ -27,16 +32,16 @@ cmsDriver.py step3 --filein file:$J/test/10_SIM/out/step2_SIM_signal_10_SIM.root
   --customise_commands "process.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')" \
   --python_filename $J/test/11_DIGI/step3_DIGI_signal_11_DIGI_cfg.py --no_exec
 
-# (11b) library event 72 alone
+# (11b) library event 747 alone
 cmsDriver.py step3 --filein file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root \
   --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended \
   -n -1 -s DIGI:pdigi_valid --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_DIGI_pileup_11_DIGI.root \
-  --customise_commands "process.source.eventsToProcess = cms.untracked.VEventRange('1:1:72')" \
+  --customise_commands "process.source.eventsToProcess = cms.untracked.VEventRange('1:1:747')" \
   --python_filename $J/test/11_DIGI/step3_DIGI_pileup_11_DIGI_cfg.py --no_exec
 
-# (11a+11b) the signal with PU = 60 per bunch crossing in bx -1..1, the collisions of the chapter 10 mixing (playback)
+# (11a+11b) the signal with PU = 60 per bunch crossing in bx -12..3, the collisions of the chapter 10 mixing (playback)
 cmsDriver.py step3 --filein file:$J/test/10_SIM/out/step3_MIX_10_SIM.root \
-  --pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)}" --pileup_input file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root \
+  --pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-12, 3)}" --pileup_input file:$J/test/10_SIM/out/step2_SIM_pileup_10_SIM.root \
   --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended \
   -n -1 -s DIGI:pdigi_valid --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_DIGI_mixed_11_DIGI.root \
   --customise_commands "process.source.eventsToProcess = cms.untracked.VEventRange('1:1:1')\nprocess.mix.input.sequential = cms.untracked.bool(True)\nprocess.mix.playback = cms.untracked.bool(True)" \
@@ -46,13 +51,13 @@ cmsDriver.py step3 --filein file:$J/test/10_SIM/out/step3_MIX_10_SIM.root \
 | argument | meaning |
 |---|---|
 | `step3` | the name of the configuration (free; `step1` was GEN, `step2` SIM) |
-| `--filein file:...` | the input (Rule E): the SIM file of the signal (11a), the 250-event library (11b), or the chapter-10 mixing output `step3_MIX_10_SIM.root`, which is the signal plus the `CrossingFramePlaybackInfoNew` of its mixing (11a+11b) |
-| `--pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-1, 1)}"` | the mixing scenario: `mix_POISSON_average_cfi` (`Configuration/StandardSequences/python/Mixing.py`), Poisson with mean `N = 60` collisions per bunch crossing, bunch crossings `B = (-1, 1)`, 25 ns spacing. Only for (11a+11b); without `--pileup` cmsDriver loads `mixNoPU_cfi`, the same module with no secondary source |
+| `--filein file:...` | the input (Rule E): the SIM file of the signal (11a), the 1000-event library (11b), or the chapter-10 mixing output `step3_MIX_10_SIM.root`, which is the signal plus the `CrossingFramePlaybackInfoNew` of its mixing (11a+11b) |
+| `--pileup "AVE_60_BX_25ns,{'N': 60, 'B': (-12, 3)}"` | the mixing scenario: `mix_POISSON_average_cfi` (`Configuration/StandardSequences/python/Mixing.py`), Poisson with mean `N = 60` collisions per bunch crossing, bunch crossings `B = (-12, 3)` (the window of every Run-3 scenario of the release, `SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py`, lines 11-12; `B = (-12,3)` is also the default of `AVE_60_BX_25ns`, `Mixing.py` line 162), 25 ns spacing. Only for (11a+11b); without `--pileup` cmsDriver loads `mixNoPU_cfi`, the same module with no secondary source |
 | `--pileup_input file:...` | the library the secondary source reads: `step2_SIM_pileup_10_SIM.root` of chapter 10 |
 | `--conditions auto:phase1_2025_realistic` | the global tag of the CMS chapters of the book (Rule I of the Constitution: CMSSW_15_0_5 is a release of 2025), `150X_mcRun3_2025_realistic_v1` (`Configuration/AlCa/python/autoCond.py`): the pedestals, noise, gains, thresholds, laser transparencies and dead channels that the digitisers read from the database. Against the 2024 global tag of the first version of this chapter (`150X_mcRun3_2024_realistic_v2`) it changes, for this step: `EcalPedestals_2025_at80fb_corrected_mc` (noisier barrel crystals), `EcalLaserAPDPNRatios_TL470fb_moy_2025_outliers_cleaned_3sigma_mc` (darker crystals), `EcalSRSettings_2024_EBZS9.5_EEZS6.0_DCC2_mc` (higher barrel zero suppression), nine `EcalTPG*` payloads (the trigger primitives), `HcalPedestals` / `HcalPedestalWidths` / `HcalRespCorrs` / `HcalSiPMParameters` / `HcalZSThresholds` `2025_MOY`, `HcalTPChannelParameters_2024_v2.0_mc`, `SiPixelLorentzAngleSim_phase1_EoR3_HV800_Tr2000` and the pixel templates of the charge reweighting (`SiPixel2DTemplateDBObject` `numerator` / `denominator`, `phase1_EoR3_HV800_Tr2000`), `SiStripBadComponents_realisticMC_for2025_v1_mc`; section 4.9 |
 | `--era Run3_2025` | the era modifiers of the 2025 detector: they set the Run-3 pixel thresholds (`run3_common`), the HB SiPM parameters (`run3_HB`), the 10-time-slice HB/HE readout and the one-slice zero suppression (`run3_common`), the GEM luminosity, the Run-2 CSC timing offsets (`run2_common`). `Run3_2025` is `Run3_2024` plus `run3_GEM_2025`, `run3_CSC_2025`, `run3_SiPixel_2025`, `stage2L1Trigger_2025` and `ecal_cctiming` (`Configuration/Eras/python/Era_Run3_2025_cff.py`); none of them touches the DIGI step (they change the GEM rec-hits, the CSC trigger primitives of the L1 step, the pixel clusteriser, the CICADA model of the L1 step and the ECAL rec-hit timing): the `dumpPython()` of the mixed configuration is the same with both eras except for the name of the global tag |
 | `--geometry DB:Extended` | the reconstruction geometry from the database (`GeometryRecoDB_cff`): the digitisers need the module and cell positions |
-| `-n -1` with `eventsToProcess` | all events of the input, restricted by the customise line to run:lumi:event 1:1:1 (the signal) or 1:1:72 (library event 72) |
+| `-n -1` with `eventsToProcess` | all events of the input, restricted by the customise line to run:lumi:event 1:1:1 (the signal) or 1:1:747 (library event 747) |
 | `-s DIGI:pdigi_valid` | the step: the `pdigi_valid` sequence of `Configuration/StandardSequences/python/Digi_cff.py` (section 2) |
 | `--datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG` | the output tier and the full debug content: every digi and link collection, the SIM products of the signal, the truth |
 | `--fileout file:...` | the output ROOT file (written in `out/`, where `cmsRun` is started) |
@@ -63,26 +68,27 @@ Why playback: `BMixingModule::produce` (`Mixing/Base/src/BMixingModule.cc`, line
 `addSignals` and then `doPileUp`; `addSignals` runs the digitisers on the signal, which draw random numbers (noise,
 photostatistics, threshold smearing) from the engine of the module `mix` before `PileUp::CalculatePileup`
 (`Mixing/Base/src/PileUp.cc`, called at line 445 of `SimGeneral/MixingModule/plugins/MixingModule.cc`) draws the number
-of collisions. In chapter 10 (`mixOnly_cff`, no digitiser) the draw with seed 12345 gave 71 / 68 / 54; a fresh draw in
-the DIGI job gave 65 / 67 / 56. With `playback = True` (`MixingModule.cc`, lines 416-483) the module reads
-`CrossingFramePlaybackInfoNew` from the input and mixes exactly library events 1-71 (bx -1), 72-139 (bx 0) and 140-193
-(bx +1), as `addPileupInfo` confirms (section 4).
+of collisions. In chapter 10 (`mixOnly_cff`, no digitiser) the draw with seed 12345 gave, for bx -12..3, 71 68 54 59
+52 61 76 59 65 59 68 54 | 64 | 63 62 60 (the draw of chapter 08, `test/08_PU/out/draw_08_PU.txt`); a fresh draw in the
+DIGI job would differ (with bx -1..1 it gave 65 / 67 / 56 instead of 71 / 68 / 54). With `playback = True`
+(`MixingModule.cc`, lines 416-483) the module reads `CrossingFramePlaybackInfoNew` from the input and mixes exactly
+library events 1-746 (bx -12..-1), 747-810 (bx 0) and 811-995 (bx +1..+3), as `addPileupInfo` confirms (section 4.5).
 
 ## 2. The cmsRun on the python config
 
 ```bash
 cd $J/test/11_DIGI/out
-cmsRun ../step3_DIGI_signal_11_DIGI_cfg.py > step3_DIGI_signal_11_DIGI.log 2>&1     # 31 s (15 s for the event)
-cmsRun ../step3_DIGI_pileup_11_DIGI_cfg.py > step3_DIGI_pileup_11_DIGI.log 2>&1     # 31 s (15 s for the event)
-cmsRun ../step3_DIGI_mixed_11_DIGI_cfg.py  > step3_DIGI_mixed_11_DIGI.log  2>&1     # 41 s (25 s for the event; 193 library events read)
+cmsRun ../step3_DIGI_signal_11_DIGI_cfg.py > step3_DIGI_signal_11_DIGI.log 2>&1     # 21 s (9 s for the event)
+cmsRun ../step3_DIGI_pileup_11_DIGI_cfg.py > step3_DIGI_pileup_11_DIGI.log 2>&1     # 21 s (9 s for the event)
+cmsRun ../step3_DIGI_mixed_11_DIGI_cfg.py  > step3_DIGI_mixed_11_DIGI.log  2>&1     # 36 s (27 s for the event; 995 library events read)
 ```
 
 Or the whole chapter: `./11_DIGI/run_11_DIGI.sh` (variables: `CASES="signal pileup mixed"`, `REUSE=1` keeps existing
-DIGI files; `PU=60`, `BUNCHES=-1,1`, `SKIP=71`, `NPU=68` are set in `test/common/jitjet_common.sh` for the whole book;
+DIGI files; `PU=60`, `BUNCHES=-12,3`, `SKIP=746`, `NPU=64` are set in `test/common/jitjet_common.sh` for chapters 08-13;
 `RUN=0` only writes the configurations, `ANALYZE=0` skips the analyzers, `PNG=0` skips the PNG pages). The three
-DIGI jobs run in parallel; the times are in `run_11_DIGI.log`, `out/run_signal.log` and `out/run_pileup.log` (12 November
-2026, three jobs started together at 13:14:42 on a shared machine; the whole chapter took 7 minutes, most of it the
-three DigiAnalyzer pages, 1.5, 1 and 3 minutes).
+DIGI jobs run in parallel; the times are in `run_11_DIGI.log`, `out/run_signal.log` and `out/run_pileup.log` (21 November
+2026, three jobs started together at 13:30:34 on a shared machine; the whole chapter took 6 minutes, most of it the
+three DigiAnalyzer pages, 1.5 minutes, 40 s and 3 minutes).
 
 ### Walk-through of `step3_DIGI_mixed_11_DIGI_cfg.py`
 
@@ -98,7 +104,7 @@ three DigiAnalyzer pages, 1.5, 1 and 3 minutes).
   them under the process name `DIGI`); the customise line restricts it to one event.
 - `process.FEVTDEBUGoutput`: the `PoolOutputModule` with the `FEVTDEBUGEventContent` commands.
 - "Other statements" (only with `--pileup`): `process.mix.input.nbPileupEvents.averageNumber = 60`,
-  `process.mix.bunchspace = 25`, `process.mix.minBunch = -1`, `process.mix.maxBunch = 1`, `process.mix.input.fileNames`
+  `process.mix.bunchspace = 25`, `process.mix.minBunch = -12`, `process.mix.maxBunch = 3`, `process.mix.input.fileNames`
   (the library), and `process.mix.digitizers = cms.PSet(process.theDigitizersValid)`.
 - `process.digitisation_step = cms.Path(process.pdigi_valid)`, then `endjob_step` and the output `EndPath`; the
   schedule runs them in this order. `customiseEarlyDelete` is appended by cmsDriver.
@@ -172,16 +178,16 @@ cmsRun ../../common/digiAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step
   sampleLabel="chapter 11_DIGI (11a): the signal digitised|bbbar, pTHat > 100 GeV|2025 detector, 13.6 TeV|no pileup" \
   > digiAnalyzer_signal_11_DIGI.log 2>&1
 cmsRun ../../common/digiAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step3_DIGI_pileup_11_DIGI.root \
-  outputFile=digiAnalyzer_pileup_11_DIGI.root maxEvents=1 eventsToProcess=1:1:72 \
+  outputFile=digiAnalyzer_pileup_11_DIGI.root maxEvents=1 eventsToProcess=1:1:747 \
   globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended \
   pdfFile=digiAnalyzer_pileup_11_DIGI.pdf pngPrefix=digiAnalyzer_pileup_11_DIGI savePNG=1 \
-  sampleLabel="chapter 11_DIGI (11b): one pileup collision digitised|library event 72|SoftQCD inelastic, 13.6 TeV|2025 detector, no signal" \
+  sampleLabel="chapter 11_DIGI (11b): one pileup collision digitised|library event 747|SoftQCD inelastic, 13.6 TeV|2025 detector, no signal" \
   > digiAnalyzer_pileup_11_DIGI.log 2>&1
 cmsRun ../../common/digiAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step3_DIGI_mixed_11_DIGI.root \
   outputFile=digiAnalyzer_mixed_11_DIGI.root maxEvents=1 eventsToProcess=1:1:1 \
   globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended \
   pdfFile=digiAnalyzer_mixed_11_DIGI.pdf pngPrefix=digiAnalyzer_mixed_11_DIGI savePNG=1 \
-  sampleLabel="chapter 11_DIGI (11a+11b): signal + pileup digitised|PU = 60 per bx (Poisson), bx -1..1|the collisions of the chapter 10 mixing (playback)|2025 detector, 13.6 TeV" \
+  sampleLabel="chapter 11_DIGI (11a+11b): signal + pileup digitised|PU = 60 per bx (Poisson), bx -12..3|the collisions of the chapter 10 mixing (playback)|2025 detector, 13.6 TeV" \
   > digiAnalyzer_mixed_11_DIGI.log 2>&1
 python3 ../../common/digiThresholds.py ../step3_DIGI_mixed_11_DIGI_cfg.py > thresholds_11_DIGI.txt
 python3 ../../common/digiLedger.py . 11_DIGI > ledger_11_DIGI.txt
@@ -212,18 +218,20 @@ are sized by their amplitude above pedestal in ADC counts: ECAL, the largest of 
 equivalent) minus the mean of the first 3; ES, the largest of the 3 minus the first; HCAL, the sum of the samples
 `hcalNSumTS = 2` from the sample of interest of the frame minus the mean of the earlier ones (a frame whose amplitude
 comes out negative is not drawn or counted: this is why the HF, which has no zero suppression and 3456 frames in
-every file, is counted with 2270 / 2169 / 1889 digis). The signal `ak4GenJets` above `jetPtMin = 30` GeV are drawn
+every file, is counted with 2270 / 2145 / 2185 digis; with the out-of-time pileup in the earlier samples 2106 of the
+7075 HB/HE frames kept in the mixed event come out negative). The signal `ak4GenJets` above `jetPtMin = 30` GeV are drawn
 as circles of radius 0.4. Tracker and muon digis are thinned for the drawing (`maxDrawn = 8000` per subdetector);
 the counts are exact. Products:
 
 | file | content |
 |---|---|
 | `digiAnalyzer_<case>_11_DIGI.pdf` | 2 pages: eta-phi, r-z (A4 MediaBox with a CropBox, do not include directly) |
-| `digiAnalyzer_<case>_11_DIGI_etaphi_run1_event<E>.png`, `..._rz_run1_event<E>.png` | the same pages as PNG (E = 1 for the signal and the mixed event, 72 for the pileup collision) |
+| `digiAnalyzer_<case>_11_DIGI_etaphi_run1_event<E>.png`, `..._rz_run1_event<E>.png` | the same pages as PNG (E = 1 for the signal and the mixed event, 747 for the pileup collision) |
 | `digiAnalyzer_<case>_11_DIGI.log` | the counts: per subdetector `nDigis`, `signal / inTime / early / late / noLink` (tracker and muon) or `sumAmplitude[ADC]` (calorimeters), the pileup summary, the total |
 | `digiAnalyzer_<case>_11_DIGI.root` | the `TFileService` file (empty histograms directory; the drawing goes to the PDF) |
 | `thresholds_11_DIGI.txt` | every threshold-like parameter of the digitisers of the mixed configuration, then the full parameter sets (now including the two trigger-primitive producers, `simEcalTriggerPrimitiveDigis` and `simHcalTriggerPrimitiveDigis`) |
 | `ledger_11_DIGI.txt` | the three logs side by side: digis per subdetector and origin, calorimeter amplitudes |
+| `counts_11_DIGI.txt` | `11_DIGI/digiFileCounts_11_DIGI.py` (FWLite on the three DIGI files): the pileup per bunch crossing, the selective-readout flags, the HCAL frames before and after the zero suppression, the ECAL frames written, the TrackingParticles by origin (section 4.5) |
 
 ### The trigger primitives (`TrigPrimAnalyzer`)
 
@@ -237,16 +245,16 @@ cmsRun ../../common/trigPrimAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/
   maxEvents=1 eventsToProcess=1:1:1 globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended \
   pdfFile=trigPrim_signal_11_DIGI.pdf pngPrefix=trigPrim_signal_11_DIGI savePNG=1 mixed=0 \
   sampleLabel="chapter 11_DIGI (11a): the signal alone|trigger primitives made by the DIGI step|bbbar, pTHat > 100 GeV, no pileup" \
-  > trigPrim_signal_11_DIGI.log 2>&1                           # 8 s each
+  > trigPrim_signal_11_DIGI.log 2>&1                           # 4-6 s each
 cmsRun ../../common/trigPrimAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step3_DIGI_pileup_11_DIGI.root \
-  maxEvents=1 eventsToProcess=1:1:72 globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended \
+  maxEvents=1 eventsToProcess=1:1:747 globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended \
   pdfFile=trigPrim_pileup_11_DIGI.pdf pngPrefix=trigPrim_pileup_11_DIGI savePNG=1 mixed=0 \
-  sampleLabel="chapter 11_DIGI (11b): one pileup collision|trigger primitives made by the DIGI step|library event 72, no signal" \
+  sampleLabel="chapter 11_DIGI (11b): one pileup collision|trigger primitives made by the DIGI step|library event 747, no signal" \
   > trigPrim_pileup_11_DIGI.log 2>&1
 cmsRun ../../common/trigPrimAnalyzer_cfg.py inputFiles=file:$J/test/11_DIGI/out/step3_DIGI_mixed_11_DIGI.root \
   maxEvents=1 eventsToProcess=1:1:1 globalTag=auto:phase1_2025_realistic era=Run3_2025 geometry=DB:Extended \
   pdfFile=trigPrim_mixed_11_DIGI.pdf pngPrefix=trigPrim_mixed_11_DIGI savePNG=1 mixed=1 \
-  sampleLabel="chapter 11_DIGI (11a+11b): signal + pileup|trigger primitives made by the DIGI step|PU = 60 per bx, bx -1..1 (playback)" \
+  sampleLabel="chapter 11_DIGI (11a+11b): signal + pileup|trigger primitives made by the DIGI step|PU = 60 per bx, bx -12..3 (playback)" \
   > trigPrim_mixed_11_DIGI.log 2>&1
 python3 ../../common/trigPrimLedger.py . 11_DIGI > trigprim_11_DIGI.txt
 ```
@@ -289,28 +297,28 @@ Note the numbering: these pages are numbered by *generator* jet (jet 1 = the b j
 ```
 == digiLedger 11_DIGI
 signal: run:lumi:event 1:1:1 vertex=(0.0276598,-0.0169037,3.11193) cm | bx 0: 0 pileup events
-pileup: run:lumi:event 1:1:72 vertex=(0.0286612,-0.0165738,-0.482677) cm | bx 0: 0 pileup events
-mixed: run:lumi:event 1:1:1 vertex=(0.0276598,-0.0169037,3.11193) cm | bx -1: 71 pileup events | bx 0: 68 pileup events | bx 1: 54 pileup events
+pileup: run:lumi:event 1:1:747 vertex=(0.0276303,-0.0177769,2.1553) cm | bx 0: 0 pileup events
+mixed: run:lumi:event 1:1:1 vertex=(0.0276598,-0.0169037,3.11193) cm | bx -12: 71 pileup events | bx -11: 68 pileup events | bx -10: 54 pileup events | bx -9: 59 pileup events | bx -8: 52 pileup events | bx -7: 61 pileup events | bx -6: 76 pileup events | bx -5: 59 pileup events | bx -4: 65 pileup events | bx -3: 59 pileup events | bx -2: 68 pileup events | bx -1: 54 pileup events | bx 0: 64 pileup events | bx 1: 63 pileup events | bx 2: 62 pileup events | bx 3: 60 pileup events
 subdet         (11a)      (11b)  (11a+11b) | mixed by origin: signal / in-time / early / late / no link ; calorimeters: sum amplitude [ADC] (11a) (11b) (11a+11b)
-PXB             3011        819      52101 | 2824 / 47941 / 1336 / 0 / 0
-PXF             1789        318      25879 | 1779 / 23634 / 466 / 0 / 0
-TIB             5360       2841      91364 | 3077 / 60025 / 25030 / 1530 / 1702
-TID             2558       1141      34922 | 1730 / 24228 / 7759 / 692 / 513
-TOB             6778       4448     106837 | 2761 / 62356 / 37048 / 1220 / 3452
-TEC            16906       7937     203778 | 11594 / 132534 / 52105 / 3587 / 3958
-EB               156         43        964 | amplitude 1260 502 8899
-EE               384        105       2520 | amplitude 1876 384 12194
-ES               981        360      15972 | amplitude 17885 5053 230844
-HB              1722       1700       2197 | amplitude 16684 15856 29111
-HE              2249       2036       3966 | amplitude 20375 12739 141702
-HO                 -          -          2 | amplitude 0 0 63
-HF              2270       2169       1889 | amplitude 8234 4167 30729
-DT                 -          -         12 | 0 / 1 / 9 / 2 / 0
-CSCstrip           -        176       1888 | 0 / 305 / 62 / 36 / 1485
-CSCwire            -          3         91 | 0 / 0 / 0 / 0 / 91
-RPC                8          8         10 | 0 / 3 / 0 / 0 / 7
-GEM                -          -         15 | 0 / 14 / 1 / 0 / 0
-total          44172      24104     544407 | 
+PXB             3011         38      44725 | 2826 / 40191 / 1689 / 0 / 19
+PXF             1789         44      22048 | 1800 / 19731 / 517 / 0 / 0
+TIB             5360       2266      79535 | 3038 / 52206 / 21242 / 1393 / 1656
+TID             2558        818      30739 | 1727 / 20673 / 7070 / 753 / 516
+TOB             6778       3984      93705 | 2733 / 56495 / 29601 / 1416 / 3460
+TEC            16906       5327     169912 | 11526 / 110643 / 40882 / 3195 / 3666
+EB               156         38        766 | amplitude 1260 421 7094
+EE               384        170        623 | amplitude 1876 595 4245
+ES               981        198      18287 | amplitude 17885 2072 197329
+HB              1722       1672       2145 | amplitude 16684 15743 25272
+HE              2249       1975       2824 | amplitude 20375 11497 49440
+HO                 -          -          5 | amplitude 0 0 65
+HF              2270       2145       2185 | amplitude 8234 3578 37928
+DT                 -          -         24 | 0 / 0 / 23 / 1 / 0
+CSCstrip           -          -       7216 | 0 / 41 / 1274 / 340 / 5561
+CSCwire            -          -        263 | 0 / 0 / 0 / 0 / 263
+RPC                8          8          7 | 0 / 0 / 0 / 0 / 7
+GEM                -          -        101 | 0 / 0 / 80 / 21 / 0
+total          44172      18683     475110 | 
 ```
 
 ### 4.2 The analyzer logs (the split of the digis in each sample, `digiAnalyzer_<case>_11_DIGI.log`)
@@ -338,59 +346,59 @@ total          44172      24104     544407 |
 (11b) `digiAnalyzer_pileup_11_DIGI.log`:
 
 ```
-== DigiAnalyzer run:lumi:event 1:1:72 vertex=(0.0286612,-0.0165738,-0.482677) cm | bx 0: 0 pileup events
-  PXB: nDigis=819 signal=819 inTime=0 early=0 late=0 noLink=0
-  PXF: nDigis=318 signal=318 inTime=0 early=0 late=0 noLink=0
-  TIB: nDigis=2841 signal=555 inTime=0 early=0 late=0 noLink=2286
-  TID: nDigis=1141 signal=339 inTime=0 early=0 late=0 noLink=802
-  TOB: nDigis=4448 signal=541 inTime=0 early=0 late=0 noLink=3907
-  TEC: nDigis=7937 signal=2698 inTime=0 early=0 late=0 noLink=5239
-  EB: nDigis=43 sumAmplitude[ADC]=501.667
-  EE: nDigis=105 sumAmplitude[ADC]=384
-  ES: nDigis=360 sumAmplitude[ADC]=5053
-  HB: nDigis=1700 sumAmplitude[ADC]=15856
-  HE: nDigis=2036 sumAmplitude[ADC]=12738.6
-  HF: nDigis=2169 sumAmplitude[ADC]=4167
-  CSCstrip: nDigis=176 signal=18 inTime=0 early=0 late=0 noLink=158
-  CSCwire: nDigis=3 signal=0 inTime=0 early=0 late=0 noLink=3
+== DigiAnalyzer run:lumi:event 1:1:747 vertex=(0.0276303,-0.0177769,2.1553) cm | bx 0: 0 pileup events
+  PXB: nDigis=38 signal=36 inTime=0 early=0 late=0 noLink=2
+  PXF: nDigis=44 signal=44 inTime=0 early=0 late=0 noLink=0
+  TIB: nDigis=2266 signal=0 inTime=0 early=0 late=0 noLink=2266
+  TID: nDigis=818 signal=53 inTime=0 early=0 late=0 noLink=765
+  TOB: nDigis=3984 signal=34 inTime=0 early=0 late=0 noLink=3950
+  TEC: nDigis=5327 signal=152 inTime=0 early=0 late=0 noLink=5175
+  EB: nDigis=38 sumAmplitude[ADC]=420.667
+  EE: nDigis=170 sumAmplitude[ADC]=595.333
+  ES: nDigis=198 sumAmplitude[ADC]=2072
+  HB: nDigis=1672 sumAmplitude[ADC]=15743.4
+  HE: nDigis=1975 sumAmplitude[ADC]=11497
+  HF: nDigis=2145 sumAmplitude[ADC]=3578
   RPC: nDigis=8 signal=0 inTime=0 early=0 late=0 noLink=8
-  total digis=24104 genJets(pt>30)=0
+  total digis=18683 genJets(pt>30)=0
 ```
 
-("signal" in this log means: linked to a particle of library event 72, the only event of the sample.)
+("signal" in this log means: linked to a particle of library event 747, the only event of the sample.)
 
 (11a+11b) `digiAnalyzer_mixed_11_DIGI.log`:
 
 ```
-== DigiAnalyzer run:lumi:event 1:1:1 vertex=(0.0276598,-0.0169037,3.11193) cm | bx -1: 71 pileup events | bx 0: 68 pileup events | bx 1: 54 pileup events
-  PXB: nDigis=52101 signal=2824 inTime=47941 early=1336 late=0 noLink=0
-  PXF: nDigis=25879 signal=1779 inTime=23634 early=466 late=0 noLink=0
-  TIB: nDigis=91364 signal=3077 inTime=60025 early=25030 late=1530 noLink=1702
-  TID: nDigis=34922 signal=1730 inTime=24228 early=7759 late=692 noLink=513
-  TOB: nDigis=106837 signal=2761 inTime=62356 early=37048 late=1220 noLink=3452
-  TEC: nDigis=203778 signal=11594 inTime=132534 early=52105 late=3587 noLink=3958
-  EB: nDigis=964 sumAmplitude[ADC]=8899
-  EE: nDigis=2520 sumAmplitude[ADC]=12194
-  ES: nDigis=15972 sumAmplitude[ADC]=230844
-  HB: nDigis=2197 sumAmplitude[ADC]=29111.2
-  HE: nDigis=3966 sumAmplitude[ADC]=141702
-  HO: nDigis=2 sumAmplitude[ADC]=63
-  HF: nDigis=1889 sumAmplitude[ADC]=30729
-  DT: nDigis=12 signal=0 inTime=1 early=9 late=2 noLink=0
-  CSCstrip: nDigis=1888 signal=0 inTime=305 early=62 late=36 noLink=1485
-  CSCwire: nDigis=91 signal=0 inTime=0 early=0 late=0 noLink=91
-  RPC: nDigis=10 signal=0 inTime=3 early=0 late=0 noLink=7
-  GEM: nDigis=15 signal=0 inTime=14 early=1 late=0 noLink=0
-  total digis=544407 genJets(pt>30)=2
+== DigiAnalyzer run:lumi:event 1:1:1 vertex=(0.0276598,-0.0169037,3.11193) cm | bx -12: 71 pileup events | bx -11: 68 pileup events | bx -10: 54 pileup events | bx -9: 59 pileup events | bx -8: 52 pileup events | bx -7: 61 pileup events | bx -6: 76 pileup events | bx -5: 59 pileup events | bx -4: 65 pileup events | bx -3: 59 pileup events | bx -2: 68 pileup events | bx -1: 54 pileup events | bx 0: 64 pileup events | bx 1: 63 pileup events | bx 2: 62 pileup events | bx 3: 60 pileup events
+  PXB: nDigis=44725 signal=2826 inTime=40191 early=1689 late=0 noLink=19
+  PXF: nDigis=22048 signal=1800 inTime=19731 early=517 late=0 noLink=0
+  TIB: nDigis=79535 signal=3038 inTime=52206 early=21242 late=1393 noLink=1656
+  TID: nDigis=30739 signal=1727 inTime=20673 early=7070 late=753 noLink=516
+  TOB: nDigis=93705 signal=2733 inTime=56495 early=29601 late=1416 noLink=3460
+  TEC: nDigis=169912 signal=11526 inTime=110643 early=40882 late=3195 noLink=3666
+  EB: nDigis=766 sumAmplitude[ADC]=7094.33
+  EE: nDigis=623 sumAmplitude[ADC]=4244.67
+  ES: nDigis=18287 sumAmplitude[ADC]=197329
+  HB: nDigis=2145 sumAmplitude[ADC]=25272.4
+  HE: nDigis=2824 sumAmplitude[ADC]=49439.8
+  HO: nDigis=5 sumAmplitude[ADC]=65
+  HF: nDigis=2185 sumAmplitude[ADC]=37928
+  DT: nDigis=24 signal=0 inTime=0 early=23 late=1 noLink=0
+  CSCstrip: nDigis=7216 signal=0 inTime=41 early=1274 late=340 noLink=5561
+  CSCwire: nDigis=263 signal=0 inTime=0 early=0 late=0 noLink=263
+  RPC: nDigis=7 signal=0 inTime=0 early=0 late=0 noLink=7
+  GEM: nDigis=101 signal=0 inTime=0 early=80 late=21 noLink=0
+  total digis=475110 genJets(pt>30)=2
 ```
 
 Sums quoted in the chapter (from these logs): (11a) tracker 36 402 digis = 24 218 linked + 12 184 noise (pixels
-4800 linked + 0 noise for 1902 PSimHits, strips 19 418 linked + 12 184 noise for 8370 PSimHits); (11b) tracker 17 504
-= 5270 linked + 12 234 noise, all linked digis 5288 (5270 + 18 CSC strips), all noise 12 403 (12 234 + 158 + 3 + 8);
-(11a+11b) tracker 514 881 = 23 765 signal + 350 718 in-time + 123 744 early + 7029 late + 9625 noise; pixels 77 980
-with 1802 early and 0 late; strips 436 901 with 121 942 early (27.9 %); the signal lost 24 218 - 23 765 = 453 digis;
-350 718 / 68 = 5158 in-time digis per collision; muon 2016 digis. Amplitude ratios (11a+11b)/(11a): EB 8899/1260 =
-7.1, EE 12194/1876 = 6.5, ES 230844/17885 = 12.9, HB 29111/16684 = 1.7, HE 141702/20375 = 7.0, HF 30729/8234 = 3.7.
+4800 linked + 0 noise for 1902 PSimHits, strips 19 418 linked + 12 184 noise for 8370 PSimHits); (11b) tracker 12 477
+= 319 linked + 12 158 noise (pixels 80 linked + 2 noise), all noise 12 166 (12 158 + 8 RPC), 12 158 / 12 477 = 97 %;
+(11a+11b) tracker 440 664 = 23 650 signal + 299 939 in-time + 101 001 early + 6757 late + 9317 noise (5.4 / 68.1 /
+22.9 / 1.5 / 2.1 %); pixels 66 773 = 4626 + 59 922 + 2206 + 0 + 19; strips 373 891 = 19 024 + 240 017 + 98 795
+(26.4 %) + 6757 + 9298; the signal lost 24 218 - 23 650 = 568 digis; 299 939 / 64 = 4687 in-time digis per collision,
+23 650 / 4687 = 5.0; muon 7611 digis (24 + 7216 + 263 + 7 + 101), linked 41 in time, 1377 early, 362 late. Amplitude
+ratios (11a+11b)/(11a): EB 7094/1260 = 5.6, EE 4245/1876 = 2.3, ES 197329/17885 = 11.0, HB 25272/16684 = 1.5,
+HE 49440/20375 = 2.4, HF 37928/8234 = 4.6. Frames added by the pileup: EB 766 - 156 = 610, EE 623 - 384 = 239.
 
 ### 4.3 `thresholds_11_DIGI.txt`: the lines quoted in table 11.2 of the chapter
 
@@ -412,7 +420,7 @@ with 1802 early and 0 late; strips 436 901 with 121 942 early (27.9 %); the sign
                               hf1.samplingFactor 0.37  hf1.readoutFrameSize 3  hf1.binOfMaximum 2  hf1.photoelectronsToAnalog 2.79
                               hf2.photoelectronsToAnalog 1.843  doNoise True  doEmpty True  doThermalNoise True  doIonFeedback True  doTimeSlew True
                               HBDarkening False  HEDarkening False  HFDarkening False  DelivLuminosity 0  killHE False
-[mix (bunch crossings)]       bunchspace 25  minBunch -1  maxBunch 1  input.nbPileupEvents.averageNumber 60.0  input.type poisson
+[mix (bunch crossings)]       bunchspace 25  minBunch -12  maxBunch 3  input.nbPileupEvents.averageNumber 60.0  input.type poisson
                               input.sequential True  playback True
 [simEcalDigis]                EcalSelectiveReadoutProducer: configFromCondDB True  UseFullReadout False  trigPrimBypass False  defaultTtf 4
 [simEcalPreshowerDigis]       ESZeroSuppressionProducer (threshold from the DB ESThresholds)
@@ -455,27 +463,32 @@ ECAL 24 262 PCaloHits in 12 804 cells (EB 5521, EE 6214, ES 1069; `E by subdetec
 GeV); HCAL 2531 PCaloHits in 1353 cells (HB 173, HE 648, HO 1, HF 531; `HB=0.217328 HE=1.66239 HO=3.73269e-06
 HF=1849`, the HF in photoelectrons of the shower library); MUON 0.
 
-Library event 72, `test/10_SIM/out/simHits_pileup_10_SIM.log`: 534 SimTracks, 164 primaries; TRK 2097 PSimHits (PXB 277,
-PXF 176, TIB 187, TID 172, TOB 209, TEC 1076); ECAL 4742 PCaloHits in 3388 cells (EB 1217, EE 1948, ES 223); HCAL 392
-PCaloHits in 262 cells (HB 21, HE 122, HF 119); MUON 11 PSimHits (CSC station 1). The energies of event 72 are the FWLite
-ones of section 4.5.
+Library event 747, `test/10_SIM/out/simHits_pileup_10_SIM.log`: 55 SimTracks, 22 primaries (FWLite: 55 SimTracks, of
+which 22 primaries, one the intact beam proton of 6799.8 GeV handed over at z = -203 m); TRK 136 PSimHits (PXB 8,
+PXF 19, TIB 0, TID 30, TOB 15, TEC 64); ECAL 173 PCaloHits in 131 cells (EB 60, EE 61, ES 10);
+HCAL 90 PCaloHits in 72 cells (HB 1, HE 17, HF 54, as the SimHitAnalyzer
+counts them; an FWLite decoding of the HCAL test numbering gives 1, 15, 54, the difference not followed up); MUON 0. The energies of event
+747 are the FWLite ones of section 4.5.
 
-The bunch crossing, `test/10_SIM/out/step3_MIX_10_SIM.log`:
+The bunch crossing, `test/10_SIM/out/step3_MIX_10_SIM.log` (station TRK of the SimHitAnalyzer on the CrossingFrames):
 
 ```
-  pileup mixed in (CrossingFrame, bunch crossings -1 .. 1): 193 events (early 71, in-time 68, late 54), 31060 primaries (10012, 10414, 10634), 97276 SimTracks; events per bx: -1:71 0:68 1:54
-  station TRK: 448315 PSimHits, 0 PCaloHits in 0 cells (signal: 10272 PSimHits, 0 PCaloHits)
-    hits by subdetector and layer/station: PXB/1=19053 PXB/2=13201 PXB/3=10078 PXB/4=8621 PXF/1=11399 PXF/2=12317 PXF/3=12984 TIB/1=29220 TIB/2=23887 TIB/3=10109 TIB/4=8725 TID/1=11910 TID/2=12594 TID/3=13393 TOB/1=23175 TOB/2=20098 TOB/3=8412 TOB/4=6786 TOB/5=5771 TOB/6=4898 TEC/1=22851 TEC/2=24335 TEC/3=25839 TEC/4=19769 TEC/5=20618 TEC/6=21515 TEC/7=15890 TEC/8=16975 TEC/9=13892
-    hits by kind of the primary: charged hadron=4999 neutral hadron=890 photon=2013 e^{#pm}=138 no stored ancestor=2232 pileup, early (bx < 0)=139551 pileup, in-time (bx 0)=146028 pileup, late (bx > 0)=152464
+  pileup mixed in (CrossingFrame, bunch crossings -12 .. 3): 995 events (early 746, in-time 64, late 185), 149894 primaries (114093, 8804, 26997), 463662 SimTracks; events per bx: -12:71 -11:68 -10:54 -9:59 -8:52 -7:61 -6:76 -5:59 -4:65 -3:59 -2:68 -1:54 0:64 1:63 2:62 3:60
+  station TRK: 2106681 PSimHits, 0 PCaloHits in 0 cells (signal: 10272 PSimHits, 0 PCaloHits)
+    hits by subdetector and layer/station: PXB/1=89824 PXB/2=62169 PXB/3=49310 PXB/4=41947 PXF/1=53296 PXF/2=58008 PXF/3=61808 TIB/1=135948 TIB/2=112600 TIB/3=47183 TIB/4=40499 TID/1=57198 TID/2=60106 TID/3=63394 TOB/1=111338 TOB/2=95803 TOB/3=39951 TOB/4=33408 TOB/5=29258 TOB/6=23397 TEC/1=107974 TEC/2=113398 TEC/3=119294 TEC/4=90905 TEC/5=94783 TEC/6=99128 TEC/7=73139 TEC/8=77488 TEC/9=64127
+    hits by kind of the primary: charged hadron=4999 neutral hadron=890 photon=2013 e^{#pm}=138 no stored ancestor=2232 pileup, early (bx < 0)=1588361 pileup, in-time (bx 0)=125625 pileup, late (bx > 0)=382423
 ```
 
-Per subdetector (the layers summed): PXB 50 953, PXF 36 700, TIB 71 941, TID 37 897, TOB 69 140, TEC 181 684 = 448 315.
+Per subdetector (the layers summed): PXB 243 250, PXF 173 112, TIB 336 230, TID 180 698, TOB 333 155, TEC 840 236,
+in all 2 106 681 = 10 272 of the signal + 125 625 in time + 1 588 361 early + 382 423 late, exactly the sums of the
+library events of each class (FWLite over `step2_SIM_pileup_10_SIM.root`, chapter 10 companion section 4.5).
 
 ### 4.5 FWLite extras
 
 Read from the ROOT files with `python3` and `DataFormats.FWLite` (`Events`, `Handle`), after `cmsenv`. The scripts
-are short enough to be retyped; they are the source of the energies of library event 72 and of the zero-suppression
-and truth counts of the chapter (the cell counts of the chapter are those of the SimHitAnalyzer of chapter 10, section 4.4).
+are short enough to be retyped; they are the source of the energies of library event 747, of the zero-suppression
+and truth counts, of the split of the early digis by bunch crossing and of the response of the ECAL filters to an
+earlier pulse (the cell counts of the chapter are those of the SimHitAnalyzer of chapter 10, section 4.4).
 
 SimHits of one event (`simHitCounts.py <file> <run:lumi:event>`: loops over the `g4SimHits` `TrackerHits*LowTof/HighTof`,
 `Muon*Hits`, `EcalHits*` and `HcalHits` collections; HCAL cells are the distinct (subdetector, side, depth, ieta,
@@ -502,57 +515,106 @@ from the SimHitAnalyzer of chapter 10: 164 / 517 HB / HE cells for the signal ag
   HE   PCaloHits=1289 cells(det,z,depth,ieta,iphi)=517 E=1.6624 GeV
   HO   PCaloHits=2 cells(det,z,depth,ieta,iphi)=1 E=0.0000 GeV
   HF   PCaloHits=882 cells(det,z,depth,ieta,iphi)=531 E=1849.0000 units (photoelectrons of the shower library)
-== event 1:1:72 of step2_SIM_pileup_10_SIM.root
-  PXB  PSimHits=277 (low 276, high 1) modules=155 sumELoss=0.0686 GeV
-  PXF  PSimHits=176 (low 173, high 3) modules=123 sumELoss=0.0221 GeV
-  TIB  PSimHits=187 (low 185, high 2) modules=135 sumELoss=0.0497 GeV
-  TID  PSimHits=172 (low 171, high 1) modules=130 sumELoss=0.0252 GeV
-  TOB  PSimHits=209 (low 205, high 4) modules=142 sumELoss=0.0802 GeV
-  TEC  PSimHits=1076 (low 1065, high 11) modules=803 sumELoss=0.2895 GeV
-  tracker total PSimHits=2097
+== event 1:1:747 of step2_SIM_pileup_10_SIM.root
+  PXB  PSimHits=8 (low 8, high 0) modules=5 sumELoss=0.0016 GeV
+  PXF  PSimHits=19 (low 19, high 0) modules=13 sumELoss=0.0022 GeV
+  TIB  PSimHits=0 (low 0, high 0) modules=0 sumELoss=0.0000 GeV
+  TID  PSimHits=30 (low 30, high 0) modules=28 sumELoss=0.0029 GeV
+  TOB  PSimHits=15 (low 15, high 0) modules=5 sumELoss=0.0043 GeV
+  TEC  PSimHits=64 (low 64, high 0) modules=53 sumELoss=0.0098 GeV
+  tracker total PSimHits=136
   MuonDTHits   PSimHits=0
-  MuonCSCHits  PSimHits=11
+  MuonCSCHits  PSimHits=0
   MuonRPCHits  PSimHits=0
   MuonGEMHits  PSimHits=0
-  EcalHitsEB PCaloHits=1443 cells=1217 E=9.4494 GeV cells>0.5MeV=729
-  EcalHitsEE PCaloHits=3069 cells=1948 E=43.4787 GeV cells>0.5MeV=1545
-  EcalHitsES PCaloHits=230 cells=223 E=0.0463 GeV cells>0.5MeV=17
-  HB   PCaloHits=43 cells(det,z,depth,ieta,iphi)=21 E=0.0175 GeV
-  HE   PCaloHits=209 cells(det,z,depth,ieta,iphi)=101 E=0.2230 GeV
+  EcalHitsEB PCaloHits=79 cells=60 E=0.2323 GeV cells>0.5MeV=34
+  EcalHitsEE PCaloHits=84 cells=61 E=0.8605 GeV cells>0.5MeV=46
+  EcalHitsES PCaloHits=10 cells=10 E=0.0014 GeV cells>0.5MeV=0
+  HB   PCaloHits=5 cells(det,z,depth,ieta,iphi)=1 E=0.0006 GeV
+  HE   PCaloHits=22 cells(det,z,depth,ieta,iphi)=15 E=0.0413 GeV
   HO   PCaloHits=0 cells(det,z,depth,ieta,iphi)=0 E=0.0000 GeV
-  HF   PCaloHits=140 cells(det,z,depth,ieta,iphi)=119 E=173.0000 units (photoelectrons of the shower library)
+  HF   PCaloHits=63 cells(det,z,depth,ieta,iphi)=54 E=98.0000 units (photoelectrons of the shower library)
 ```
 
-The 164 primaries of library event 72 are from `test/09_G4/out/ledger_09_G4.txt` (chapter 9).
+The 22 primaries of library event 747 (`SimTrack`s with `genpartIndex() > 0`): 21 particles of the generator record,
+351 GeV in all, and the forward proton of 6799.8 GeV that `LHCTransport` hands over at z = -203 m: a single-diffractive
+collision, one beam proton intact.
 
-The DIGI files (`addPileupInfo`, the selective-readout flags `simEcalDigis:ebSrFlags/eeSrFlags` by value, the
-`simHcalUnsuppressedDigis` against `simHcalDigis` sizes, the `mix:MergedTrackTruth` split by `EncodedEventId`; the
-script was retyped for the 2025 run, and on the 2024 files it reproduces the 2024 numbers quoted in section 4.9):
+The DIGI files (`test/11_DIGI/digiFileCounts_11_DIGI.py <out dir>`, run by the script into `out/counts_11_DIGI.txt`: `addPileupInfo`, the selective-readout flags
+`simEcalDigis:ebSrFlags/eeSrFlags` by value, the `simHcalUnsuppressedDigis` against `simHcalDigis` sizes, the ECAL
+frames written, the `mix:MergedTrackTruth` split by `EncodedEventId`; on the files of section 4.9 it gives the 2024
+numbers there):
 
 ```
 == signal run 1 event 1
-  bx 0: PU_NumInteractions=0 TrueNumInteractions=0.0
+  pileup per bx (bx:n): 0:0; sum 0
   EB SR flags (value: n of the 2448 trigger towers): [(1, 2444), (3, 4)]; EE SR flags (n of the 624 supercrystals): [(1, 608), (3, 16)]
   HCAL unsuppressed -> zero suppressed: HBHE(QIE11) 15840 -> 4459, HF(QIE10) 3456 -> 3456, HO 2160 -> 0
-  TrackingParticles (mix:MergedTrackTruth): 999 (signal 999, in-time pileup 0, out-of-time 0)
-== pileup run 1 event 72
-  bx 0: PU_NumInteractions=0 TrueNumInteractions=0.0
-  EB SR flags (value: n of the 2448 trigger towers): [(1, 2448)]; EE SR flags (n of the 624 supercrystals): [(1, 621), (3, 3)]
-  HCAL unsuppressed -> zero suppressed: HBHE(QIE11) 15840 -> 4310, HF(QIE10) 3456 -> 3456, HO 2160 -> 0
-  TrackingParticles (mix:MergedTrackTruth): 237 (signal 237, in-time pileup 0, out-of-time 0)
+  ECAL frames written: EB 156, EE 384
+  TrackingParticles (mix:MergedTrackTruth): 999 (signal 999, in-time pileup 0, out-of-time 0: early 0, late 0)
+== pileup run 1 event 747
+  pileup per bx (bx:n): 0:0; sum 0
+  EB SR flags (value: n of the 2448 trigger towers): [(1, 2448)]; EE SR flags (n of the 624 supercrystals): [(1, 616), (3, 8)]
+  HCAL unsuppressed -> zero suppressed: HBHE(QIE11) 15840 -> 4186, HF(QIE10) 3456 -> 3456, HO 2160 -> 0
+  ECAL frames written: EB 38, EE 170
+  TrackingParticles (mix:MergedTrackTruth): 21 (signal 21, in-time pileup 0, out-of-time 0: early 0, late 0)
 == mixed run 1 event 1
-  bx -1: PU_NumInteractions=71 TrueNumInteractions=71.0
-  bx 0: PU_NumInteractions=68 TrueNumInteractions=68.0
-  bx 1: PU_NumInteractions=54 TrueNumInteractions=54.0
-  EB SR flags (value: n of the 2448 trigger towers): [(1, 2425), (3, 23)]; EE SR flags (n of the 624 supercrystals): [(1, 524), (3, 100)]
-  HCAL unsuppressed -> zero suppressed: HBHE(QIE11) 15840 -> 6545, HF(QIE10) 3456 -> 3456, HO 2160 -> 2
-  TrackingParticles (mix:MergedTrackTruth): 45282 (signal 999, in-time pileup 14729, out-of-time 29554)
+  pileup per bx (bx:n): -12:71 -11:68 -10:54 -9:59 -8:52 -7:61 -6:76 -5:59 -4:65 -3:59 -2:68 -1:54 0:64 1:63 2:62 3:60; sum 995
+  EB SR flags (value: n of the 2448 trigger towers): [(1, 2430), (3, 18)]; EE SR flags (n of the 624 supercrystals): [(1, 606), (3, 18)]
+  HCAL unsuppressed -> zero suppressed: HBHE(QIE11) 15840 -> 7075, HF(QIE10) 3456 -> 3456, HO 2160 -> 11
+  ECAL frames written: EB 766, EE 623
+  TrackingParticles (mix:MergedTrackTruth): 211377 (signal 999, in-time pileup 12385, out-of-time 197993: early 160205, late 37788)
 ```
 
 Flag value 1 is "low interest" (zero suppression applied), 3 "high interest" (full readout); the channel totals
 (EB 61 200 crystals, EE 14 648, ES 137 216, HB 9072, HE 6768, HO 2160, HF 3456) are the detector elements listed by
 the SimHitAnalyzer of chapter 10 (`simHits_signal_10_SIM.log`, first line) and the sizes of the unsuppressed HCAL
 collections.
+
+The mixed digis by bunch crossing (`linksByBx.py step3_DIGI_mixed_11_DIGI.root`: for every pixel and strip channel the
+`PixelDigiSimLink` / `StripDigiSimLink` with the largest charge fraction, as the DigiAnalyzer attributes them, counted
+by the bunch crossing of its `EncodedEventId`; for the CSC strips the distinct (strip, collision) pairs of
+`simMuonCSCDigis:MuonCSCStripDigiSimLinks`, and the links of the four chambers of the old Level-1 muon):
+
+```
+pixel digis with a link, by bx of the largest fraction: -11:103 -9:21 -8:4 -4:200 -3:5 -2:125 -1:1748 0:59922 signal:4626
+strip digis with a link, by bx of the largest fraction: -12:219 -11:224 -10:228 -9:126 -8:103 -7:79 -6:263 -5:114 -4:195 -3:797 -2:6290 -1:90157 0:240017 1:6671 2:86 signal:19024
+CSC strip links (channel, collision) by bx: -12:67 -11:310 -10:36 -9:83 -8:88 -7:240 -6:119 -5:125 -4:128 -1:125 0:41 1:207 2:82 3:57
+  chamber endcap 2 ME1/1 chamber 20: links by (bx, collision in bx): {(-11, 21): 31, (2, 41): 32}
+  chamber endcap 2 ME2/1 chamber 10: links by (bx, collision in bx): {(-11, 21): 24, (-10, 52): 36, (1, 56): 6}
+  chamber endcap 2 ME3/1 chamber 11: links by (bx, collision in bx): {(-11, 21): 32}
+  chamber endcap 2 ME4/1 chamber 11: links by (bx, collision in bx): {(-11, 21): 32}
+```
+
+The totals agree with the DigiAnalyzer (pixels: 2206 early = 1748 + 125 + 200 + 103 + 21 + 4 + 5; strips: 98 795
+early, 90 157 of them bx -1; 6757 late = 6671 + 86). Collision 21 of bunch crossing -11 is library event 71 + 21 = 92,
+the collision of the kaon-decay muon that the Level-1 trigger found when it was in time (bx -1..1 version of the book,
+`test/tmp/out_bx-1to1/12_L1T/out/truth_12_L1T.txt`: `MUON pdgId 13 ... bx 0, collision 21`).
+
+The response of the ECAL filters to the pulse of an earlier or later bunch crossing (`ootResponse.py`, on the
+payloads `EcalSimPulseShapePhaseI` (1 ns steps, `conddb dump`), `EcalTPGWeightIdMap_2018_mc` (two weight groups, 7-bit
+two's-complement integers over 64: group 0 = 92 93 16 31 24, group 1 = 86 95 16 33 26) and `EcalSRSettings_2024_EBZS9.5_EEZS6.0_DCC2_mc`
+(`dccNormalizedWeights`, `ecalDccZs1stSample = 2`); the filter is placed on the samples where it gives the largest
+in-time response, a unit pulse of bunch crossing b is the shape read at `peak + (s - 6) x 25 - 25 b` ns in sample s):
+
+```
+== barrel-shape (peak at 135 ns): samples of an in-time pulse: 0.000 0.000 -0.000 0.015 0.774 1.000 0.882 0.668 0.470 0.316
+  TP group 0 weights -0.562 -0.547 0.250 0.484 0.375 on samples 3-7: in-time 1.001; relative response by bx: -12:-0.027 -11:-0.040 -10:-0.058 -9:-0.085 -8:-0.124 -7:-0.183 -6:-0.275 -5:-0.395 -4:-0.511 -3:-0.532 -2:-0.262 -1:0.496 +0:1.000 +1:0.753 +2:0.297 +3:0.006; sum over bx -12..-1: -1.997
+  TP group 1 weights -0.656 -0.516 0.250 0.516 0.406 on samples 3-7: in-time 1.060; relative response by bx: -12:-0.028 -11:-0.041 -10:-0.060 -9:-0.088 -8:-0.128 -7:-0.190 -6:-0.285 -5:-0.408 -4:-0.525 -3:-0.541 -2:-0.253 -1:0.535 +0:1.000 +1:0.763 +2:0.304 +3:0.006; sum over bx -12..-1: -2.012
+  DCC ZS     weights -0.374 -0.374 -0.363 0.272 0.468 0.371 on samples 2-7: in-time 1.000; relative response by bx: -12:-0.038 -11:-0.055 -10:-0.081 -9:-0.118 -8:-0.174 -7:-0.259 -6:-0.376 -5:-0.510 -4:-0.591 -3:-0.465 -2:0.069 -1:0.646 +0:1.000 +1:0.737 +2:0.294 +3:0.006; sum over bx -12..-1: -1.953
+== endcap-shape (peak at 148 ns): samples of an in-time pulse: 0.000 0.000 -0.000 0.116 0.747 0.987 0.885 0.677 0.484 0.339
+  TP group 0 weights -0.562 -0.547 0.250 0.484 0.375 on samples 3-7: in-time 0.933; relative response by bx: -12:-0.036 -11:-0.051 -10:-0.073 -9:-0.103 -8:-0.145 -7:-0.202 -6:-0.288 -5:-0.406 -4:-0.527 -3:-0.544 -2:-0.246 -1:0.488 +0:1.000 +1:0.815 +2:0.360 +3:0.046; sum over bx -12..-1: -2.133
+  TP group 1 weights -0.656 -0.516 0.250 0.516 0.406 on samples 3-7: in-time 0.995; relative response by bx: -12:-0.037 -11:-0.053 -10:-0.075 -9:-0.105 -8:-0.149 -7:-0.208 -6:-0.295 -5:-0.417 -4:-0.538 -3:-0.550 -2:-0.233 -1:0.519 +0:1.000 +1:0.819 +2:0.365 +3:0.047; sum over bx -12..-1: -2.140
+  DCC ZS     weights -0.374 -0.374 -0.363 0.272 0.468 0.371 on samples 2-7: in-time 0.951; relative response by bx: -12:-0.049 -11:-0.069 -10:-0.097 -9:-0.138 -8:-0.193 -7:-0.273 -6:-0.385 -5:-0.516 -4:-0.594 -3:-0.455 -2:0.059 -1:0.651 +0:1.000 +1:0.785 +2:0.348 +3:0.045; sum over bx -12..-1: -2.060
+```
+
+For a pileup equal in every crossing (the average), the in-time amplitude of the primitive gains `1 - 1.997 + 1.056 =
+0.059` of one crossing's worth (group 0; 0.084 for the zero suppression); with only bx -1..1 it gained
+`0.496 + 1 + 0.753 = 2.25`; with the Phase-2 window bx -3..3 `-0.298 + 1 + 1.056 = 1.76` (bx -12..-4 sum to -1.698).
+The weights sum to zero (`-36 - 35 + 16 + 31 + 24 = 0`; `-0.374 - 0.374 - 0.3629 + 0.2721 + 0.4681 + 0.3707 = 0`).
+The HCAL primitives (HB, HE) subtract a fraction of the previous sample instead (`HcalTriggerPrimitiveAlgo.cc`, line
+536: `(sampleTS << 8) - sampleTSminus1 * weight) / 256`), with the weights of `HcalTPChannelParameters_2024_v2.0_mc`
+(`auxi1`): 120 for |ieta| 1-20, 110 for 21-28, the coded veto threshold `auxi2` = 88 everywhere.
 
 ### 4.6 Files of the release quoted in "Open problems for Phase-2"
 
@@ -588,6 +650,7 @@ list of modifiers in the era comes from `Phase2C17I13M9._isOrContains(m)` for ev
 | muon | `SimMuon/DTDigitizer/python/muonDTDigis_cfi.py` (20 "number from M. Pegoraro", 37-39 `phase2Digis`), `SimMuon/CSCDigitizer/python/muonCSCDigis_cfi.py` (18 "Latest tuning by Vadim Khotilovich 16-Nov-2012", 48 `doNeutrons = False`, 86-90 `run2_common` offsets, the effective ones in Phase-2), `SimMuon/RPCDigitizer/python/muonRPCDigis_cfi.py` (28 Run-3 `doBkgNoise = True`, 63 Phase-2 `False`, 94 `phase2_muon`), `SimMuon/GEMDigitizer/python/muonGEMDigis_cfi.py` (13 `instLumi = 2.0`, 16 `instLumi = 5`), `SimMuon/GEMDigitizer/plugins/GEMDigiProducer.cc` (101 `simulateBkgNoise` false; 109 "5E+34 (PU 140)"), `SimMuon/Configuration/python/SimMuon_cff.py` (27 "while GE0 is in development", 37 `phase2_GE0`), `SimMuon/{DT,CSC,RPC,GEM}Digitizer/python/*ChamberMasker_cff.py` |
 | ageing | `SLHCUpgradeSimulations/Configuration/python/aging.py` (84 "todo: determine ZS threshold adjustments", 99 seeds at 3000 fb-1, 193-199 the five ECAL tags, 202-207 the ECAL thresholds 0.103-0.707 GeV, 240-273 `customise_aging_300/1000/3000/3000_ultimate/4500_ultimate`: `agedHGCal` at 255, 263, 271; no tracker, MTD or muon entry), `Configuration/PyReleaseValidation/python/upgradeWorkflowComponents.py` (2089-2120 `Aging1000`, `Aging3000`) |
 | mixing, premixing | `Configuration/PyReleaseValidation/python/relval_steps.py` (4616-4617 `'Run4'`: `AVE_200_BX_25ns`), `Configuration/StandardSequences/python/Mixing.py` (184 `AVE_200_BX_25ns` `B = (-3,3)`; 185 `_m12p3`, 186 `_m6p6`, used by no workflow of the release: `grep -r m12p3 Configuration SimGeneral`), `SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py` (11-12 `maxBunch = 3`, `minBunch = -12`), imported by the 2024 and 2025 profiles `mix_2024_25ns_RunIII2024Summer24_PoissonOOTPU_cfi.py` and `Run3_2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23_cfi.py`, `upgradeWorkflowComponents.py` (2428 `PMXS1`, 2441 `PMXS2`) |
+| bunch-crossing windows (section 3.1 of the chapter, the ECAL box and the PU-200 problem) | `SimCalorimetry/EcalSimAlgos/src/EcalHitResponse.cc` (28-29 `m_minBunch(-32)`, `m_maxBunch(10)`), `interface/EcalTDigitizer.icc` (21 `withinBunchRange(bunchCrossing)`), `SimCalorimetry/CaloSimAlgos/src/CaloHitResponse.cc` (33-34 `theMinBunch(-10)`, `theMaxBunch(10)`; no `setBunchRange` call in `SimCalorimetry/` or `SimGeneral/`), `interface/CaloTDigitizer.h` (76, the HCAL), `SimTracker/SiStripDigitizer/plugins/SiStripDigitizerAlgorithm.cc` (192-193: `std::fabs(tof - cosmicShift - r/30) < tofCut`, 58 `tofCut` = `TOFCutForDeconvolution`), `SimTracker/SiPixelDigitizer/plugins/SiPixelDigitizerAlgorithm.cc` (841-842 `TofLowerCut` / `TofUpperCut`), `SimMuon/GEMDigitizer/src/GEMSignalModel.cc` (48-80 `getSimHitBx`: every hit gets its own bx; `minBunch` / `maxBunch` are read only by `GEMNoiseModel.cc` and `GEMBkgModel.cc`, both off), `SimCalorimetry/HcalTrigPrimAlgos/src/HcalTriggerPrimitiveAlgo.cc` (480 PFA2 when the weight is 255, 536 PFA1'), `SimCalorimetry/HcalTrigPrimProducers/plugins/HcalTrigPrimDigiProducer.cc` (198-203 the weight and veto from `HcalTPChannelParameters`) |
 
 ### 4.7 The trigger primitives: `trigprim_11_DIGI.txt` (the output of `common/trigPrimLedger.py`, in full)
 
@@ -597,20 +660,20 @@ section 1 of the file).
 ```
 == trigPrimLedger 11_DIGI
 (11a)      signal: run:lumi:event 1:1:1
-(11b)      pileup: run:lumi:event 1:1:72
+(11b)      pileup: run:lumi:event 1:1:747
 (11a+11b)  mixed: run:lumi:event 1:1:1
 format: ECAL samples per primitive=5 sampleOfInterest=2 | HCAL (HB, HE) samples per primitive=4 presamples=2
 
 -- 1. The trigger primitives: primitives with ET > 0 / sum ET [GeV] / largest ET [GeV]
                                             (11a) signal                  (11b) pileup               (11a+11b) mixed
-ECAL, EB (of 2448)                     368 / 215.0 / 3.0             340 / 185.0 / 1.5             683 / 468.0 / 5.5
-ECAL, EE (of 1584)                     131 / 113.5 / 6.0              105 / 69.0 / 3.0             494 / 579.5 / 7.0
-ECAL, all (of 4032)                    499 / 328.5 / 6.0             445 / 254.0 / 3.0           1177 / 1047.5 / 7.0
-HCAL, HB (of 2304)                       69 / 35.5 / 1.5               51 / 26.0 / 1.0             233 / 183.0 / 7.5
-HCAL, HE (of 1728)                      12 / 24.0 / 10.0                 0 / 0.0 / 0.0            328 / 241.5 / 10.0
-HCAL, HF (of 792)                      40 / 148.5 / 89.0                 4 / 2.0 / 0.5           741 / 1321.0 / 90.5
-HCAL, all (of 4824)                   121 / 208.0 / 89.0               55 / 28.0 / 1.0          1302 / 1745.5 / 90.5
-all primitives (of 8856)                     620 / 536.5                   500 / 282.0                 2479 / 2793.0
+ECAL, EB (of 2448)                     368 / 215.0 / 3.0             327 / 186.0 / 1.5             428 / 292.0 / 4.5
+ECAL, EE (of 1584)                     131 / 113.5 / 6.0              116 / 82.5 / 3.0             167 / 136.5 / 7.0
+ECAL, all (of 4032)                    499 / 328.5 / 6.0             443 / 268.5 / 3.0             595 / 428.5 / 7.0
+HCAL, HB (of 2304)                       69 / 35.5 / 1.5               58 / 30.0 / 1.0            190 / 155.0 / 15.5
+HCAL, HE (of 1728)                      12 / 24.0 / 10.0                 0 / 0.0 / 0.0            225 / 156.0 / 10.5
+HCAL, HF (of 792)                      40 / 148.5 / 89.0                 2 / 1.0 / 0.5           705 / 1064.5 / 89.0
+HCAL, all (of 4824)                   121 / 208.0 / 89.0               60 / 31.0 / 1.0          1120 / 1375.5 / 89.0
+all primitives (of 8856)                     620 / 536.5                   503 / 299.5                 1715 / 1804.0
 
 -- 2. One primitive per bunch crossing: sum ET [GeV] of the time samples stored with every primitive
       (25 ns per sample; [ ] is the sample of interest, the bunch crossing of the event)
@@ -619,52 +682,47 @@ all primitives (of 8856)                     620 / 536.5                   500 /
    HB + HE  bx -2..+1:       35       26 [    59.5]     32.5
    HF       bx -1.. 0:                 0 [   148.5]
 (11b)      pileup
-   ECAL     bx -2..+2:    443.5    243.5 [     254]    247.5      245
-   HB + HE  bx -2..+1:     28.5       27 [      26]       32
-   HF       bx -1.. 0:                 0 [       2]
+   ECAL     bx -2..+2:    426.5    242.5 [   268.5]      275    247.5
+   HB + HE  bx -2..+1:       31     33.5 [      30]       33
+   HF       bx -1.. 0:                 0 [       1]
 (11a+11b)  mixed
-   ECAL     bx -2..+2:    517.5      826 [  1047.5]    575.5    190.5
-   HB + HE  bx -2..+1:       34    255.5 [   424.5]      350
-   HF       bx -1.. 0:              1124 [    1321]
+   ECAL     bx -2..+2:      616      356 [   428.5]    420.5      339
+   HB + HE  bx -2..+1:    263.5    268.5 [     311]    328.5
+   HF       bx -1.. 0:             804.5 [  1064.5]
 
 -- 3. What the ECAL primitives do inside the DIGI step: the trigger-tower flag of every primitive (low / mid / high
       interest) and the selective-readout decision of the ECAL digitisation that follows from it
                                                        (11a)           (11b)       (11a+11b)
-EB towers flagged mid interest                             4               0              14
+EB towers flagged mid interest                             4               0              10
 EB towers flagged high interest                            0               0               1
-EB towers read in full (of 2448)                           4               0              23
+EB towers read in full (of 2448)                           4               0              18
    with a high flag themselves                             0               0               1
-   others (mid flag, or next to a high one)                4               0              22
-EE towers flagged mid interest                             3               3              76
-EE towers flagged high interest                            3               0              13
-EE supercrystals read in full (of 624)                    16               3             100
+   others (mid flag, or next to a high one)                4               0              17
+EE towers flagged mid interest                             3               7               6
+EE towers flagged high interest                            3               0               3
+EE supercrystals read in full (of 624)                    16               8              18
 (11a)      EB tower read in full: ieta=-17 iphi=46 ecalTP=3 ttFlag=1
 (11a)      EB tower read in full: ieta=3 iphi=17 ecalTP=2 ttFlag=1
 (11a)      EB tower read in full: ieta=11 iphi=27 ecalTP=3 ttFlag=1
 (11a)      EB tower read in full: ieta=12 iphi=31 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=-3 iphi=3 ecalTP=1 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-3 iphi=4 ecalTP=0.5 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-3 iphi=5 ecalTP=0 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-3 iphi=55 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=-4 iphi=3 ecalTP=0 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-4 iphi=4 ecalTP=5.5 ttFlag=3
-(11a+11b)  EB tower read in full: ieta=-4 iphi=5 ecalTP=0 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-5 iphi=3 ecalTP=1 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-5 iphi=4 ecalTP=0 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-5 iphi=5 ecalTP=0.5 ttFlag=0
-(11a+11b)  EB tower read in full: ieta=-9 iphi=41 ecalTP=2.5 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=-9 iphi=42 ecalTP=2.5 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=-10 iphi=30 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=-10 iphi=32 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=-13 iphi=67 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=-17 iphi=46 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=4 iphi=8 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=6 iphi=11 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=7 iphi=38 ecalTP=3 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=11 iphi=27 ecalTP=3.5 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=13 iphi=47 ecalTP=2 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=14 iphi=25 ecalTP=2.5 ttFlag=1
-(11a+11b)  EB tower read in full: ieta=17 iphi=49 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-4 iphi=15 ecalTP=2.5 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-5 iphi=24 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-9 iphi=42 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-16 iphi=63 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=-17 iphi=46 ecalTP=2.5 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=4 iphi=39 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=4 iphi=40 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=4 iphi=41 ecalTP=1 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=5 iphi=39 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=5 iphi=40 ecalTP=4.5 ttFlag=3
+(11a+11b)  EB tower read in full: ieta=5 iphi=41 ecalTP=0.5 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=5 iphi=42 ecalTP=3 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=6 iphi=39 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=6 iphi=40 ecalTP=0 ttFlag=0
+(11a+11b)  EB tower read in full: ieta=6 iphi=41 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=8 iphi=64 ecalTP=2 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=11 iphi=27 ecalTP=2.5 ttFlag=1
+(11a+11b)  EB tower read in full: ieta=11 iphi=36 ecalTP=2.5 ttFlag=1
 
 -- 4. What an ECAL primitive measures: the primitives against the transverse energy that the particles of the sample
       left in the crystals of each tower (PCaloHits; in the mixed sample only the hits of the signal are in the file)
@@ -676,25 +734,25 @@ EE supercrystals read in full (of 624)                    16               3    
    EE   deposits: 1226 towers, 77.0 GeV | towers with a deposit >= 0.25 GeV and a primitive: 18 (deposit 34.9 GeV, primitives 32.0 GeV)
         primitives without a deposit >= 0.25 GeV: 113 (81.5 GeV) | deposits >= 0.25 GeV without a primitive: 20 (9.3 GeV) | deposits below 0.25 GeV per tower: 32.7 GeV
 (11b)      pileup
-   ECAL deposits: 1195 towers, 14.6 GeV | towers with a deposit >= 0.25 GeV and a primitive: 2 (deposit 0.6 GeV, primitives 1.0 GeV)
-        primitives without a deposit >= 0.25 GeV: 443 (253.0 GeV) | deposits >= 0.25 GeV without a primitive: 2 (0.6 GeV) | deposits below 0.25 GeV per tower: 13.4 GeV
-   EB   deposits: 557 towers, 6.0 GeV | towers with a deposit >= 0.25 GeV and a primitive: 2 (deposit 0.6 GeV, primitives 1.0 GeV)
-        primitives without a deposit >= 0.25 GeV: 338 (184.0 GeV) | deposits >= 0.25 GeV without a primitive: 0 (0.0 GeV) | deposits below 0.25 GeV per tower: 5.4 GeV
-   EE   deposits: 638 towers, 8.6 GeV | towers with a deposit >= 0.25 GeV and a primitive: 0 (deposit 0.0 GeV, primitives 0.0 GeV)
-        primitives without a deposit >= 0.25 GeV: 105 (69.0 GeV) | deposits >= 0.25 GeV without a primitive: 2 (0.6 GeV) | deposits below 0.25 GeV per tower: 8.0 GeV
+   ECAL deposits: 67 towers, 0.4 GeV | towers with a deposit >= 0.25 GeV and a primitive: 0 (deposit 0.0 GeV, primitives 0.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 443 (268.5 GeV) | deposits >= 0.25 GeV without a primitive: 0 (0.0 GeV) | deposits below 0.25 GeV per tower: 0.4 GeV
+   EB   deposits: 31 towers, 0.2 GeV | towers with a deposit >= 0.25 GeV and a primitive: 0 (deposit 0.0 GeV, primitives 0.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 327 (186.0 GeV) | deposits >= 0.25 GeV without a primitive: 0 (0.0 GeV) | deposits below 0.25 GeV per tower: 0.2 GeV
+   EE   deposits: 36 towers, 0.2 GeV | towers with a deposit >= 0.25 GeV and a primitive: 0 (deposit 0.0 GeV, primitives 0.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 116 (82.5 GeV) | deposits >= 0.25 GeV without a primitive: 0 (0.0 GeV) | deposits below 0.25 GeV per tower: 0.2 GeV
 (11a+11b)  mixed
-   ECAL deposits: 2799 towers, 120.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 41 (deposit 54.0 GeV, primitives 72.5 GeV)
-        primitives without a deposit >= 0.25 GeV: 1136 (975.0 GeV) | deposits >= 0.25 GeV without a primitive: 32 (14.1 GeV) | deposits below 0.25 GeV per tower: 52.6 GeV
-   EB   deposits: 1573 towers, 43.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 17 (deposit 16.2 GeV, primitives 20.0 GeV)
-        primitives without a deposit >= 0.25 GeV: 666 (448.0 GeV) | deposits >= 0.25 GeV without a primitive: 18 (7.6 GeV) | deposits below 0.25 GeV per tower: 19.9 GeV
-   EE   deposits: 1226 towers, 77.0 GeV | towers with a deposit >= 0.25 GeV and a primitive: 24 (deposit 37.8 GeV, primitives 52.5 GeV)
-        primitives without a deposit >= 0.25 GeV: 470 (527.0 GeV) | deposits >= 0.25 GeV without a primitive: 14 (6.5 GeV) | deposits below 0.25 GeV per tower: 32.7 GeV
+   ECAL deposits: 2799 towers, 120.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 34 (deposit 51.8 GeV, primitives 49.0 GeV)
+        primitives without a deposit >= 0.25 GeV: 561 (379.5 GeV) | deposits >= 0.25 GeV without a primitive: 39 (16.3 GeV) | deposits below 0.25 GeV per tower: 52.6 GeV
+   EB   deposits: 1573 towers, 43.7 GeV | towers with a deposit >= 0.25 GeV and a primitive: 15 (deposit 16.0 GeV, primitives 15.5 GeV)
+        primitives without a deposit >= 0.25 GeV: 413 (276.5 GeV) | deposits >= 0.25 GeV without a primitive: 20 (7.9 GeV) | deposits below 0.25 GeV per tower: 19.9 GeV
+   EE   deposits: 1226 towers, 77.0 GeV | towers with a deposit >= 0.25 GeV and a primitive: 19 (deposit 35.8 GeV, primitives 33.5 GeV)
+        primitives without a deposit >= 0.25 GeV: 148 (103.0 GeV) | deposits >= 0.25 GeV without a primitive: 19 (8.5 GeV) | deposits below 0.25 GeV per tower: 32.7 GeV
 
 -- 5. The two generator jets in the primitives: the 9 x 9 towers around the jet axis, sum ET [GeV]
 (11a)      GenJet 1: pt=117.788 eta=-1.58908 phi=-2.08403 towerIeta=-19 towerIphi=49 | 9x9 towers around it: ecalTP=29 (12 towers) hcalTP=22.5 (9 primitives) ecalDepositEt=41.6009 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 0 0 22.5 0
 (11a)      GenJet 2: pt=115.944 eta=-3.74635 phi=1.00816 towerIeta=-34 towerIphi=12 | 9x9 towers around it: ecalTP=0 (0 towers) hcalTP=123.75 (11 primitives) ecalDepositEt=0 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 0 123.75 0 0
-(11a+11b)  GenJet 1: pt=117.788 eta=-1.58908 phi=-2.08403 towerIeta=-19 towerIphi=49 | 9x9 towers around it: ecalTP=48 (31 towers) hcalTP=30.5 (17 primitives) ecalDepositEt=41.6009 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 0 0.5 30.5 1.5
-(11a+11b)  GenJet 2: pt=115.944 eta=-3.74635 phi=1.00816 towerIeta=-34 towerIphi=12 | 9x9 towers around it: ecalTP=0 (0 towers) hcalTP=199.75 (45 primitives) ecalDepositEt=0 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 50.75 199.75 0 0
+(11a+11b)  GenJet 1: pt=117.788 eta=-1.58908 phi=-2.08403 towerIeta=-19 towerIphi=49 | 9x9 towers around it: ecalTP=33.5 (18 towers) hcalTP=26.5 (13 primitives) ecalDepositEt=41.6009 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 1 2 26.5 0
+(11a+11b)  GenJet 2: pt=115.944 eta=-3.74635 phi=1.00816 towerIeta=-34 towerIphi=12 | 9x9 towers around it: ecalTP=0 (0 towers) hcalTP=178.75 (41 primitives) ecalDepositEt=0 | hcal samples of the window (HB/HE: index 2 = sample of interest; HF: index 1): 45.25 178.75 0 0
 
 -- 6. The largest primitives (ECAL + HCAL of the tower)
 (11a)      top tower 0: ieta=-34 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=89 hcalSamples=0,89,0,0
@@ -703,18 +761,18 @@ EE supercrystals read in full (of 624)                    16               3    
 (11a)      top tower 3: ieta=-19 iphi=48 ecalTP=6 ttFlag=3 fineGrain=0 ecalDepositEt=6.57903 hcalTP=3.5 hcalSamples=0,0,3.5,0
 (11a)      top tower 4: ieta=-33 iphi=13 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=9.5 hcalSamples=0,9.5,0,0
 (11a)      top tower 5: ieta=-34 iphi=13 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=7 hcalSamples=0,7,0,0
-(11b)      top tower 0: ieta=26 iphi=3 ecalTP=3 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
-(11b)      top tower 1: ieta=2 iphi=49 ecalTP=1 ttFlag=0 fineGrain=0 ecalDepositEt=0.000319419 hcalTP=1 hcalSamples=0,0.5,1,0
-(11b)      top tower 2: ieta=27 iphi=5 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
-(11b)      top tower 3: ieta=27 iphi=6 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
-(11b)      top tower 4: ieta=26 iphi=15 ecalTP=1.5 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
-(11b)      top tower 5: ieta=2 iphi=23 ecalTP=1 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=0.5 hcalSamples=0,0,0.5,0
-(11a+11b)  top tower 0: ieta=-34 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=90.5 hcalSamples=1,90.5,0,0
-(11a+11b)  top tower 1: ieta=-33 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=15.5 hcalSamples=0,15.5,0,0
-(11a+11b)  top tower 2: ieta=-18 iphi=50 ecalTP=3.5 ttFlag=1 fineGrain=0 ecalDepositEt=3.44173 hcalTP=10 hcalSamples=0,0,10,0
-(11a+11b)  top tower 3: ieta=-33 iphi=13 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=12 hcalSamples=0.5,12,0,0
-(11a+11b)  top tower 4: ieta=40 iphi=19 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=11.5 hcalSamples=2.5,11.5,0,0
-(11a+11b)  top tower 5: ieta=-19 iphi=48 ecalTP=7 ttFlag=3 fineGrain=0 ecalDepositEt=6.57903 hcalTP=3.5 hcalSamples=0,0,3.5,0
+(11b)      top tower 0: ieta=26 iphi=3 ecalTP=3 ttFlag=1 fineGrain=0 ecalDepositEt=0.00200589 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 1: ieta=-25 iphi=34 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 2: ieta=26 iphi=52 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 3: ieta=-28 iphi=70 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 4: ieta=-28 iphi=69 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11b)      top tower 5: ieta=28 iphi=9 ecalTP=2 ttFlag=1 fineGrain=0 ecalDepositEt=0 hcalTP=0 hcalSamples=0,0,0,0
+(11a+11b)  top tower 0: ieta=-34 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=89 hcalSamples=1,89,0,0
+(11a+11b)  top tower 1: ieta=8 iphi=68 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=15.5 hcalSamples=0,0,15.5,1
+(11a+11b)  top tower 2: ieta=-18 iphi=50 ecalTP=3.5 ttFlag=1 fineGrain=0 ecalDepositEt=3.44173 hcalTP=10.5 hcalSamples=0,0,10.5,0
+(11a+11b)  top tower 3: ieta=-33 iphi=11 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=13 hcalSamples=0,13,0,0
+(11a+11b)  top tower 4: ieta=-33 iphi=13 ecalTP=0 ttFlag=0 fineGrain=0 ecalDepositEt=0 hcalTP=11 hcalSamples=0.5,11,0,0
+(11a+11b)  top tower 5: ieta=-19 iphi=48 ecalTP=7 ttFlag=3 fineGrain=0 ecalDepositEt=6.57903 hcalTP=4 hcalSamples=0,0,4,0
 ```
 
 How the chapter reads it.
@@ -722,24 +780,28 @@ How the chapter reads it.
 - Section 1 is table 11.3. The mixed column is also the first table of chapter 12 (its step 1).
 - Section 2, "one primitive per bunch crossing": the ECAL sample sums of the signal alone are 426.5, 268.5, [328.5],
   274.0, 280.0 GeV: about 270 GeV of noise per crossing (the first stored sample is higher, as in 2024) and some 55 GeV
-  more in ours.
+  more in ours. With the pileup 616.0, 356.0, [428.5], 420.5, 339.0: ours is 100 GeV above the signal alone (with bx
+  -1..1 it was 1047.5, 719 GeV above), the cancellation of the sum-to-zero weights of section 4.5.
 - Section 3: the thresholds of the flags are 2 GeV (mid) and 4 GeV (high), from the payload of `EcalTPGPhysicsConstRcd`,
   `EcalTPGPhysicsConst_2025_mc_EB_4.0_2.0_EE_4.0_2.0` (`conddb list 150X_mcRun3_2025_realistic_v1 | grep EcalTPG`
   lists the 19 `EcalTPG*Rcd` payloads; `conddb dump` of this one gives `ttf-threshold-Low 2`, `ttf-threshold-High 4`,
-  the same content as the `2018_mc` payload of the 2024 global tag). Mixed barrel: 14 mid + 1 high towers; a mid tower
-  is read in full alone, a high one with its 8 neighbours: 14 + 9 = 23 towers, the 23 `EB tower read in full` lines
-  (the eight with `ttFlag=0` are the neighbours of (-4, 4)). The signal alone: 4 mid barrel towers, read in full, and
-  in the endcap 3 mid + 3 high towers, 16 supercrystals read in full.
+  the same content as the `2018_mc` payload of the 2024 global tag). Mixed barrel: 10 mid + 1 high towers; a mid tower
+  is read in full alone, a high one with its 8 neighbours, of which one, (6, 41), is itself a mid tower: 10 + 9 - 1 = 18
+  towers, the 18 `EB tower read in full` lines (the seven with `ttFlag=0` are neighbours of (5, 40)). Endcap: 6 mid +
+  3 high towers, 18 supercrystals. The signal alone: 4 mid barrel towers, read in full, and in the endcap 3 mid + 3
+  high towers, 16 supercrystals read in full. Library event 747: no barrel flag, 7 mid endcap towers, 8 supercrystals.
 - Section 4, signal alone: 120.7 GeV of ET deposited in 2799 ECAL towers; 32 towers with at least 0.25 GeV and a
   primitive (deposit 49.8 GeV, primitives 48.0 GeV); 41 towers with at least 0.25 GeV (18.3 GeV) and no primitive;
   52.6 GeV in towers below 0.25 GeV; 467 of the 499 primitives (280.5 GeV) without such a deposit. 49.8 + 18.3 + 52.6 =
-  120.7. Library event 72: 14.6 GeV deposited, 4 towers with 0.25 GeV, 445 primitives (254.0 GeV): 4032 / 445 = one
-  tower in 9.1 (2024: 157 + 72 = 229 ECAL primitives, section 4.9: one tower in 4032 / 229 = 17.6, "eighteen").
-- Section 5, the 9 x 9 towers around the jet axes: the b jet 29.0 (ECAL) + 22.5 (HCAL) = 51.5 GeV alone, 48.0 + 30.5 =
-  78.5 GeV with the pileup (+27.0); the bbar jet 123.75 and 199.75 GeV (+76.0; the quarter GeV: an HF primitive is two
+  120.7. Library event 747: 0.4 GeV deposited in 67 towers, none with 0.25 GeV, 443 primitives (268.5 GeV): 4032 / 443
+  = one tower in 9.1 (2024, the same collision, section 4.9: 274 primitives, one tower in 4032 / 274 = 14.7, "fifteen").
+- Section 5, the 9 x 9 towers around the jet axes: the b jet 29.0 (ECAL) + 22.5 (HCAL) = 51.5 GeV alone, 33.5 + 26.5 =
+  60.0 GeV with the pileup (+8.5); the bbar jet 123.75 and 178.75 GeV (+55.0; the quarter GeV: an HF primitive is two
   towers wide in phi, and one that lies half inside the window is counted half, `TrigPrimAnalyzer.cc`). Chapter 12 centres its window on
-  the seed tower of the Level-1 jet, (-18, 50) instead of the jet-axis tower (-19, 49), and finds 46.0 + 28.0 = 74.0
+  the seed tower of the Level-1 jet, (-18, 50) instead of the jet-axis tower (-19, 49), and finds 32.5 + 23.0 = 55.5
   GeV for the b jet: the two windows differ by one tower in each direction.
+- Section 6: the largest tower of the mixed event after the HF one is the HB tower (8, 68) with 15.5 GeV, pileup, far
+  from both signal jets (it is not in the top six of the signal alone; chapter 12 makes a Level-1 jet of 39 GeV of it).
 
 The parameters of the two producers (`thresholds_11_DIGI.txt`, section 2; the HCAL one abbreviated to the lines the
 chapter uses):
@@ -798,8 +860,17 @@ All under `/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_0_5/src`:
 The chapter runs with `YEAR=2025` (`common/jitjet_common.sh`, Rule I of the Constitution): `auto:phase1_2025_realistic`
 = `150X_mcRun3_2025_realistic_v1` and the era `Run3_2025`, for the three DIGI jobs and the two analyzers
 (`digiAnalyzer_cfg.py` and `trigPrimAnalyzer_cfg.py` default to them; the script passes them). The first version of
-the chapter (11 November 2026) ran with `auto:phase1_2024_realistic` = `150X_mcRun3_2024_realistic_v2` and `Run3_2024`;
-its outputs were kept for the comparison below.
+the chapter (11 November 2026) ran with `auto:phase1_2024_realistic` = `150X_mcRun3_2024_realistic_v2` and `Run3_2024`.
+Since the move to the sixteen bunch crossings (21 November 2026) the comparison is made with -12..3 in both years: the
+2024 mixed DIGI file is the one `test/12_L1T/run_12_L1T_2024.sh` makes (`test/12_L1T/out2024/step3_DIGI_mixed_11_DIGI.root`,
+the mixed configuration of this chapter with the 2024 settings and the same playback); `test/11_DIGI/run_11_DIGI_2024.sh`
+digitises the signal and library event 747 with the same `cmsDriver.py` commands as in section 1 and
+`--conditions auto:phase1_2024_realistic --era Run3_2024` (configurations `step3_DIGI_{signal,pileup}_2024_11_DIGI_cfg.py`),
+links the mixed file, and analyses the three into `test/11_DIGI/out2024/` with the commands of section 3
+(`globalTag=auto:phase1_2024_realistic era=Run3_2024`), `digiLedger.py`, `trigPrimLedger.py` and
+`11_DIGI/digiFileCounts_11_DIGI.py` (section 4.5): `out2024/ledger_11_DIGI.txt`, `trigprim_11_DIGI.txt`,
+`counts_11_DIGI.txt`. The signal-alone
+numbers are those of 11 November 2026, digi for digi (4982 + 7 pixel, 19 513 + 12 256 strip digis, 43 762 in all).
 
 What did not change.
 
@@ -808,10 +879,10 @@ What did not change.
 | the configuration | `process.dumpPython()` of `step3_DIGI_mixed_11_DIGI_cfg.py` with each era: 19 114 lines, identical except the name of the global tag. None of the five modifiers that `Run3_2025` adds to `Run3_2024` (`run3_GEM_2025`, `run3_CSC_2025`, `run3_SiPixel_2025`, `stage2L1Trigger_2025`, `ecal_cctiming`) is used by a module of the DIGI step |
 | `thresholds_11_DIGI.txt` | identical (it lists the python; the database thresholds are not in it) |
 | the input | the SimHits of chapter 10 are identical with both settings (chapter 10 companion, section 4.7): section 4.4 is unchanged |
-| the mixing | `addPileupInfo` 71 / 68 / 54, the same library events (playback of the same `CrossingFramePlaybackInfoNew`) |
-| the truth | `mix:MergedTrackTruth` 999 / 237 / 45 282 (in-time 14 729, out-of-time 29 554) |
-| the muon digis | identical counts and split in all three samples (mixed: DT 12, CSC 1888 strips + 91 wires, RPC 10, GEM 15); the ES frames of (11a) and (11b) |
-| the ECAL deposits behind the primitives | `trigprim_11_DIGI.txt` section 4: 120.7 GeV in 2799 towers (signal), 14.6 GeV in 1195 towers (event 72) |
+| the mixing | `addPileupInfo` 71 68 54 59 52 61 76 59 65 59 68 54 / 64 / 63 62 60, the same library events (playback of the same `CrossingFramePlaybackInfoNew`) |
+| the truth | `mix:MergedTrackTruth` 999 / 21 / 211 377 (in-time 12 385, out-of-time 197 993) |
+| the muon digis | identical counts and split in all three samples (mixed: DT 24, CSC 7216 strips + 263 wires, RPC 7, GEM 101); the ES frames of (11a) and (11b) |
+| the ECAL deposits behind the primitives | `trigprim_11_DIGI.txt` section 4: 120.7 GeV in 2799 towers (signal), 0.4 GeV in 67 towers (event 747) |
 
 What changed: the conditions. `conddb diff 150X_mcRun3_2024_realistic_v2 150X_mcRun3_2025_realistic_v1` lists 35
 records with another tag. Those the DIGI step reads, with what `conddb dump` of the two payloads gives (averages over
@@ -835,30 +906,34 @@ The other changed records (beam spots, alignment, pixel reconstruction templates
 `EcalChannelStatus`, the L1 menu, the jet corrections, `DeDxCalibration`) have no consumer in the DIGI step (for
 `EcalChannelStatusRcd`: no file of `SimCalorimetry/` reads it).
 
-The numbers, 2024 -> 2025 (the 2024 values from the outputs of 11 November 2026; (11a) / (11b) / (11a+11b)):
+The numbers, 2024 -> 2025 ((11a) / (11b) / (11a+11b); bx -12..3 in both years):
 
 | quantity | 2024 | 2025 | why |
 |---|---|---|---|
 | pixel digis linked (11a), for 1902 PSimHits | 4982 | 4800 | smaller Lorentz angle: less charge sharing between pixels (the reweighting templates changed too; the share of each not established) |
 | pixel noise digis (11a) | 7 | 0 | the same noise configuration; a different random draw (below) |
 | strip digis linked / noise (11a) | 19 513 / 12 256 | 19 418 / 12 184 | bad components; random noise |
-| tracker digis (11a) / (11b) / (11a+11b) | 36 758 / 17 684 / 520 289 | 36 402 / 17 504 / 514 881 | |
-| mixed tracker: signal / in-time / early / late / noise | 23 971 / 355 086 / 124 603 / 6966 / 9663 | 23 765 / 350 718 / 123 744 / 7029 / 9625 | |
-| EB frames | 399 / 285 / 2050 | 156 / 43 / 964 | barrel zero suppression 0.2275 -> 0.3325 GeV (+46 %), against crystal noise +16 % and an APD/PN ratio -9 % (less light) |
-| EE frames | 372 / 55 / 4144 | 384 / 105 / 2520 | EE zero suppression unchanged; the mixed event has 100 instead of 175 supercrystals read in full |
-| EB towers / EE supercrystals read in full | 2 / 0 / 23 and 15 / 1 / 175 | 4 / 0 / 23 and 16 / 3 / 100 | follow the primitives (flags 2 and 4 GeV) |
-| ES frames | 981 / 360 / 15 907 | 981 / 360 / 15 972 | ES payloads unchanged; noise draw |
-| HB / HE frames kept by the zero suppression (HBHE) | 3285 / 2972 / 5839 | 4459 / 4310 / 6545 | SiPM dark current x1.9 (HB) and x2.9 (HE), zero-suppression levels x1.3 |
-| HF frames with a non-negative amplitude | 2251 / 2115 / 1889 | 2270 / 2169 / 1889 | HF payloads unchanged (pedestal 14.9 fC, width 2.97 fC in both); noise draw |
-| all digis | 43 762 / 23 363 / 551 889 | 44 172 / 24 104 / 544 407 | |
-| ECAL primitives EB (> 0, sum ET) | 200, 114.5 / 157, 83.5 / 594, 408.0 GeV | 368, 215.0 / 340, 185.0 / 683, 468.0 GeV | noisier barrel crystals; the TPG payloads changed too (the share not established) |
-| ECAL primitives EE | 98, 85.5 / 72, 44.0 / 594, 1273.5 GeV | 131, 113.5 / 105, 69.0 / 494, 579.5 GeV | (11a+11b): the pileup of 2.5 < abs(eta) < 3 in darker crystals (APD/PN 0.041 -> 0.013), not compensated by the linearisation |
-| HCAL primitives HB / HE / HF (11a+11b) | 153, 129.5 / 335, 271.5 / 741, 1329.0 GeV | 233, 183.0 / 328, 241.5 / 741, 1321.0 GeV | HB: dark current |
-| all primitives | 363, 380.5 / 244, 135.0 / 2417, 3411.5 GeV | 620, 536.5 / 500, 282.0 / 2479, 2793.0 GeV | |
+| tracker digis (11a) / (11b) / (11a+11b) | 36 758 / 12 768 / 446 563 | 36 402 / 12 477 / 440 664 | |
+| mixed tracker: signal / in-time / early / late / noise | 23 929 / 304 495 / 101 897 / 6756 / 9486 | 23 650 / 299 939 / 101 001 / 6757 / 9317 | |
+| EB frames | 399 / 286 / 1489 | 156 / 38 / 766 | barrel zero suppression 0.2275 -> 0.3325 GeV (+46 %), against crystal noise +16 % and an APD/PN ratio -9 % (less light) |
+| EE frames | 372 / 53 / 1005 | 384 / 170 / 623 | EE zero suppression unchanged; the mixed event has 18 instead of 30 supercrystals read in full |
+| EB towers / EE supercrystals read in full | 2 / 0 / 13 and 15 / 1 / 30 | 4 / 0 / 18 and 16 / 8 / 18 | follow the primitives (flags 2 and 4 GeV) |
+| ES frames | 981 / 198 / 18 188 | 981 / 198 / 18 287 | ES payloads unchanged; noise draw |
+| HB / HE frames kept by the zero suppression (HBHE) | 3285 / 2959 / 6501 | 4459 / 4186 / 7075 | SiPM dark current x1.9 (HB) and x2.9 (HE), zero-suppression levels x1.3 |
+| HF frames with a non-negative amplitude | 2251 / 2171 / 2230 | 2270 / 2145 / 2185 | HF payloads unchanged (pedestal 14.9 fC, width 2.97 fC in both); noise draw |
+| all digis | 43 762 / 18 175 / 481 572 | 44 172 / 18 683 / 475 110 | |
+| ECAL primitives EB (> 0, sum ET) | 200, 114.5 / 183, 96.5 / 304, 202.5 GeV | 368, 215.0 / 327, 186.0 / 428, 292.0 GeV | noisier barrel crystals; the TPG payloads changed too (the share not established) |
+| ECAL primitives EE | 98, 85.5 / 91, 53.5 / 143, 158.0 GeV | 131, 113.5 / 116, 82.5 / 167, 136.5 GeV | (11a+11b): the pileup of 2.5 < abs(eta) < 3 in darker crystals (APD/PN 0.041 -> 0.013), not compensated by the linearisation |
+| HCAL primitives HB / HE / HF (11a+11b) | 120, 107.0 / 261, 192.0 / 701, 1042.0 GeV | 190, 155.0 / 225, 156.0 / 705, 1064.5 GeV | HB: dark current; HE: the response corrections and TP channel parameters changed too (not established) |
+| all primitives | 363, 380.5 / 282, 154.0 / 1529, 1701.5 GeV | 620, 536.5 / 503, 299.5 / 1715, 1804.0 GeV | |
 | signal towers with a deposit >= 0.25 GeV and a primitive | 33 (deposit 51.0, primitives 50.0 GeV) | 32 (deposit 49.8, primitives 48.0 GeV) | less light per GeV |
-| b-jet window (axis tower (-19, 49)), ECAL + HCAL | 32.0 + 23.5 (11a), 48.0 + 27.5 (11a+11b) | 29.0 + 22.5 (11a), 48.0 + 30.5 (11a+11b) | |
-| bbar-jet window | 124.0 (11a), 200.5 (11a+11b) | 123.75 (11a), 199.75 (11a+11b) | |
-| largest primitive | HF (-34, 11): 89.0 GeV (11a and 11a+11b) | 89.0 (11a), 90.5 GeV (11a+11b) | |
+| b-jet window (axis tower (-19, 49)), ECAL + HCAL | 32.0 + 23.5 (11a), 35.0 + 25.5 (11a+11b) | 29.0 + 22.5 (11a), 33.5 + 26.5 (11a+11b) | |
+| bbar-jet window | 124.0 (11a), 175.0 (11a+11b) | 123.75 (11a), 178.75 (11a+11b) | |
+| largest primitive | HF (-34, 11): 89.0 GeV (11a and 11a+11b) | 89.0 GeV (11a and 11a+11b) | |
+
+(With bx -1..1, the comparison of 11 November 2026, the mixed column read: EB frames 2050 / 964, EE frames 4144 / 2520,
+EE supercrystals read in full 175 / 100, all primitives 3411.5 / 2793.0 GeV for 2024 / 2025; the outputs of that version
+are in `test/tmp/out_bx-1to1/11_DIGI/out/`. The year changes the same channels in both windows.)
 
 "A different random draw": every digitiser inside the `MixingModule` draws from the one engine of `mix` (seed 12345;
 `RandomNumberGeneratorService` has no engine of its own for them). A payload that changes how many random numbers one
@@ -960,39 +1035,85 @@ differences are fluctuations, not effects of the 2025 conditions.
     median frame (by max - min): subdet=4 ieta=-31 iphi=43 depth=4  ADC [3, 2, 4]  TDC [-1, -1, -1]
 
 -- 5. The muon digis of the mixed event (simMuon*Digis); the iteration is done by a small C++ helper
-  DT digis=12 (wheel station sector superlayer layer wire time[ns]):
-    -2 1 4 2 1 5 564.062
-    2 1 5 1 3 2 564.062
-    -2 1 4 2 4 5 613.281
-    2 2 4 1 2 29 625.781
-    2 2 4 1 1 29 672.656
-    -2 1 4 3 1 30 679.688
-    -2 1 4 2 3 5 710.938
-    2 1 5 1 1 2 721.875
-    -2 1 4 3 2 31 748.438
-    -2 1 4 2 2 5 751.562
-    2 1 5 1 2 3 833.594
-    0 1 10 3 3 18 921.875
-  CSC strip digis=1888 in 13 chambers (endcap station ring chamber: strips)
+  DT digis=24 (wheel station sector superlayer layer wire time[ns]):
+    -2 1 4 2 1 5 289.062
+    2 1 5 1 3 2 289.062
+    -2 1 4 2 4 5 338.281
+    -2 1 6 1 4 16 344.531
+    2 2 4 1 2 29 352.344
+    2 1 10 1 4 5 365.625
+    2 2 4 1 1 29 395.312
+    -2 1 4 3 1 30 404.688
+    -2 1 6 1 1 23 408.594
+    -2 1 4 2 3 5 435.938
+    2 1 5 1 1 2 446.875
+    -2 1 4 3 2 31 473.438
+    -2 1 4 2 2 5 476.562
+    -2 1 6 1 1 15 501.562
+    2 1 10 1 3 5 518.75
+    -2 1 6 1 3 15 557.812
+    2 1 5 1 2 3 558.594
+    0 1 6 3 4 38 587.5
+    2 1 10 1 1 5 600.781
+    0 1 10 3 3 18 643.75
+    -2 1 6 1 2 16 645.312
+    2 1 10 1 2 6 678.906
+    -2 1 6 1 2 24 681.25
+    2 2 1 1 3 56 711.719
+  CSC strip digis=7216 in 47 chambers (endcap station ring chamber: strips)
+    1 1 1 26: 112 strip digis in layers 1,2,3,4,5
+    1 1 1 27: 208 strip digis in layers 1,2,3,4,5,6
+    1 1 1 3: 176 strip digis in layers 1,2,3,4,5,6
+    1 1 1 31: 160 strip digis in layers 1,2,3,4,5,6
+    1 1 1 36: 192 strip digis in layers 1,2,3,4,5,6
+    1 1 1 4: 160 strip digis in layers 1,2,3,4,5,6
+    1 1 1 5: 128 strip digis in layers 1,2,3,4,5,6
     1 1 4 11: 192 strip digis in layers 1,2,3,4,5,6
+    1 1 4 15: 192 strip digis in layers 1,2,3,4,5,6
     1 1 4 21: 160 strip digis in layers 1,2,3,4,5,6
-    1 1 4 7: 96 strip digis in layers 1,2,3,4,5,6
-    1 1 4 8: 176 strip digis in layers 1,2,3,4,5,6
-    2 1 1 20: 192 strip digis in layers 1,2,3,4,5,6
+    1 1 4 23: 112 strip digis in layers 1,2,3,4,5,6
+    1 1 4 4: 96 strip digis in layers 1,2,3,4,5,6
+    1 1 4 5: 160 strip digis in layers 1,2,3,4,5,6
+    1 1 4 7: 64 strip digis in layers 1,2,3,4
+    1 1 4 8: 144 strip digis in layers 1,2,3,4,5,6
+    1 1 4 9: 112 strip digis in layers 2,3,4,5,6
+    1 2 1 1: 80 strip digis in layers 1,2,3,4,5
+    1 2 1 5: 144 strip digis in layers 1,2,3,4,5,6
+    1 2 1 8: 192 strip digis in layers 1,2,3,4,5,6
+    2 1 1 19: 96 strip digis in layers 1,2,3,4,5,6
+    2 1 1 20: 288 strip digis in layers 1,2,3,4,5,6
+    2 1 1 26: 176 strip digis in layers 1,2,3,4,5,6
+    2 1 1 30: 176 strip digis in layers 1,2,3,4,5,6
+    2 1 1 31: 256 strip digis in layers 1,2,3,4,5,6
+    2 1 1 4: 160 strip digis in layers 1,2,3,4,5,6
+    2 1 1 6: 192 strip digis in layers 1,2,3,4,5,6
+    2 1 1 7: 176 strip digis in layers 1,2,3,4,5,6
     2 1 2 25: 144 strip digis in layers 1,2,3,4,5,6
+    2 1 4 12: 192 strip digis in layers 1,2,3,4,5,6
+    2 1 4 14: 160 strip digis in layers 1,2,3,4,5,6
+    2 1 4 16: 96 strip digis in layers 1,2,3,4,5,6
+    2 1 4 18: 144 strip digis in layers 1,2,3,4,5,6
+    2 1 4 19: 288 strip digis in layers 1,2,3,4,5,6
     2 1 4 2: 192 strip digis in layers 1,2,3,4,5,6
     2 1 4 25: 96 strip digis in layers 1,2,3,4,5,6
-    2 1 4 33: 96 strip digis in layers 1,2,3,4,5,6
+    2 1 4 27: 128 strip digis in layers 1,2,3,4,5,6
+    2 1 4 3: 192 strip digis in layers 1,2,3,4,5,6
+    2 1 4 33: 128 strip digis in layers 1,2,3,4,5,6
+    2 1 4 9: 192 strip digis in layers 1,2,3,4,5,6
     2 2 1 10: 256 strip digis in layers 1,2,3,4,5,6
-    2 2 1 11: 96 strip digis in layers 1,2,3,4,5,6
+    2 2 1 11: 48 strip digis in layers 1,2,6
+    2 2 1 16: 96 strip digis in layers 1,2,3,4,5,6
+    2 2 1 3: 160 strip digis in layers 1,2,3,4,5,6
+    2 2 1 4: 96 strip digis in layers 1,2,3,4,5,6
+    2 2 1 7: 112 strip digis in layers 2,3,4,5,6
     2 3 1 11: 96 strip digis in layers 1,2,3,4,5,6
     2 4 1 11: 96 strip digis in layers 1,2,3,4,5,6
-  CSC strip with the largest pulse: endcap 1 ME1/4 chamber 8 layer 1 strip 39, 8 samples (50 ns each): 1023 1016 1205 2001 2232 1858 1455 1212
-  CSC strip pulse heights (max - min of the 8 samples): median 5, 90% 15, max 1216
-  a median strip: ME2/1 chamber 10 layer 2 strip 15: 1138 1137 1141 1141 1140 1137 1136 1140
-  CSC wire digis=91 in 13 chambers; first time bin: {'6': 1, '7': 11, '8': 57, '9': 13, '10': 6, '11': 2, '12': 1}
-  RPC digis=10 (region station ring strip bx): -1 1 2 32 0; -1 1 2 21 0; -1 1 2 22 0; -1 1 2 23 0; 0 1 2 65 1; 0 2 -1 18 -3; -1 3 2 12 -2; 1 3 2 9 4; -1 3 3 18 -3; -1 4 3 17 0
-  GEM digis=15 (region station chamber layer strip bx): -1 1 20 1 213 0; -1 1 20 1 214 0; -1 1 20 1 215 0; -1 1 2 1 173 -1; -1 1 2 1 174 -1; -1 1 2 1 175 -1; 1 1 7 1 126 0; 1 1 7 1 127 0; 1 1 7 1 128 0; 1 1 2 2 304 0; -1 1 20 2 210 0; -1 1 2 2 166 1; 1 1 7 2 116 -1; 1 1 7 2 117 -1; 1 1 7 2 118 -1
+  CSC strip with the largest pulse: endcap 1 ME1/4 chamber 8 layer 3 strip 2, 8 samples (50 ns each): 1021 952 2887 4095 4095 4095 4095 4095
+  CSC strip pulse heights (max - min of the 8 samples): median 5, 90% 18, max 3143
+  a median strip: ME1/4 chamber 14 layer 3 strip 27: 1012 1009 1007 1009 1010 1007 1009 1012
+  CSC wire digis=263 in 41 chambers; first time bin: {'0': 19, '1': 57, '2': 24, '3': 24, '4': 22, '5': 2, '6': 5, '7': 17, '8': 16, '9': 38, '10': 22, '11': 16, '13': 1}
+  RPC digis=7 (region station ring strip bx): -1 1 2 15 0; 0 1 2 53 1; 0 2 -1 6 -3; 1 3 2 24 4; -1 3 3 28 -3; -1 3 3 22 -2; -1 4 2 27 0
+  GEM digis=101 (region station chamber layer strip bx): -1 1 32 1 362 -6; -1 1 32 1 363 -6; -1 1 32 1 364 -6; -1 1 11 1 120 -1; -1 1 11 1 121 -1; 1 1 26 1 292 -4; 1 1 26 1 293 -4; 1 1 26 1 294 -4; -1 1 30 1 204 -7; -1 1 30 1 205 -7; -1 1 30 1 206 -7; -1 1 30 1 220 -8; 1 1 20 1 206 -2; 1 1 20 1 207 -2; 1 1 36 1 159 -6; 1 1 36 1 160 -6; 1 1 5 1 290 1; 1 1 5 1 291 1; -1 1 6 1 311 1; -1 1 6 1 312 1; 1 1 27 1 370 -6; 1 1 27 1 371 -6; 1 1 4 1 27 1; 1 1 4 1 28 1; 1 1 26 1 383 -6; -1 1 7 1 56 -1; -1 1 7 1 57 -1; 1 1 9 1 149 -4; 1 1 9 1 150 -4; 1 1 9 1 151 -4; 1 1 9 1 152 -4; -1 1 20 1 213 -11; -1 1 20 1 214 -11; -1 1 20 1 215 -11; -1 1 2 1 163 -7; -1 1 2 1 164 -7; -1 1 2 1 164 -6; -1 1 2 1 165 -6; -1 1 2 1 172 -10; -1 1 2 1 173 -10; -1 1 2 1 174 -10; -1 1 2 1 175 -10; 1 1 7 1 127 -11; 1 1 7 1 128 -11; -1 1 12 1 220 -9; -1 1 12 1 221 -9; 1 1 15 1 89 2; 1 1 15 1 90 2; 1 1 15 1 91 2; -1 1 20 2 315 3; -1 1 20 2 316 3; -1 1 20 2 317 3; 1 1 21 2 353 -3; 1 1 21 2 354 -3; 1 1 21 2 355 -3; 1 1 21 2 356 -4; 1 1 21 2 356 -3; 1 1 21 2 357 -3; 1 1 21 2 358 -3; -1 1 31 2 370 -6; -1 1 31 2 371 -6; -1 1 31 2 372 -6; -1 1 32 2 380 -6; -1 1 32 2 381 -6; -1 1 32 2 382 -6; 1 1 26 2 307 -3; 1 1 26 2 308 -3; -1 1 30 2 184 -7; -1 1 30 2 185 -7; -1 1 30 2 186 -7; 1 1 36 2 168 -4; 1 1 36 2 169 -4; 1 1 2 2 304 -11; 1 1 5 2 276 1; 1 1 5 2 277 1; -1 1 6 2 305 1; -1 1 6 2 306 1; 1 1 27 2 361 -6; 1 1 27 2 362 -6; 1 1 27 2 363 -6; 1 1 4 2 17 1; 1 1 4 2 18 1; -1 1 7 2 63 -2; -1 1 7 2 64 -2; -1 1 7 2 65 -2; -1 1 7 2 65 0; 1 1 9 2 129 -4; 1 1 9 2 130 -4; 1 1 9 2 131 -4; -1 1 20 2 210 -12; -1 1 2 2 165 -11; -1 1 2 2 166 -11; 1 1 7 2 116 -10; 1 1 7 2 117 -10; 1 1 7 2 118 -10; -1 1 12 2 226 -10; -1 1 12 2 227 -10; 1 1 15 2 73 1; 1 1 15 2 74 1; 1 1 15 2 75 1; -1 2 16 1 116 -7
 ```
 
 How the chapter reads it.
@@ -1030,25 +1151,30 @@ How the chapter reads it.
   of `HcalTDCParameters.h`); the HF frame (figure 11.4, right) is (-34, 11), depth 1: 2 122 20; the median kept HB/HE
   frame is HE (-16, 31), depth 4: 4 4 5 7 6 15 12 12 15 12. 4459 HB/HE frames kept for 173 + 648 = 821 HB and HE cells
   with a hit (`simHits_signal_10_SIM.log`): at least 4459 - 821 = 3638 ("at least 3600") frames have no hit; library
-  event 72: 4310 frames for 21 + 122 = 143 HB and HE cells with a hit (`simHits_pileup_10_SIM.log`, the same counting as
-  the signal's; the FWLite count of section 4.5, 21 + 101, merges the HE layers differently).
-- Section 5, the muon chambers ("The muon chambers"): 12 DT digis between 564.062 and 921.875 ns, minus the offset of
-  500 ns (`muonDTDigis_cfi.py`, `pset.offset = 500`): 64 to 422 ns; 422 / 25 = 17 crossings (last paragraph of the
-  chapter). 1888 CSC strip digis in 13 chambers, 96 to 256 strips each (multiples of 16: 6 to 16 boards); the chambers
-  (endcap 2 = negative z) ME1/1 chamber 20, ME2/1 chamber 10, ME3/1 and ME4/1 chamber 11 are the four chambers of the
-  trigger muon of chapter 12 (its table of CSC stubs); ring 4 of station 1 is ME1/1a, so the largest pulse (endcap 1,
-  ME1/4 chamber 8, 1016 to 2232 counts) is in ME1/1. Strip pulse heights (largest minus smallest of the 8 samples):
-  median 5. Wire time bins 6 to 12, 57 of 91 in bin 8; RPC bunch crossings -3 to +4; GEM -1 to +1.
+  event 747: 4186 frames for 0.04 GeV in the HB and HE (FWLite, section 4.5: 1 HB and 15 HE cells in the test numbering).
+- Section 5, the muon chambers ("The muon chambers"): 24 DT digis between 289.062 and 711.719 ns, minus the offset of
+  500 ns (`muonDTDigis_cfi.py`, `pset.offset = 500`): -211 to +212 ns. Twelve of them are the twelve DT digis of the bx
+  -1..1 version (`test/tmp/out_bx-1to1/11_DIGI/out/examples_11_DIGI.txt`) on the same wires 275 ns earlier: nine to the
+  TDC count (e.g. wheel -2 station 1 sector 4 SL 2 layer 1 wire 5: 564.062 -> 289.062), three within 1.6 to 3.1 ns
+  (2 2 4 1 2 29: 625.781 -> 352.344; 2 2 4 1 1 29: 672.656 -> 395.312; 0 1 10 3 3 18: 921.875 -> 643.750), the 2.4 ns
+  smearing of the digitiser drawn again. 7216 CSC strip digis in 47 chambers, 48 to 288 strips each (multiples of 16);
+  the chambers (endcap 2 = negative z) ME1/1 chamber 20, ME2/1 chamber 10, ME3/1 and ME4/1 chamber 11 are those of the
+  trigger muon of the bx -1..1 version, library event 92 (section 4.5), now in bx -11; ring 4 of station 1 is ME1/1a,
+  so the largest pulse (endcap 1, ME1/4 chamber 8 layer 3 strip 2, 1021 952 2887 4095 4095 4095 4095 4095) is in ME1/1
+  and saturates the 12-bit ADC. Strip pulse heights (largest minus smallest of the 8 samples): median 5, 90 % below
+  18. Wire time bins 0 to 13: 0-5 148 digis, 6-11 114, 13 one; RPC bunch crossings -3 to +4 (all 7 without a link);
+  GEM -12 to +3 (80 early, 21 late by the DigiAnalyzer).
 
 Numbers of the chapter derived from the tables above (sums and ratios):
 
 | quantity | value | from |
 |---|---|---|
 | strip digis of the signal | 36 402 - 4800 = 31 602 | 4.1 |
-| pixel / strip PSimHits of the bunch crossing | 50 953 + 36 700 = 87 653 / 71 941 + 37 897 + 69 140 + 181 684 = 360 662 | 4.4 |
-| pixel / strip digis per hit, bunch crossing | 77 980 / 87 653 = 0.89 / 436 901 / 360 662 = 1.21 | 4.1, 4.4 |
-| mixed pixels: signal / in-time / early | 2824 + 1779 = 4603 / 47 941 + 23 634 = 71 575 / 1336 + 466 = 1802 | 4.1 |
-| mixed strips: signal / in-time / early / late / noise | 19 162 / 279 143 / 121 942 / 7029 / 9625 | 4.1 |
+| pixel / strip PSimHits of the bunch crossing | 416 362 / 1 690 319 | 4.4 |
+| pixel / strip digis per hit, bunch crossing | 66 773 / 416 362 = 0.16 and 373 891 / 1 690 319 = 0.22 | 4.1, 4.4 |
+| mixed pixels: signal / in-time / early / noise | 2826 + 1800 = 4626 / 40 191 + 19 731 = 59 922 / 1689 + 517 = 2206 / 19 + 0 = 19 | 4.1 |
+| mixed strips: signal / in-time / early / late / noise | 19 024 / 240 017 / 98 795 / 6757 / 9298 | 4.1 |
+| early digis by bunch crossing (largest link fraction) | pixels: bx -1 1748, -2 125, -4 200, other 133; strips: bx -1 90 157, -2 6290, other 2348; late strips +1 6671, +2 86 | 4.5 |
 | ECAL crystals | 61 200 + 14 648 = 75 848 | 4.5 |
 | pixel window for a hit of bunch crossing -1 | tof - r/c = delay - 25 ns within -12.5..+12.5 ns: delay 12.5 to 37.5 ns | `TofLowerCut`, `TofUpperCut` |
 

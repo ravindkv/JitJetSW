@@ -43,7 +43,7 @@ options.register('printHits', False, VarParsing.multiplicity.singleton, VarParsi
                  'print every primary with its hit counts per station')
 options.register('prefix', 'simHits', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'file-name prefix of the pages: <outputDir>/<station>/<prefix>_<station>_run<R>_event<E>.pdf')
-options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG')
+options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG, rendered from the closed PDF by pdftoppm (plugins/PdfPng.h; ROOT without pdftoppm)')
 options.register('hcalTestNumbering', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
                  'HCAL PCaloHit ids are in the simulation test numbering, relabelled to HcalDetId')
 options._tags, options._tagOrder = {}, []

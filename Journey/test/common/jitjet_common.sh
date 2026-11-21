@@ -26,7 +26,8 @@
 #   EVENTS=1       events generated / simulated (the book follows ONE event; more only for illustration)
 #   EVENT=1:1:1    the event of the book (run:lumi:event), the one drawn and mixed
 #   PNG=1          convert the PDF pages to PNG (pdftoppm). Default 0 for chapters 01-08, whose .tex include the PDFs
-#                  themselves, 1 for 09-13
+#                  themselves, 1 for 09-13. The analyzers of 10-13 (savePNG=$PNG) render theirs from their own PDFs with
+#                  pdftoppm too (plugins/PdfPng.h): ROOT's PNG of the mixed event of chapter 10 took four and a half hours
 #   CONE_R=0.4     gen_stage: the GenPartAnalyzer pages draw the cone Delta R < CONE_R around the b and the bbar, with its
 #                  pT and a zoom on the fuller cone (default 0: no cones; the ledger always lists the cones of R = 0.4)
 #   DRAW_STAGES=2  gen_stage: the GenPartAnalyzer PDF gets only the pages of these stages (comma list; default: every
@@ -68,18 +69,17 @@ jitjet_init() {
   # the pileup of the book (chapters 08 to 11): PU collisions per bunch crossing on average, in bunch crossings
   # BUNCHES, the library read in sequence. The MixingModule (seed 12345, Poisson(PU) per bunch crossing, early crossings
   # first) draws for this signal event SKIP collisions in the crossings before 0 (library events 1..SKIP) and NPU in
-  # bx 0 (library events SKIP+1..SKIP+NPU), the in-time collisions. The window is set per chapter, like YEAR:
-  #   08, 09: bx -12..3, the window of every Run-3 scenario of CMSSW_15_0_5 (mix_probFunction_25ns_PoissonOOTPU_cfi.py,
-  #           since 16 November 2026): 746 early, 64 in time (library events 747-810), 185 late, 995 in all; chapter 08
-  #           makes the draw itself at generator level (common/pileupDraw_cfg.py, draw_08_PU.txt) and checks it,
-  #           chapter 09 hands the 1000 library collisions to Geant4 and takes the 64 in-time ones for its ledger
-  #   10-13:  bx -1..1 until they are moved: 71 / 68 / 54 (in time: library events 72-139); chapter 10 checks its draw
-  #           (WARNING_intime_10_SIM.txt if it differs) and chapter 11 replays it (MixingModule playback).
+  # bx 0 (library events SKIP+1..SKIP+NPU), the in-time collisions. Chapters 08-13 use bx -12..3, the window of every
+  # Run-3 scenario of CMSSW_15_0_5 (mix_probFunction_25ns_PoissonOOTPU_cfi.py; 08 and 09 since 16 November 2026, 10-13
+  # since 21 November 2026; before, bx -1..1 with 71 / 68 / 54): 746 early, 64 in time (library events 747-810), 185
+  # late, 995 in all. Chapter 08 makes the draw itself at generator level (common/pileupDraw_cfg.py, draw_08_PU.txt) and
+  # checks it, chapter 09 hands the 1000 library collisions to Geant4 and takes the 64 in-time ones for its ledger,
+  # chapter 10 mixes them at SimHit level and checks its draw against SKIP / NPU (WARNING_intime_10_SIM.txt if it
+  # differs), chapter 11 replays it (MixingModule playback) and 12, 13 follow the mixed event.
   PU=${PU:-60}
-  case $CHAPTER in
-    0[89]_*) BUNCHES=${BUNCHES:--12,3}; SKIP=${SKIP:-746}; NPU=${NPU:-64} ;;
-    *)       BUNCHES=${BUNCHES:--1,1};  SKIP=${SKIP:-71};  NPU=${NPU:-68} ;;
-  esac
+  BUNCHES=${BUNCHES:--12,3}
+  SKIP=${SKIP:-746}
+  NPU=${NPU:-64}
   EVENTS=${EVENTS:-1}
   EVENT=${EVENT:-1:1:1}
   RUN=${RUN:-1}

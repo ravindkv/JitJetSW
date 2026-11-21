@@ -2,7 +2,7 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: step3 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/step2_SIM_pileup_10_SIM.root --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended -n -1 -s DIGI:pdigi_valid --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_DIGI_pileup_11_DIGI.root --customise_commands process.source.eventsToProcess = cms.untracked.VEventRange('1:1:72') --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/11_DIGI/step3_DIGI_pileup_11_DIGI_cfg.py --no_exec
+# with command line options: step3 --filein file:/afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/10_SIM/out/step2_SIM_pileup_10_SIM.root --conditions auto:phase1_2025_realistic --era Run3_2025 --geometry DB:Extended -n -1 -s DIGI:pdigi_valid --datatier GEN-SIM-DIGI --eventcontent FEVTDEBUG --fileout file:step3_DIGI_pileup_11_DIGI.root --customise_commands process.source.eventsToProcess = cms.untracked.VEventRange('1:1:747') --python_filename /afs/cern.ch/work/r/rverma/public/JME/JitJet/CMSSW_15_0_5/src/JitJetSW/Journey/test/11_DIGI/step3_DIGI_pileup_11_DIGI_cfg.py --no_exec
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.Eras.Era_Run3_2025_cff import Run3_2025
@@ -124,7 +124,7 @@ associatePatAlgosToolsTask(process)
 
 # Customisation from command line
 
-process.source.eventsToProcess = cms.untracked.VEventRange('1:1:72')
+process.source.eventsToProcess = cms.untracked.VEventRange('1:1:747')
 # Add early deletion of temporary data products to reduce peak memory need
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
 process = customiseEarlyDelete(process)

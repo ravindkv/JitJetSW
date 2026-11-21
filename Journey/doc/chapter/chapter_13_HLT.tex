@@ -72,26 +72,29 @@ Most of the path is shared with other paths and runs once per event.}
 \toprule
 step & modules (examples) & what it makes & in our event \\
 \midrule
-1 & \code{hltGtStage2Digis}, \code{hltL1sSingleJet90}, \code{hltPrePFJet110} & the Level-1 record; for each path: go or stop & 1\,906\,128 bytes from 678 boards; 652 of 754 paths stop at their seed \\
-2 & \code{hltTowerMakerForAll}, \code{hltAK4CaloJetsCorrected} & 2051 towers, calo jets & 2 jets above $30\GeV$: $118.5$ and $93.3\GeV$ \\
-3 & \code{hltPixelTracks}, \code{hltMergedTracks}, \code{hltVerticesPF} & pixel tracks, full tracks, vertices & 2981 pixel tracks, 116 full tracks, 1 vertex: the signal \\
-4 & \code{hltParticleFlow}, \code{hltAK4PFJetsCorrected} & 1366 particles, PF jets & 2 jets above $30\GeV$: $126.7$ and $86.7\GeV$ \\
-5 & \code{hltSinglePFJet110}, \code{TriggerResults} & the decision of every path & 40 paths accept; \code{HLT\_PFJet110} by $16.7\GeV$ \\
+1 & \code{hltGtStage2Digis}, \code{hltL1sSingleJet90}, \code{hltPrePFJet110} & the Level-1 record; for each path: go or stop & 1\,775\,760 bytes from 678 boards; 656 of 754 paths stop at their seed \\
+2 & \code{hltTowerMakerForAll}, \code{hltAK4CaloJetsCorrected} & 1958 towers, calo jets & 4 jets above $30\GeV$: the signal's $119.5$ and $90.4\GeV$, two of pileup \\
+3 & \code{hltPixelTracks}, \code{hltMergedTracks}, \code{hltVerticesPF} & pixel tracks, full tracks, vertices & 2251 pixel tracks, 270 full tracks, 3 vertices: the signal first \\
+4 & \code{hltParticleFlow}, \code{hltAK4PFJetsCorrected} & 1392 particles, PF jets & 4 jets above $30\GeV$: the signal's $120.9$ and $83.8\GeV$, two of pileup \\
+5 & \code{hltSinglePFJet110}, \code{TriggerResults} & the decision of every path & 33 paths accept; \code{HLT\_PFJet110} by $10.9\GeV$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 One event is followed (\path{test/13_HLT/run_13_HLT.sh}), the same as in chapter~\ref{ch:12_L1T}: the signal with
-the 71, 68 and 54 collisions of bunch crossings $-1$, 0 and $+1$ (Rule H). Who made an object is read from the truth
-the file still carries: the two generator jets of chapter~\ref{ch:07_GenJet}, the simulated position of every
-collision along the beam (\code{addPileupInfo}, \code{genParticles:xyz0}).
+the 995 collisions of the 16 bunch crossings $-12$ to $+3$, 64 of them in our crossing (library events 747--810;
+Rule H). Who made an object is read from the truth the file still carries: the two generator jets of
+chapter~\ref{ch:07_GenJet}, the simulated position of every in-time collision along the beam (\code{addPileupInfo},
+\code{genParticles:xyz0}). (The chapter was rerun on 21 November 2026, when the book moved from the three crossings
+$-1$ to $+1$ to the 16 of the Run-3 production; the numbers of the earlier version are in
+\path{test/tmp/out_bx-1to1/13_HLT/}.)
 
 \section{From the previous chapter}
 
 One file of chapter~\ref{ch:12_L1T} enters (Rule E), \path{test/12_L1T/out/step4_L1_12_L1T.root}: the digis of
-chapter~\ref{ch:11_DIGI} and the products of the Level-1 emulator, $12.3\,$MB. The decision it carries: 63 of the 465
-Level-1 algorithms fired, among them \code{L1\_SingleJet90}, by $46\GeV$ on the $\bar b$ jet in the HF ($136.0\GeV$)
-and by $18.5\GeV$ on the $b$ jet ($108.5\GeV$). That algorithm is the seed of \code{HLT\_PFJet110}: the door
+chapter~\ref{ch:11_DIGI} and the products of the Level-1 emulator, $31.0\,$MB. The decision it carries: 54 of the 465
+Level-1 algorithms fired, among them \code{L1\_SingleJet90}, by $32.5\GeV$ on the $\bar b$ jet in the HF ($122.5\GeV$)
+and by $3.5\GeV$ on the $b$ jet ($93.5\GeV$). That algorithm is the seed of \code{HLT\_PFJet110}: the door
 through which the event enters this chapter.
 
 The HLT does not read digis. It reads what the detector sends: \emph{raw data}, one block of bytes per readout board
@@ -131,15 +134,17 @@ Which menu? The one the release gives the 2025 simulation: \code{HLT:@relval2025
 taking (\path{HLTrigger/Configuration/python/HLT_2025v10_cff.py}), module for module the physics menu \code{GRun} of
 the release. Its seeds name algorithms of the 2025 Level-1 menu of chapter~\ref{ch:12_L1T}, and every one exists:
 \path{python/hltL1Menu_cff.py}, which checks the seeds against that menu, changes nothing, and the 898 paths run. (The
-2024 version of this chapter ran the same menu on the 2024 Level-1 menu: 30 of the algorithms its seeds name did not
-exist, and 37 paths had to be removed. The release has no 2024 HLT menu: \code{HLT:@relval2024} is a ``fake'' menu
-of three paths.) The output adds to the input what the HLT made: $20.8\,$MB in all.
+2024 comparison of the chapter, \path{test/13_HLT/run_13_HLT_2024.sh}, runs the same menu on the 2024 Level-1 menu:
+30 of the algorithms its seeds name do not exist there, and 37 paths are removed. The release has no 2024 HLT menu:
+\code{HLT:@relval2024} is a ``fake'' menu of three paths.) The output adds to the input what the HLT made: $39.4\,$MB
+in all.
 
 \section{Step 1: the raw event, the Level-1 seed and the prescale}
 
 \textbf{What the step does.} The event arrives as 678 blocks of bytes, one per readout board that has data
 (table~\ref{tab:13_raw}). More than half of it is the strip tracker, which has almost ten million channels; the calorimeters
-are a fifth. Every path then starts with the same five modules (\code{HLTBeginSequence}): \code{hltTriggerType}
+and the preshower are a quarter, of which the ECAL crystals, after the selective readout of chapter~\ref{ch:11_DIGI},
+only 3\,\%. Every path then starts with the same five modules (\code{HLTBeginSequence}): \code{hltTriggerType}
 (is this a physics event?), \code{hltGtStage2Digis}, which unpacks the record of the Level-1 global trigger from its
 board (FED 1404), \code{hltGtStage2ObjectMap}, which runs the global-trigger algorithm of chapter~\ref{ch:12_L1T}
 once more on the unpacked objects to know \emph{which} objects satisfied each algorithm,
@@ -167,9 +172,9 @@ the analysis one has in mind, whether those paths ran unprescaled in the data.
 \end{plainwords}
 
 \begin{plainwords}[How long it takes]
-In this job, on one core of a processor without a graphics card, the HLT took about a minute to start (reading the
-configuration of 4783 modules and the conditions of the global tag) and about six seconds for our event
-(\path{step5_HLT_13_HLT.log}: from ``Begin processing'' at 13:23:46 to the closing of the input at 13:23:52), the first
+In this job, on one core of a processor without a graphics card, the HLT took about 40 seconds to start (reading the
+configuration of 4783 modules and the conditions of the global tag) and about eight seconds for our event
+(\path{step5_HLT_13_HLT.log}: from ``Begin processing'' at 13:38:48 to the closing of the input at 13:38:56), the first
 event of the job, which also pays the initialisation of many modules. On the farm a process runs for days, the start
 is paid once, the modules marked \code{@alpaka} run on the graphics cards, and the menu is designed so that the
 average event takes a small fraction of a second. Our event is not average: it passes a jet seed, so the full
@@ -177,12 +182,13 @@ tracking and particle flow run.
 \end{plainwords}
 
 \textbf{The numbers of the event.} The record unpacked by the HLT is that of chapter~\ref{ch:12_L1T}, bit for bit:
-63 algorithms fired, 9 jets, 12 e/$\gamma$, 12 $\tau$, one muon (figure~\ref{fig:13_seed}). Of the 754 physics
-(\code{HLT\_}) and scouting (\code{DST\_}) paths, 652 stop at their seed: they cost the farm nothing but the
-evaluation of an expression. 102 start their reconstruction. \code{hltL1sSingleJet90} is true and hands two Level-1
-jets to the rest of its path, $136.0\GeV$ at $(\eta,\phi)=(-3.74,1.00)$ and $108.5\GeV$ at $(-1.52,-1.98)$: the two
-jets of the signal. The seed of \code{HLT\_PFJet200}, \code{L1\_SingleJet120}, hands only the first; the seeds of the
-paths above $200\GeV$ (\code{L1\_SingleJet180} and the like) are false.
+54 algorithms fired, 4 jets, 9 e/$\gamma$, 12 $\tau$, no muon (figure~\ref{fig:13_seed}). Of the 754 physics
+(\code{HLT\_}) and scouting (\code{DST\_}) paths, 656 stop at their seed: they cost the farm nothing but the
+evaluation of an expression. 98 start their reconstruction. \code{hltL1sSingleJet90} is true and hands two Level-1
+jets to the rest of its path, $122.5\GeV$ at $(\eta,\phi)=(-3.74,1.00)$ and $93.5\GeV$ at $(-1.52,-1.98)$: the two
+jets of the signal. The seed of \code{HLT\_PFJet200}, \code{L1\_SingleJet120}, hands only the first, by $2.5\GeV$; the
+seeds of the paths above $200\GeV$ (\code{L1\_SingleJet180} and the like) are false. The two other Level-1 jets,
+$39.0\GeV$ at $(0.65,-0.41)$ and $28.0\GeV$ at $(0.39,-2.85)$, are in the barrel where the signal has nothing.
 
 \begin{table}[!htb]
 \centering\small
@@ -193,16 +199,16 @@ numbers of \code{DataFormats/FEDRawData/interface/FEDNumbering.h}).}
 \toprule
 subsystem & readout boards (FEDs) & kB & share \\
 \midrule
-strip tracker & 381 & 997.5 & 53.6\,\% \\
-pixel tracker & 108 & 306.7 & 16.5\,\% \\
-HCAL (HB, HE, HF, HO) & 44 & 240.6 & 12.9\,\% \\
-ECAL preshower & 40 & 137.4 & 7.4\,\% \\
-ECAL & 54 & 103.9 & 5.6\,\% \\
-CSC & 36 & 46.9 & 2.5\,\% \\
-Level-1 trigger & 7 & 27.1 & 1.5\,\% \\
-GEM, DT, RPC & 8 & 1.3 & 0.1\,\% \\
+strip tracker & 381 & 902.8 & 52.1\,\% \\
+pixel tracker & 108 & 263.0 & 15.2\,\% \\
+HCAL (HB, HE, HF, HO) & 44 & 252.5 & 14.6\,\% \\
+ECAL preshower & 40 & 155.6 & 9.0\,\% \\
+CSC & 36 & 77.9 & 4.5\,\% \\
+ECAL & 54 & 53.3 & 3.1\,\% \\
+Level-1 trigger & 7 & 26.8 & 1.5\,\% \\
+GEM, DT, RPC & 8 & 2.4 & 0.1\,\% \\
 \midrule
-all & 678 & 1861.5 & \\
+all & 678 & 1734.1 & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -212,8 +218,9 @@ all & 678 & 1861.5 & \\
 \includegraphics[width=0.93\textwidth]{13_HLT/out/hlt_13_HLT_seed_seed_run1_event1.png}
 \caption{Step 1, what the HLT knows when a path starts: the Level-1 objects it unpacks
 (\code{hlt\_13\_HLT\_seed\_seed\_run1\_event1.png}; squares: jets with their $E_{\mathrm T}$ in GeV, triangles: $\tau$,
-dots: e/$\gamma$, star: the muon). The orange circles are the two jets that \code{hltL1sSingleJet90} records as the
-reason it fired; magenta, the generator jets. The right panel: the raw data and the fate of the 754 paths.}
+dots: e/$\gamma$; there is no muon). The orange circles are the two jets that \code{hltL1sSingleJet90} records as the
+reason it fired; magenta, the generator jets. The jets of 39 and $28\GeV$ in the barrel are pileup. The right panel:
+the raw data and the fate of the 754 paths.}
 \label{fig:13_seed}
 \end{figure}
 
@@ -237,20 +244,23 @@ figure~\ref{fig:13_path}: 209 entries, of which 174 distinct modules, since a se
 have already run. The version suffix \code{\_v13} changes whenever the path changes; an analysis asks for
 \code{HLT\_PFJet110\_v*}.
 
-\textbf{What the seeds open.} The 102 paths that start are the ones the Level-1 decision of chapter~\ref{ch:12_L1T}
-justifies, and they show what the HLT is for (table~\ref{tab:13_started}). Chapter~\ref{ch:12_L1T} found that 33 of
-the 63 Level-1 algorithms needed an object the hard collision did not make: missing-energy seeds fired by an ETMHF
-twice the neutrino, muon seeds fired by a pileup kaon, low-threshold jet and e/$\gamma$ seeds fired by the pileup of
-the barrel. Those seeds open 30 missing-energy paths and 13 muon paths here. The HLT stops 29 of the 30
-missing-energy paths, most of them at the first cut on the missing $H_{\mathrm T}$ of the calo jets
-(\code{HLTMhtFilter}), and 12 of the 13 muon paths, which want a muon above 8, 10, 12 or $23\GeV$ (or two above
-$50\GeV$). (With the 2024
-settings the ring-28 jets of chapter~\ref{ch:12_L1T} had also opened 13 VBF and 6 multijet paths, all stopped here.) Reconstructing the event better than the Level-1 trigger could
-is how the HLT brings the rate down by a factor of a hundred.
+\textbf{What the seeds open.} The 98 paths that start are the ones the Level-1 decision of chapter~\ref{ch:12_L1T}
+justifies, and they show what the HLT is for (table~\ref{tab:13_started}). Of the 54 Level-1 algorithms that fired, 8
+look at no object (zero bias, beam pick-ups) and 22 are satisfied by the two signal jets alone; the other 24 needed
+something the hard collision did not make on its own: the two barrel jets of pileup (39 and $28\GeV$), the energy sums
+($H_{\mathrm T}=132.5\GeV$ for \code{L1\_HTT120er}; the missing $E_{\mathrm T}$ with the HF, $78.5\GeV$, twice the
+neutrino, for \code{L1\_ETMHF70}), three VBF algorithms that pair the $\bar b$ jet with the $39\GeV$ pileup jet, the
+CICADA score and a handful of e/$\gamma$ candidates of 2 to $6\GeV$. Those seeds open 41 missing-energy and
+$H_{\mathrm T}$ paths and 3 VBF paths here, and the HLT stops all 44: the missing transverse energy of the calorimeter
+towers is $66.4\GeV$, below the 70 to $110\GeV$ that the missing-energy paths ask first (\code{HLT1CaloMET}, 28 paths,
+the three VBF ones included); the $H_{\mathrm T}$ of the jets, 168 (calo) and $159\GeV$ (PF), is below every $H_{\mathrm
+T}$ threshold, from 180 up; the missing $H_{\mathrm T}$ of the calo jets, $24\GeV$, below 50. Only the paths that ask
+for nothing but their seed go through (section~\ref{sec:13_step5}). Reconstructing the event better than the
+Level-1 trigger could is how the HLT brings the rate down by a factor of a hundred.
 
 \begin{table}[!htb]
 \centering\small
-\caption{Step 1 and step 5: the 102 \code{HLT\_} and \code{DST\_} paths whose seed fired, by kind, and the filter types
+\caption{Step 1 and step 5: the 98 \code{HLT\_} and \code{DST\_} paths whose seed fired, by kind, and the filter types
 that stopped them (\code{ledger\_13\_HLT.txt}, section 5).}
 \label{tab:13_started}
 \begin{tabular}{@{}l rr >{\raggedright\arraybackslash}p{7.2cm}@{}}
@@ -258,14 +268,14 @@ that stopped them (\code{ledger\_13\_HLT.txt}, section 5).}
 kind of path & accepted & stopped & stopped by (C++ type of the filter) \\
 \midrule
 single jets, dijets & 16 & 14 & \code{HLT1PFJet} 4, \code{HLT1CaloJet} 4, \code{HLTDiPFJetAveEtaFilter} 4, \code{HLTDiCaloJetAveFilter} 2 \\
-multijets, VBF, electrons & 0 & 0 & seeds not fired (2024: 6, 13 and 2 paths started, all stopped) \\
-missing energy, $H_{\mathrm T}$ & 1 & 29 & \code{HLTMhtFilter} 16, \code{HLT1PFMET} 5, \code{HLTDeDxFilter} 3, \code{HLTHtMhtFilter} 2, others 3 \\
-muons & 1 & 12 & \code{HLTMuonL2FromL1TPreFilter} 9, \code{HLTMuonL3PreFilter} 3 \\
-scouting & 7 & 0 & \\
-no object, L1 seed only, calibration & 15 & 0 & \\
+VBF (two jets far apart in $\eta$) & 0 & 3 & \code{HLT1CaloMET} 3 \\
+missing energy, $H_{\mathrm T}$ & 0 & 41 & \code{HLT1CaloMET} 25, \code{HLTHtMhtFilter} 9, \code{HLTMhtFilter} 5, \code{HLTMuonRecHitClusterFilter} 2 \\
+multijets, muons, electrons & 0 & 0 & seeds not fired \\
+scouting & 4 & 0 & \\
+no object, L1 seed only, calibration & 13 & 0 & \\
 isolated tracks, PPS, monitoring & 0 & 7 & \code{TriggerResultsFilter} 3, \code{HLTPixelIsolTrackL1TFilter} 2, \code{HLTPPSCalFilter} 2 \\
 \midrule
-all & 40 & 62 & \\
+all & 33 & 65 & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -318,15 +328,19 @@ HO & weight $10^{-99}$: not used \\
 \end{tabular}
 \end{table}
 
-\textbf{The numbers of the event.} The calorimeters give $11\,193$ rec-hits with $3198.9\GeV$ of transverse energy,
-half of it in the HF ($1606.2\GeV$; table~\ref{tab:13_rechits}). The HF has the fewest cells and the most energy: its
-1728 rec-hits hold $50.8\TeV$ of energy, the forward pileup at small angle, which is little transverse energy each.
-The barrel ECAL has 956 rec-hits, half as many as with the 2024 settings: the higher zero suppression of
-chapter~\ref{ch:11_DIGI}. The rec-hits make 2051 towers with $2842.9\GeV$ (barrel 342.8, endcap 882.9, HF
-$1617.2\GeV$), close to the $2793\GeV$ of trigger primitives of chapter~\ref{ch:12_L1T}. The energy density is
-$\rho=36.3\GeV$ per unit area: a jet of radius 0.4, area 0.50, collects $18\GeV$ of pileup on average. And so the
-clustering finds 190 jets, 23 of them above $30\GeV$ before the corrections (figure~\ref{fig:13_calo}). After them,
-two are left above $30\GeV$, and they are the two jets of the signal (table~\ref{tab:13_calojets}).
+\textbf{The numbers of the event.} The calorimeters give 9713 rec-hits with $2556.5\GeV$ of transverse energy,
+half of it in the HF ($1329.6\GeV$; table~\ref{tab:13_rechits}). The HF has the fewest cells and the most energy: its
+1728 rec-hits hold $40.6\TeV$ of energy, the forward pileup at small angle, which is little transverse energy each.
+The ECAL has only 762 barrel and 623 endcap rec-hits, against 2367 and 4233 for the HCAL: one per ECAL frame that the
+selective readout of chapter~\ref{ch:11_DIGI} wrote, and with the earlier crossings in the event it wrote few
+(chapter~\ref{ch:11_DIGI} says why). The rec-hits make 1958 towers with $2195.6\GeV$ (barrel 303.4, endcap 554.8, HF
+$1337.4\GeV$), against $1804\GeV$ of trigger primitives in chapter~\ref{ch:12_L1T}; the difference is in the HCAL
+barrel and endcap, whose rec-hits hold $991\GeV$ where their primitives held $311\GeV$ (why the two estimates of the
+same deposits differ that much in the 16-crossing event is not established here). The energy density is $\rho=26.5\GeV$ per unit
+area: a jet of radius 0.4, area 0.50, collects $13\GeV$ of pileup on average. The clustering finds 192 jets, 7 of
+them above $30\GeV$ before the corrections (figure~\ref{fig:13_calo}). After them, four are left above $30\GeV$: the
+two jets of the signal (table~\ref{tab:13_calojets}) and two barrel jets of $41.8$ and $34.9\GeV$ at
+$(\eta,\phi)=(0.44,-2.88)$ and $(0.68,-0.46)$, where the Level-1 trigger had its pileup jets of 28 and $39\GeV$.
 
 \begin{table}[!htb]
 \centering\small
@@ -337,11 +351,11 @@ two are left above $30\GeV$, and they are the two jets of the signal (table~\ref
 \toprule
 rec-hits & $n$ & $\sum E$ & $\sum E_{\mathrm T}$ & max $E_{\mathrm T}$ & & towers & $n$ & $\sum E_{\mathrm T}$ \\
 \cmidrule(lr){1-5}\cmidrule(lr){7-9}
-ECAL barrel & 956 & 208.3 & 142.6 & 3.01 & & barrel & 492 & 342.8 \\
-ECAL endcap & 2515 & 2135.3 & 378.7 & 5.07 & & endcap & 771 & 882.9 \\
-HCAL barrel & 2162 & 671.3 & 493.4 & 7.81 & & HF & 788 & 1617.2 \\
-HCAL endcap & 3832 & 3028.3 & 578.0 & 9.63 & & all & 2051 & 2842.9 \\
-HF & 1728 & 50\,809.4 & 1606.2 & 61.15 & & \quad EM / HAD & & 1090.3 / 1752.6 \\
+ECAL barrel & 762 & 173.1 & 126.7 & 2.31 & & barrel & 420 & 303.4 \\
+ECAL endcap & 623 & 439.5 & 109.5 & 5.14 & & endcap & 750 & 554.8 \\
+HCAL barrel & 2367 & 660.6 & 478.6 & 9.13 & & HF & 788 & 1337.4 \\
+HCAL endcap & 4233 & 2690.3 & 512.1 & 10.08 & & all & 1958 & 2195.6 \\
+HF & 1728 & 40\,617.7 & 1329.6 & 59.80 & & \quad EM / HAD & & 691.9 / 1503.7 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -357,25 +371,28 @@ comparison.}
  & $b$ jet & $\bar b$ jet (HF) & a pileup jet \\
 \midrule
 generator jet \pt{} (visible) & 117.8 (79.8) & 115.9 & -- \\
-calo jet $\eta$, $\phi$ & $-1.58$, $-2.08$ & $-3.72$, $0.96$ & $3.66$, $-0.36$ \\
-towers, EM fraction & 33, 0.56 & 17, 0.27 & 16, 0.35 \\
-raw \pt{} & 70.9 & 163.5 & 39.5 \\
-after L1FastJet & 57.4 ($\times0.809$) & 119.9 ($\times0.734$) & 10.3 ($\times0.260$) \\
-after L2Relative & \textbf{93.3} ($\times1.627$) & \textbf{118.5} ($\times0.987$) & \textbf{12.5} ($\times1.218$) \\
-Level-1 jet of chapter~\ref{ch:12_L1T} & 108.5 & 136.0 & -- \\
+calo jet $\eta$, $\phi$ & $-1.57$, $-2.07$ & $-3.72$, $1.00$ & $-3.53$, $-0.08$ \\
+towers, EM fraction & 30, 0.54 & 16, 0.29 & 15, 0.41 \\
+raw \pt{} & 64.7 & 152.5 & 38.6 \\
+after L1FastJet & 55.1 ($\times0.852$) & 121.1 ($\times0.794$) & 17.0 ($\times0.441$) \\
+after L2Relative & \textbf{90.4} ($\times1.642$) & \textbf{119.5} ($\times0.987$) & \textbf{20.6} ($\times1.215$) \\
+Level-1 jet of chapter~\ref{ch:12_L1T} & 93.5 & 122.5 & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\emph{The $b$ jet} has $70.9\GeV$ of towers for $79.8\GeV$ of visible particles, pileup included: the calorimeter
-response to hadrons is well below one. The pileup subtraction takes $13.5\GeV$ and the relative correction multiplies
-by 1.63, to $93.3\GeV$. \emph{The $\bar b$ jet} in the HF has the opposite problem: $163.5\GeV$ of towers for a jet of
-$115.9\GeV$, pileup and the HF response together; the subtraction takes $43.6\GeV$ (the area, the $\rho$ and the
-parameters of this $\eta$ bin), and the relative correction is close to one. The pileup jets lose three quarters of
-their energy to L1FastJet: what they are made of is exactly the $\rho$ that is subtracted.
+\emph{The $b$ jet} has $64.7\GeV$ of towers for $79.8\GeV$ of visible particles, pileup included: the calorimeter
+response to hadrons is well below one. The pileup subtraction takes $9.6\GeV$ and the relative correction multiplies
+by 1.64, to $90.4\GeV$. \emph{The $\bar b$ jet} in the HF has the opposite problem: $152.5\GeV$ of towers for a jet of
+$115.9\GeV$, pileup and the HF response together; the subtraction takes $31.4\GeV$ (the area, the $\rho$ and the
+parameters of this $\eta$ bin), and the relative correction is close to one. A pileup jet in the HF loses more than half
+of its energy to L1FastJet: what it is made of is the $\rho$ that is subtracted. The two barrel jets of pileup are
+different: they come out above their raw \pt{} ($30.3\to41.8$ and $25.3\to34.9\GeV$: $\times0.78$ and $\times0.73$,
+then $\times1.77$ and $\times1.88$),
+because they are not an average density but jets of their own, made by two of the in-time collisions (step~3).
 
 The cut of the step is a single line of the menu: \code{hltSingleAK4CaloJet80}, at least one corrected calo jet
-with $\pt\geq80\GeV$ and $\abseta<5$. Both signal jets pass. It costs a few milliseconds and protects what follows:
+with $\pt\geq80\GeV$ and $\abseta<5$. Both signal jets pass, the pileup jets do not. It costs a few milliseconds and protects what follows:
 a path whose calo jets are too soft stops here, before the tracking.
 
 \begin{figure}[!htb]
@@ -384,7 +401,8 @@ a path whose calo jets are too soft stops here, before the tracking.
 \caption{Step 2, the calorimeter towers of the event with the corrected AK4 calo jets above $20\GeV$ (red dashed
 circles, \pt{} in GeV) and the generator jets (magenta) (\code{hlt\_13\_HLT\_calo\_towers\_run1\_event1.png}). The
 grid is that of the trigger towers of chapter~\ref{ch:12_L1T}; a tower of $10^\circ$ or $20^\circ$ is shared over the
-$5^\circ$ cells it covers. The bright bands at $\abseta\approx2.7$--3 and the HF are the pileup.}
+$5^\circ$ cells it covers. The bands beyond $\abseta\approx2$ and the HF are the pileup; the circles of 42 and $35\GeV$
+in the barrel are jets of two in-time pileup collisions.}
 \label{fig:13_calo}
 \end{figure}
 
@@ -396,8 +414,8 @@ $5^\circ$ cells it covers. The bright bands at $\abseta\approx2.7$--3 and the HF
 Left: the $b$ jet; right: the $\bar b$ jet in the HF. The red dashed square is the $9\times9$ window of the
 Level-1 jet of chapter~\ref{ch:12_L1T} nearest to the calo jet (for the $b$ jet centred on its seed,
 $(i\eta,i\phi)=(-18,50)$, one tower away in both from the calo jet at $(-19,49)$; for the $\bar b$ jet both at
-$(-34,12)$): in the same window the HLT towers hold $77.7\GeV$ for the $b$ jet (Layer-1: $74.5\GeV$) and
-$215.9\GeV$ for the $\bar b$ jet (Layer-1: $189.0\GeV$).}
+$(-34,12)$): in the same window the HLT towers hold $68.3\GeV$ for the $b$ jet (Layer-1: $56.0\GeV$) and
+$192.7\GeV$ for the $\bar b$ jet (Layer-1: $170.0\GeV$).}
 \label{fig:13_calozoom}
 \end{figure}
 
@@ -424,25 +442,30 @@ second iteration, the \emph{doublet recovery}, seeds with pairs of pixel hits th
 tracks that crossed only two pixel layers. The two are merged (\code{hltMergedTracks}), and the vertices of particle
 flow are fitted from them (\code{hltVerticesPF}, deterministic annealing in $z$ and an adaptive fit).
 
-\begin{plainwords}[Why the HLT reconstructs one collision of 69]
-A bunch crossing of our event holds 69 collisions. Full tracking of all of them would take most of the time budget
-of the farm. The HLT therefore reconstructs everything cheaply with pixels, decides which collision is the
-interesting one (the vertex with the largest $\sum\pt^2$, because a hard scattering makes harder tracks than a
-pileup collision) and builds full tracks only from the pixel tracks that come from it, and from vertices almost as
-hard. In our event the trimming keeps one vertex out of 31, and it is the signal. The pileup collisions remain pixel
-tracks, except those within the $3\mm$ seeding window around it. This works when the hard collision has hard charged particles in the tracker; an event whose jets are both
+\begin{plainwords}[Why the HLT reconstructs a few collisions of 65]
+A bunch crossing of our event holds 65 collisions, the signal and 64 of pileup. Full tracking of all of them would take
+most of the time budget of the farm. The HLT therefore reconstructs everything cheaply with pixels, decides which
+collision is the interesting one (the vertex with the largest $\sum\pt^2$, because a hard scattering makes harder
+tracks than a pileup collision) and builds full tracks only from the pixel tracks that come from it, and from vertices
+almost as hard. The sum is that of the menu (\path{RecoVertex/PixelVertexFinding/src/PVClusterComparer.cc} with
+\code{HLTPSetPvClusterComparerForIT}): tracks of 1 to $20\GeV$, a harder one counted as $20\GeV$, so that one
+mis-measured track cannot make a vertex the first. In our event the signal is the first of 27 pixel vertices, and the
+trimming keeps two pileup collisions with it: library events 760 and 764 of chapter~\ref{ch:10_SIM}, 8.7 and 5.5\,mm
+away; 760 is the busiest collision of the whole library (754 primaries). The other pileup collisions remain pixel
+tracks. This works when the hard collision has hard charged particles in the tracker; an event whose jets are both
 outside the tracker would have its primary vertex chosen among the pileup.
 \end{plainwords}
 
-\textbf{The numbers of the event.} The tracker gives $20\,925$ pixel clusters and $115\,249$ strip clusters. The
-cellular automaton makes 2981 pixel tracks, of which 156 above $10\GeV$; they form 31 pixel vertices, for the 68
-in-time pileup collisions and the signal. The first pixel vertex is at $z=3.107\cm$, with 40 pixel tracks: the signal,
-whose simulated vertex is at $z=3.112\cm$ (no pileup collision is within a millimetre of it). It is the only vertex
-the trimming keeps. Iteration 0 builds 108 tracks, the doublet recovery 8 more: 116 full tracks, 49 of them above
-$1\GeV$, with on average 4.0 pixel and 9.3 strip hits. They make one PF vertex, at $z=3.111\cm$, $7\um$ from the
-simulated one (the pixel vertex was $53\um$ away), with 107 tracks; 61 tracks with $121.8\GeV$ are within a millimetre of it
-(figure~\ref{fig:13_track}). Another 27 are within a millimetre of pixel vertex 8, a pileup collision $2.2\mm$ away,
-inside the $3\mm$ window of iteration 0.
+\textbf{The numbers of the event.} The tracker gives $17\,842$ pixel clusters and $99\,265$ strip clusters. The
+cellular automaton makes 2251 pixel tracks, of which 99 above $10\GeV$; they form 27 pixel vertices, for the 64
+in-time pileup collisions and the signal (two pileup collisions are within a millimetre of the signal, at $z=3.05$ and
+$3.21\cm$, and cannot be told from it). The first pixel vertex is at $z=3.109\cm$, with 49 pixel tracks: the
+signal, whose simulated vertex is at $z=3.112\cm$. The trimming keeps it and the vertices at $z=2.248$ and
+$2.560\cm$ (pu13 and pu17 of table~\ref{tab:13_vertices}). Iteration 0 builds 262 tracks around the three, the
+doublet recovery 8 more: 270 full tracks, 140 of them above $1\GeV$, with on average 4.2 pixel and 9.0 strip hits.
+They make three PF vertices, in the same order: the signal at $z=3.115\cm$, $26\um$ from the simulated one (the pixel
+vertex was $27\um$ away), with 67 tracks and $122.8\GeV$ within a millimetre of it (figure~\ref{fig:13_track}), and the
+two pileup collisions with 90 and 38. Two thirds of the full tracks are pileup.
 
 \begin{table}[!htb]
 \centering\small
@@ -453,63 +476,66 @@ inside the $3\mm$ window of iteration 0.
 \toprule
 stage (module) & what it does, with which cuts & our event \\
 \midrule
-pixel and strip clusters & neighbouring channels above threshold & 20\,925 / 115\,249 \\
-pixel tracks (\code{hltPixelTracks}) & cellular automaton, 3 or 4 pixel hits, $\pt>0.9\GeV$ & 2981 \\
-pixel vertices (\code{hltPixelVertices}) & clusters in $z$ of pixel tracks above $0.5\GeV$ & 31 \\
-kept vertices (\code{hltTrimmedPixelVertices}) & $\sum\pt^2\geq0.3\times$ the first vertex & 1 \\
-iteration 0 & seeds: pixel tracks within $0.3\cm$ in $z$ of a kept vertex; \code{mkFit}; high purity & 108 \\
+pixel and strip clusters & neighbouring channels above threshold & 17\,842 / 99\,265 \\
+pixel tracks (\code{hltPixelTracks}) & cellular automaton, 3 or 4 pixel hits, $\pt>0.9\GeV$ & 2251 \\
+pixel vertices (\code{hltPixelVertices}) & clusters in $z$ of pixel tracks above $0.5\GeV$ & 27 \\
+kept vertices (\code{hltTrimmedPixelVertices}) & $\sum\pt^2\geq0.3\times$ the first vertex & 3 \\
+iteration 0 & seeds: pixel tracks within $0.3\cm$ in $z$ of a kept vertex; \code{mkFit}; high purity & 262 \\
 doublet recovery & seeds: pixel pairs in regions of inactive pixel modules & 8 \\
-merged (\code{hltMergedTracks}) & the two, without duplicates & 116 \\
-PF vertices (\code{hltVerticesPF}) & deterministic annealing in $z$, adaptive fit & 1 \\
+merged (\code{hltMergedTracks}) & the two, without duplicates & 270 \\
+PF vertices (\code{hltVerticesPF}) & deterministic annealing in $z$, adaptive fit & 3 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \emph{The pileup vertices.} Each pixel vertex can be compared with the simulated collisions (table~\ref{tab:13_vertices}):
-the first ten are each within $80\um$ of a simulated collision, most within $40\um$. The HLT knows where the pileup
-collisions are; it only does not build their full tracks. Only the first vertex is kept: no other pixel vertex reaches 30\,\% of its
-$\sum\pt^2$.
+the first ten are each within $170\um$ of a simulated collision, most within $30\um$. The HLT knows where the pileup
+collisions are; it only does not build their full tracks, except for the two that the trimming keeps.
 
 \begin{table}[!htb]
 \centering\small
 \caption{Step 3: the first ten pixel vertices, in the order of the HLT, and the simulated collision nearest to each in
-$z$ (\code{hlt\_13\_HLT.log}, lines \code{vertex pixel}; ``pu$k$'' is the $k$-th in-time pileup collision of
-\code{addPileupInfo}).}
+$z$ (\code{hlt\_13\_HLT.log}, lines \code{vertex pixel}; ``pu$k$'' is the in-time pileup collision $k$ of
+\code{addPileupInfo}, counted from 0: library event $747+k$; the first three are kept by the trimming).}
 \label{tab:13_vertices}
 \begin{tabular}{r rrl r}
 \toprule
 & $z$ [cm] & pixel tracks & nearest simulated collision & $\Delta z$ [$\mu$m] \\
 \midrule
-0 & 3.1066 & 40 & the signal & 53 \\
-1 & $-0.3305$ & 22 & pu9 & 79 \\
-2 & $-5.4560$ & 31 & pu30 & 17 \\
-3 & 2.0815 & 22 & pu42 & 12 \\
-4 & 0.3620 & 27 & pu35 & 16 \\
-5 & $-2.0472$ & 13 & pu51 & 3 \\
-6 & $-2.8665$ & 18 & pu29 & 9 \\
-7 & 2.4981 & 25 & pu22 & 34 \\
-8 & 2.8856 & 20 & pu34 & 64 \\
-9 & 1.4886 & 28 & pu10 & 39 \\
+0 & 3.1093 & 49 & the signal & 27 \\
+1 & 2.2485 & 55 & pu13 (library event 760) & 15 \\
+2 & 2.5597 & 32 & pu17 (764) & 12 \\
+3 & $-1.8336$ & 53 & pu25 & 23 \\
+4 & $-3.6209$ & 26 & pu34 & 15 \\
+5 & 7.2919 & 24 & pu12 & 146 \\
+6 & $-3.5398$ & 21 & pu51 & 7 \\
+7 & $-1.4983$ & 17 & pu48 & 169 \\
+8 & 5.8032 & 11 & pu7 & 18 \\
+9 & $-2.3705$ & 12 & pu50 & 29 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\emph{The two jets.} Inside the $b$ jet ($\Delta R<0.4$) there are 7 tracks with $50.1\GeV$, six of them from the
-signal vertex; the charged particles of the generator jet have $32.6\GeV$. Two tracks more than with the 2024
-settings: the electron of the $B^-$ decay ($5.0\GeV$) and a track of $11.2\GeV$ a hair ($\Delta R=0.04$) from the
-pion of $11.0\GeV$, with no simulated particle of its own: a duplicate, or a secondary; which is not established. The $\bar b$ jet, at $\eta=-3.75$, is
-outside the tracker ($\abseta<2.5$): its $44.0\GeV$ of charged particles leave no track. For the HLT this jet will be
-calorimeter only, in step~4 as in step~2.
+\emph{The two jets.} Inside the $b$ jet ($\Delta R<0.4$) there are 9 tracks with $52.1\GeV$, five of them, $44.5\GeV$,
+within a millimetre of the signal vertex; the charged particles of the generator jet have $32.6\GeV$. Of the four
+others, one is the electron of the $B^-$ decay ($5.0\GeV$, $1.1\mm$ from the vertex: it left the vertex at an angle),
+three are soft tracks of $0.5$ to $1.3\GeV$ from the pileup vertices, which iteration 0 now also builds. One of the
+five is a track of $11.2\GeV$ a hair ($\Delta R=0.04$) from the pion of $11.0\GeV$, with no simulated particle of its
+own: a duplicate, or a secondary; which is not established (companion, last section). The $\bar b$ jet, at
+$\eta=-3.75$, is outside the tracker ($\abseta<2.5$): its $44.0\GeV$ of charged particles leave no track. For the HLT
+this jet will be calorimeter only, in step~4 as in step~2. The barrel jet of $42\GeV$ of step~2 has 11 tracks with
+$28\GeV$, all but two from $z=2.43$--$2.60\cm$: it is a jet of library event 764 (pu17), not of the signal.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{13_HLT/out/hlt_13_HLT_track_etaphi_run1_event1.png}\hfill
 \includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{13_HLT/out/hlt_13_HLT_track_vertices_run1_event1.png}
-\caption{Step 3 (\code{hlt\_13\_HLT\_track\_etaphi/vertices\_run1\_event1.png}). Left: the 116 full tracks in
-$\eta$--$\phi$; black, the 61 within $1\mm$ in $z$ of the signal vertex; grey, the others (size $\propto\log(1+\pt)$).
+\caption{Step 3 (\code{hlt\_13\_HLT\_track\_etaphi/vertices\_run1\_event1.png}). Left: the 270 full tracks in
+$\eta$--$\phi$; black, the 67 within $1\mm$ in $z$ of the signal vertex; grey, the others (size $\propto\log(1+\pt)$).
 The blue dashed lines are the end of the tracker; the $\bar b$ jet (magenta, left) has no track. Right: along the
-beam, the 31 pixel vertices (circles, height = pixel tracks; full: the one kept by the trimming), the one PF vertex
-(bar) and, below the axis, the simulated in-time collisions (blue) and the signal (star).}
+beam, the 27 pixel vertices (circles, height = pixel tracks; full: the three kept by the trimming), the three PF
+vertices (bars, height = tracks within $1\mm$; magenta: the signal) and, below the axis, the simulated in-time
+collisions (blue) and the signal (star).}
 \label{fig:13_track}
 \end{figure}
 
@@ -535,10 +561,11 @@ the PF candidates (\code{hltFixedGridRhoFastjetAll}) and the payload \code{AK4PF
 \emph{and} $\phi$: 118 bins, because a patch of the barrel on the negative side ($-1.566<\eta<0$,
 $-1.2<\phi<-0.8$) has its own; our jets are not in it.
 
-\textbf{The numbers of the event.} 1366 particles with $\sum\pt=2655.8\GeV$ (table~\ref{tab:13_pf},
-figure~\ref{fig:13_pf}). More than half of them, 783, are in the HF; within the tracker, 110 of the 515 particles are
-charged. The energy density is $\rho=36.7\GeV$ per unit area. The 192 PF jets include 13 above $30\GeV$ before the
-corrections and 2 after: the two signal jets again.
+\textbf{The numbers of the event.} 1392 particles with $\sum\pt=2337.8\GeV$ (table~\ref{tab:13_pf},
+figure~\ref{fig:13_pf}). More than half of them, 779, are in the HF; within the tracker, 244 of the 539 particles are
+charged, most of them from the two pileup vertices that the tracking kept. The energy density is $\rho=31.7\GeV$ per
+unit area. The 209 PF jets include 6 above $30\GeV$ before the corrections and 4 after: the two signal jets again, and
+the two barrel jets of pileup of step~2.
 
 \begin{table}[!htb]
 \centering\small
@@ -548,32 +575,35 @@ corrections and 2 after: the two signal jets again.
 \toprule
 kind & $n$ & $\sum\pt$ [GeV] & & region & $n$ & charged \\
 \cmidrule(lr){1-3}\cmidrule(lr){5-7}
-charged hadron & 117 & 181.9 & & tracker, $\abseta<2.5$ & 515 & 110 \\
-photon & 238 & 196.3 & & $2.5<\abseta<3$ & 68 & 8 \\
-neutral hadron & 209 & 702.5 & & HF, $\abseta>3$ & 783 & 0 \\
-HF hadronic & 700 & 1486.0 & & & & \\
-HF electromagnetic & 101 & 86.0 & & & & \\
-muon & 1 & 3.0 & & & & \\
-electron & 0 & 0 & & & & \\
+charged hadron & 261 & 388.0 & & tracker, $\abseta<2.5$ & 539 & 244 \\
+photon & 192 & 160.1 & & $2.5<\abseta<3$ & 74 & 17 \\
+neutral hadron & 140 & 489.4 & & HF, $\abseta>3$ & 779 & 0 \\
+HF hadronic & 693 & 1215.2 & & & & \\
+HF electromagnetic & 106 & 85.1 & & & & \\
+muon, electron & 0 & 0 & & & & \\
 \midrule
-all & 1366 & 2655.8 & & all & 1366 & 118 \\
+all & 1392 & 2337.8 & & all & 1392 & 261 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\emph{The $b$ jet} is 29 particles: 7 charged hadrons with $50.1\GeV$, 20 photons with $28.4\GeV$, 2 neutral hadrons
-with $5.8\GeV$; $83.7\GeV$ raw, against $70.9\GeV$ for the calo jet, because the charged hadrons now have the energy
-of their tracks. L1FastJet subtracts $11.0\GeV$ ($\times0.869$), L2Relative multiplies by 1.192: $\mathbf{86.7\GeV}$.
-That is 9\,\% above the $79.8\GeV$ of visible particles of chapter~\ref{ch:07_GenJet}, the $11\GeV$ of the extra
-track of step~3 (with the 2024 settings, without it, the PF jet had $80.3\GeV$); the $37.5\GeV$ of the
-neutrino are lost to every trigger. \emph{The $\bar b$ jet} is 17 HF hadronic particles, $156.8\GeV$ raw; L1FastJet
-takes $27.6\GeV$ ($\times0.824$) and L2Relative $\times0.981$: $\mathbf{126.7\GeV}$, 9\,\% above the generator jet.
-Particle flow cannot help in the HF: the PF jet is a calorimeter jet with another clustering and other corrections.
+\emph{The $b$ jet} is 22 particles: 9 charged hadrons with $52.1\GeV$ and 13 photons with $27.8\GeV$; $79.5\GeV$ raw,
+against $64.7\GeV$ for the calo jet, because the charged hadrons now have the energy of their tracks. L1FastJet
+subtracts $9.4\GeV$ ($\times0.882$), L2Relative multiplies by 1.194: $\mathbf{83.8\GeV}$, 5\,\% above the $79.8\GeV$ of
+visible particles of chapter~\ref{ch:07_GenJet}. The charged hadrons carry $52.1\GeV$ where the charged particles of the
+generator jet have $32.6\GeV$: the $11.2\GeV$ track without a simulated particle of its own and the soft pileup
+tracks of step~3 are among them. The $37.5\GeV$ of the neutrino are lost to every
+trigger. \emph{The $\bar b$ jet} is 16 HF hadronic particles and one HF electromagnetic one, $146.5\GeV$ raw;
+L1FastJet takes $23.6\GeV$ ($\times0.839$) and L2Relative $\times0.984$: $\mathbf{120.9\GeV}$, 4\,\% above the
+generator jet. Particle flow cannot help in the HF: the PF jet is a calorimeter jet with another clustering and other
+corrections.
 
 \emph{The other jets.} Table~\ref{tab:13_pfjets} lists the corrected PF jets above $15\GeV$. After the two signal
-jets come seven jets of 16 to $21\GeV$ with no generator jet behind them. Five are beyond the tracker and made only
-of neutral energy (the HF hadronic fraction of the jet at $\eta=-4.22$ is 1.00): pileup that no track can tell
-from a jet. The corrections push them down by factors of 0.4 to 0.6, the subtraction of $\rho$ doing most of it.
+jets come eight jets of 15 to $42\GeV$ with no generator jet behind them. The first two are the barrel jets of
+step~2, now $42.3$ and $33.1\GeV$: two thirds of the first is charged, tracks of library event 764 (step~3), and the
+corrections hardly touch either (factors 1.01 and 0.99), because what they subtract is the average density, not a jet
+that another collision made. The other six have 15 to $21\GeV$ and factors of 0.52 to 1.01; the one beyond the
+tracker, at $\eta=-3.59$, is made only of HF energy and is halved.
 
 \begin{table}[!htb]
 \centering\small
@@ -584,15 +614,16 @@ from a jet. The corrections push them down by factors of 0.4 to 0.6, the subtrac
 \toprule
 \pt{} & raw & $\eta$ & $\phi$ & ch. & neut. & phot. & HF had. & factor & generator jet \\
 \midrule
-126.7 & 156.8 & $-3.77$ & 0.96 & 0.00 & 1.00 & 0.00 & 1.00 & 0.808 & 115.9 ($\bar b$) \\
-86.7 & 83.7 & $-1.58$ & $-2.08$ & 0.59 & 0.07 & 0.34 & 0.00 & 1.035 & 117.8 ($b$) \\
-21.2 & 24.2 & 1.11 & 2.43 & 0.37 & 0.31 & 0.32 & 0.00 & 0.876 & -- \\
-19.6 & 37.7 & 3.41 & 1.94 & 0.00 & 0.95 & 0.00 & 0.95 & 0.521 & -- \\
-18.3 & 34.7 & 4.61 & $-1.23$ & 0.00 & 1.00 & 0.00 & 1.00 & 0.526 & -- \\
-18.0 & 34.6 & $-4.22$ & 1.25 & 0.00 & 1.00 & 0.00 & 1.00 & 0.522 & -- \\
-16.7 & 29.9 & 4.78 & 1.67 & 0.00 & 1.00 & 0.00 & 1.00 & 0.561 & -- \\
-16.3 & 19.7 & 1.02 & 1.69 & 0.05 & 0.73 & 0.22 & 0.00 & 0.827 & -- \\
-16.1 & 38.9 & 3.69 & $-0.36$ & 0.00 & 1.00 & 0.00 & 1.00 & 0.414 & -- \\
+120.9 & 146.5 & $-3.76$ & 1.00 & 0.00 & 0.99 & 0.00 & 0.99 & 0.825 & 115.9 ($\bar b$) \\
+83.8 & 79.5 & $-1.57$ & $-2.08$ & 0.64 & 0.00 & 0.36 & 0.00 & 1.053 & 117.8 ($b$) \\
+42.3 & 41.8 & 0.44 & $-2.84$ & 0.67 & 0.00 & 0.33 & 0.00 & 1.013 & -- \\
+33.1 & 33.5 & 0.65 & $-0.45$ & 0.28 & 0.58 & 0.14 & 0.00 & 0.990 & -- \\
+20.8 & 22.4 & 1.23 & 2.45 & 0.62 & 0.23 & 0.15 & 0.00 & 0.932 & -- \\
+20.7 & 20.4 & 1.22 & 2.94 & 0.33 & 0.50 & 0.17 & 0.00 & 1.013 & -- \\
+19.3 & 36.8 & $-3.59$ & $-0.07$ & 0.00 & 0.94 & 0.00 & 0.94 & 0.524 & -- \\
+16.8 & 22.7 & $-2.10$ & 1.03 & 0.20 & 0.64 & 0.16 & 0.00 & 0.739 & -- \\
+16.6 & 21.1 & $-2.31$ & $-1.11$ & 0.22 & 0.66 & 0.12 & 0.00 & 0.785 & -- \\
+15.0 & 17.3 & $-1.23$ & 1.04 & 0.31 & 0.60 & 0.09 & 0.00 & 0.867 & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -600,7 +631,7 @@ from a jet. The corrections push them down by factors of 0.4 to 0.6, the subtrac
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=0.93\textwidth]{13_HLT/out/hlt_13_HLT_pf_candidates_run1_event1.png}
-\caption{Step 4, the 1366 PF candidates of the event by kind, with the corrected AK4 PF jets above $20\GeV$ (red dashed
+\caption{Step 4, the 1392 PF candidates of the event by kind, with the corrected AK4 PF jets above $20\GeV$ (red dashed
 circles) and the generator jets (\code{hlt\_13\_HLT\_pf\_candidates\_run1\_event1.png}). Black: charged hadrons; green:
 photons; violet: neutral hadrons; orange and cyan: HF hadronic and electromagnetic. The HF is a regular grid: one
 particle per cluster, and the clusters follow the towers.}
@@ -613,12 +644,13 @@ particle per cluster, and the clusters follow the towers.}
 \includegraphics[width=0.49\textwidth,trim=0 0 475 0,clip]{13_HLT/out/hlt_13_HLT_pf_jet2_run1_event1.png}
 \caption{Step 4, the two signal jets particle by particle (\code{hlt\_13\_HLT\_pf\_jet1/jet2\_run1\_event1.png}; full
 markers: the constituents of the PF jet, open: the other candidates, \pt{} in GeV for those above $4\GeV$). Left: the
-$b$ jet, 29 constituents of three kinds; right: the $\bar b$ jet, 17 HF clusters, one of $86.9\GeV$.}
+$b$ jet, 22 constituents of two kinds; right: the $\bar b$ jet, 17 HF clusters, one of $85.7\GeV$.}
 \label{fig:13_pfzoom}
 \end{figure}
 
 \FloatBarrier
 \section{Step 5: the decision of the paths}
+\label{sec:13_step5}
 
 {\sloppy\textbf{What the step does.} At the end of each path a filter cuts on the objects the path built. For
 \code{HLT\_PFJet110} there are two modules (figure~\ref{fig:13_path}, 171 and 172).
@@ -637,10 +669,10 @@ event can be in several datasets, and is then written several times.
 
 \textbf{The numbers of the event.} \code{HLT\_PFJet110} accepts it (table~\ref{tab:13_jetpaths},
 figure~\ref{fig:13_ladders}): the seed fired, two calo jets passed $80\GeV$, two PF jets are matched to them, and one
-passes $110\GeV$: the $\bar b$ jet in the HF, $126.7\GeV$, by $16.7\GeV$. The $b$ jet alone, $86.7\GeV$, would not
-have been enough. One step up the ladder the event stops: \code{HLT\_PFJet140} fails by $13.3\GeV$; so does
+passes $110\GeV$: the $\bar b$ jet in the HF, $120.9\GeV$, by $10.9\GeV$. The $b$ jet alone, $83.8\GeV$, would not
+have been enough. One step up the ladder the event stops: \code{HLT\_PFJet140} fails by $19.1\GeV$; so does
 \code{HLT\_PFJetFwd140}, the forward version. \code{HLT\_AK8PFJet140}, the same with jets of radius 0.8, fails by
-$0.9\GeV$: the AK8 jet around the $\bar b$ jet has $139.1\GeV$.
+$14.2\GeV$: the AK8 jet around the $\bar b$ jet has $125.8\GeV$.
 
 \begin{table}[!htb]
 \centering\small
@@ -651,16 +683,17 @@ $0.9\GeV$: the AK8 jet around the $\bar b$ jet has $139.1\GeV$.
 \toprule
 path & L1 seed & what the event has & decision \\
 \midrule
-\code{HLT\_PFJet40}, \code{60}, \code{80} & \code{L1\_ZeroBias} & PF jet 126.7 & accepted \\
-\code{HLT\_PFJet110} & \code{L1\_SingleJet90} & calo jet 118.5, PF jet 126.7 & \textbf{accepted}, by 16.7 \\
-\code{HLT\_PFJet140} & \code{L1\_SingleJet90} & calo 118.5 $\geq$ 110; PF 126.7 & stopped by the PF cut \\
-\code{HLT\_PFJet200} & \code{L1\_SingleJet120} & calo jet 118.5 $<$ 170 & stopped by the calo cut \\
+\code{HLT\_PFJet40}, \code{60}, \code{80} & \code{L1\_ZeroBias} & PF jet 120.9 & accepted \\
+\code{HLT\_PFJet110} & \code{L1\_SingleJet90} & calo jet 119.5, PF jet 120.9 & \textbf{accepted}, by 10.9 \\
+\code{HLT\_PFJet140} & \code{L1\_SingleJet90} & calo 119.5 $\geq$ 110; PF 120.9 & stopped by the PF cut \\
+\code{HLT\_PFJet200} & \code{L1\_SingleJet120} & calo jet 119.5 $<$ 170 & stopped by the calo cut \\
 \code{HLT\_PFJet260} \ldots{} \code{550} & \code{L1\_SingleJet180} \ldots & & stopped by the seed \\
-\code{HLT\_PFJetFwd80}, \code{140} & \code{L1\_SingleJet60\_FWD2p5}, \code{90\_FWD2p5} & PF jet 126.7 at $\abseta>2.7$ & 80 accepted, 140 stopped \\
-\code{HLT\_AK8PFJet80}, \code{140} & \code{L1\_ZeroBias}, \code{L1\_SingleJet90} & AK8 PF jet 139.1 & 80 accepted, 140 stopped \\
-\code{HLT\_DiPFJetAve80}, \code{140} & \code{L1\_ZeroBias}, \ldots & PF average 106.7, calo 105.9 & 80 accepted, 140 stopped by the calo cut \\
+\code{HLT\_PFJetFwd80}, \code{140} & \code{L1\_SingleJet60\_FWD2p5}, \code{90\_FWD2p5} & PF jet 120.9 at $\abseta>2.7$ & 80 accepted, 140 stopped \\
+\code{HLT\_AK8PFJet80}, \code{140} & \code{L1\_ZeroBias}, \code{L1\_SingleJet90} & AK8 PF jet 125.8 & 80 accepted, 140 stopped \\
+\code{HLT\_DiPFJetAve80}, \code{140} & \code{L1\_ZeroBias}, \ldots & PF average 102.3, calo 105.0 & 80 accepted, 140 stopped by the calo cut \\
 \code{HLT\_DiPFJetAve60} \ldots{} \code{160\_HFJEC} & \ldots & no jet with $\abseta<1.4$ & stopped \\
-\code{HLT\_PFHT180} \ldots{} \code{1050} & \code{L1\_HTT}\ldots & & stopped by the seed \\
+\code{HLT\_PFHT180}; \code{510} \ldots{} \code{1050} & \code{L1\_HTT120er} (\ldots) & PF $H_{\mathrm T}$ 159.2; calo 168.2 & stopped by the $H_{\mathrm T}$ cuts \\
+\code{HLT\_PFHT250} \ldots{} \code{430} & \code{L1\_HTT160er} \ldots & & stopped by the seed \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -669,8 +702,8 @@ path & L1 seed & what the event has & decision \\
 \code{HLT\_DiPFJetAve100\_HFJEC} exists to calibrate the HF with dijets: a \emph{tag} jet in the barrel,
 $\abseta<1.4$, where the response is known, and a \emph{probe} jet in the HF, $2.7<\abseta<5.5$, back to back
 ($\Delta\phi>2.5$), with an average \pt{} above $100\GeV$ (\code{hltDiPFJetAve100ForHFJEC}). Our event is a dijet with
-one jet in the HF and the other opposite in $\phi$ ($\Delta\phi=3.04$), average $106.7\GeV$. The filter finds the
-probe, $126.7\GeV$ at $\eta=-3.77$, and no tag: the $b$ jet is at $\eta=-1.58$, $0.18$ beyond the barrel cut. The
+one jet in the HF and the other opposite in $\phi$ ($\Delta\phi=3.08$), average $102.3\GeV$. The filter finds the
+probe, $120.9\GeV$ at $\eta=-3.76$, and no tag: the $b$ jet is at $\eta=-1.57$, $0.17$ beyond the barrel cut. The
 four HF calibration paths whose seed fired (60, 80, 100, 160) fail on it; the other three (220, 260, 300) stop at
 their seed.
 \end{plainwords}
@@ -689,9 +722,9 @@ $\abseta>2.7$, the leading AK8 jet, the average of the two leading jets, $H_{\ma
 \centering
 \begin{tikzpicture}[x=0.0115cm, y=0.55cm, font=\footnotesize]
 \foreach \y/\v/\t in {6/898/{paths in the menu}, 5/754/{physics and scouting paths (\code{HLT\_}, \code{DST\_})},
-  4/102/{whose Level-1 seed fired: they start their reconstruction}, 3/40/{that reach their end: they accept the event},
-  2/16/{of which satisfied by the two signal jets alone}, 1/48/{datasets (of 99) that take the event},
-  0/33/{streams (of 68): files of the data acquisition}}
+  4/98/{whose Level-1 seed fired: they start their reconstruction}, 3/33/{that reach their end: they accept the event},
+  2/16/{of which satisfied by the two signal jets alone}, 1/45/{datasets (of 99) that take the event},
+  0/31/{streams (of 68): files of the data acquisition}}
 { \fill[\ifnum\y>1 blue!40\else orange!60\fi] (0,\y-0.36) rectangle (\v,\y+0.36);
   \node[anchor=west] at (\v+8,\y) {\v: \t}; }
 \path (0,0) -- (940,0);
@@ -708,29 +741,28 @@ of paths (blue) or of datasets and streams (orange).}
 
 \begin{lstlisting}[style=txt]
 path: name=HLT_PFJet110_v13 accept=1 stage=accept seedFired=1 last=hltBoolEnd lastIndex=208 nModules=209
-filter: label=hltL1sSingleJet90     type=HLTL1TSeed  n=2 | L1Jet(136.0,-3.74,1.00) L1Jet(108.5,-1.52,-1.98)
-filter: label=hltSingleAK4CaloJet80 type=HLT1CaloJet n=2 | Jet(118.5,-3.72,0.96) Jet(93.3,-1.58,-2.08)
-filter: label=hltSinglePFJet110     type=HLT1PFJet   n=1 | Jet(126.7,-3.77,0.96)
+filter: label=hltL1sSingleJet90     type=HLTL1TSeed  n=2 | L1Jet(122.5,-3.74,1.00) L1Jet(93.5,-1.52,-1.98)
+filter: label=hltSingleAK4CaloJet80 type=HLT1CaloJet n=2 | Jet(119.5,-3.72,1.00) Jet(90.4,-1.57,-2.07)
+filter: label=hltSinglePFJet110     type=HLT1PFJet   n=1 | Jet(120.9,-3.76,1.00)
 \end{lstlisting}
 
 \noindent Each step of the path narrowed the list: two Level-1 jets, two calo jets, one PF jet. An analysis that uses
 this trigger checks that its own jet is close to that last object, and measures the efficiency of the path with
 events of a lower, prescaled path, \code{HLT\_PFJet80} for example, in which the jet above $110\GeV$ was not required.
 
-\textbf{What else accepts it.} 40 of the 754 paths (table~\ref{tab:13_accepted}, figure~\ref{fig:13_funnel}). Sixteen are jet paths satisfied by
-the two signal jets. Two need an object the hard collision did not make: \code{HLT\_Mu3\_PFJet40} finds the muon of
-chapter~\ref{ch:12_L1T}, the kaon of a pileup collision that decayed in flight, now reconstructed by the HLT
-(with $3.1\GeV$ by the muon chambers alone, \code{hltL2Muons}, then $3.0\GeV$ with the tracker,
-\code{hltIterL3MuonCandidates}), and pairs it with the $b$ jet; \code{HLT\_CaloMET90\_NotCleaned} finds a missing
-transverse energy of $138.5\GeV$ in the towers, where the neutrino carries $37.5\GeV$. Three paths ask only for their
-Level-1 seed. Twelve select nothing at all: zero bias, random, ``physics'' (any event), calibration and monitoring
-paths, which in data run prescaled or on special events. Seven are scouting paths (\code{DST\_}): they save not the
-raw event but a compact list of HLT objects, at a high rate; four of them are seeded by the CICADA anomaly score of
-chapter~\ref{ch:12_L1T}.
+\textbf{What else accepts it.} 33 of the 754 paths (table~\ref{tab:13_accepted}, figure~\ref{fig:13_funnel}). Sixteen
+are jet paths satisfied by the two signal jets (the lowest of them, \code{HLT\_PFJet40}, records the pileup jet of
+$42.3\GeV$ as well). None needs an object of the pileup: the calorimeter missing transverse energy is $66.4\GeV$ and
+\code{HLT\_CaloMET90\_NotCleaned} stops, and there is no muon for \code{HLT\_Mu3\_PFJet40}. Two paths ask only for
+their Level-1 seed: \code{HLT\_L1ETMHadSeeds}, which the $78.5\GeV$ of \code{L1\_ETMHF70} opens, and
+\code{HLT\_L1AlwaysTrue}. Eleven select nothing at all: zero bias, random, ``physics'' (any event), calibration and
+monitoring paths, which in data run prescaled or on special events. Four are scouting paths (\code{DST\_}): they save
+not the raw event but a compact list of HLT objects, at a high rate; one of them is seeded by the CICADA anomaly
+score of chapter~\ref{ch:12_L1T}, \code{L1\_CICADA\_VLoose}.
 
 \begin{table}[!htb]
 \centering\small
-\caption{Step 5: the 40 \code{HLT\_} and \code{DST\_} paths that accept the event, by what satisfies them
+\caption{Step 5: the 33 \code{HLT\_} and \code{DST\_} paths that accept the event, by what satisfies them
 (\code{ledger\_13\_HLT.txt}, section 5).}
 \label{tab:13_accepted}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.1cm} c >{\raggedright\arraybackslash}p{9.6cm}@{}}
@@ -738,18 +770,18 @@ chapter~\ref{ch:12_L1T}.
 satisfied by & paths & which \\
 \midrule
 the two signal jets & 16 & \code{HLT\_PFJet40}, \code{60}, \code{80}, \code{110}; \code{PFJetFwd40}, \code{60}, \code{80}; \code{AK8PFJet40}, \code{60}, \code{80}; \code{AK8PFJetFwd40}, \code{60}, \code{80}; \code{DiPFJetAve40}, \code{60}, \code{80} \\
-a pileup object & 2 & \code{HLT\_Mu3\_PFJet40} (the muon of a pileup kaon), \code{HLT\_CaloMET90\_NotCleaned} ($138.5\GeV$) \\
-the L1 seed alone & 3 & \code{HLT\_L1SingleMuCosmics}, \code{HLT\_L1ETMHadSeeds}, \code{HLT\_L1AlwaysTrue} \\
-no object & 12 & \code{HLT\_ZeroBias} (and \code{\_Alignment}, \code{\_Beamspot}), \code{HLT\_Physics}, \code{HLT\_Random}, \code{HLT\_EphemeralPhysics}, \code{HLT\_EphemeralZeroBias}, \code{HLT\_EcalCalibration}, \code{HLT\_HcalCalibration}, \code{HLT\_HcalNZS}, \code{HLT\_HcalPhiSym}, \code{HLT\_PPSRandom} \\
-scouting & 7 & \code{DST\_PFScouting\_CICADA*} (4), \code{DST\_PFScouting\_ZeroBias}, \code{DST\_ZeroBias}, \code{DST\_Physics} \\
+a pileup object & 0 & \\
+the L1 seed alone & 2 & \code{HLT\_L1ETMHadSeeds}, \code{HLT\_L1AlwaysTrue} \\
+no object & 11 & \code{HLT\_ZeroBias} (and \code{\_Alignment}, \code{\_Beamspot}), \code{HLT\_Physics}, \code{HLT\_Random}, \code{HLT\_EphemeralPhysics}, \code{HLT\_EphemeralZeroBias}, \code{HLT\_EcalCalibration}, \code{HLT\_HcalCalibration}, \code{HLT\_HcalNZS}, \code{HLT\_PPSRandom} \\
+scouting & 4 & \code{DST\_PFScouting\_CICADAVLoose}, \code{DST\_PFScouting\_ZeroBias}, \code{DST\_ZeroBias}, \code{DST\_Physics} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Where the event goes.} 48 of the 99 datasets and 33 of the 68 streams accept it. For physics the ones that
-matter are \code{JetMET0} and \code{JetMET1} (18 of their 150 paths fired; the two are copies that split the rate),
-\code{Muon0} and \code{Muon1} (one path of 129, \code{HLT\_Mu3\_PFJet40}: the event would be in the muon dataset
-because of a pileup kaon), \code{ZeroBias}, and the scouting dataset \code{ScoutingPFRun3}. The jet analysis this
+\textbf{Where the event goes.} 45 of the 99 datasets and 31 of the 68 streams accept it. For physics the ones that
+matter are \code{JetMET0} and \code{JetMET1} (17 of their 150 paths fired: the 16 jet paths and
+\code{HLT\_L1ETMHadSeeds}; the two are copies that split the rate), \code{ZeroBias}, and the scouting dataset
+\code{ScoutingPFRun3}. The jet analysis this
 book is heading to reads \code{JetMET}: the stream \code{PhysicsJetMET0}, the dataset \code{JetMET0}, the trigger bit
 \code{HLT\_PFJet110\_v13} with the $\bar b$ jet as its object.
 
@@ -769,72 +801,81 @@ Middle: the two jets of the signal. Bottom: the decision.}
 \begin{tabular}{@{}p{7.0cm} r >{\raggedright\arraybackslash}p{4.4cm}@{}}
 \toprule
 \multicolumn{3}{@{}l}{\emph{what the HLT sees}} \\
-step 1: raw event (678 FEDs) & 1862 kB & strip tracker 54\,\% \\
-step 1: Level-1 algorithms fired / jets unpacked & 63 / 9 & as in chapter~\ref{ch:12_L1T} \\
-step 2: rec-hits, $\sum E_{\mathrm T}$ & 3198.9 GeV & 11\,193 rec-hits \\
-step 2: towers, $\sum E_{\mathrm T}$ & 2842.9 GeV & 2051 towers; HF 1617.2 \\
-step 2: $\rho$ (calorimeter) & 36.3 GeV & per unit area \\
-step 2: calo jets above 30 GeV, raw / corrected & 23 / 2 & of 190 \\
-step 3: pixel tracks / pixel vertices / kept & 2981 / 31 / 1 & 68 + 1 collisions \\
-step 3: full tracks, $\sum\pt$ & 116, 179.5 GeV & of the signal vertex: 61, 121.8 \\
-step 3: PF vertices & 1 & $7\um$ from the signal \\
-step 4: PF candidates, $\sum\pt$ & 1366, 2655.8 GeV & HF: 783 \\
-step 4: $\rho$ (particle flow) & 36.7 GeV & per unit area \\
-step 4: PF jets above 30 GeV, raw / corrected & 13 / 2 & of 192 \\
+step 1: raw event (678 FEDs) & 1734 kB & strip tracker 52\,\% \\
+step 1: Level-1 algorithms fired / jets unpacked & 54 / 4 & as in chapter~\ref{ch:12_L1T} \\
+step 2: rec-hits, $\sum E_{\mathrm T}$ & 2556.5 GeV & 9713 rec-hits \\
+step 2: towers, $\sum E_{\mathrm T}$ & 2195.6 GeV & 1958 towers; HF 1337.4 \\
+step 2: $\rho$ (calorimeter) & 26.5 GeV & per unit area \\
+step 2: calo jets above 30 GeV, raw / corrected & 7 / 4 & of 192; 2 of pileup \\
+step 3: pixel tracks / pixel vertices / kept & 2251 / 27 / 3 & 64 + 1 collisions \\
+step 3: full tracks, $\sum\pt$ & 270, 408.8 GeV & of the signal vertex: 67, 122.8 \\
+step 3: PF vertices & 3 & the first $26\um$ from the signal \\
+step 4: PF candidates, $\sum\pt$ & 1392, 2337.8 GeV & HF: 779 \\
+step 4: $\rho$ (particle flow) & 31.7 GeV & per unit area \\
+step 4: PF jets above 30 GeV, raw / corrected & 6 / 4 & of 209; 2 of pileup \\
 \midrule
 \multicolumn{3}{@{}l}{\emph{the two signal jets: $b$ ($\eta=-1.59$) and $\bar b$ ($\eta=-3.75$), \pt{} in GeV}} \\
 generator jet (visible particles) & 117.8 (79.8) / 115.9 & chapter~\ref{ch:07_GenJet} \\
-Level-1 jet & 108.5 / 136.0 & chapter~\ref{ch:12_L1T} \\
-calo jet, raw $\rightarrow$ corrected & 70.9 $\rightarrow$ 93.3 / 163.5 $\rightarrow$ 118.5 & step 2 \\
-tracks in the jet & 7, 50.1 / 0 & step 3 \\
-PF jet, raw $\rightarrow$ corrected & 83.7 $\rightarrow$ 86.7 / 156.8 $\rightarrow$ 126.7 & step 4 \\
+Level-1 jet & 93.5 / 122.5 & chapter~\ref{ch:12_L1T} \\
+calo jet, raw $\rightarrow$ corrected & 64.7 $\rightarrow$ 90.4 / 152.5 $\rightarrow$ 119.5 & step 2 \\
+tracks in the jet & 9, 52.1 / 0 & step 3 \\
+PF jet, raw $\rightarrow$ corrected & 79.5 $\rightarrow$ 83.8 / 146.5 $\rightarrow$ 120.9 & step 4 \\
 \midrule
 \multicolumn{3}{@{}l}{\emph{decision}} \\
 paths \code{HLT\_} and \code{DST\_} & 754 & \\
-\quad stopped by the L1 seed / a prescale / a filter & 652 / 0 / 62 & \\
-\quad accepting the event & 40 & 16 on the signal jets alone \\
-\code{HLT\_PFJet110}, the path of the book & accepted & by 16.7 GeV, on the $\bar b$ jet \\
-highest single-jet threshold passed & 110 & 140 failed by 13.3 GeV \\
-datasets / streams & 48 / 33 & \code{JetMET0}, \code{PhysicsJetMET0} \\
+\quad stopped by the L1 seed / a prescale / a filter & 656 / 0 / 65 & \\
+\quad accepting the event & 33 & 16 on the signal jets alone \\
+\code{HLT\_PFJet110}, the path of the book & accepted & by 10.9 GeV, on the $\bar b$ jet \\
+highest single-jet threshold passed & 110 & 140 failed by 19.1 GeV \\
+datasets / streams & 45 / 31 & \code{JetMET0}, \code{PhysicsJetMET0} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Read downwards, the ledger says what each step of the HLT is for. The calorimeters see $2843\GeV$ of towers; the
-pileup subtraction leaves two jets, which are the signal. The tracker sees 2981 pixel tracks; the HLT builds its 116
-full tracks around one collision, which is the signal. Particle flow brings the $b$ jet to $86.7\GeV$, near its visible energy, and
-cannot help the $\bar b$ jet, which no tracker sees. The decision then turns on that jet: \code{HLT\_PFJet110} fires
-because the HF jet is measured at $126.7\GeV$, 9\,\% above its true \pt. Of the 40 paths that accept the event, 16
-are satisfied by the two signal jets alone, and the jet path of the book is one of them.
+Read downwards, the ledger says what each step of the HLT is for. The calorimeters see $2196\GeV$ of towers; the
+pileup subtraction leaves four jets above $30\GeV$, the two of the signal and two that pileup collisions really made.
+The tracker sees 2251 pixel tracks; the HLT builds its 270 full tracks around three collisions, the first of which is
+the signal. Particle flow brings the $b$ jet to $83.8\GeV$, near its visible energy, and cannot help the $\bar b$ jet,
+which no tracker sees. The decision then turns on that jet: \code{HLT\_PFJet110} fires because the HF jet is measured
+at $120.9\GeV$, 4\,\% above its true \pt. Of the 33 paths that accept the event, 16 are satisfied by the two signal jets
+alone, and the jet path of the book is one of them; the 44 missing-energy, $H_{\mathrm T}$ and VBF paths that pileup
+opened at Level 1 are all stopped.
 
-\paragraph{What the year changed.} With the 2024 settings (the first version of this chapter; the companion compares
-the two step by step) the menu had to be cut to 861 paths, and 41 of 717 accepted the event. With 2025 the menu runs
-whole and 40 of 754 accept: the VBF, multijet and electron paths do not even start, because their Level-1 seeds,
-fired in 2024 by the ring-28 jets and a cluster of $8\GeV$, did not fire; one CICADA scouting path is lost with
-\code{L1\_CICADA\_VTight}. The path of the book is untouched: the $\bar b$ jet moved from 125.9 to $126.7\GeV$ and
-\code{HLT\_PFJet110} accepts by $16.7\GeV$ instead of $15.9\GeV$. Table~\ref{tab:13_years} puts the two side by side.
+\paragraph{What the year changed.} The same event with the 2024 settings (\path{test/13_HLT/run_13_HLT_2024.sh}, on
+the 2024 Level-1 file of \path{test/12_L1T/run_12_L1T_2024.sh}, output in \path{test/13_HLT/out2024/}; the companion
+compares the two step by step): the menu is cut to 861 paths, and 31 of 717 accept the event. With 2025 the menu runs
+whole and 33 of 754 accept: the two more are \code{HLT\_L1ETMHadSeeds} and \code{DST\_PFScouting\_CICADAVLoose},
+whose Level-1 seeds fire in 2025 only (ETMHF $78.5$ against $69.0\GeV$, one GeV short of \code{L1\_ETMHF70} in 2024;
+the CICADA score $55.1$ against the threshold 50 of \code{L1\_CICADA\_VLoose}, where 2024 had 82.3 against 113), and with
+\code{L1\_ETMHF70} come the 25 missing-energy paths that start and stop on the calorimeter MET. The ECAL rec-hits are half as many in 2025 (the higher
+zero suppression of chapter~\ref{ch:11_DIGI}). In 2024 the busiest pileup collision, library event 760, was the first
+pixel vertex and the signal the second (both kept); in 2025 the signal is first. The path of the book is untouched:
+the $\bar b$ jet is $121.0$ and $120.9\GeV$, and \code{HLT\_PFJet110} accepts by $11.0$ and $10.9\GeV$.
+Table~\ref{tab:13_years} puts the two side by side.
 
 \begin{table}[!htb]
 \centering\small
-\caption{The same event through the HLT with the 2024 and the 2025 settings of the release (the 2024 numbers are
-those of the first version of this chapter; companion, last section). Values in GeV unless stated.}
+\caption{The same event through the HLT with the 2024 and the 2025 settings of the release (\code{out2024/} and
+\code{out/}; companion, last section). Values in GeV unless stated.}
 \label{tab:13_years}
 \begin{tabular}{@{}l rr >{\raggedright\arraybackslash}p{5.6cm}@{}}
 \toprule
  & 2024 & 2025 & why \\
 \midrule
 HLT menu, paths run & 861 & 898 & 2024: 37 removed, their seeds not in the Level-1 menu \\
-Level-1 algorithms fired / L1 jets & 57 / 12 & 63 / 9 & no jet in tower ring 28 (chapter~\ref{ch:12_L1T}) \\
-raw event, kB (ECAL) & 1929 (173) & 1862 (104) & ECAL barrel zero suppression (chapter~\ref{ch:11_DIGI}) \\
-ECAL barrel rec-hits & 2039 & 956 & the same \\
-towers, $\sum E_{\mathrm T}$ & 3085.5 & 2842.9 & the two ECAL changes of chapter~\ref{ch:11_DIGI} \\
-$\rho$ calorimeter / particle flow & 40.0 / 36.4 & 36.3 / 36.7 & \\
-calo jets $b$ / $\bar b$, corrected & 88.5 / 113.4 & 93.3 / 118.5 & \\
-full tracks / pixel vertices & 115 / 27 & 116 / 31 & pixel digis and templates of 2025 \\
-PF jets $b$ / $\bar b$, corrected & 80.3 / 125.9 & 86.7 / 126.7 & $b$: one track of $11\GeV$ more \\
-paths started / accepted & 124 / 41 & 102 / 40 & VBF, multijet, electron seeds not fired \\
-\code{HLT\_PFJet110}, margin & 15.9 & 16.7 & \\
-datasets / streams & 47 / 32 & 48 / 33 & \\
+Level-1 algorithms fired / L1 jets & 30 / 4 & 54 / 4 & chapter~\ref{ch:12_L1T}; 2025: \code{L1\_ETMHF70}, \code{L1\_CICADA\_VLoose} \\
+raw event, kB (ECAL) & 1768 (84) & 1734 (53) & ECAL barrel zero suppression (chapter~\ref{ch:11_DIGI}) \\
+ECAL barrel rec-hits & 1481 & 762 & the same \\
+towers, $\sum E_{\mathrm T}$ & 2370.2 & 2195.6 & the ECAL changes of chapter~\ref{ch:11_DIGI} \\
+$\rho$ calorimeter / particle flow & 29.9 / 32.2 & 26.5 / 31.7 & \\
+calo MET & 86.2 & 66.4 & \\
+calo jets $b$ / $\bar b$, corrected & 88.9 / 116.4 & 90.4 / 119.5 & \\
+pixel vertices; the first & 33; event 760 & 27; the signal & not established \\
+full tracks / PF vertices & 216 / 2 & 270 / 3 & 2025: three vertices kept, not two \\
+PF jets $b$ / $\bar b$, corrected & 83.9 / 121.0 & 83.8 / 120.9 & \\
+paths started / accepted & 69 / 31 & 98 / 33 & 2025: 25 MET paths start (ETMHF) \\
+\code{HLT\_PFJet110}, margin & 11.0 & 10.9 & \\
+datasets / streams & 44 / 30 & 45 / 31 & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -842,8 +883,8 @@ datasets / streams & 47 / 32 & 48 / 33 & \\
 \begin{figure}[!htb]
 \centering
 \begin{tikzpicture}[x=0.042cm, y=0.5cm, font=\footnotesize]
-\foreach \y/\t/\b/\bb in {6/{generator jet}/117.8/115.9, 5/{generator jet, visible}/79.8/115.9, 4/{Level-1 jet}/108.5/136.0,
-                          3/{calo jet, raw}/70.9/163.5, 2/{calo jet, corrected}/93.3/118.5, 1/{PF jet, raw}/83.7/156.8, 0/{PF jet, corrected}/86.7/126.7}
+\foreach \y/\t/\b/\bb in {6/{generator jet}/117.8/115.9, 5/{generator jet, visible}/79.8/115.9, 4/{Level-1 jet}/93.5/122.5,
+                          3/{calo jet, raw}/64.7/152.5, 2/{calo jet, corrected}/90.4/119.5, 1/{PF jet, raw}/79.5/146.5, 0/{PF jet, corrected}/83.8/120.9}
 { \node[anchor=east] at (-2,\y) {\t};
   \fill[blue!45] (0,\y+0.05) rectangle (\b,\y+0.4); \node[anchor=west, font=\scriptsize] at (\b,\y+0.22) {\b};
   \fill[orange!70] (0,\y-0.4) rectangle (\bb,\y-0.05); \node[anchor=west, font=\scriptsize] at (\bb,\y-0.22) {\bb}; }
@@ -861,17 +902,19 @@ step and carries the decision.}
 \end{figure}
 
 Figure~\ref{fig:13_objects} is the event as the HLT records it: the objects of the filters of the paths that
-accepted it. Compare it with figure~\ref{fig:12_objects}, the 34 objects that the Level-1 trigger handed over, and
-with figure~\ref{fig:11_mixed}, the $544\,407$ digis of the same event: what is left are the two jets the journey has
-followed since chapter~\ref{ch:01_ME}.
+accepted it. Compare it with figure~\ref{fig:12_objects}, the 25 objects that the Level-1 trigger handed over, and
+with figure~\ref{fig:11_mixed}, the $475\,110$ digis of the same event: what is left are the two jets the journey has
+followed since chapter~\ref{ch:01_ME}, and one jet that a pileup collision made, which the lowest jet paths record
+with them.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=0.93\textwidth]{13_HLT/out/hlt_13_HLT_seed_objects_run1_event1.png}
 \caption{The event as the HLT records it (\code{hlt\_13\_HLT\_seed\_objects\_run1\_event1.png}): the objects of the last
-filter of each accepted \code{HLT\_} path, from \code{hltTriggerSummaryAOD}. Red squares: AK4 PF jets ($126.7$ and
-$86.7\GeV$); open orange squares: AK8 PF jets; the tick on the left edge: the direction of the calorimeter missing
-transverse energy. Magenta circles: the two generator jets. The right panel lists the physics datasets.}
+filter of each accepted \code{HLT\_} path, from \code{hltTriggerSummaryAOD}. Red squares: AK4 PF jets ($120.9$ and
+$83.8\GeV$ of the signal, $42.3\GeV$ of pileup at $(0.44,-2.84)$); open orange squares: AK8 PF jets. No accepted path
+records a missing transverse energy this time (no tick on the left edge). Magenta circles: the two generator jets. The
+right panel lists the physics datasets.}
 \label{fig:13_objects}
 \end{figure}
 
@@ -900,7 +943,7 @@ written yet. A jet in the HF cannot even seed one: the three Level-1 jet seeds o
 \path{L1Trigger/Configuration/python/Phase2GTMenus/SeedDefinitions/step1_2024/l1tGTMenuObjects_cff.py}), and our
 $\bar{b}$ jet seeded \code{L1\_SingleJet90} at $\eta=-3.74$ in step~1.
 
-\textbf{The Phase-2 HLT does not start from a raw event.} In step~1, 70\,\% of our raw event of 1861.5\,kB came from the
+\textbf{The Phase-2 HLT does not start from a raw event.} In step~1, two thirds of our raw event of 1734.1\,kB came from the
 tracker. In Phase-2 the tracker has no raw data: \path{Configuration/StandardSequences/python/DigiToRaw_cff.py} drops
 its packers (line 41, ``\code{\# FIXME}'', after ``Remove siPixelRawData until we have phase2 pixel digis'', line 38)
 and has no HGCAL packer (line 22). The HLT reads the simulated digis instead (\code{simSiPixelDigis},
@@ -918,7 +961,7 @@ the global tag of the Phase-2 workflows that payload is
 \path{JetCorrectorParametersCollection_Phase2Spring23ticlv4_MC_AK4PFPuppiHLT_v1}, one interval of validity written
 on 21 September 2023, and in it the L1FastJet level and the L3Absolute level both have the formula ``1'' (\code{conddb
 dump} of the payload): the menu computes $\rho$ and runs a corrector that multiplies by one. The response rests on
-L2Relative alone: 19 bins of $\eta$, one of them for all of $-5.2<\eta<-3$, so our $\bar{b}$ jet ($\eta=-3.77$) gets the
+L2Relative alone: 19 bins of $\eta$, one of them for all of $-5.2<\eta<-3$, so our $\bar{b}$ jet ($\eta=-3.76$) gets the
 same function of \pt{} as a jet at $\eta=-5$ (Run~3: 82 bins for calo jets, 118 cells of $\eta\times\phi$ for PF jets).
 The name says ``ticlv4''; \code{ticl\_v5} is already in the menu (\path{HLT_75e33/sequences/HLTIterTICLSequence_cfi.py},
 lines 13--14). The AK8 PUPPI jets have no Phase-2 payload at all: they read the offline Run-3 label \code{AK8PFPuppi}
@@ -942,8 +985,8 @@ own (label \code{HLT}, \code{PFCalibration\_Run3\_2024\_online\_v1}); its HCAL t
 (\code{usePFThresholdsFromDB = True}, \path{hltParticleFlowRecHitHBHE_cfi.py}, line 31):
 \code{HcalPFCuts\_2023\_V1.0\_mc}, the payload of our 2024 global tag, replaced in 2025 by \code{HcalPFCuts\_2025\_mc}.
 
-\textbf{The tracking reconstructs every collision, without the timing layer.} Step~3 showed that the Run-3 HLT keeps one
-pixel vertex of 31 (\code{hltTrimmedPixelVertices}, \code{fractionSumPt2 = 0.3}) and builds full tracks only around it.
+\textbf{The tracking reconstructs every collision, without the timing layer.} Step~3 showed that the Run-3 HLT keeps three
+pixel vertices of 27 (\code{hltTrimmedPixelVertices}, \code{fractionSumPt2 = 0.3}) and builds full tracks only around them.
 In Phase-2 the seeds of the first iteration are all the pixel tracks, with no vertex
 (\path{HLT_75e33/modules/hltInitialStepSeeds_cfi.py}: \code{InputVertexCollection = ""}, \code{usePV = False}); the only
 vertex trimmer of the menu is in a muon path. The primary vertices are found in $z$ only (\code{DA\_vect}, no track
@@ -964,8 +1007,8 @@ clustering and PUPPI.
 Will be overwritten with valid aging customisation'' (the HCAL thresholds of the e/$\gamma$ $H/E$,
 \path{hltEgammaHoverEL1Seeded_cfi.py}, line 17; \code{usePFThresholdsFromDB}, line 21, overwrites them with the 2023
 payload above), ``Probably need to move elsewhere in the final setup'' (\path{HLTInitialStepSequence_cfi.py}, lines
-31--32, the LST variant of the tracking). As in Run~3, a menu works only with the Level-1 menu it was written for (the 2024 version
-of this chapter had to drop 30 Level-1 algorithms from its seeds; the release simulates 2024 with \code{relval2024 : Fake2}). The Phase-2 seeds
+31--32, the LST variant of the tracking). As in Run~3, a menu works only with the Level-1 menu it was written for (the 2024 comparison
+of this chapter has to drop 30 Level-1 algorithms from its seeds; the release simulates 2024 with \code{relval2024 : Fake2}). The Phase-2 seeds
 name 19 Level-1 algorithms, defined in all three Level-1 menus of the release, each ``The first prototype menu'':
 \code{step1\_2023}, \code{step1\_2024} (the default, \path{ConfigBuilder.py}, line 1597, and the menu of chapter~\ref{ch:12_L1T}),
 \code{step1\_2024\_explicitSeeds}; but \code{pSinglePuppiJet230} is $160\GeV$ of Level-1 \pt{} in the first and an

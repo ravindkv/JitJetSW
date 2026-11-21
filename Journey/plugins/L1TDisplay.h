@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "PdfPng.h"
 #include "TBox.h"
 #include "TCanvas.h"
 #include "TEllipse.h"
@@ -224,24 +225,32 @@ namespace l1tdisplay {
         line(-e, -M_PI, -e, M_PI, color, 1, style);
       }
     }
-    // print the page: one page of the open PDF and a PNG
+    // print the page: one page of the open PDF and a PNG (png empty: none), made from the PDF by pdftoppm when it is
+    // closed (PdfPng.h); ROOT's PNG without pdftoppm or without an open PDF
     void print(const std::string& png) {
       canvas_->cd();
       canvas_->Update();
-      if (pdfOpen_)
+      if (pdfOpen_) {
         canvas_->Print(pdf_.c_str());
-      if (!png.empty())
+        if (!pngs_.add(png))
+          canvas_->SaveAs(png.c_str());
+      } else if (!png.empty()) {
         canvas_->SaveAs(png.c_str());
+      }
     }
     void openPdf(const std::string& pdf) {
       pdf_ = pdf;
       pdfOpen_ = !pdf.empty();
-      if (pdfOpen_)
+      if (pdfOpen_) {
         canvas_->Print((pdf_ + "[").c_str());
+        pngs_.open();
+      }
     }
     void closePdf() {
-      if (pdfOpen_)
+      if (pdfOpen_) {
         canvas_->Print((pdf_ + "]").c_str());
+        pngs_.convert(pdf_, canvas_.get());
+      }
       pdfOpen_ = false;
       pad_->Clear();
       side_->Clear();
@@ -254,6 +263,7 @@ namespace l1tdisplay {
     std::vector<std::unique_ptr<TObject>> keep_;
     std::string pdf_;
     bool pdfOpen_ = false;
+    jitjet::PdfPngs pngs_;  // the PNGs of the open PDF
     double y_ = 0.965;
   };
 

@@ -29,7 +29,7 @@ options.register('eventsToProcess', '', VarParsing.multiplicity.singleton, VarPa
                  'run:lumi:event to draw, e.g. 1:1:1; empty: the first maxEvents events')
 options.register('pdfPrefix', 'l1t', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  'prefix of the three PDFs (<prefix>_calo.pdf, _muon.pdf, _global.pdf) and of the PNG pages')
-options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG')
+options.register('savePNG', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool, 'also save every page as PNG, rendered from the closed PDF by pdftoppm (plugins/PdfPng.h; ROOT without pdftoppm)')
 options.register('sampleLabel', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  "text printed in the right panel of every page, '|' separates lines")
 options.register('jetPtMin', 30.0, VarParsing.multiplicity.singleton, VarParsing.varType.float,

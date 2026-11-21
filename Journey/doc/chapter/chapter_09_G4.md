@@ -68,11 +68,11 @@ env LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | grep -v '/biglib/'
     cmsRun ../step2_G4_pileup_09_G4_cfg.py > step2_G4_pileup_09_G4.log 2>&1     # 3 min 18 s for the 1000 collisions
 ```
 
-Or the whole chapter: `./09_G4/run_09_G4.sh` (variables: `PUSEED=20241`; `NPU=64` and `SKIP=746` are set for
-chapters 08 and 09 in `jitjet_init` of `test/common/jitjet_common.sh` since 16 November 2026: the draw of chapter 08
+Or the whole chapter: `./09_G4/run_09_G4.sh` (variables: `PUSEED=20241`; `NPU=64` and `SKIP=746` are set in
+`jitjet_init` of `test/common/jitjet_common.sh`, for 08 and 09 since 16 November 2026: the draw of chapter 08
 over the bunch crossings -12..3 of the Run-3 scenarios (seed 12345, Poisson with mean 60 per bunch crossing) puts
 library events 1 to 746 into the twelve early crossings and 747 to 810 into bunch crossing 0 for this signal event,
-`test/08_PU/out/draw_08_PU.txt`; chapters 10-13 keep bx -1..1, `SKIP=71`, `NPU=68`, until they are moved; `RUN=0` to only write the configurations, `ANALYZE=0` to skip the analyzers, `PNG=0` to skip the PNG pages).
+`test/08_PU/out/draw_08_PU.txt`; chapters 10-13 use the same since 21 November 2026; `RUN=0` to only write the configurations, `ANALYZE=0` to skip the analyzers, `PNG=0` to skip the PNG pages).
 
 ### Walk-through of `step2_G4_signal_09_G4_cfg.py`
 

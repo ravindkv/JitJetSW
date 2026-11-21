@@ -20,8 +20,8 @@ JETS=ak4GenJetsPU,ak4GenJetsNoNuPU,ak8GenJetsPU ./08_PU/run_08_PU.sh   # three o
 Variables (defaults): `PUEVENTS=1000 PUSEED=20241 MIXSEED=12345 PUTYPE=fixed JETS=ak4GenJetsPU JETPTMIN=3 LABELPTMIN=30`, plus
 the common ones of `common/jitjet_common.sh` (`YEAR=2025 CONDITIONS=auto:phase1_2025_realistic ERA=Run3_2025
 GEOMETRY=DB:Extended BEAMSPOT=DBrealistic COMENERGY=13600.0 EVENT=1:1:1 RUN=1 ANALYZE=1 PNG=0` (the .tex of chapters 01-08 include the PDFs), and the pileup
-convention of the book, set per chapter in `jitjet_init` like `YEAR`: for 08 and 09 `PU=60 BUNCHES=-12,3 SKIP=746 NPU=64`,
-for 10-13 still `PU=60 BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up by the
+convention of the book in `jitjet_init`, the same for 08-13: `PU=60 BUNCHES=-12,3 SKIP=746 NPU=64`; until
+21 November 2026 chapters 10-13 used `BUNCHES=-1,1 SKIP=71 NPU=68`). `SKIP` and `NPU` are the library events used up by the
 early bunch crossings and the in-time collisions of bunch crossing 0 in the draw of the MixingModule for this
 signal event (seed `MIXSEED` = 12345, Poisson(60) per bunch crossing, the library read in sequence, early
 crossings first): with bx -12..3, events 1-746 in the twelve early crossings, 747-810 in bx 0, 811-995 in the
@@ -691,7 +691,8 @@ RecoVertex/Configuration/python/RecoVertex_phase2_timing_cff.py (5, 33): unsorte
 Library sizes: PU 200 x 7 crossings (-3..3) = 1400 minimum-bias events per signal event; Run 3 scenario
 ~65 x 16 crossings (-12..3) = 1040; the draw of this chapter (bunch crossings -12..3, mean 60, 960 on average)
 995 for this event: 746 + 64 + 185 library events for the early crossings, bunch crossing 0 and the late ones;
-1000 / 1400 = 70 % of one PU-200 event. The mixing of chapters 10 and 11 (bunch crossings -1..1): 193, 71 + 68 + 54.
+1000 / 1400 = 70 % of one PU-200 event. The mixing of chapters 10 and 11 is this draw (until 21 November 2026 they
+mixed bunch crossings -1..1: 193, 71 + 68 + 54).
 In-time pedestal: 61.2 GeV per unit area (64 collisions) x 200 / 64 = 191 GeV; cone 30.8 x 200 / 64 = 96 GeV, against
 the 117.8 GeV of the b jet of chapter 07 (82 %).
 

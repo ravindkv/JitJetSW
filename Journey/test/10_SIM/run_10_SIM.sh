@@ -10,12 +10,12 @@
 #   signal       + hadronic physics: the full SIM step (B_Decay_EM_Had), the file every later chapter uses
 # and the three samples of the chapter are drawn station by station with SimHitAnalyzer (TRK, ECAL, HCAL, MUON, ALL):
 #   (10a) signal   the full-physics signal event
-#   (10b) pileup   the pileup library: all collisions of chapter 09 through the full Geant4 (the file the MixingModule reads
+#   (10b) pileup   the pileup library: all 1000 collisions of chapter 09 through the full Geant4 (the file the MixingModule reads
 #                  in chapters 10 and 11, i.e. the GEN-SIM library the premixing of the production starts from); library
 #                  event SKIP+1 is drawn
 #   (10a+10b)      the mixing at SimHit level: the MixingModule of the DIGI step (PU = Poisson(PU) collisions per bunch crossing
 #                  in BUNCHES, library read in sequence, process MIX) with the digitisers removed (python/mixOnly_cff.py),
-#                  SimHitAnalyzer reading the CrossingFrames: the signal hits with the pileup hits of bx -1, 0, +1 underneath.
+#                  SimHitAnalyzer reading the CrossingFrames: the signal hits with the pileup hits of bx -12..3 underneath.
 #                  The job writes step3_MIX_10_SIM.root: the signal event with the playback record of the draw
 #                  (CrossingFramePlaybackInfoNew: which library events went into which bunch crossing), the input of the
 #                  mixed DIGI of chapter 11 (MixingModule playback), so that 11 digitises exactly these collisions.
@@ -29,7 +29,7 @@
 #   mixed/<station>/simHits_mixed_10_SIM_<station>_...                       (10a+10b), log simHits_mixed_10_SIM.log, job log step3_MIX_10_SIM.log
 #   step3_MIX_10_SIM.root, .driver.log                     (10a+10b) the signal with the playback record of the mixing (config step3_MIX_10_SIM_cfg.py)
 #   ledger_10_SIM.txt                                      the ledger of the stages and of the three samples (common/simLedger.py)
-# Variables: PU=60 BUNCHES=-1,1 SKIP=71 NPU=68 (jitjet_common.sh) PUSEED=20241 STATIONS= (subset) HIGHLIGHT=1 HIGHLIGHT_PTMIN=2 PRINTHITS=0
+# Variables: PU=60 BUNCHES=-12,3 SKIP=746 NPU=64 (jitjet_common.sh: the window and the draw of chapter 08) PUSEED=20241 STATIONS= (subset) HIGHLIGHT=1 HIGHLIGHT_PTMIN=2 PRINTHITS=0
 #            STAGES="B B_Decay B_Decay_EM signal" CASES="signal pileup mixed" REUSE=1 (keep existing SIM files)
 set -euo pipefail
 CHAPTER=10_SIM
@@ -90,7 +90,7 @@ run_sim() {  # run_sim <stage> <input> <events> <extra customise>
   return 0
 }
 
-# the library (long: PUEVENTS collisions, about 2.5 s each) runs in the background while the signal stages run
+# the library (long: PUEVENTS collisions, about 2 s each, half an hour for 1000) runs in the background while the signal stages run
 if [[ " $CASES " == *" pileup "* || " $CASES " == *" mixed "* ]]; then
   run_sim pileup "$library_in" -1 '\n'"process.RandomNumberGeneratorService.g4SimHits.initialSeed = $((PUSEED + 2))" > "$OUT/run_pileup.log" 2>&1 &
   lib_pid=$!
@@ -161,6 +161,7 @@ if [[ " $CASES " == *" mixed "* ]]; then
   grep -E "^SimHitAnalyzer|^  pileup mixed|^    pileup event|^  station|^    hits by|^    primaries with hits" "$OUT/step3_MIX_${CHAPTER}.log" > "$OUT/simHits_mixed_${CHAPTER}.log"
   grep -E "^SimHitAnalyzer run|^  pileup mixed|^  station|^    primaries with hits" "$OUT/simHits_mixed_${CHAPTER}.log"
   # the in-time collisions chapters 08 and 09 assumed (SKIP, NPU) must be the ones the MixingModule drew
+  rm -f "$OUT/WARNING_intime_${CHAPTER}.txt"
   read -r early intime < <(grep -m1 "events per bx:" "$OUT/simHits_mixed_${CHAPTER}.log" | sed 's/.*events per bx://' | awk '
     { e = 0; i = 0; for (k = 1; k <= NF; ++k) { split($k, a, ":"); if (a[1] < 0) e += a[2]; if (a[1] == 0) i = a[2] } print e, i }')
   if [[ $early != "$SKIP" || $intime != "$NPU" ]]; then

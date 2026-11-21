@@ -23,7 +23,8 @@
 #   thresholds_11_DIGI.txt                              the thresholds and settings of every digitiser (common/digiThresholds.py)
 #   ledger_11_DIGI.txt                                  the ledger of the three samples (common/digiLedger.py)
 #   examples_11_DIGI.txt                                the worked examples of the chapter (11_DIGI/digiExamples_11_DIGI.py, FWLite)
-# Variables: PU=60 BUNCHES=-1,1 SKIP=71 (jitjet_common.sh) CASES="signal pileup mixed" REUSE=1 (keep existing DIGI files)
+#   counts_11_DIGI.txt                                  pileup per bx, SR flags, HCAL ZS, ECAL frames, TrackingParticles (digiFileCounts_11_DIGI.py)
+# Variables: PU=60 BUNCHES=-12,3 SKIP=746 (jitjet_common.sh) CASES="signal pileup mixed" REUSE=1 (keep existing DIGI files)
 set -euo pipefail
 CHAPTER=11_DIGI
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../common/jitjet_common.sh"
@@ -97,4 +98,8 @@ if [[ " $CASES " == *" signal "* && " $CASES " == *" mixed "* ]]; then
   python3 "$CHDIR/digiExamples_${CHAPTER}.py" "$OUT" > "$OUT/examples_${CHAPTER}.txt" 2> "$OUT/examples_${CHAPTER}.log" ||
     { tail -20 "$OUT/examples_${CHAPTER}.log" >&2; exit 1; }
 fi
-echo "  Thresholds: thresholds_${CHAPTER}.txt; ledger: ledger_${CHAPTER}.txt; trigger primitives: trigprim_${CHAPTER}.txt; examples: examples_${CHAPTER}.txt"
+# the counts of the DIGI files that the analyzers do not print (pileup per bunch crossing, selective-readout flags, HCAL
+# zero suppression, ECAL frames, TrackingParticles by origin): FWLite, companion section 4.5
+python3 "$CHDIR/digiFileCounts_${CHAPTER}.py" "$OUT" "$pu_event" > "$OUT/counts_${CHAPTER}.txt" 2> "$OUT/counts_${CHAPTER}.log" ||
+  { tail -20 "$OUT/counts_${CHAPTER}.log" >&2; exit 1; }
+echo "  Thresholds: thresholds_${CHAPTER}.txt; ledger: ledger_${CHAPTER}.txt; trigger primitives: trigprim_${CHAPTER}.txt; examples: examples_${CHAPTER}.txt; counts: counts_${CHAPTER}.txt"

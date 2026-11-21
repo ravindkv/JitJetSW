@@ -11,7 +11,7 @@
 Chapter~\ref{ch:09_G4} ran Geant4 with nothing switched on: the 571 primaries flew straight, lost no energy and
 only marked the sensors they crossed. This chapter switches the physics on, one ingredient at a time, until the
 \code{SIM} step is the one the production runs, and then does the same for the pileup. At the end of it the event
-is what the detector \emph{received}: every place where a particle of the event, or of one of the 193 collisions
+is what the detector \emph{received}: every place where a particle of the event, or of one of the 995 collisions
 around it, left energy in a sensitive volume. What the detector makes of that energy, a signal of its electronics,
 is chapter~\ref{ch:11_DIGI}. The ingredients, in the order in which they are added (figure~\ref{fig:10_chain}):
 
@@ -25,10 +25,14 @@ Compton scattering) gives the tracker hits an energy loss, converts photons in t
 photons and electrons shower in the ECAL;
 \item \textbf{the hadronic physics} (\code{FTFP\_BERT}: elastic and inelastic nuclear interactions) makes the
 hadrons interact with nuclei, shower in the calorimeters and be absorbed before the muon chambers;
-\item \textbf{the pileup library}: the 250 minimum-bias collisions of chapter~\ref{ch:08_PU} go through the same
+\item \textbf{the pileup library}: the 1000 minimum-bias collisions of chapter~\ref{ch:08_PU} go through the same
 full Geant4;
 \item \textbf{the mixing}: the \code{MixingModule} of the \code{DIGI} step, run here without its digitisers,
-overlays the 71, 68 and 54 collisions of bunch crossings $-1$, 0 and $+1$ on the signal.
+overlays on the signal 995 of them in the 16 bunch crossings $-12$ to $+3$ of the Run-3 production: 746 before ours,
+64 in it, 185 after. No Geant4 runs in this step: the signal (10a) and the library (10b) are simulated separately,
+and their overlay (10a+10b) is an illustration of what the digitisers of chapter~\ref{ch:11_DIGI} receive. The
+production, which premixes at the digi level, never holds the SimHits of a signal and of its pileup together (box in
+subsection~\ref{sec:10_library}).
 \end{enumerate}
 
 \begin{figure}[!htb]
@@ -41,12 +45,12 @@ overlays the 71, 68 and 54 collisions of bunch crossings $-1$, 0 and $+1$ on the
 \node[sig] (d) at (6.7,0)  {+ decays\\{\tiny\ttfamily stage B\_Decay}\\{\tiny 41 decays}};
 \node[sig] (e) at (10.05,0)  {+ EM physics\\{\tiny\ttfamily stage B\_Decay\_EM}\\{\tiny 230 conversions}};
 \node[sig] (h) at (13.4,0) {+ hadronic = full\\{\tiny\ttfamily signal (10a)}\\{\tiny 1355 secondaries}};
-\node[tr]  (l0) at (0,-2.6)   {the library\\{\tiny\ttfamily chapter 9, transport}\\{\tiny 250 collisions}};
-\node[pu]  (l)  at (3.35,-2.6) {full Geant4\\{\tiny\ttfamily pileup (10b)}\\{\tiny 120\,574 SimTracks}};
-\node[mx]  (m)  at (10.05,-2.6) {MixingModule\\{\tiny\ttfamily mix, AVE\_60\_BX\_25ns}\\{\tiny bx $-1$/0/$+1$: 71/68/54}};
-\node[mx]  (c)  at (13.4,-2.6) {CrossingFrames\\{\tiny\ttfamily (10a+10b)}\\{\tiny 448\,315 tracker hits}};
+\node[tr]  (l0) at (0,-2.6)   {the library\\{\tiny\ttfamily chapter 9, transport}\\{\tiny 1000 collisions}};
+\node[pu]  (l)  at (3.35,-2.6) {full Geant4\\{\tiny\ttfamily pileup (10b)}\\{\tiny 464\,653 SimTracks}};
+\node[mx]  (m)  at (10.05,-2.6) {MixingModule\\{\tiny\ttfamily mix, AVE\_60\_BX\_25ns}\\{\tiny bx $-12..3$: 746/64/185}};
+\node[mx]  (c)  at (13.4,-2.6) {CrossingFrames\\{\tiny\ttfamily (10a+10b)}\\{\tiny 2\,106\,681 tracker hits}};
 \draw[->] (t) -- (b); \draw[->] (b) -- (d); \draw[->] (d) -- (e); \draw[->] (e) -- (h);
-\draw[->] (l0) -- (l); \draw[->] (l) -- node[above, font=\tiny] {193 collisions, read in sequence} (m);
+\draw[->] (l0) -- (l); \draw[->] (l) -- node[above, font=\tiny] {995 collisions, read in sequence} (m);
 \draw[->] (h.south) -- ++(0,-0.45) -| (m.north); \draw[->] (m) -- (c);
 \draw[->] (c.south) -- ++(0,-0.45) node[below, font=\scriptsize, text=black!60] {chapter 11: digitisation};
 \foreach \l/\x in {field/3.35, decay/6.7, em/10.05, had/13.4} \node[font=\scriptsize, text=black!60] at (\x,0.85) {\ref*{sec:10_\l}};
@@ -56,8 +60,8 @@ overlays the 71, 68 and 54 collisions of bunch crossings $-1$, 0 and $+1$ on the
 \end{tikzpicture}
 \caption{The chapter as a chain. Top: the signal run four times on top of the transport-only file of
 chapter~\ref{ch:09_G4}, one physics ingredient more each time (process name \code{SIMFULL}, one file per stage);
-the last stage is the full \code{SIM} step. Bottom: the 250 library collisions through the same full Geant4, and the
-\code{MixingModule}, which overlays 193 of them on the signal. The grey numbers are the subsections of
+the last stage is the full \code{SIM} step. Bottom: the 1000 library collisions through the same full Geant4, and the
+\code{MixingModule}, which overlays 995 of them on the signal. The grey numbers are the subsections of
 section~\ref{sec:10_numbers}.}
 \label{fig:10_chain}
 \end{figure}
@@ -76,9 +80,9 @@ much of it there is in our event (\code{ledger\_10\_SIM.txt}, \code{extras\_10\_
 \ref{sec:10_em} & electromagnetic physics & energy loss, conversions, bremsstrahlung, electromagnetic showers & 230 conversions; a $44\GeV$ photon puts two thirds of its shower in one crystal \\
 \ref{sec:10_had} & hadronic physics & nuclear interactions, hadronic showers, invisible energy & 386 stored secondaries of 142 nuclear interactions; a quarter of the charged hadrons interact in the tracker \\
 \ref{sec:10_stations} & the signal station by station & the hits of the full simulation per detector & $10\,272$ tracker hits, $12\,804$ ECAL and 1353 HCAL cells, no muon hit \\
-\ref{sec:10_library} & the pileup library & 250 minimum-bias collisions, full physics & library event 72: 2097 tracker hits, $53\GeV$ in the ECAL \\
-\ref{sec:10_mixing} & the mixing & 193 collisions in three bunch crossings, shifted in time & $31\,060$ pileup primaries; their vertices spread over $\pm10\cm$ \\
-\ref{sec:10_pileup} & where the pileup goes & the hits of the mixture per detector & the signal is 2.3\,\% of the tracker hits; 98\,\% of the barrel crystals are hit \\
+\ref{sec:10_library} & the pileup library & 1000 minimum-bias collisions, full physics & library event 747, a diffractive one: 136 tracker hits, $1.1\GeV$ in the ECAL \\
+\ref{sec:10_mixing} & the mixing & 995 collisions in 16 bunch crossings, shifted in time & $149\,894$ pileup primaries; their vertices spread over $\pm13\cm$ \\
+\ref{sec:10_pileup} & where the pileup goes & the hits of the mixture per detector & the signal is 0.5\,\% of the tracker hits; every crystal of the barrel and the endcaps is hit \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -91,6 +95,39 @@ the release sets them), \emph{the numbers of the event}, and a picture. Subsecti
 detector by detector, with the \code{SimHitAnalyzer}. Subsections 6 to 8 are the pileup at the same level: the
 library (sample 10b), the mixing, and the mixed event (sample 10a+10b). This is the only place in the book where one
 can still see which hit came from which collision; chapter~\ref{ch:11_DIGI} digitises exactly this mixture.
+
+\textbf{What the script runs, and how long it takes.} Table~\ref{tab:10_cost} lists the jobs of
+\path{test/10_SIM/run_10_SIM.sh} with their wall-clock times (one thread each on a shared lxplus machine with a load
+average of 5 to 27, so they vary by tens of per cent). Most of the time goes to the library, the 1000 collisions
+through the full Geant4; the mixing only copies objects and shifts their times. The pictures of the mixture (10a+10b),
+an illustration, come next: the \code{SimHitAnalyzer} draws each of its $2.1$ million tracker hits as a marker in three
+views, and again for the station \code{ALL}. Written into a PDF this takes about a minute for the tracker and for
+\code{ALL}, and the PNGs of the book are rendered from the PDF pages in half a minute; ROOT's own PNG paints every marker once more, $1.5$\,ms each,
+and when the analyzer still made it the mixture took 4\,h\,39\,min. \code{ANALYZE=0} skips all the pages and keeps what
+chapter~\ref{ch:11_DIGI} needs, the SIM files and the playback record.
+
+\begin{table}[!htb]
+\centering\footnotesize\setlength{\tabcolsep}{4pt}
+\caption{The jobs of \code{run\_10\_SIM.sh} and their wall-clock time, from the time stamps of the logs (the four
+stages of 12 November 2026, the rest of 21 November 2026). The library runs in the background next to the four
+stages; the pages wait for it.}
+\label{tab:10_cost}
+\begin{tabular}{@{}lll@{}}
+\toprule
+job & configuration & time \\
+\midrule
+the four stages (signal) & \path{step2_SIM_<stage>_10_SIM_cfg.py} & 52 to 71\,s each, the event itself 12\,s \\
+the library (10b) & \path{step2_SIM_pileup_10_SIM_cfg.py} & 33\,min: 76\,s start-up, 1.9\,s per collision \\
+\code{SimAnalyzer}, per stage & \path{common/simAnalyzer_cfg.py} & 6 to 10\,s \\
+\code{SimHitAnalyzer} (10a), (10b) & \path{common/simHitAnalyzer_cfg.py} & 17\,s, 13\,s \\
+the mixing, \code{ANALYZE=0} & \path{step3_MIX_10_SIM_cfg.py} & 10\,s \\
+\quad with its pages & the same & 3.5\,min (with ROOT's own PNGs 4\,h\,39\,min) \\
+the ledger, the extras & \path{simLedger.py}, \path{simExtras_10_SIM.py} & 1\,s, 8\,s \\
+\midrule
+the chapter from scratch & \path{run_10_SIM.sh} & 38\,min (\code{ANALYZE=0}: 35\,min) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{plainwords}[What Geant4 does with a particle]
 Geant4 moves every particle in steps. At each step it asks the physics list which process happens next (a
@@ -125,8 +162,8 @@ Two files enter (Rule E), both with the process name \code{SIM} of the transport
 chapter~\ref{ch:09_G4}: the signal, \path{test/09_G4/out/step2_G4_signal_09_G4.root}, 571 primaries of the 634
 stable particles with $6923\GeV$ and $471.7\GeV$ of \pt{}, 557 of them reaching the tracker/calorimeter boundary,
 6734 tracker crossings with zero energy loss and 459 HF cells of the shower library; and the library,
-\path{step2_G4_pileup_09_G4.root}, the 250 collisions, of which library events 72 to 139 are the 68 in-time
-collisions with $10\,387$ primaries and 27 forward protons handed over at the Roman pots.\footnote{The numbers of this chapter are in
+\path{step2_G4_pileup_09_G4.root}, the 1000 collisions, of which library events 747 to 810 are the 64 in-time
+collisions with 8786 primaries and 18 forward protons handed over at the Roman pots.\footnote{The numbers of this chapter are in
 \path{test/10_SIM/out/ledger_10_SIM.txt} (the output of \code{common/simLedger.py}), in the five
 \path{simAnalyzer_<stage>_10_SIM.log}, in \path{simHits_signal_10_SIM.log}, \path{simHits_pileup_10_SIM.log},
 \path{simHits_mixed_10_SIM.log} (the latter extracted from the mixing job log \path{step3_MIX_10_SIM.log}) and in
@@ -138,8 +175,8 @@ the transport-only products are not copied, so each file holds the generator rec
 chapters~\ref{ch:06_Decay}--\ref{ch:07_GenJet} and one set of simulation products, those of its own physics. The
 hand-over is the same in every stage, 571 primaries from the same smeared vertex $(0.028, -0.017, 3.11)\cm$ and
 the same 29 generator vertices; what changes is everything after the first step. The \code{SimHitAnalyzer} counts
-$10\,414$ primaries in the 68 in-time collisions, because it counts every \code{SimTrack} with a generator link:
-the $10\,387$ primaries of chapter~\ref{ch:09_G4} and its 27 forward protons of $3.0$ to $6.8\TeV$ that the beam-line
+8804 primaries in the 64 in-time collisions, because it counts every \code{SimTrack} with a generator link:
+the 8786 primaries of chapter~\ref{ch:09_G4} and its 18 forward protons of $3.3$ to $6.8\TeV$ that the beam-line
 transport hands to Geant4 at $z=\pm203$\,m (subsection~\ref{sec:10_library}). The two
 objects to follow are unchanged: the $b$ system, 8 of its 9 stable particles handed over, $56.8\GeV$ of \pt{} at
 $(\eta,\phi) = (-1.55, -2.09)$ (the antineutrino, $37.5\GeV$ of \pt{}, is gone), and the $\bar b$ system, 16 of 16,
@@ -147,9 +184,10 @@ $114.2\GeV$ at $(-3.75, 1.01)$, pointing at the HF.
 
 Every job of this chapter runs, like chapter~\ref{ch:09_G4}, with the 2025 settings of the release
 (\code{auto:phase1\_2025\_realistic}, \code{Run3\_2025}): the geometry and the field map are those of 2024,
-and nothing in \code{g4SimHits} or in the \code{MixingModule} depends on the year. The four stages, the library
-and the mixture come out as with the 2024 settings, hit for hit, and the mixing draws the same 71, 68 and 54
-collisions (companion, section~4). Only the drawing moves: the analyzers place a tracker hit, recorded in the frame
+and nothing in \code{g4SimHits} or in the \code{MixingModule} depends on the year. When the chapter was moved to
+2025 (with a library of 250 collisions and the three crossings $-1$ to $+1$), the four stages, the library and the
+mixture came out as with the 2024 settings, hit for hit, and so did the draw (companion, section~4); the 1000
+collisions of today begin with those 250, unchanged. Only the drawing moves: the analyzers place a tracker hit, recorded in the frame
 of its module, with the reconstruction geometry, which applies the tracker alignment of the global tag, and the
 2025 alignment (\code{TrackerAlignment\_Run3MC\_2025\_EOY\_v1}) puts the modules $10\,\mu$m away from those of
 2024 in the median, the TEC $0.3$\,mm: invisible in the displays, and no number of the chapter changes.
@@ -566,28 +604,30 @@ Files: \code{signal/<station>/}\allowbreak\code{simHits\_signal\_10\_SIM\_<stati
 \subsection{The pileup library and one collision}
 \label{sec:10_library}
 
-\textbf{What it is.} The library (sample 10b) is the 250 minimum-bias collisions of chapter~\ref{ch:08_PU}, handed
+\textbf{What it is.} The library (sample 10b) is the 1000 minimum-bias collisions of chapter~\ref{ch:08_PU}, handed
 over in chapter~\ref{ch:09_G4}, through the same full Geant4 with its own random seed (\code{PUSEED}$+2 = 20243$). It
 is simulated once, independently of the signal, and any number of signal events could take their pileup from it.
 
-\textbf{The numbers of the event.} The 250 collisions give $38\,862$ primaries, which become $120\,574$
-\code{SimTrack}s with $548\,028$ tracker hits, $394\,627$ EB hits ($3149\GeV$), $691\,000$ EE hits ($11\,616\GeV$) and
-$119\,964$ HCAL hits, 60\,MB in all; they took 7 to 12 minutes, $1.8$ to $2.8$\,s each, the signal event alone 8 to
-12\,s, depending on the load of the shared machine. Library event 72, the first in-time collision, has 164 primaries
-and 534 \code{SimTrack}s, 2097 tracker hits, 4742 ECAL hits in 3388 cells (EB 1217 cells with $9.45\GeV$, EE 1948
-with $43.5\GeV$, ES 223), 392 HCAL hits in 262 cells (HB 21, HE 122, HF 119 with 173 photoelectrons) and 11 CSC hits
-in station 1 from a track without stored ancestor; 142 of its 164 primaries left a hit. The collision is a fifth of
-the signal in tracker hits and a seventh in ECAL energy ($53$ against $362\GeV$), and its ECAL energy is mostly
-charged hadrons ($29.4\GeV$) and photons ($15.7\GeV$) of a few GeV each, spread over the whole detector. Three
-diffractive collisions (library events 12, 124, 179) give Geant4 nothing but protons of $6800\GeV$ (one of
-$5539\GeV$) at $z=\pm203$\,m: the beam-line transport of the generator step (\code{LHCTransport}, read since
-\code{run3\_common} sets \code{g4SimHits.LHCTransport = True}) delivers them to the start of the forward proton
-spectrometer (\code{PPSRegionStart = 203}, \path{SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py}).
+\textbf{The numbers of the event.} The 1000 collisions give $150\,266$ primaries, which become $464\,653$
+\code{SimTrack}s with $2\,101\,876$ tracker hits, $1\,514\,223$ EB hits ($12\,088\GeV$), $2\,657\,171$ EE hits
+($44\,222\GeV$) and $458\,101$ HCAL hits, 226\,MB in all; they took 33 minutes, 2\,s each, the signal event alone 8
+to 12\,s, depending on the load of the shared machine. Library event 747, the first in-time collision, is the
+single-diffractive collision of chapters~\ref{ch:08_PU} and~\ref{ch:09_G4}: 22 primaries, one of them the proton of
+$6800\GeV$ handed over at $z=-203$\,m, 55 \code{SimTrack}s, 136 tracker hits (most of them in the disks and the
+TEC: the collision is forward), 173 ECAL hits in 131 cells (EB 60 cells with $0.23\GeV$, EE 61 with $0.86\GeV$, ES 10)
+and 90 HCAL hits in 72 cells (HB 1, HE 17, HF 54 with 98 photoelectrons); 18 of its 22 primaries left a hit. It is not a typical collision, the 64 in time have from 2 to 754 primaries, 84 in the
+median (section 7 of \code{extras\_10\_SIM.txt}), but it is the one the draw puts first into our crossing, and the
+book follows it from chapter~\ref{ch:08_PU} on. Eleven diffractive collisions (library events 12, 124, 179, 196, 502,
+632, 684, 774, 833, 879, 970; 774 is in time) give Geant4 nothing but one or two protons of $3.3$ to $6.8\TeV$ at
+$z=\pm203$\,m, and 318 of the 1000 hand over 360 such protons in all: the beam-line transport of the generator step
+(\code{LHCTransport}, read since \code{run3\_common} sets \code{g4SimHits.LHCTransport = True}) delivers them to the
+start of the forward proton spectrometer (\code{PPSRegionStart = 203},
+\path{SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py}).
 
 \begin{plainwords}[The library, and what the production calls the premixing library]
 \code{step2\_SIM\_pileup\_10\_SIM.root} is a GEN-SIM library: minimum-bias collisions simulated once, to be overlaid
-on any number of signal events. Reading it, 193 collisions per signal event here and about 1000 in the Run-3 production scenario
-(section~\ref{sec:10_phase2}), is why the production does not mix SimHits. Its \emph{premixing library} (\code{premix\_stage1}) is made by a job that mixes a full bunch-crossing
+on any number of signal events. Reading it, 995 collisions per signal event here, about 1000 in every Run-3
+production scenario (section~\ref{sec:10_phase2}), is why the production does not mix SimHits. Its \emph{premixing library} (\code{premix\_stage1}) is made by a job that mixes a full bunch-crossing
 train of minimum-bias collisions from a GEN-SIM library like this one and \emph{digitises} it, storing one premixed
 event, digis and all, per future signal event (data tier \code{PREMIX}); the signal job then digitises the signal
 alone and adds one premixed event to it, channel by channel (\code{premix\_stage2}, the \code{PreMixingModule},
@@ -609,55 +649,66 @@ collision keeps its own vertex, drawn in chapter~\ref{ch:08_PU} from the same lu
 digitisers of chapter~\ref{ch:11_DIGI} read the \code{CrossingFrame}s, not the signal collections.
 
 \textbf{The parameters.} \code{process.mix} of \code{cmsDriver.py -s DIGI} with the option
-\code{--pileup} \code{AVE\_60\_BX\_25ns,\{'N':~60,~'B':~(-1,~1)\}}: a Poisson draw of mean 60 per bunch crossing, three
-bunch crossings, 25\,ns apart, the library read in sequence (\code{input.sequential = True}), the random engine of
+\code{--pileup} \code{AVE\_60\_BX\_25ns,\{'N':~60,~'B':~(-12,~3)\}}: a Poisson draw of mean 60 per bunch crossing, 16
+bunch crossings, 25\,ns apart, from $-300$ to $+75\ns$, the window of every Run-3 production scenario of the release
+(section~\ref{sec:10_phase2}), the library read in sequence (\code{input.sequential = True}), the random engine of
 the module seeded with 12345. The job (\path{python/mixOnly_cff.py}) removes the digitisers and puts the
 \code{SimHitAnalyzer} on the \code{CrossingFrame}s.
 
-\textbf{The numbers of the event.} The draw gave 71, 68 and 54 collisions for $\bx=-1$, 0 and $+1$, library events
-1--71, 72--139 and 140--193 in that order, and the script checks that the in-time ones are those that chapters
-\ref{ch:08_PU} and \ref{ch:09_G4} assumed. The 193 collisions bring $31\,060$ primaries ($10\,012$, $10\,414$,
-$10\,634$ by bunch crossing) and $97\,276$ \code{SimTrack}s. They are very unequal: from 1 primary (the PPS protons
-above) to 574, with a median of 69, 114.5 and 148.5 per collision in the three bunch crossings (section 7 of \code{extras\_10\_SIM.txt}); the 54 late
-collisions happen to be the busiest. Their vertices spread along the beam with an r.m.s. of
-$3.76\cm$, from $z=-9.5$ to $+10.1\cm$; two of the 190 vertices near the centre are within 1\,mm of the signal vertex
-at $z=3.11\cm$.
+\textbf{The numbers of the event.} The draw gave 71, 68, 54, 59, 52, 61, 76, 59, 65, 59, 68 and 54 collisions to
+the twelve early crossings $\bx=-12$ to $-1$, 64 to ours and 63, 62 and 60 to the three late ones: library events
+1--746, 747--810 and 811--995 in that order, the draw of chapter~\ref{ch:08_PU}, made there at generator level with
+the same seed, and the script checks that the in-time collisions are those that chapters \ref{ch:08_PU} and
+\ref{ch:09_G4} used. (The first three crossings receive the 71, 68 and 54 collisions that the three crossings $-1$,
+0, $+1$ received when this chapter mixed only those: the draw runs from the earliest crossing on.) The 995 collisions
+bring $149\,894$ primaries ($114\,093$ early, 8804 in time, $26\,997$ late) and $463\,662$ \code{SimTrack}s. They are
+very unequal: from 1 primary (the PPS protons above) to 754, with a median of 90; per crossing the median runs from
+65 ($\bx=-7$) to 161 ($\bx=-5$), and our own crossing, with 84 and $137.6$ on average, is a quiet one (section 7 of
+\code{extras\_10\_SIM.txt}). Their vertices spread along the beam with an r.m.s. of $3.58\cm$, from $z=-12.4$ to
+$+12.9\cm$; 13 of the 984 vertices near the centre are within 1\,mm of the signal vertex at $z=3.11\cm$, one of them
+in our crossing (the remaining 11 of the 995 are the proton-only collisions at $z=\pm203$\,m).
 
 \begin{plainwords}[Why the DIGI job of the next chapter replays this draw]
 The number of collisions per bunch crossing is a Poisson draw with mean 60 from the random engine of the module
 \code{mix} (seed 12345), and the library is read in sequence, so the draw decides which library events are in time:
-72--139 here, the \code{SKIP = 71}, \code{NPU = 68} that chapters \ref{ch:08_PU} and \ref{ch:09_G4} used (the
-script checks it). The same module with the same seed \emph{with} the digitisers gives other numbers (65, 67 and 56
-were observed): \code{BMixingModule::produce} (\path{Mixing/Base/src/BMixingModule.cc}) calls
+747--810 here, the \code{SKIP = 746}, \code{NPU = 64} that chapters \ref{ch:08_PU} and \ref{ch:09_G4} used (the
+script checks it). The same module with the same seed \emph{with} the digitisers gives other numbers (with the three
+crossings $-1$ to $+1$, 65, 67 and 56 instead of 71, 68 and 54): \code{BMixingModule::produce} (\path{Mixing/Base/src/BMixingModule.cc}) calls
 \code{initializeEvent}, \code{addSignals}, \code{doPileUp} in that order, and \code{addSignals} runs the
 digitisers on the signal, which consume random numbers of the same engine before \code{PileUp::CalculatePileup}
 (\path{Mixing/Base/src/PileUp.cc}, called from \path{SimGeneral/MixingModule/plugins/MixingModule.cc}) draws
 the collisions. The mixing job therefore writes \path{step3_MIX_10_SIM.root}: the signal event again (the
 \code{CrossingFrame}s are transient, \code{drop *\_mix\_*\_*}) plus the \code{CrossingFramePlaybackInfoNew} of
 the module \code{mix}, process \code{MIX}: which library events went into which bunch crossing.
-Chapter~\ref{ch:11_DIGI} reads it with \code{process.mix.playback = True} and digitises exactly these 193 collisions.
+Chapter~\ref{ch:11_DIGI} reads it with \code{process.mix.playback = True} and digitises exactly these 995 collisions.
 \end{plainwords}
 
 \subsection{Where the pileup goes}
 \label{sec:10_pileup}
 
-\textbf{The numbers of the event} (\code{simHits\_mixed\_10\_SIM.log}, figure~\ref{fig:10_pileup}). In the
-\emph{tracker} the 193 collisions put $438\,043$ hits next to the $10\,272$ of the signal: $139\,551$ early,
-$146\,028$ in time, $152\,464$ late, that is 1966, 2147 and 2823 per collision; the signal is 2.3\,\% of the tracker
-hits of the three bunch crossings, 6.6\,\% of those of its own. The innermost pixel layer has $19\,053$ hits, of which 397 are the signal's. In the
-\emph{ECAL} they hit nearly every crystal: $59\,897$ of the $61\,200$ of the barrel and $14\,619$ of the $14\,648$
-of the endcaps have a hit, and $31\,654$ of the $137\,216$ preshower strips. The 193 collisions dominate $103\,808$
-cells with $12\,130\GeV$ ($3950$, $3860$, $4320\GeV$ by bunch crossing, $57\GeV$ per in-time collision) against the
-$12\,804$ cells and $362\GeV$ of the signal alone; the endcap crystals alone hold $9720\GeV$, 33 times the signal's
-$294$. With the pileup on top, only 2362 cells are still dominated by the signal, holding $236\GeV$; the other
-$10\,442$ cells of its showers now belong, by energy, to a pileup particle. The followed photon still dominates 80
-crystals with $42.6\GeV$ (270 alone), the followed $\pi^+$ 8 with $3.9\GeV$ (35 alone): the core of a shower
-survives, its edges are lost. The \emph{HCAL} goes from 1353 to $11\,021$ cells (HB 3624 of 9072, HE 4170, HO 15, HF
-3212 of 3456), 258 of them dominated by the signal; in the HF the drawing shows many cells dominated by the early
-collisions (figure~\ref{fig:10_pileup}, olive). The \emph{muon chambers}, empty for the signal, have 204 hits (DT 43, CSC 151, RPC 2,
-GEM 8): 51 from the early bunch crossing, 129 in time, 24 late. Of the 571 signal primaries, 378 still own a hit or a
-cell in the mixture, down from 512; in the HCAL only 92 of 266, because the cells of the hadronic showers are shallow
-and a pileup deposit easily outweighs them.
+\textbf{The numbers of the event} (\code{simHits\_mixed\_10\_SIM.log}, figure~\ref{fig:10_pileup}). Nothing at
+this level knows about time yet: every pileup hit carries its time, shifted by its bunch crossing from $-300$ to
+$+75\ns$, and all of them are in the \code{CrossingFrame}s. The twelve early crossings hold three quarters of the
+collisions, and so about three quarters of everything below; which of them a detector sees is decided by its
+electronics, in chapter~\ref{ch:11_DIGI}. In the \emph{tracker} the 995 collisions put $2\,096\,409$ hits next to the
+$10\,272$ of the signal: $1\,588\,361$ early, $125\,625$ in time, $382\,423$ late, that is 2129, 1963 and 2067 per
+collision; the signal is 0.49\,\% of the tracker hits of the sixteen bunch crossings, 7.6\,\% of those of its own.
+The innermost pixel layer has $89\,824$ hits, of which 397 are the signal's. In the \emph{ECAL} every crystal has a
+hit, the $61\,200$ of the barrel and the $14\,648$ of the endcaps, and so have $82\,999$ of the $137\,216$ preshower
+strips. The pileup dominates $158\,148$ cells with $56\,400\GeV$ ($52\,900$ early, 797 in time, $2730\GeV$ late)
+against the $12\,804$ cells and $362\GeV$ of the signal alone; the endcap crystals alone hold $44\,400\GeV$, 151
+times the signal's $294$. With the pileup on top, only 699 cells are still dominated by the signal, holding
+$150\GeV$; the other $12\,105$ cells of its showers now belong, by energy, to a pileup particle, most often an early
+one. The in-time collisions deposit $3430\GeV$ in the ECAL ($54\GeV$ per collision, FWLite on the library) but
+dominate only 6980 cells with $797\GeV$: the twelve earlier crossings outweigh them almost everywhere. The followed
+photon still dominates 37 crystals with $41.7\GeV$ (270 alone), the followed $\pi^+$ 2 with $2.8\GeV$ (35 alone): the
+core of a shower survives, its edges are lost. The \emph{HCAL} goes from 1353 to $15\,791$ cells (HB 6856 of 9072, HE
+5464 of 6768, HO 66, HF 3405 of 3456), 69 of them dominated by the signal and $13\,395$ by the early crossings
+(figure~\ref{fig:10_pileup}, olive); the HF $\pi^+$ of the $\bar b$ jet keeps 2 of its 19 cells. The \emph{muon
+chambers}, empty for the signal, have 838 hits (DT 70, CSC 710, RPC 9, GEM 49), most of them in the inner endcap
+stations: 639 early, 75 in time, 124 late. Of the 571 signal primaries, 353 still own a hit or a cell in the mixture,
+down from 512; in the ECAL 182 of 366, in the HCAL only 38 of 266, because the cells of the hadronic showers are
+shallow and a pileup deposit easily outweighs them.
 
 \begin{figure}[!htbp]
 \centering
@@ -666,10 +717,12 @@ and a pileup deposit easily outweighs them.
 \includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/mixed/HCAL/simHits_mixed_10_SIM_HCAL_rz_run1_event1.png}\hfill
 \includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/mixed/MUON/simHits_mixed_10_SIM_MUON_rz_run1_event1.png}
 \caption{(10a+10b) The mixed event station by station, legends cropped: the tracker barrel in $x$--$y$, the ECAL in $\eta$--$\phi$, the HCAL and the muon system in $r$--$z$.
-The signal is drawn as in figure~\ref{fig:10_stations}, the pileup underneath by bunch crossing: olive $-1$, blue 0,
-red $+1$; a calorimeter cell takes the colour of the origin that deposited most of its energy. The signal survives as
+The signal is drawn as in figure~\ref{fig:10_stations}, the pileup underneath by bunch crossing: olive early
+($\bx=-12$ to $-1$), blue in time, red late ($+1$ to $+3$), drawn in that order, so that in the dense tracker layers the
+red hits cover the olive ones (the legend counts $685\,160$ early, $54\,572$ in time and $169\,770$ late hits in the
+barrel); a calorimeter cell takes the colour of the origin that deposited most of its energy. The signal survives as
 the black and green dots along the followed tracks and as the core of the $b$ jet at $(-1.6,-2.1)$ in the ECAL; the
-204 muon hits are all pileup.
+838 muon hits are all pileup.
 Files: \code{mixed/<station>/}\allowbreak\code{simHits\_mixed\_10\_SIM\_<station>\_<view>\_run1\_event1.png}.}
 \label{fig:10_pileup}
 \end{figure}
@@ -684,16 +737,16 @@ HB and HE, 1849 photoelectrons in the HF (the 1851
 $6923\GeV$ handed to Geant4 this is what the sensitive volumes record; the rest is the sampling of the HCAL (its
 visible energy is a few per cent of what it absorbs), nuclear binding energy, the
 neutrons and neutrinos of the showers, the dead material and the forward particles beyond the HF. For the mixture
-the stage adds, on top of the signal, $438\,043$ tracker hits, 204 muon-chamber hits, $103\,808$ ECAL cells with
-$12\,130\GeV$ and $10\,763$ HCAL cells; the 68 in-time collisions alone, handed over in chapter~\ref{ch:09_G4}
-with $4486\GeV$ of \pt{}, put $146\,028$ tracker hits and $3860\GeV$ of ECAL energy next to the signal's
-$10\,272$ and $362$.
+the table splits the same quantities by origin (subsection~\ref{sec:10_pileup}); the 64 in-time collisions,
+handed over in chapter~\ref{ch:09_G4} with $3815\GeV$ of \pt{}, show only the $797\GeV$ of the ECAL cells they
+dominate, of the $3430\GeV$ they deposit.
 
 \begin{table}[htb]
 \centering\scriptsize\setlength{\tabcolsep}{3pt}
 \caption{The ledger of the SimHits, station by station (\code{ledger\_10\_SIM.txt}, from the \code{SimHitAnalyzer}
-logs): the signal alone (10a), library event~72 alone (10b), and the mixed event (10a+10b) split by origin: the
-signal, the 71 collisions of bunch crossing $-1$, the 68 of bunch crossing 0, the 54 of bunch crossing $+1$. A
+logs): the signal alone (10a), library event~747 alone (10b), and the mixed event (10a+10b) split by origin: the
+signal, the 746 collisions of the twelve early bunch crossings ($-12$ to $-1$), the 64 of bunch crossing 0, the 185 of
+the three late ones ($+1$ to $+3$). A
 cell of the mixed event is attributed to the origin that deposited most of its energy. ECAL energies in GeV; the
 HCAL ``energy'' is the visible GeV of HB, HE and HO plus the photoelectrons of the HF, as the analyzer sums them.}
 \label{tab:10_ledger}
@@ -701,17 +754,17 @@ HCAL ``energy'' is the visible GeV of HB, HE and HO plus the photoelectrons of t
 \toprule
  & (10a) & (10b) & \multicolumn{5}{c}{(10a+10b) the mixed event} \\
 \cmidrule(lr){4-8}
- & signal & event 72 & all & signal & early (71) & in time (68) & late (54) \\
+ & signal & event 747 & all & signal & early (746) & in time (64) & late (185) \\
 \midrule
-primaries & 571 & 164 & 31\,631 & 571 & 10\,012 & 10\,414 & 10\,634 \\
-\code{SimTrack}s & 1926 & 534 & 99\,202 & 1926 & \multicolumn{3}{c}{97\,276} \\
-tracker \code{PSimHit}s & 10\,272 & 2097 & 448\,315 & 10\,272 & 139\,551 & 146\,028 & 152\,464 \\
-muon \code{PSimHit}s & 0 & 11 & 204 & 0 & 51 & 129 & 24 \\
-ECAL cells & 12\,804 & 3388 & 106\,170 & 2362 & 32\,941 & 34\,418 & 36\,449 \\
-ECAL energy [GeV] & 361.9 & 53.0 & 12\,366 & 236 & 3950 & 3860 & 4320 \\
-HCAL cells & 1353 & 262 & 11\,021 & 258 & 3322 & 3529 & 3912 \\
-HCAL energy [GeV + HF p.e.] & 1851 & 173 & 54\,000 & 1072 & 15\,500 & 16\,500 & 20\,900 \\
-primaries with a hit & 512 of 571 & 142 of 164 & & 378 of 571 & & & \\
+primaries & 571 & 22 & 150\,465 & 571 & 114\,093 & 8804 & 26\,997 \\
+\code{SimTrack}s & 1926 & 55 & 465\,588 & 1926 & \multicolumn{3}{c}{463\,662} \\
+tracker \code{PSimHit}s & 10\,272 & 136 & 2\,106\,681 & 10\,272 & 1\,588\,361 & 125\,625 & 382\,423 \\
+muon \code{PSimHit}s & 0 & 0 & 838 & 0 & 639 & 75 & 124 \\
+ECAL cells & 12\,804 & 131 & 158\,847 & 699 & 129\,238 & 6980 & 21\,930 \\
+ECAL energy [GeV] & 361.9 & 1.1 & 56\,600 & 150 & 52\,900 & 797 & 2730 \\
+HCAL cells & 1353 & 72 & 15\,791 & 69 & 13\,395 & 553 & 1774 \\
+HCAL energy [GeV + HF p.e.] & 1851 & 98 & 246\,800 & 371 & 246\,000 & 28 & 406 \\
+primaries with a hit & 512 of 571 & 18 of 22 & & 353 of 571 & & & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -721,10 +774,12 @@ every tracker and muon hit as a dot, every calorimeter cell as a marker whose si
 (left), the signal is readable at a glance: the $b$ jet at $(-1.55, -2.09)$ as the densest block, black for the
 charged hadrons, green for the photons, orange for the electron of the $B^-$ decay; the $\bar b$ jet at $(-3.75, 1.01)$
 as a block of large HF cells; the beam remnants as black HF cells along both edges; the empty band beyond
-$\abseta = 3$ where the tracker ends. With the pileup underneath (right), the same hits are there, but only the two
-jets still stand out of the $565\,710$ hits and cells of the bunch-crossing train: the $\pi^+$ of $31\GeV$ and
-the $K^0_S$ of $16\GeV$ that the analyzer follows are labelled, everything else of the signal is one dot among
-forty. This is the picture the reconstruction will have to undo, and why chapter~\ref{ch:11_DIGI} keeps the
+$\abseta = 3$ where the tracker ends. With the pileup underneath (right), the same hits are there, drawn on top, but
+the plane is olive from edge to edge (the early crossings dominate four ECAL cells in five and five HCAL cells in six),
+with the red and blue of the late and in-time ones scattered over it. $11\,040$ of the $2\,282\,157$ hits and cells
+are the signal's: one dot among two hundred. The black strings of its charged tracks still cross the tracker region
+and the $b$ jet still stands out, as the green and orange block of its photons and its electron, but of the $\bar b$
+jet only two HF cells are left, one of them the followed $\pi^+$ of $31\GeV$. This is the picture the reconstruction will have to undo, and why chapter~\ref{ch:11_DIGI} keeps the
 \code{DigiSimLink}s.
 
 \begin{figure}[htbp]
@@ -735,13 +790,13 @@ forty. This is the picture the reconstruction will have to undo, and why chapter
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.495\textwidth}
 \includegraphics[width=\textwidth]{10_SIM/out/mixed/ALL/simHits_mixed_10_SIM_ALL_etaphi_run1_event1.png}
-\caption{(10a+10b) the signal with its 193 pileup collisions underneath, the pileup coloured by bunch crossing.}
+\caption{(10a+10b) the signal with its 995 pileup collisions underneath, the pileup coloured by bunch crossing.}
 \end{subfigure}
 \caption{The $\eta$--$\phi$ display of the event at the SimHit level, all stations
 (\code{signal/ALL/simHits\_signal\_10\_SIM\_ALL\_etaphi\_run1\_event1.png},
 \code{mixed/ALL/simHits\_mixed\_10\_SIM\_ALL\_etaphi\_run1\_event1.png}; the r--z and x--y views and the pages
 per station are next to them). Black: charged hadrons, purple: neutral hadrons, green: photons, orange:
-electrons, grey: no stored ancestor; olive, blue and red: pileup of bunch crossings $-1$, 0 and $+1$. The leading
+electrons, grey: no stored ancestor; olive, blue and red: pileup of the early ($-12$ to $-1$), the in-time and the late ($+1$ to $+3$) bunch crossings. The leading
 primary of each kind is followed through the layers and labelled.}
 \label{fig:10_display}
 \end{figure}
@@ -788,8 +843,8 @@ calorimeters are not in it: a collection that is not listed falls back on a thre
 1000} ns (\code{CaloSD.cc}, lines 43, 59 and 87--99). The HGCal adds \code{HGCSD.EminHit = 0.0} and
 \code{HGCScintSD.EminHit = 0.0}, with \code{HGCSD.TimeSliceUnit = 0.001} ns for the silicon and the scintillator
 (\path{SimG4CMS/Calo/src/HGCScintSD.cc}, line 41), so every deposit of every step in its cells is kept, time-sliced to
-the picosecond, until the $500\ns$ after which the \code{SteppingAction} stops a track (\code{MaxTrackTime}). The 68
-in-time collisions alone deposit $3860\GeV$ in $34\,418$ ECAL cells here; at PU 200 the number of HGCal
+the picosecond, until the $500\ns$ after which the \code{SteppingAction} stops a track (\code{MaxTrackTime}). The 64
+in-time collisions alone leave $262\,219$ ECAL hits with $3430\GeV$ here; at PU 200 the number of HGCal
 \code{PCaloHit}s per event is set by this zero, which no modifier changes: the default is ``keep everything''.
 
 \textbf{The time windows and the timing detectors.} The \code{SteppingAction} stops a track after
@@ -835,7 +890,7 @@ of the digitiser.
 \code{HFShowerLibrary\_run3\_v7.root} (\code{FileVersion = 3}, \code{EqualizeTimeShift = True}) is set by the
 \code{run3\_HFSL} modifier of \code{Era\_Run3\_cff.py}, and the Phase-2 eras are built on \code{Run3\_noMkFit}
 (\path{Configuration/Eras/python/Era_Phase2_cff.py}), so they inherit it: \code{HFParameters\_cff.py} has no
-Phase-2 entry. The 1849 photoelectrons of the signal and the $53\,900$ of the bunch crossing are drawn from showers
+Phase-2 entry. The 1849 photoelectrons of the signal and the $246\,000$ of the sixteen bunch crossings are drawn from showers
 stored for the Run-3 detector; the HF of D110 is built from the same XML (chapter~\ref{ch:09_G4}), so the library
 carries over, with its old reach: the file has no event-information branch (\code{BranchEvt} is empty), so
 \path{SimG4CMS/Calo/src/HFShowerLibrary.cc} uses its hard-wired 16 energies from 2 to $1000\GeV$ (line 568), and a
@@ -845,15 +900,16 @@ particle above $1\TeV$ gets a sum of showers of the $1000\GeV$ bin (\code{extrap
 \path{2025_LHC_Simulation_fill12p5h_levelling9h_nb2340_xSec80mb_il2p23} (a \code{probFunction} over 0--99
 collisions with mean 64.3; 44.9 for the 2024 one, \path{2024_25ns_RunIII2024Summer24_PoissonOOTPU}), built on
 \path{SimGeneral/MixingModule/python/mix_probFunction_25ns_PoissonOOTPU_cfi.py}, mixes \code{minBunch = -12} to
-\code{maxBunch = 3}: 16 bunch crossings, about $16\times64 \simeq 1030$ library collisions per signal event (our three
-bunch crossings of 60 read 193). The Phase-2 relvals (\code{PUDataSets} for \code{Run4} in
+\code{maxBunch = 3}: 16 bunch crossings, about $16\times64 \simeq 1030$ library collisions per signal event (our
+sixteen bunch crossings of 60 read 995). The Phase-2 relvals (\code{PUDataSets} for \code{Run4} in
 \path{Configuration/PyReleaseValidation/python/relval_steps.py}) use \code{AVE\_200\_BX\_25ns}, defined in
 \code{Mixing.py} as \path{mix_POISSON_average_cfi} with \code{N = 200} and \code{B = (-3, 3)}: seven bunch
 crossings, 1400 collisions, and the out-of-time pileup cut at $-75\ns$ instead of $-300\ns$ (the variants
-\code{AVE\_200\_BX\_25ns\_m12p3} and \code{\_m6p6} exist next to it, used by no workflow). In this event the one
-early bunch crossing already puts 51 of the 204 muon-chamber hits and $139\,551$ tracker hits in front of the
-digitisers; with \code{B = (-3, 3)} no collision older than $75\ns$ exists for the detectors with a long memory (the
-DT drift, the CSC strips) to see, whatever the time windows of chapter~\ref{ch:11_DIGI}.
+\code{AVE\_200\_BX\_25ns\_m12p3} and \code{\_m6p6} exist next to it, used by no workflow). In this event the nine
+bunch crossings older than $75\ns$ ($-12$ to $-4$, 565 collisions) put 575 of the 838 muon-chamber hits and
+$1\,216\,638$ of the $2\,096\,409$ pileup tracker hits in front of the digitisers (FWLite on the library); with
+\code{B = (-3, 3)} none of them exists for the detectors with a long memory (the DT drift, the CSC strips) to see,
+whatever the time windows of chapter~\ref{ch:11_DIGI}.
 
 \textbf{What premixing keeps of the SimHits.} The modifier \code{premix\_stage1} extends the list
 \code{pcrossingFrames} of \code{mixSimHits} (\path{SimGeneral/MixingModule/python/mixObjects_cfi.py}) so that the

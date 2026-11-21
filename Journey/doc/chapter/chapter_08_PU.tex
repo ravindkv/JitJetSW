@@ -76,12 +76,11 @@ first library event & 1 & 72 & 140 & 194 & 253 & 305 & 366 & 442 & 501 & 566 & 6
 \end{tabular}
 \end{table}
 
-Chapter~\ref{ch:09_G4} hands all 1000 collisions to Geant4 and counts these 64 in its ledger. Chapters~\ref{ch:10_SIM}
-to \ref{ch:13_HLT} have not been moved to the 16 crossings yet: they mix the three crossings $-1$ to $+1$ (library
-events 1--193, in time 72--139), and their outputs were made from a library of 250 events, which are, collision by
-collision, the first 250 of these 1000: the same seeds give the same events in the same order whatever the length
-of the run (checked particle by particle), so nothing of theirs changes, but until they are moved their in-time
-collisions are not the 64 of this chapter. Only in-time
+Chapter~\ref{ch:09_G4} hands all 1000 collisions to Geant4 and counts these 64 in its ledger;
+chapter~\ref{ch:10_SIM} simulates them in full and mixes the 995 into the same 16 crossings (its
+\code{MixingModule} makes this draw again and checks it), chapter~\ref{ch:11_DIGI} digitises that mixture, and
+chapters~\ref{ch:12_L1T} and \ref{ch:13_HLT} trigger on it. (Until 21 November 2026 they mixed the three crossings
+$-1$ to $+1$, library events 1--193 of a 250-event library, the first 250 of these 1000.) Only in-time
 collisions matter at generator level: a list of particles has no time axis, so the 931 early and late
 collisions can only act through the time response of the detector.
 
