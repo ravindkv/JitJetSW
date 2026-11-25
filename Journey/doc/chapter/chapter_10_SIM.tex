@@ -1,7 +1,8 @@
 % chapter_10_SIM.tex -- chapter 10 of the JitJet book: the full Geant4 physics, stage by stage; the signal, the library
 % and the mixing at SimHit level. Every number comes from test/10_SIM/out/ (ledger_10_SIM.txt, simAnalyzer_<stage>_10_SIM.log,
-% simHits_{signal,pileup,mixed}_10_SIM.log, step3_MIX_10_SIM.log, extras_10_SIM.txt, the PNG pages and the headers of the
-% SimHitAnalyzer PDFs) and from the FWLite extras listed in doc/chapter/chapter_10_SIM.md, section 4.
+% simHits_{signal,pileup,mixed}_10_SIM.log, step3_MIX_10_SIM.log, extras_10_SIM.txt, the PNG pages; the energies per
+% subdetector and the followed primaries of the SimHitAnalyzer are in its logs) and from the FWLite extras listed in
+% doc/chapter/chapter_10_SIM.md, section 4.
 
 \chapter{10 -- SIM: the 571 primaries bend, decay, shower and leave hits; the library and the mixing}
 \label{ch:10_SIM}
@@ -546,8 +547,9 @@ ECAL cells; the $\bar b$ jet at $\eta=-3.75$ is a block of HF cells.}
 
 \textbf{What it shows.} The \code{SimHitAnalyzer} takes the full simulation detector by detector (``stations'':
 tracker, ECAL, HCAL, muon system) and draws every hit at its place in the detector, in $r$--$z$, in $x$--$y$ and in
-$\eta$--$\phi$, coloured by the kind of the primary it descends from. For the leading primary of every kind it joins
-the hits in time order and labels them, so that one particle can be followed through the layers
+$\eta$--$\phi$, coloured by the kind of the primary it descends from. The leading primary of every kind is labelled
+next to its hits and its calorimeter cells are circled; the hits are not joined into lines, since the hits of one
+primary come from its whole family of descendants, and tracks are made in the reconstruction
 (figure~\ref{fig:10_stations}): the $\pi^+$ of $13.3\GeV$ of \pt{} of the $b$ jet, the photon of
 subsection~\ref{sec:10_em}, the one electron of the event ($\pt=5.0\GeV$, $E=10.95\GeV$), and in the forward
 direction a $K^0_S$ of $15.7\GeV$ and a $\pi^+$ of $30.6\GeV$ of the $\bar b$ jet. The $K^0_S$ ($E=338.5\GeV$,
@@ -593,9 +595,9 @@ line of table~\ref{tab:10_stages}: 1511 photoelectrons in 459 cells).
 \includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/signal/HCAL/simHits_signal_10_SIM_HCAL_rz_run1_event1.png}
 \caption{(10a) The signal station by station, legends cropped. Top: the tracker in $r$--$z$ and, for its barrel, in $x$--$y$; bottom: the ECAL and the HCAL in
 $r$--$z$. Black: hits of charged hadrons, purple: neutral hadrons, green: photons, orange: electrons, grey: no stored
-ancestor; grey dots and frames: the detector elements. The followed primaries are joined in time order and labelled:
-the conversion pair of the photon (green) and the electron (orange) cross the whole tracker towards the endcap at
-$z\approx-300\cm$; the products of the nuclear interaction of the $K^0_S$ in the beam pipe (purple) fan out into the TID and TEC; in the HCAL the $b$ jet reaches the HE
+ancestor; grey dots and frames: the detector elements. The leading primary of each kind is labelled, its cells circled:
+the hits of the conversion pair of the photon (green) and of the electron (orange) cross the whole tracker towards the
+endcap at $z\approx-300\cm$; the products of the nuclear interaction of the $K^0_S$ in the beam pipe (purple) fan out into the TID and TEC; in the HCAL the $b$ jet reaches the HE
 around $z=-400\cm$ and the $\bar b$ jet the HF at $z=-1115\cm$.
 Files: \code{signal/<station>/}\allowbreak\code{simHits\_signal\_10\_SIM\_<station>\_<view>\_run1\_event1.png}.}
 \label{fig:10_stations}
@@ -718,10 +720,13 @@ shallow and a pileup deposit easily outweighs them.
 \includegraphics[width=0.475\textwidth,trim=0 0 288 0,clip]{10_SIM/out/mixed/MUON/simHits_mixed_10_SIM_MUON_rz_run1_event1.png}
 \caption{(10a+10b) The mixed event station by station, legends cropped: the tracker barrel in $x$--$y$, the ECAL in $\eta$--$\phi$, the HCAL and the muon system in $r$--$z$.
 The signal is drawn as in figure~\ref{fig:10_stations}, the pileup underneath by bunch crossing: olive early
-($\bx=-12$ to $-1$), blue in time, red late ($+1$ to $+3$), drawn in that order, so that in the dense tracker layers the
-red hits cover the olive ones (the legend counts $685\,160$ early, $54\,572$ in time and $169\,770$ late hits in the
-barrel); a calorimeter cell takes the colour of the origin that deposited most of its energy. The signal survives as
-the black and green dots along the followed tracks and as the core of the $b$ jet at $(-1.6,-2.1)$ in the ECAL; the
+($\bx=-12$ to $-1$), blue in time, red late ($+1$ to $+3$); a calorimeter cell takes the colour of the origin that
+deposited most of its energy. The tracker and the ECAL, with more than $100\,000$ pileup hits or cells each, draw the
+pileup binned: one box per bin, its area growing with the logarithm of the pileup hits in the bin, filled by the three
+origins as nested squares in proportion to their counts, olive outside, red in the middle, blue in the centre, so that
+none hides another (in the tracker barrel $685\,160$ early, $54\,572$ in time and $169\,770$ late hits: on average three
+quarters of a box are olive). The HCAL and the muon system keep one marker per cell or hit, drawn early, in time, late. The signal survives as
+the black and green dots along the paths of its particles and as the core of the $b$ jet at $(-1.6,-2.1)$ in the ECAL; the
 838 muon hits are all pileup.
 Files: \code{mixed/<station>/}\allowbreak\code{simHits\_mixed\_10\_SIM\_<station>\_<view>\_run1\_event1.png}.}
 \label{fig:10_pileup}
@@ -775,8 +780,9 @@ every tracker and muon hit as a dot, every calorimeter cell as a marker whose si
 charged hadrons, green for the photons, orange for the electron of the $B^-$ decay; the $\bar b$ jet at $(-3.75, 1.01)$
 as a block of large HF cells; the beam remnants as black HF cells along both edges; the empty band beyond
 $\abseta = 3$ where the tracker ends. With the pileup underneath (right), the same hits are there, drawn on top, but
-the plane is olive from edge to edge (the early crossings dominate four ECAL cells in five and five HCAL cells in six),
-with the red and blue of the late and in-time ones scattered over it. $11\,040$ of the $2\,282\,157$ hits and cells
+the plane is covered with pileup from edge to edge, drawn binned: in nearly every box olive outweighs the red ring and
+the blue centre of the late and in-time crossings (the early crossings dominate four ECAL cells in five and five HCAL
+cells in six). $11\,040$ of the $2\,282\,157$ hits and cells
 are the signal's: one dot among two hundred. The black strings of its charged tracks still cross the tracker region
 and the $b$ jet still stands out, as the green and orange block of its photons and its electron, but of the $\bar b$
 jet only two HF cells are left, one of them the followed $\pi^+$ of $31\GeV$. This is the picture the reconstruction will have to undo, and why chapter~\ref{ch:11_DIGI} keeps the
@@ -790,14 +796,17 @@ jet only two HF cells are left, one of them the followed $\pi^+$ of $31\GeV$. Th
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.495\textwidth}
 \includegraphics[width=\textwidth]{10_SIM/out/mixed/ALL/simHits_mixed_10_SIM_ALL_etaphi_run1_event1.png}
-\caption{(10a+10b) the signal with its 995 pileup collisions underneath, the pileup coloured by bunch crossing.}
+\caption{(10a+10b) the signal with its 995 pileup collisions underneath, the pileup binned and coloured by bunch crossing.}
 \end{subfigure}
 \caption{The $\eta$--$\phi$ display of the event at the SimHit level, all stations
 (\code{signal/ALL/simHits\_signal\_10\_SIM\_ALL\_etaphi\_run1\_event1.png},
-\code{mixed/ALL/simHits\_mixed\_10\_SIM\_ALL\_etaphi\_run1\_event1.png}; the r--z and x--y views and the pages
-per station are next to them). Black: charged hadrons, purple: neutral hadrons, green: photons, orange:
-electrons, grey: no stored ancestor; olive, blue and red: pileup of the early ($-12$ to $-1$), the in-time and the late ($+1$ to $+3$) bunch crossings. The leading
-primary of each kind is followed through the layers and labelled.}
+\code{mixed/ALL/simHits\_mixed\_10\_SIM\_ALL\_etaphi\_run1\_event1.png}; the r--z and x--y views, the r--z view of both
+halves of the detector, \code{\_rzUpDown\_} ($r$ signed by the sign of $y$, $|r|<300\cm$), and the pages per station are
+next to them). Black: charged hadrons, purple: neutral hadrons, green: photons, orange:
+electrons, grey: no stored ancestor; olive, blue and red: pileup of the early ($-12$ to $-1$), the in-time and the late ($+1$ to $+3$) bunch crossings, binned
+(a box per bin, area growing with the logarithm of its hits, olive outside, red in the middle, blue in the centre, in
+proportion to their counts). The leading
+primary of each kind is labelled.}
 \label{fig:10_display}
 \end{figure}
 

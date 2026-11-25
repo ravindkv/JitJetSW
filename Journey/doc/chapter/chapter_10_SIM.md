@@ -305,12 +305,23 @@ cd $J/test && python3 10_SIM/simExtras_10_SIM.py > 10_SIM/out/extras_10_SIM.txt 
 
 `simAnalyzer_cfg.py` (chapter 09, section 3, for the options): `simStage=N` highlights the stage in the right panel of every
 page (1 transport, 2 + B, 3 + decays, 4 + EM, 5 + hadronic); `genStages=5` draws the five generator pages first (signal
-stage only). `simHitAnalyzer_cfg.py`: `highlight=1` follows the leading primary of every kind (above `highlightPtMin=2` GeV)
-through the layers and labels it; `savePNG=1` writes every page as PNG next to the PDF, rendered from the closed PDF
+stage only). `simHitAnalyzer_cfg.py`: `highlight=1` labels the leading primary of every kind (above `highlightPtMin=2` GeV)
+next to its hits and circles its calorimeter cells (the hits are not joined into lines: those of one primary come from
+its whole family of descendants, and tracks belong to the reconstruction chapters); `savePNG=1` writes every page as PNG next to the PDF, rendered from the closed PDF
 by `pdftoppm -cropbox` (`plugins/PdfPng.h`: the PNG keeps ROOT's size, 1396 x 872 pixels, and no resolution chunk, so the
 trims of the chapter stay valid; ROOT's own PNG painted the 2.1 million hits of the mixed event for hours); `printHits=1` would print every
 primary with its hit counts per station; `stations=TRK,ALL` would restrict the stations. The global tag, era and geometry
-give the reco geometry (`GeometryRecoDB`) for the hit positions and the detector elements drawn in grey.
+give the reco geometry (`GeometryRecoDB`) for the hit positions and the detector elements drawn in grey. Set in
+`python/simHitAnalyzer_cff.py`, not on the command line: `rUpDownMax=300` for the station `ALL` (a fourth view,
+`rzUpDown`: r-z with r signed by the half of the detector, + for y > 0, - for y < 0, |r| < 300 cm, both halves of
+CMS apart; the muon chambers beyond are left out, they hold 838 hits of the mixed event and none of the signal);
+`binPileupAbove=100000` and `pileupBins=120` for the mixing job (Constitution, Rule K1): a station with more pileup
+hits and cells than that, TRK (2.10 million), ECAL (158 thousand) and ALL, draws its pileup binned, 120 bins across
+the frame and square bins on the page, one box per bin whose area is log10(1 + N) / log10(1 + Nmax) of the bin, filled
+by the three bunch-crossing classes as nested squares with visible areas in proportion to their counts (early outside,
+late in the middle, in-time in the centre); HCAL (15.7 thousand) and MUON (838) keep the markers. The page header is
+one line, the hits and cells grouped by detector (Tracker, ECAL, HCAL, Muon) with the subdetectors in brackets, rounded
+to K and M; the exact numbers are in the logs.
 
 What each run produces in `out/`:
 
@@ -319,10 +330,10 @@ What each run produces in `out/`:
 | `simAnalyzer_<stage>_10_SIM.pdf`, `_page-N.png` | for `B`, `B_Decay`, `B_Decay_EM` five pages: 1 the primaries handed to Geant4 (by kind, the 63 stable particles without `SimTrack` as crosses), 2 the primaries at the tracker/calorimeter boundary (marker at the crossing point, line from the production direction, open marker if not reaching it), 3 the secondaries by creator process (decay, ionisation, bremsstrahlung, conversion, Compton, annihilation, hadron elastic / inelastic), 4 the tracker and muon `PSimHit`s by subdetector, 5 the `PCaloHit`s summed per cell with the marker size growing with the energy, the b and bbar systems in red and blue on every page. For `signal` ten pages: the five generator stages of chapters 01 to 06 first (`_page-01..05`), then the five SIM pages (`_page-06..10`) |
 | `simAnalyzer_<stage>_10_SIM.log` | the per-page counts quoted in the chapter (section 4) |
 | `simAnalyzer_<stage>_10_SIM.root` | `TFileService` histograms per page |
-| `signal/<station>/simHits_signal_10_SIM_<station>_run1_event1.pdf`, `_<station>_{rz,xy,etaphi}_run1_event1.png` | (10a) one PDF of three pages per station (`TRK`, `ECAL`, `HCAL`, `MUON`, `ALL`): the r-z view, the transverse view of the barrel, the eta-phi view from the primary vertex; the detector elements of the station in grey, the hits coloured by the kind of the primary they descend from, the leading primary per kind connected through the layers; the header lists hits per subdetector and layer and the followed primaries |
+| `signal/<station>/simHits_signal_10_SIM_<station>_run1_event1.pdf`, `_<station>_{rz,xy,etaphi}_run1_event1.png` | (10a) one PDF of three pages per station (`TRK`, `ECAL`, `HCAL`, `MUON`, `ALL`): the r-z view, the transverse view of the barrel, the eta-phi view from the primary vertex; `ALL` has four, the r-z view of both halves (`_ALL_rzUpDown_`, \|r\| < 300 cm) second; the detector elements of the station in grey, the hits coloured by the kind of the primary they descend from, the leading primary per kind labelled; the header is the hits and cells by detector, the subdetectors in brackets, K / M rounded |
 | `pileup/<station>/simHits_pileup_10_SIM_<station>_..._run1_event747.pdf/.png` | (10b) the same for library event 747 |
-| `mixed/<station>/simHits_mixed_10_SIM_<station>_..._run1_event1.pdf/.png` | (10a+10b) the same for the mixed event: the signal hits by kind on top, the pileup hits underneath coloured by bunch crossing (olive early, blue in time, red late); a calorimeter cell takes the colour of the origin that deposited most of its energy |
-| `simHits_signal_10_SIM.log`, `simHits_pileup_10_SIM.log`, `simHits_mixed_10_SIM.log` | per station: hits and cells, hits by subdetector and layer, hits by kind of the primary (cells and their energy for the calorimeters), primaries with hits; the mixed log also lists every mixed collision with its bunch crossing, primaries, `SimTrack`s, `SimVertex`s, vertex z and time, and the "events per bx" line the script checks against `SKIP` / `NPU` |
+| `mixed/<station>/simHits_mixed_10_SIM_<station>_..._run1_event1.pdf/.png` | (10a+10b) the same for the mixed event: the signal hits by kind on top, the pileup underneath coloured by bunch crossing (olive early, blue in time, red late); a calorimeter cell takes the colour of the origin that deposited most of its energy. `TRK`, `ECAL` and `ALL` draw the pileup binned (Rule K1, nested boxes, see above), `HCAL` and `MUON` as markers |
+| `simHits_signal_10_SIM.log`, `simHits_pileup_10_SIM.log`, `simHits_mixed_10_SIM.log` | per station: hits and cells, hits by subdetector and layer, hits by kind of the primary (cells and their energy for the calorimeters), primaries with hits, the energy by subdetector, the followed primaries (hits, cells and energy of each), and one line per view (`view rzUpDown`: hits within \|r\| < 300 cm; `view xy`: the barrel hits by kind, as in the legend of the x-y page; `view etaphi`: the primary vertex and the hits beyond the eta range); the mixed log adds the `signal and pileup` line (hits of the signal and of the pileup, binned or not), and also lists every mixed collision with its bunch crossing, primaries, `SimTrack`s, `SimVertex`s, vertex z and time, and the "events per bx" line the script checks against `SKIP` / `NPU` |
 | `step3_MIX_10_SIM.log` | the full mixing job log (the analyzer lines above, the detector element extents); the same job draws the pages and writes `step3_MIX_10_SIM.root`, but the log names only the two input files it opens and closes, not the output file |
 | `step3_MIX_10_SIM.root` | the signal event with the `CrossingFramePlaybackInfoNew` (section 2), the input of (11a+11b) |
 | `ledger_10_SIM.txt` | the ledger of `common/simLedger.py`: table 1, the stages from the SimAnalyzer logs (with the transport-only run of chapter 09 as first line); table 2, the three samples station by station from the SimHitAnalyzer logs |
@@ -403,8 +414,8 @@ Reading the "by kind" lines: for the tracker and muon stations the numbers are h
 cells (attributed to the kind of the primary that deposited most of the cell's energy) with the energy of those cells in
 parentheses; `ALL` adds the two. The HCAL "GeV" add the visible energy of HB, HE, HO (GeV) and the HF shower-library units
 (photoelectrons), as the analyzer sums them. In the chapter: the mixed-event ECAL energies 150 GeV (signal, 21.8 +
-11.6 + 111 + 6.07) and 56 427 GeV (pileup, 52 900 + 797 + 2730), total 56 577, 56 600 in the ledger table of the chapter (the page header of
-`mixed/ECAL`, EB 1.21e+04 + EE 4.44e+04 + ES 43.4 = 56 543; the library sums of section 4.5, 12 068 + 44 126 + 43 = 56 237,
+11.6 + 111 + 6.07) and 56 427 GeV (pileup, 52 900 + 797 + 2730), total 56 577, 56 600 in the ledger table of the chapter (the line
+`energy by subdetector` of station `ECAL` in `simHits_mixed_10_SIM.log`, EB 12 136 + EE 44 419 + ES 43.4 = 56 598; the library sums of section 4.5, 12 068 + 44 126 + 43 = 56 237,
 plus the signal's 362 = 56 599); the HCAL 371 (signal, 313 + 58.1 + 0.0024 + 0.0005) and 246 434 (pileup, 246 000 + 28.2
 + 406), total 246 805, 246 800 in the table; the tracker pileup hits 1 588 361 + 125 625 + 382 423 = 2 096 409; per
 collision 1 588 361 / 746 = 2129, 125 625 / 64 = 1963, 382 423 / 185 = 2067; the signal's share 10 272 / 2 106 681 =
@@ -477,22 +488,25 @@ PXB/1=397 PXB/2=221 PXB/3=179 PXB/4=132 PXF/1=323 PXF/2=319 PXF/3=331 TIB/1=587 
 ```
 PXB/1=3 PXB/2=5 PXF/1=6 PXF/2=7 PXF/3=6 TID/1=5 TID/2=9 TID/3=16 TOB/1=1 TOB/2=13 TOB/4=1 TEC/1=6 TEC/2=9 TEC/3=16 TEC/4=3 TEC/5=5 TEC/6=6 TEC/7=5 TEC/8=7 TEC/9=7 EB=60 EE=61 ES=10 HB=1 HE=17 HF=54
 ```
-The page header of `pileup/ALL/simHits_pileup_10_SIM_ALL_run1_event747.pdf` (`pdftotext`) gives the energies: `EB 60 cells
-(0.232 GeV), EE 61 cells (0.86 GeV), ES 10 cells (0.00141 GeV), HB 1 cells (0.000649 GeV), HE 17 cells (0.0413 GeV), HF 54
-cells (98, shower-library units)`; 0.232 + 0.86 + 0.001 = 1.09 GeV of ECAL energy, 0.0006 + 0.041 + 98 = 98.0 HCAL units;
-`339 hits` = 136 PSimHits + 203 cells. No hit in TIB or in the muon system: the collision is single diffractive, its
+The energies, line `energy by subdetector` of station `ALL` in the same log: `EB=0.232 GeV EE=0.86 GeV ES=0.00141 GeV
+HB=0.000649 GeV HE=0.0413 GeV HF=98 HF shower-library units`; 0.232 + 0.86 + 0.001 = 1.09 GeV of ECAL energy, 0.0006 +
+0.041 + 98 = 98.0 HCAL units; 339 hits and cells = 136 PSimHits + 203 cells (the page header: `339 = Tracker 136 hits
+(PXB 8, PXF 19, TID 30, TOB 15, TEC 64) + ECAL 131 cells (EB 60, EE 61, ES 10) + HCAL 72 cells (HB 1, HE 17, HF 54)`). No hit in TIB or in the muon system: the collision is single diffractive, its
 charged particles leave at small angles (TID, TEC and PXF hold 113 of the 136 tracker hits, HF 54 of the 72 HCAL cells).
 
 `simHits_mixed_10_SIM.log`, station `ALL`:
 ```
 PXB/1=89824 PXB/2=62169 PXB/3=49310 PXB/4=41947 PXF/1=53296 PXF/2=58008 PXF/3=61808 TIB/1=135948 TIB/2=112600 TIB/3=47183 TIB/4=40499 TID/1=57198 TID/2=60106 TID/3=63394 TOB/1=111338 TOB/2=95803 TOB/3=39951 TOB/4=33408 TOB/5=29258 TOB/6=23397 TEC/1=107974 TEC/2=113398 TEC/3=119294 TEC/4=90905 TEC/5=94783 TEC/6=99128 TEC/7=73139 TEC/8=77488 TEC/9=64127 DT/1=62 DT/2=8 CSC/1=432 CSC/2=221 CSC/3=39 CSC/4=18 RPC/1=8 RPC/4=1 GEM/1=48 GEM/2=1 EB=61200 EE=14648 ES=82999 HB=6856 HE=5464 HO=66 HF=3405
 ```
-The page header of `mixed/ALL/simHits_mixed_10_SIM_ALL_run1_event1.pdf` (`pdftotext`): `2282157 hits: PXB 243250, PXF 173112,
-TIB 336230, TID 180698, TOB 333155, TEC 840236, DT 70, CSC 710, RPC 9, GEM 49, EB 61200 cells (1.21e+04 GeV), EE 14648 cells
-(4.44e+04 GeV), ES 82999 cells (43.4 GeV), HB 6856 cells (43.7 GeV), HE 5464 cells (280 GeV), HO 66 cells (0.0614 GeV), HF 3405
-cells (2.46e+05, shower-library units)`; `signal + pileup (MixingModule): 11040 hits of the signal event + 2271117 hits of
-the 995 mixed pileup events (149894 pileup primaries)`; the legend `pileup, early (bx < 0) (1731633)`, `in-time (bx 0)
-(133233)`, `late (bx > 0) (406251)`; the followed primaries `π+ 31 GeV`, `K0S 16 GeV`, `γ 18 GeV`, `e- 5 GeV` (in the
+The other lines of station `ALL` in `simHits_mixed_10_SIM.log`: `energy by subdetector: EB=12136 GeV EE=44419 GeV ES=43.4
+GeV HB=43.7 GeV HE=280 GeV HO=0.0614 GeV HF=246009 HF shower-library units`; `signal and pileup: 11040 hits and cells of the
+signal event, 2271117 of the 995 mixed pileup events (149894 pileup primaries); pileup drawn binned (more than 100000, Rule
+K1)`; by kind `pileup, early (bx < 0)=1731633`, `pileup, in-time (bx 0)=133233`, `pileup, late (bx > 0)=406251` (the
+legend of the r-z page, rounded: `1.73M`, `133K`, `406K`); the followed primaries `#pi^{+} 30.6 GeV`, `K_{S}^{0} 15.7 GeV`,
+`#gamma 17.7 GeV`, `e^{-} 5.0 GeV`, labelled on the pages with the pT rounded, `π+ 31 GeV`, `K0S 16 GeV`, `γ 18 GeV`,
+`e- 5 GeV`. The page header gives the hits rounded, `2.28M = Tracker 2.11M hits (PXB 243K, PXF 173K, TIB 336K, TID 181K,
+TOB 333K, TEC 840K) + ECAL 159K cells (EB 61.2K, EE 14.6K, ES 83.0K) + HCAL 15.8K cells (HB 6.86K, HE 5.46K, HO 66, HF
+3.40K) + Muon 838 hits (DT 70, CSC 710, RPC 9, GEM 49)` (in the
 eta-phi view the labels of the photon and the electron overlap in the b jet). 2 282 157 = 2 107 519 PSimHits + 174 638
 cells; 11 040 = 10 272 + 768, one in 207 (2 282 157 / 11 040 = 206.7); the tracker 243 250 + 173 112 + 336 230 + 180 698 +
 333 155 + 840 236 = 2 106 681. In the eta-phi view the early crossings dominate 129 238 of the 158 847 ECAL cells (81 %,
@@ -859,10 +873,10 @@ The arithmetic of the chapter on these numbers:
 | 142 nuclear-interaction vertices: 4 + 13 + 85 + 26 + 14 | the location line of section (4); 14 = 9 (calorimeters) + 5 (preshower) |
 | b system: ECAL 63.58 GeV, HCAL 0.386 GeV in 122 cells, x sampling = 73 GeV | 6.229 + 57.323 + 0.024; 0.010 + 0.376; 17 + 105; 0.010 x 125 + 0.376 x 190 = 72.7 (HB and HE sampling factors of `test/11_DIGI/out/thresholds_11_DIGI.txt`: `hb.samplingFactors` 124.5-143.5, `he.samplingFactors` 186.1-210.6) |
 | bbar system: 9.9 GeV in the ECAL (9.4 in the EE) | 0.540 + 9.353 + 0.012 = 9.905 (the SimAnalyzer: 9.90505) |
-| the followed photon and pi+ in the mixed event: 37 crystals with 41.7 GeV, 2 with 2.8 GeV; the HF pi+ 2 of its 19 cells | the header of `mixed/ECAL/simHits_mixed_10_SIM_ECAL_run1_event1.pdf` (`pdftotext`): `π+ 13.3 GeV (η -1.54), 2.78 GeV in 2 cells; KS 15.7 GeV (η -3.77), 1.44 GeV in 28 cells; γ 17.7 GeV (η -1.57), 41.69 GeV in 37 cells; e 5.0 GeV (η -1.43), 6.07 GeV in 20 cells`; of `mixed/HCAL/...`: `π+ 30.6 GeV (η -3.74), 311 (HF units) in 2 HF cells; KL 11.8 GeV (η -3.71), 54 (HF units) in 1 HF cells` |
-| the followed primaries of the signal: photon 270 cells with 42.0 GeV, pi+ 35 cells with 3.4 GeV, 171 tracker hits of the photon, 809 HF units in 19 cells of the HF pi+, K0S 203 hits | the headers of `signal/{TRK,ECAL,HCAL}/simHits_signal_10_SIM_<station>_run1_event1.pdf`: `π+ 13.3 GeV (η -1.54), 29 hits; KS 15.7 GeV (η -3.77), 203 hits; γ 17.7 GeV (η -1.57), 171 hits; e 5.0 GeV (η -1.43), 138 hits`; `π+ 13.3 GeV (η -1.54), 3.43 GeV in 35 cells; ...; γ 17.7 GeV (η -1.57), 42.03 GeV in 270 cells`; `π+ 30.6 GeV (η -3.74), 809 (HF units) in 19 HF cells`; the "GeV" of these labels is the pT of the primary (`plugins/SimHitAnalyzer.cc`, `highlightLine`) |
+| the followed photon and pi+ in the mixed event: 37 crystals with 41.7 GeV, 2 with 2.8 GeV; the HF pi+ 2 of its 19 cells | `simHits_mixed_10_SIM.log`, line `followed primaries` of station `ECAL`: `#pi^{+} 13.3 GeV (#eta -1.54), 2.78 GeV in 2 cells;  K_{S}^{0} 15.7 GeV (#eta -3.77), 1.44 GeV in 28 cells;  #gamma 17.7 GeV (#eta -1.57), 41.69 GeV in 37 cells;  e^{-} 5.0 GeV (#eta -1.43), 6.07 GeV in 20 cells`; of station `HCAL`: `#pi^{+} 30.6 GeV (#eta -3.74), 311 (HF units) in 2 HF cells;  K_{L}^{0} 11.8 GeV (#eta -3.71), 54 (HF units) in 1 HF cells` |
+| the followed primaries of the signal: photon 270 cells with 42.0 GeV, pi+ 35 cells with 3.4 GeV, 171 tracker hits of the photon, 809 HF units in 19 cells of the HF pi+, K0S 203 hits | `simHits_signal_10_SIM.log`, lines `followed primaries` of stations `TRK`, `ECAL`, `HCAL`: `#pi^{+} 13.3 GeV (#eta -1.54), 29 hits;  K_{S}^{0} 15.7 GeV (#eta -3.77), 203 hits;  #gamma 17.7 GeV (#eta -1.57), 171 hits;  e^{-} 5.0 GeV (#eta -1.43), 138 hits`; `#pi^{+} 13.3 GeV (#eta -1.54), 3.43 GeV in 35 cells; ...; #gamma 17.7 GeV (#eta -1.57), 42.03 GeV in 270 cells`; `#pi^{+} 30.6 GeV (#eta -3.74), 809 (HF units) in 19 HF cells`; the "GeV" of these labels is the pT of the primary (`plugins/SimHitAnalyzer.cc`, `highlightLine`) |
 | every barrel and endcap crystal hit; ES 82 999 of 137 216; HB 6856 of 9072, HE 5464 of 6768, HF 3405 of 3456 | `simHits_mixed_10_SIM.log` (cells per subdetector: `EB=61200 EE=14648 ES=82999`, `HB=6856 HE=5464 HO=66 HF=3405`) against the detector elements of `simHits_signal_10_SIM.log` (`EB=61200 EE=14648 ES=137216 HB=9072 HE=6768 HO=2160 HF=3456`) |
-| EE 44 400 GeV, 151 times the signal | the header of `mixed/ECAL/...`: `EE 14648 cells (4.44e+04 GeV)`; 44 400 / 293.66 = 151 |
+| EE 44 400 GeV, 151 times the signal | `simHits_mixed_10_SIM.log`, station `ECAL`: `energy by subdetector: EB=12136 GeV EE=44419 GeV ES=43.4 GeV`; 44 419 / 293.66 = 151 |
 | PU vertices: r.m.s. 3.58 cm, -12.4 to +12.9 cm, 13 of 984 within 1 mm of z = 3.11 cm, one of them in time | section (7); the 11 collisions at z = +-203 m left out (984 + 11 = 995) |
 | primaries per collision: median 90 of the 995, per crossing from 65 (bx -7) to 161 (bx -5), 84 in time; 137.6 per in-time collision against 150.6 | section (7) of `extras_10_SIM.txt` (for an even count the mean of the two middle values; the script printed the upper middle value until 13 November 2026); the same from FWLite on the library, section 4.5: 8804 / 64 = 137.6, 149 894 / 995 = 150.6 |
 | the PPS protons, `LHCTransport`, 203 m | section (8); `g4SimHits_cfi.py` line 694 `run3_common.toModify( g4SimHits, LHCTransport = True )`; `SimTransport/PPSProtonTransport/python/CommonParameters_cfi.py` lines 10-11 `PPSRegionStart_45/56 = 203` |

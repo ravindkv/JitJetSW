@@ -8,6 +8,9 @@
 #
 # The stations are TRK (tracker), ECAL (EB + HGCal EE for Phase2, EB + EE + ES for Run 3), HCAL (HB, HO, HF +
 # HGCal HSi / HSc, or HB, HE, HO, HF), HGCAL (Phase2 only), MUON (DT, CSC, RPC, GEM) and ALL; see plugins/SimHitAnalyzer.cc.
+# ALL has a fourth view, rzUpDown: r-z with r signed by the half of the detector (+ y > 0, - y < 0), |r| < 300 cm.
+# In CrossingFrame mode a station with more than binPileupAbove pileup hits and cells draws its pileup binned
+# (Constitution, Rule K1): one TH2 of counts per bunch-crossing class, nested boxes underneath the signal markers.
 import FWCore.ParameterSet.Config as cms
 
 
@@ -29,10 +32,11 @@ def simHitStations(phase2=True, crossingFrame=False, stations=''):
     hcalGeo = ['HB', 'HO', 'HF'] if phase2 else ['HB', 'HE', 'HO', 'HF']
     hgcGeo = ['HGCEE', 'HGCHSi', 'HGCHSc'] if phase2 else []
 
-    def station(name, title, psim=[], calo=[], geometry=[], zMax=1300., rMax=800., xyMax=800., etaMax=5., caloEntry=False):
+    def station(name, title, psim=[], calo=[], geometry=[], zMax=1300., rMax=800., xyMax=800., etaMax=5., caloEntry=False,
+                rUpDownMax=0.):
         return cms.PSet(name=cms.string(name), title=cms.string(title), psimHits=tags(psim), caloHits=tags(calo),
                         geometry=cms.vstring(*geometry), zMax=cms.double(zMax), rMax=cms.double(rMax), xyMax=cms.double(xyMax),
-                        etaMax=cms.double(etaMax), drawCaloEntry=cms.bool(caloEntry))
+                        etaMax=cms.double(etaMax), rUpDownMax=cms.double(rUpDownMax), drawCaloEntry=cms.bool(caloEntry))
 
     result = [
         station('TRK', 'tracker', psim=pixel + strip, geometry=['tracker'], zMax=300., rMax=125., xyMax=125., etaMax=4.5),
@@ -51,7 +55,7 @@ def simHitStations(phase2=True, crossingFrame=False, stations=''):
                 zMax=1150., rMax=760., xyMax=760., etaMax=3.0),
         station('ALL', 'all subdetectors', psim=pixel + strip + muon, calo=ecal + ['HcalHits'] + hgcal,
                 geometry=['tracker'] + ecalGeo + hcalGeo + hgcGeo + ['DT', 'CSC', 'RPC', 'GEM'],
-                zMax=1300., rMax=800., xyMax=800., etaMax=5.2),
+                zMax=1300., rMax=800., xyMax=800., etaMax=5.2, rUpDownMax=300.),
     ]
     if stations:
         wanted = stations.split(',')
@@ -60,7 +64,8 @@ def simHitStations(phase2=True, crossingFrame=False, stations=''):
 
 
 def simHitAnalyzer(outputDir, sampleLabel='', phase2=True, crossingFrame=False, stations='', highlight=1, highlightPtMin=2.,
-                   savePNG=True, printHits=False, hcalTestNumbering=True, prefix='simHits', maxGeoPoints=12000):
+                   savePNG=True, printHits=False, hcalTestNumbering=True, prefix='simHits', maxGeoPoints=12000,
+                   binPileupAbove=100000, pileupBins=120):
     sim = cms.InputTag('mix', 'g4SimHits') if crossingFrame else cms.InputTag('g4SimHits')
     return cms.EDAnalyzer('SimHitAnalyzer',
         simTracks=sim,
@@ -76,6 +81,8 @@ def simHitAnalyzer(outputDir, sampleLabel='', phase2=True, crossingFrame=False, 
         highlight=cms.int32(int(highlight)),
         highlightPtMin=cms.double(float(highlightPtMin)),
         maxGeoPoints=cms.int32(int(maxGeoPoints)),
+        binPileupAbove=cms.int32(int(binPileupAbove)),
+        pileupBins=cms.int32(int(pileupBins)),
     )
 
 

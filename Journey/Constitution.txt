@@ -148,10 +148,13 @@ Rule J: The detector chapters (09_G4, 10_SIM, 11_DIGI) teach how CMS is simulate
     (J5) (B2), (B4), (B5) and the companion (C1)-(C4) are unchanged in form; (C4) lists every number the subsections
          quote, with the file, the FWLite script, the conddb payload or the release file it comes from
 
-Rule K: Displays of many hits (for the future)
+Rule K: Displays of many hits
     (K1) a page with more than about 100 000 markers (the mixed event of 10_SIM: 2.1 million tracker hits) draws the pileup
          BINNED, one TH2 of counts per bunch-crossing class (log z) underneath the signal markers and the followed primaries:
-         markers drawn class after class cover each other (the late crossings hide the early ones that dominate), counts do not
+         markers drawn class after class cover each other (the late crossings hide the early ones that dominate), counts do not.
+         Built in SimHitAnalyzer (binPileupAbove = 100000: TRK, ECAL and ALL of the mixed event of 10_SIM): one box per bin,
+         its area log10(1 + N) / log10(1 + Nmax) of the bin, filled by the three classes as nested squares whose visible
+         areas are in proportion to their counts (early outside, late in the middle, in-time in the centre)
     (K2) the PNG of an analyzer page is rendered from its PDF by pdftoppm (plugins/PdfPng.h), not painted by ROOT (hours for 2 M markers)
 
 List of chapters:

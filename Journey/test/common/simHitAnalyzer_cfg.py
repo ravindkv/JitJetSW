@@ -2,7 +2,7 @@
 # (TRK, ECAL, HCAL, HGCAL, MUON and ALL) an r-z view, a transverse (barrel) view and an eta-phi view of the
 # hits, coloured by the kind of the primary (the particle handed to Geant4) the hit descends from, with the
 # detector elements of the station from the reco geometry in grey and the leading primary of every kind
-# followed through the layers. Output: <outputDir>/<station>/simHits_<station>.pdf (+ one PNG per page).
+# labelled (its calorimeter cells circled). Output: <outputDir>/<station>/simHits_<station>.pdf (+ one PNG per page).
 #
 #   cmsRun simHitAnalyzer_cfg.py inputFiles=file:SIM_Phase2/step2_SIM_Transport_B_Decay_EM_Had_out.root \
 #          outputDir=SIM_Phase2 era=Phase2C17I13M9 globalTag=auto:phase2_realistic_T33 geometry=ExtendedRun4D110 \
@@ -36,7 +36,7 @@ options.register('stations', '', VarParsing.multiplicity.singleton, VarParsing.v
 options.register('sampleLabel', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  "text printed in the right panel of every page, '|' separates lines")
 options.register('highlight', 1, VarParsing.multiplicity.singleton, VarParsing.varType.int,
-                 'leading primaries per kind whose hits are connected and labelled (0: none)')
+                 'leading primaries per kind that are labelled, their calorimeter cells circled (0: none)')
 options.register('highlightPtMin', 2.0, VarParsing.multiplicity.singleton, VarParsing.varType.float,
                  'minimum pT of a followed primary [GeV]')
 options.register('printHits', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,

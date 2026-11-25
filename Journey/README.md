@@ -71,10 +71,14 @@ paints every marker again (Constitution, Rule K); all keep the logs.
   calorimeter PCaloHits per cell; b and bbar systems followed. Options: `simStage`, `genStages`, `maxPage`,
   `eventsToProcess`, `globalTag`, `era`, `geometry`.
 - **SimHitAnalyzer** (`test/common/simHitAnalyzer_cfg.py`, `python/simHitAnalyzer_cff.py`): one event station by
-  station (TRK, ECAL, HCAL, MUON, ALL; HGCAL for Phase-2) in three views (r-z, x-y, eta-phi) with the detector elements
-  in grey and the hits coloured by the kind of the primary they descend from, the leading primary of every kind
-  followed. In CrossingFrame mode (`addSimHitAnalyzer`, `mixOnly_cff.mixOnly`) it runs inside the mixing job and draws
-  the pileup hits underneath, coloured by bunch crossing (early, in-time, late); the log lists every mixed collision.
+  station (TRK, ECAL, HCAL, MUON, ALL; HGCAL for Phase-2) in three views (r-z, x-y, eta-phi; ALL also `rzUpDown`, r-z
+  with r signed by the half of the detector, |r| < 300 cm) with the detector elements in grey and the hits coloured by
+  the kind of the primary they descend from, the leading primary of every kind labelled. The page header is one line,
+  the hits grouped by detector with the subdetectors in brackets (K / M rounded); the exact counts, the energies per
+  subdetector and the followed primaries are in the log. In CrossingFrame mode (`addSimHitAnalyzer`,
+  `mixOnly_cff.mixOnly`) it runs inside the mixing job and draws the pileup hits underneath, coloured by bunch crossing
+  (early, in-time, late); a station with more than `binPileupAbove` (100 000) pileup hits and cells draws them binned
+  (Constitution, Rule K1: nested boxes per bin, area ~ log N, split by class); the log lists every mixed collision.
   Options: `outputDir`, `prefix`, `stations`, `eventsToProcess`, `highlight`, `highlightPtMin`, `printHits`, `savePNG`.
 - **DigiAnalyzer** (`test/common/digiAnalyzer_cfg.py`): the digis of one event of a GEN-SIM-DIGI file on an eta-phi
   and an r-z page: pixel and strip digis at the position of the pixel / strip, attributed through the DigiSimLinks to

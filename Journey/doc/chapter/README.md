@@ -68,7 +68,8 @@ comes first and may take more pages, never by repeating a number that is explain
   made for them since 14 November 2026). pdfTeX takes the CropBox around the canvas, not the A4 MediaBox, and honours the
   /Rotate of the ROOT page, so the natural size is the landscape canvas (822 x 513 bp) and `trim=l b r t, clip` works on it
   as on the PNG. Chapters 09-13 still use the PNG pages, `{<XX_YYY>/out/<prefix>_page-N.png}`; the SimHitAnalyzer pages are
-  `<XX_YYY>/out/<case>/<station>/<prefix>_<station>_<view>_run1_event1.png`. One or two figures per chapter, the eta-phi
+  `<XX_YYY>/out/<case>/<station>/<prefix>_<station>_<view>_run1_event1.png` (`<view>` = `rz`, `xy`, `etaphi`, and for `ALL`
+  also `rzUpDown`, the r-z view of both halves). One or two figures per chapter, the eta-phi
   display in B4.
 - The ledger table of B4 has one row per quantity the stage changed (particles, energy, pT, by region / kind), with the
   value before and after the stage and the difference, in `booktabs` style.

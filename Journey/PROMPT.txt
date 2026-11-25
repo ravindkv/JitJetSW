@@ -1,4 +1,18 @@
 
+--------------------------------------------
+2026-11-25: P78_FixHeaderAndRemovedLines
+--------------------------------------------
+
+(1) The SimHitAnalyzer header fix: shrink the header text so it stops running into the legend column. It's now a code change plus a 5-minute rerun of chapter 10.
+
+(2) Rule K1: the binned pileup display is written into the Constitution but not built yet.
+
+(3) The upper texts in all these plots test/10_SIM/out/mixed/ALL/simHits_mixed_10_SIM_ALL_*.png looks croweded and overlapping. Since the important numbers are in the first line, remove the other lines. Now the first line can be regrouped as Tracker, ECAL, HCAL, etc and in brackets mention the sub-groups (e.g. the ones for barrel, endcap). Also big numbers can be rounded and experessed in "K" and "M" for thousands and millions.
+
+(4) I would like to have one new plot test/10_SIM/out/mixed/ALL/simHits_mixed_10_SIM_ALL_rzUpDown_run1_event1.png where we show r = -300 to 300 (the idea is to show both half of the CMS but only upto 300 cm as we have a very few muons on muon chamber)
+
+(5) Let us not connect the lines for now. We will be doing that later in reconstruction chapters. For now, just show the hits.
+
 
 ***** All below prompts were prompted from test dir
 --------------------------------------------

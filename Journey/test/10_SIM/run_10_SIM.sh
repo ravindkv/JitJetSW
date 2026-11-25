@@ -27,6 +27,8 @@
 #   signal/<station>/simHits_signal_10_SIM_<station>_run1_event1.pdf, .png   (10a), log simHits_signal_10_SIM.log
 #   pileup/<station>/simHits_pileup_10_SIM_<station>_...                     (10b), log simHits_pileup_10_SIM.log
 #   mixed/<station>/simHits_mixed_10_SIM_<station>_...                       (10a+10b), log simHits_mixed_10_SIM.log, job log step3_MIX_10_SIM.log
+#     views per station: rz, xy, etaphi; ALL also rzUpDown (r signed by the half, |r| < 300 cm); in mixed/ the pileup of
+#     TRK, ECAL and ALL (more than 100 000 hits and cells) is drawn binned (Constitution, Rule K1)
 #   step3_MIX_10_SIM.root, .driver.log                     (10a+10b) the signal with the playback record of the mixing (config step3_MIX_10_SIM_cfg.py)
 #   ledger_10_SIM.txt                                      the ledger of the stages and of the three samples (common/simLedger.py)
 # Variables: PU=60 BUNCHES=-12,3 SKIP=746 NPU=64 (jitjet_common.sh: the window and the draw of chapter 08) PUSEED=20241 STATIONS= (subset) HIGHLIGHT=1 HIGHLIGHT_PTMIN=2 PRINTHITS=0
@@ -131,15 +133,15 @@ draw() {  # draw <case> <input> <event> <label>
   grep -E "^SimHitAnalyzer run|^  station|^    primaries with hits" "$OUT/simHits_${case}_${CHAPTER}.log"
 }
 if [[ " $CASES " == *" signal "* ]]; then
-  draw signal "$OUT/step2_SIM_signal_${CHAPTER}.root" "$EVENT" "chapter $CHAPTER (10a): the signal|bbbar, pTHat > $PTHATMIN GeV|full Geant4 physics, $YEAR detector|no pileup"
+  draw signal "$OUT/step2_SIM_signal_${CHAPTER}.root" "$EVENT" "chapter $CHAPTER (10a)|the signal: bbbar, pTHat > $PTHATMIN GeV|full Geant4 physics|$YEAR detector, no pileup"
 fi
 if [[ " $CASES " == *" pileup "* ]]; then
-  draw pileup "$OUT/step2_SIM_pileup_${CHAPTER}.root" "1:1:$((SKIP + 1))" "chapter $CHAPTER (10b): one pileup collision|library event $((SKIP + 1)), full Geant4 physics|SoftQCD inelastic, 13.6 TeV|$YEAR detector, no signal"
+  draw pileup "$OUT/step2_SIM_pileup_${CHAPTER}.root" "1:1:$((SKIP + 1))" "chapter $CHAPTER (10b)|one pileup collision, event $((SKIP + 1))|full Geant4 physics|SoftQCD inelastic, 13.6 TeV|$YEAR detector, no signal"
 fi
 fi  # ANALYZE
 if [[ " $CASES " == *" mixed "* ]]; then
   mkdir -p "$OUT/mixed"
-  label="chapter $CHAPTER (10a+10b): signal + pileup at SimHit level|PU = $PU per bx (Poisson), bx $bx_min..$bx_max|library in sequence, no digitisers|$YEAR detector, 13.6 TeV"
+  label="chapter $CHAPTER (10a+10b)|signal + pileup at SimHit level|PU = $PU per bx (Poisson), bx $bx_min..$bx_max|library in sequence, no digitisers|$YEAR detector, 13.6 TeV"
   py_true() { (( $1 )) && echo True || echo False; }
   kw="highlight=$HIGHLIGHT, highlightPtMin=$HIGHLIGHT_PTMIN, savePNG=$(py_true "$PNG"), printHits=$(py_true "$PRINTHITS")"
   [[ -n $STATIONS ]] && kw+=", stations='$STATIONS'"
@@ -158,7 +160,8 @@ if [[ " $CASES " == *" mixed "* ]]; then
     --customise_commands "$customise"
   (( RUN )) && { [[ -s $OUT/step3_MIX_${CHAPTER}.root ]] || { echo "No output produced: $OUT/step3_MIX_${CHAPTER}.root" >&2; exit 1; }; }
   (( RUN && ANALYZE )) || exit 0
-  grep -E "^SimHitAnalyzer|^  pileup mixed|^    pileup event|^  station|^    hits by|^    primaries with hits" "$OUT/step3_MIX_${CHAPTER}.log" > "$OUT/simHits_mixed_${CHAPTER}.log"
+  grep -E "^SimHitAnalyzer|^  pileup mixed|^    pileup event|^  station|^    hits by|^    primaries with hits|^    energy by|^    signal and pileup|^    followed|^    view " \
+    "$OUT/step3_MIX_${CHAPTER}.log" > "$OUT/simHits_mixed_${CHAPTER}.log"
   grep -E "^SimHitAnalyzer run|^  pileup mixed|^  station|^    primaries with hits" "$OUT/simHits_mixed_${CHAPTER}.log"
   # the in-time collisions chapters 08 and 09 assumed (SKIP, NPU) must be the ones the MixingModule drew
   rm -f "$OUT/WARNING_intime_${CHAPTER}.txt"
